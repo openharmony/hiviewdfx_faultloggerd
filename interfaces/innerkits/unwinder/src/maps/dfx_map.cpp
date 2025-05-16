@@ -299,7 +299,7 @@ uint64_t DfxMap::GetRelPc(uint64_t pc)
     return (pc - begin + offset);
 }
 
-std::string DfxMap::ToString()
+std::string DfxMap::ToString() const
 {
     char buf[LINE_BUF_SIZE] = {0};
     std::string realMapName = UnFormatMapName(name);

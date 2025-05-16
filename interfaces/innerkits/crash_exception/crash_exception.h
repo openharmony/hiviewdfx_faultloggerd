@@ -19,6 +19,7 @@
 #include <cinttypes>
 #include <string>
 #include "dfx_exception.h"
+#include "dfx_dump_request.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -45,12 +46,12 @@ uint64_t GetTimeMillisec(void);
 /**
  * @brief save crashed process info
 */
-void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid);
+void SetCrashProcInfo(const ProcessDumpType& dumpType, const std::string& name, int32_t pid, int32_t uid);
 
 /**
  * @brief report crash to sysevent
 */
-void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int32_t errCode);
+void ReportCrashException(int32_t errCode);
 
 /**
  * @brief report crash to sysevent

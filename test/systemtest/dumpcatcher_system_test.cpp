@@ -1512,7 +1512,7 @@ static void TestDumpCatch(const int targetPid, const string& processName, const 
     DfxDumpCatcher dumplog;
     string msg = "";
     if (dumplog.DumpCatch(targetPid, 0, msg)) {
-        GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump sucessfully.";
+        GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump successfully.";
         string log[] = {"Pid:" + to_string(targetPid), "Tid:" + to_string(targetPid), "Name:" + processName,
                         "#00", "#01", "#02"};
         int expectNum = sizeof(log) / sizeof(log[0]);

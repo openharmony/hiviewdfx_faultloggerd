@@ -6,6 +6,7 @@
       OHOS::HiviewDFX::Read*;
       OHOS::HiviewDFX::TidToNstid*;
       OHOS::HiviewDFX::IsThreadInPid*;
+      OHOS::HiviewDFX::ReadProcRssMemInfo*;
     };
   local:
     *;

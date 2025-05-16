@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,13 +22,15 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+#define NOINLINE __attribute__((noinline))
+
 const static unsigned int SLEEP_TIMEOUT = 360000;
 
 static void CreateThread(int *argv)
 {
     int threadID = *argv;
     printf("create MultiThread %d\n", threadID);
-    TestFunc1();
+    sleep(3); // 3 : sleep 3 seconds // 3 : three seconds
     return;
 }
 
@@ -43,6 +45,44 @@ static void CreateThreadForCrash(const int *argv)
     return;
 }
 
+pid_t CreateMultiThreadProcess(int threadNum)
+{
+    pid_t pid = fork();
+    if (pid < 0) {
+        printf("Failed to fork new test process.");
+    } else if (pid == 0) {
+        (void)MultiThreadConstructor(threadNum);
+        sleep(3); // 3 : sleep 3 seconds
+        _exit(0);
+    }
+    return pid;
+}
+
+pid_t CreateMultiThreadForThreadCrash(int threadNum)
+{
+    pid_t pid = fork();
+    if (pid < 0) {
+        printf("Failed to fork new test process.");
+    } else if (pid == 0) {
+        (void)MultiThreadConstructorForThreadCrash(threadNum);
+    }
+    return pid;
+}
+
+pid_t CreateMultiThreadForThreadCrashWithOpen(int threadNum, int openNum)
+{
+    pid_t pid = fork();
+    if (pid < 0) {
+        printf("Failed to fork new test process.");
+    } else if (pid == 0) {
+        for (int i = 0; i < openNum; ++i) {
+            fopen("/dev/null", "r");
+        }
+        (void)MultiThreadConstructorForThreadCrash(threadNum);
+    }
+    return pid;
+}
+
 NOINLINE int MultiThreadConstructor(const int threadNum)
 {
     pthread_t t[threadNum];
@@ -53,11 +93,6 @@ NOINLINE int MultiThreadConstructor(const int threadNum)
         pthread_create(&t[i], NULL, (void *(*)(void *))CreateThread, &threadID[i]);
         pthread_detach(t[i]);
     }
-
-    while (1) {
-        continue;
-    }
-
     return 0;
 }
 

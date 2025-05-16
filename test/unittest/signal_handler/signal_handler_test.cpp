@@ -66,6 +66,7 @@ extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func) __attribute__((we
 extern "C" void DFX_InstallSignalHandler(void) __attribute__((weak));
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len) __attribute__((weak));
+extern "C" int DFX_SetCrashLogConfig(uint8_t type, uint32_t value) __attribute__((weak));
 static bool CheckCallbackCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -950,7 +951,7 @@ HWTEST_F(SignalHandlerTest, FdTableTest001, TestSize.Level2)
             /**
              * @tc.steps: step6. Waiting for the completion of stack grabbing
              * */
-            sleep(3);
+            sleep(3); // 3 : sleep 3 seconds
 
             string keywords[] = {
                 to_string(fileno(fp)) + "->/dev/null", to_string(tag)
@@ -968,6 +969,126 @@ HWTEST_F(SignalHandlerTest, FdTableTest001, TestSize.Level2)
             int minRegIdx = -1;
             ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
         }
+    }
+}
+
+/**
+ * @tc.name: SetCrashLogConfig001
+ * @tc.desc: Verify the set crash Log config
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SetCrashLogConfig001, TestSize.Level2)
+{
+    if (DFX_SetCrashLogConfig == nullptr) {
+        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
+        return;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new process.";
+    } else if (pid == 0) {
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 10000), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        abort();
+    } else {
+        sleep(3); // 3 : sleep 3 seconds
+        string keywords[] = {
+            "configs:",
+            "printing:true",
+            "size:10000B",
+            "printing:true",
+        };
+        auto filePath = GetDumpLogFileName("cppcrash", pid, TEMP_DIR);
+        ASSERT_FALSE(filePath.empty());
+
+        int length = sizeof(keywords) / sizeof(keywords[0]);
+        int minRegIdx = -1;
+        ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
+    }
+}
+
+/**
+ * @tc.name: SetCrashLogConfig002
+ * @tc.desc: Verify the set crash Log config twice
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SetCrashLogConfig002, TestSize.Level2)
+{
+    if (DFX_SetCrashLogConfig == nullptr) {
+        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
+        return;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new process.";
+    } else if (pid == 0) {
+        // once
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 10000), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        // twice
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 0), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 9999), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        abort();
+    } else {
+        sleep(3); // 3 : sleep 3 seconds
+        string keywords[] = {
+            "configs:",
+            "size:9999B",
+            "printing:true",
+        };
+        auto filePath = GetDumpLogFileName("cppcrash", pid, TEMP_DIR);
+        ASSERT_FALSE(filePath.empty());
+
+        int length = sizeof(keywords) / sizeof(keywords[0]);
+        int minRegIdx = -1;
+        ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
+    }
+}
+
+/**
+ * @tc.name: SetCrashLogConfig003
+ * @tc.desc: Verify the set crash Log config three times
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SetCrashLogConfig003, TestSize.Level2)
+{
+    if (DFX_SetCrashLogConfig == nullptr) {
+        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
+        return;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new process.";
+    } else if (pid == 0) {
+        // once
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 10000), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        // twice
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 0), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 9999), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        // three times
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 1024), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 0), 0);
+        abort();
+    } else {
+        sleep(3); // 3 : sleep 3 seconds
+        string keywords[] = {
+            "configs:",
+            "printing:true",
+            "size:1024B",
+        };
+        auto filePath = GetDumpLogFileName("cppcrash", pid, TEMP_DIR);
+        ASSERT_FALSE(filePath.empty());
+
+        int length = sizeof(keywords) / sizeof(keywords[0]);
+        int minRegIdx = -1;
+        ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
     }
 }
 } // namespace HiviewDFX

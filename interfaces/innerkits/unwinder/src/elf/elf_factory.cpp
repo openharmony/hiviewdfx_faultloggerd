@@ -55,7 +55,7 @@ std::shared_ptr<DfxElf> MiniDebugInfoFactory::Create()
     std::vector<uint8_t> miniDebugInfoData;
     if (!XzDecompress(reinterpret_cast<uint8_t *>(gnuDebugDataHdr_.address),
         gnuDebugDataHdr_.size, miniDebugInfoData)) {
-        DFXLOGE("Failed to decompressed .gnu_debugdata seciton.");
+        DFXLOGU("Failed to decompressed .gnu_debugdata seciton.");
         return nullptr;
     }
     // miniDebugInfoData store the decompressed bytes.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,10 +26,12 @@
 #include <unistd.h>
 #include <vector>
 
-#include "dfx_config.h"
+#include "process_dump_config.h"
+#include "crash_exception.h"
 #include "dfx_define.h"
-#include "dfx_logger.h"
-#include "dfx_ring_buffer_wrapper.h"
+
+#include "dfx_buffer_writer.h"
+#include "dfx_log.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
 #include "procinfo.h"
@@ -37,40 +39,62 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-DfxProcess::DfxProcess(pid_t pid, pid_t nsPid)
-{
-    InitProcessInfo(pid, nsPid);
-}
-
-void DfxProcess::InitProcessInfo(pid_t pid, pid_t nsPid)
+void DfxProcess::InitProcessInfo(pid_t pid, pid_t nsPid, uid_t uid, const std::string& processName)
 {
     processInfo_.pid = pid;
     processInfo_.nsPid = nsPid;
-    ReadProcessName(processInfo_.pid, processInfo_.processName);
+    processInfo_.uid = uid;
+    processInfo_.processName = processName;
 }
 
-bool DfxProcess::InitOtherThreads(bool attach)
+bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request)
+{
+    pid_t nsTid = request.tid;
+    pid_t tid = ChangeTid(nsTid, true);
+    keyThread_ = DfxThread::Create(processInfo_.pid, tid, nsTid);
+    if (!keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
+        DFXLOGE("Failed to attach key thread(%{public}d).", nsTid);
+        ReportCrashException(CrashExceptionCode::CRASH_DUMP_EATTACH);
+        return false;
+    }
+    if (keyThread_->GetThreadInfo().threadName.empty()) {
+        keyThread_->SetThreadName(std::string(request.threadName));
+    }
+    keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request.context));
+    if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) { // dumpcatch set target thread to key thread
+        pid_t dumpCatchTargetTid = request.siginfo.si_value.sival_int == 0 ?
+            request.nsPid : request.siginfo.si_value.sival_int;
+        DFXLOGE("dumpCatchTargetTid(%{public}d).", dumpCatchTargetTid);
+        if (dumpCatchTargetTid != tid) {
+            otherThreads_.emplace_back(keyThread_);
+            keyThread_ = DfxThread::Create(processInfo_.pid, dumpCatchTargetTid, dumpCatchTargetTid);
+            if (keyThread_ != nullptr && keyThread_->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
+                keyThread_->SetThreadRegs(DfxRegs::CreateRemoteRegs(dumpCatchTargetTid));
+            }
+        }
+    }
+    return true;
+}
+
+bool DfxProcess::InitOtherThreads(pid_t requestTid)
 {
     std::vector<int> tids;
     std::vector<int> nstids;
     if (!GetTidsByPid(processInfo_.pid, tids, nstids)) {
         return false;
     }
-
+    pid_t keyThreadNsTid = 0;
+    if (keyThread_ != nullptr) {
+        keyThreadNsTid = keyThread_->GetThreadInfo().nsTid;
+    }
     for (size_t i = 0; i < nstids.size(); ++i) {
-        if ((recycleTid_ > 0) && (nstids[i] == static_cast<int>(recycleTid_))) {
-            DFXLOGD("skip recycle thread:%{public}d.", nstids[i]);
+        // KeyThread and requestThread have been initialized, skip directly
+        if ((nstids[i] == keyThreadNsTid) || nstids[i] == requestTid) {
             continue;
         }
-
-        if ((keyThread_ != nullptr) && nstids[i] == keyThread_->threadInfo_.nsTid) {
-            DFXLOGD("skip key thread:%{public}d.", nstids[i]);
-            continue;
-        }
-
         auto thread = DfxThread::Create(processInfo_.pid, tids[i], nstids[i]);
-        if (attach) {
-            thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT);
+        if (thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
+            thread->SetThreadRegs(DfxRegs::CreateRemoteRegs(thread->GetThreadInfo().nsTid));
         }
         otherThreads_.push_back(thread);
     }
@@ -125,7 +149,7 @@ void DfxProcess::Attach(bool hasKey)
         return;
     }
     for (auto& thread : otherThreads_) {
-        if (thread->threadInfo_.nsTid == processInfo_.nsPid) {
+        if (thread->GetThreadInfo().nsTid == processInfo_.nsPid) {
             thread->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
             continue;
         }
@@ -135,27 +159,29 @@ void DfxProcess::Attach(bool hasKey)
 
 void DfxProcess::Detach()
 {
-    if (otherThreads_.empty()) {
-        return;
+    if (keyThread_ != nullptr) {
+        keyThread_->Detach();
     }
 
-    for (auto& thread : otherThreads_) {
-        thread->Detach();
+    for (const auto& thread : otherThreads_) {
+        if (thread != nullptr) {
+            thread->Detach();
+        }
     }
 }
 
-void DfxProcess::SetFatalMessage(const std::string &msg)
+void DfxProcess::AppendFatalMessage(const std::string &msg)
 {
     fatalMsg_ += msg;
 }
 
-std::string DfxProcess::GetFatalMessage() const
+const std::string& DfxProcess::GetFatalMessage() const
 {
     return fatalMsg_;
 }
 
 namespace {
-bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
+bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
 {
     std::string path = "/proc/" +std::to_string(tid);
     UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
@@ -194,7 +220,7 @@ bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
 }
 }
 
-std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
+std::string DfxProcess::GetProcessLifeCycle()
 {
     struct sysinfo si;
     constexpr uint64_t invalidTimeLimit = 2 * 365 * 24 * 3600; // 2 year
@@ -203,7 +229,7 @@ std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
         return "";
     }
     unsigned long long startTime = 0;
-    if (GetProcessInfo(pid, startTime)) {
+    if (GetProcessStartTime(processInfo_.pid, startTime)) {
         auto clkTck = sysconf(_SC_CLK_TCK);
         if (clkTck == -1) {
             DFXLOGE("Get _SC_CLK_TCK fail. errno %{public}d", errno);
