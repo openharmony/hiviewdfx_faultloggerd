@@ -32,11 +32,11 @@ namespace HiviewDFX {
 inline bool RealPath(const std::string& path, std::string& realPath)
 {
 #if is_ohos
-    realPath.reserve(PATH_MAX);
-    realPath.resize(PATH_MAX - 1);
-    if (realpath(path.c_str(), &(realPath[0])) == nullptr) {
+    char buf[PATH_MAX] = {0};
+    if (realpath(path.c_str(), buf) == nullptr) {
         return false;
     }
+    realPath = buf;
 #else
     realPath = path;
 #endif

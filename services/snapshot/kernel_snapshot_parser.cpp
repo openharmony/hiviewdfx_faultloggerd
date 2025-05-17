@@ -142,7 +142,7 @@ void KernelSnapshotParser::ParseStackBacktrace(const SnapshotCell& cell, CrashMa
     KernelFrame frame;
     for (size_t i = cell.start + 1; i <= cell.end; i++) {
         frame.Parse(cell.lines[i]);
-        int pos = i - cell.start - 1;
+        size_t pos = i - cell.start - 1;
         output[CrashSection::FAULT_THREAD_INFO] += frame.ToString(pos) + "\n";
     }
 }

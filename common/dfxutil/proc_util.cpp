@@ -173,7 +173,10 @@ static bool ParseStatFromString(const std::string& statStr, ProcessInfo& info)
 
     // comm(2)
     std::string comm = statStr.substr(commStart + 1, commEnd - commStart - 1);
-    (void)memcpy_s(info.comm, TASK_COMM_LEN, comm.c_str(), comm.length());
+    if (memcpy_s(info.comm, TASK_COMM_LEN, comm.c_str(), comm.length()) != EOK) {
+        DFXLOGE("Failed to copy comm.");
+        return false;
+    }
     parsed = sscanf_s(statStr.substr(commEnd).c_str(),
         ") %c "             // state(3)
         "%d "               // ppid(4)
