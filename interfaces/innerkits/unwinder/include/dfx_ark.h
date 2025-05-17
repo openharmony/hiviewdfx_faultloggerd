@@ -93,6 +93,20 @@ using ReadMemFunc = panda::ecmascript::ReadMemFunc;
 using ArkUnwindParam = panda::ecmascript::ArkUnwindParam;
 using ArkStepParam = panda::ecmascript::ArkStepParam;
 
+enum class ArkFunction {
+    ARK_LIB_NAME,
+    ARK_CREATE_JS_SYMBOL_EXTRACTOR,
+    ARK_DESTORY_JS_SYMBOL_EXTRACTOR,
+    ARK_CREATE_LOCAL,
+    ARK_DESTROY_LOCAL,
+    ARK_PARSE_JS_FILE_INFO,
+    ARK_PARSE_JS_FRAME_INFO_LOCAL,
+    ARK_PARSE_JS_FRAME_INFO,
+    STEP_ARK,
+    STEP_ARK_WITH_RECORD_JIT,
+    ARK_WRITE_JIT_CODE,
+};
+    
 class DfxArk {
 public:
     static DfxArk& Instance();
@@ -198,14 +212,22 @@ public:
      * @return if succeed return 1, otherwise return -1
     */
     int ArkDestroyLocal();
+
+    /**
+     * @brief init ark function.
+     *
+     * @param arkFunction target function.
+     * @return
+     */
+    bool InitArkFunction(ArkFunction arkFunction);
 private:
     DfxArk() = default;
     ~DfxArk() = default;
     DfxArk(const DfxArk&) = delete;
     DfxArk& operator=(const DfxArk&) = delete;
     bool GetLibArkHandle(void);
-    template <typename FuncName>
-    void DlsymArkFunc(const char* funcName, FuncName& dlsymFuncName);
+    bool DlsymArkFunc(const char* funcName, void** dlsymFuncName);
+
     void* handle_ = nullptr;
     using StepArkFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, OHOS::HiviewDFX::ArkStepParam*);
     using StepArkWithJitFn = int (*)(OHOS::HiviewDFX::ArkUnwindParam*);

@@ -94,12 +94,15 @@
       OHOS::HiviewDFX::DfxSymbols::ParseSymbols*;
       OHOS::HiviewDFX::DfxSymbols::AddSymbolsByPlt*;
       OHOS::HiviewDFX::DfxSymbols::GetFuncNameAndOffsetByPc*;
+      OHOS::HiviewDFX::DfxArk::InitArkFunction*;
       OHOS::HiviewDFX::DfxArk::Instance*;
       OHOS::HiviewDFX::DfxArk::ArkCreateJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;
+      OHOS::HiviewDFX::DfxArk::StepArkFrame*;
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
+      OHOS::HiviewDFX::DfxMaps::GetArkStackRange*;
       OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
       OHOS::HiviewDFX::LocalThreadContextMix::GetInstance*;
       OHOS::HiviewDFX::LocalThreadContextMix::GetMapByPc*;
