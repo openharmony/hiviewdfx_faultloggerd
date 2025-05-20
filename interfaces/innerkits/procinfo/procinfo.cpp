@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <securec.h>
+#include <sstream>
 #include <fcntl.h>
 #include <unistd.h>
 #include "dfx_define.h"
@@ -311,6 +312,47 @@ void ReadThreadWchan(std::string& result, const int tid, bool withThreadName)
         ss += "Load thread wchan failed.\n";
     }
     result = ss;
+}
+
+uint64_t GetProcRssMemInfo(pid_t pid)
+{
+    if (pid <= 0) {
+        return 0;
+    }
+
+    constexpr int tokenNum = 2;
+    constexpr int decimalBase = 10;
+    std::string statmPath = "/proc/" + std::to_string(pid) + "/statm";
+    std::string readContent;
+
+    if (!LoadStringFromFile(statmPath, readContent)) {
+        return 0;
+    }
+
+    std::istringstream iss(readContent);
+    std::vector<std::string> tokens;
+    for (int i = 0; i < tokenNum; i++) {
+        std::string token;
+        getline(iss, token, ' ');
+        if (!token.empty()) {
+            tokens.push_back(token);
+        }
+    }
+
+    if (tokens.size() < tokenNum) {
+        return 0;
+    }
+
+    std::string rssStr = tokens.at(1);
+    uint64_t rss = static_cast<uint64_t>(strtoull(rssStr.c_str(), nullptr, decimalBase));
+    if (rss == 0) {
+        return rss;
+    }
+    constexpr int pageSizeKB = 4;
+    constexpr int sizekiB = 1024;
+    constexpr int sizekB = 1000;
+    rss = (rss * pageSizeKB * sizekiB) / sizekB;
+    return rss;
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS

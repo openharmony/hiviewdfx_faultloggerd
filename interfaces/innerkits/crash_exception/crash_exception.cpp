@@ -39,9 +39,9 @@ uint64_t GetTimeMillisec(void)
             (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION);
 }
 
-void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid)
+void SetCrashProcInfo(const ProcessDumpType& dumpType, const std::string& name, int32_t pid, int32_t uid)
 {
-    if (pid <= 0) {
+    if (pid <= 0 || dumpType != ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         return;
     }
     g_isInitProcessInfo = true;
@@ -50,13 +50,12 @@ void SetCrashProcInfo(std::string& name, int32_t pid, int32_t uid)
     g_crashProcessUid = uid;
 }
 
-void ReportCrashException(const char* pName, int32_t pid, int32_t uid, int32_t errCode)
+void ReportCrashException(int32_t errCode)
 {
-    if (pName == nullptr || strnlen(pName, NAME_BUF_LEN) == NAME_BUF_LEN) {
+    if (!g_isInitProcessInfo) {
         return;
     }
-
-    ReportCrashException(std::string(pName), pid, uid, errCode);
+    ReportCrashException(g_crashProcessName, g_crashProcessPid, g_crashProcessUid, errCode);
 }
 
 void ReportCrashException(std::string name, int32_t pid, int32_t uid, int32_t errCode)

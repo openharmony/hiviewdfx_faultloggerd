@@ -135,6 +135,13 @@ void ReadThreadWchan(std::string& result, const int tid, bool withThreadName = f
  * @brief Get stacktrace head info
 */
 std::string GetStacktraceHeader();
+
+/**
+ * @brief read process rss
+ * @param pid process id
+ * @return rss value(KB)
+*/
+uint64_t GetProcRssMemInfo(pid_t pid);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 #endif

@@ -38,8 +38,8 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
-      "$faultloggerd_path/tools/panic_maker:panic_maker",
       "$faultloggerd_path/test/utils:dfx_test_util",
+      "$faultloggerd_path/tools/panic_maker:panic_maker",
     ]
 
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"

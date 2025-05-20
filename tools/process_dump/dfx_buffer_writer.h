@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,47 +21,40 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include "dfx_ring_buffer.h"
+#include "dfx_buffer_writer.h"
 #include "nocopyable.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 
-#define BACK_TRACE_RING_BUFFER_SIZE (32 * 1024)
+typedef int (*BufferWriteFunc) (int32_t fd, const char *buf, const int len);
 
-typedef int (*RingBufferWriteFunc) (int32_t fd, const char *buf, const int len);
-
-class DfxRingBufferWrapper final {
+class DfxBufferWriter final {
 public:
-    static DfxRingBufferWrapper &GetInstance();
-    ~DfxRingBufferWrapper() = default;
-
-    void StartThread();
-    void StopThread();
+    static DfxBufferWriter &GetInstance();
+    ~DfxBufferWriter() = default;
+    void Finish();
 
     void SetWriteBufFd(int32_t fd);
-    void SetWriteFunc(RingBufferWriteFunc func);
+    void SetWriteResFd(int32_t fd);
+    void SetWriteFunc(BufferWriteFunc func);
+    bool WriteDumpRes(int32_t dumpRes);
 
-    void AppendMsg(const std::string& msg);
-    int AppendBuf(const char *format, ...);
+    void WriteMsg(const std::string& msg);
+    void WriteFormatMsg(const char *format, ...);
 
-    void AppendBaseInfo(const std::string& info);
-    void PrintBaseInfo();
+    void AppendBriefDumpInfo(const std::string& info);
+    void PrintBriefDumpInfo();
 private:
     static int DefaultWrite(int32_t fd, const char *buf, const int len);
 
-    DfxRingBufferWrapper() = default;
-    DISALLOW_COPY_AND_MOVE(DfxRingBufferWrapper);
+    DfxBufferWriter() = default;
+    DISALLOW_COPY_AND_MOVE(DfxBufferWriter);
 
-    RingBufferWriteFunc writeFunc_ = nullptr;
-
-    DfxRingBuffer<BACK_TRACE_RING_BUFFER_SIZE, std::string> ringBuffer_;
-    int32_t fd_ = -1;
-    volatile bool hasFinished_ = false;
-    std::vector<std::string> crashBaseInfo_;
-
-    static std::condition_variable printCV_;
-    static std::mutex printMutex_;
+    BufferWriteFunc writeFunc_ = nullptr;
+    int32_t bufFd_ = -1;
+    int32_t resFd_ = -1;
+    std::string briefDumpInfo_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

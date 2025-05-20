@@ -38,6 +38,7 @@ AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath, const std::vec
 AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
 AT_SYMBOL_HIDDEN bool IsBetaVersion();
 AT_SYMBOL_HIDDEN bool IsDeveloperMode();
+AT_SYMBOL_HIDDEN bool IsOversea();
 #endif
 AT_SYMBOL_HIDDEN off_t GetFileSize(int fd);
 AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);

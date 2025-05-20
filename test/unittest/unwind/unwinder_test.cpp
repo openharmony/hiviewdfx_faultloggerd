@@ -22,7 +22,6 @@
 #include <thread>
 #include <unistd.h>
 
-#include "dfx_config.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_ptrace.h"
 #include "dfx_regs_get.h"
@@ -633,26 +632,6 @@ HWTEST_F(UnwinderTest, StepTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "StepTest006: end.";
 }
 #endif
-
-/**
- * @tc.name: DfxConfigTest001
- * @tc.desc: test DfxConfig class functions
- * @tc.type: FUNC
- */
-HWTEST_F(UnwinderTest, DfxConfigTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxConfigTest001: start.";
-    ASSERT_EQ(DfxConfig::GetConfig().displayRegister, true);
-    ASSERT_EQ(DfxConfig::GetConfig().displayBacktrace, true);
-    ASSERT_EQ(DfxConfig::GetConfig().displayMaps, true);
-    ASSERT_EQ(DfxConfig::GetConfig().displayFaultStack, true);
-    ASSERT_EQ(DfxConfig::GetConfig().dumpOtherThreads, true);
-    ASSERT_EQ(DfxConfig::GetConfig().highAddressStep, 512);
-    ASSERT_EQ(DfxConfig::GetConfig().lowAddressStep, 32);
-    ASSERT_EQ(DfxConfig::GetConfig().maxFrameNums, 256);
-    ASSERT_EQ(DfxConfig::GetConfig().reservedParseSymbolTime, 100);
-    GTEST_LOG_(INFO) << "DfxConfigTest001: end.";
-}
 
 /**
  * @tc.name: FillFrameTest001

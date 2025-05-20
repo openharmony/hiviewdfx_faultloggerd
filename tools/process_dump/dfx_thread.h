@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,6 @@
 #include <vector>
 
 #include "dfx_define.h"
-#include "dfx_fault_stack.h"
 #include "dfx_frame.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
@@ -47,19 +46,26 @@ public:
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
     void SetThreadRegs(const std::shared_ptr<DfxRegs> &regs);
     void AddFrame(const DfxFrame& frame);
-    void AddFrames(const std::vector<DfxFrame>& frames);
     const std::vector<DfxFrame>& GetFrames() const;
     void SetFrames(const std::vector<DfxFrame>& frames);
-    void InitFaultStack(bool needParseStack = false);
+    void SetSubmitterFrames(const std::vector<DfxFrame>& frames)
+    {
+        submitterFrames_ = frames;
+    }
     void ParseSymbol(Unwinder& unwinder);
-    std::shared_ptr<FaultStack> GetFaultStack() const;
-    std::string ToString() const;
+    std::string ToString(bool needPrintTid = true) const;
+    const DfxThreadInfo& GetThreadInfo() const
+    {
+        return threadInfo_;
+    }
+    void SetThreadName(const std::string& threadName)
+    {
+        threadInfo_.threadName = threadName;
+    }
 
     void Detach();
     bool Attach(int timeout = PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
     void SetParseSymbolNecessity(bool needParseSymbol);
-
-    DfxThreadInfo threadInfo_;
 private:
     enum class ThreadStatus {
         THREAD_STATUS_INVALID = -1,
@@ -69,11 +75,11 @@ private:
 
     DfxThread() = default;
     void InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid);
-
+    DfxThreadInfo threadInfo_;
     ThreadStatus threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
-    std::shared_ptr<DfxRegs> regs_;
+    std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::vector<DfxFrame> frames_;
-    std::shared_ptr<FaultStack> faultStack_;
+    std::vector<DfxFrame> submitterFrames_;
     bool needParseSymbol_ = true;
 };
 } // namespace HiviewDFX

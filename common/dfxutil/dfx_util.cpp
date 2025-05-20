@@ -198,6 +198,17 @@ bool IsDeveloperMode()
     return false;
 #endif
 }
+
+bool IsOversea()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const globalRegion = "const.global.region";
+    static bool isOversea = OHOS::system::GetParameter(globalRegion, "CN") != "CN";
+    return isOversea;
+#else
+    return false;
+#endif
+}
 #endif
 
 off_t GetFileSize(int fd)
