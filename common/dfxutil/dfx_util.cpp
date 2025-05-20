@@ -43,10 +43,11 @@
 #endif
 #include "dfx_log.h"
 
-#ifdef LOG_DOMAIN
+// defile Domain ID
+#ifndef LOG_DOMAIN
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D11
 #endif
+#define LOG_DOMAIN 0xD002D11
 
 #ifdef LOG_TAG
 #undef LOG_TAG
@@ -242,7 +243,7 @@ bool ReadFdToString(int fd, std::string& content)
 void CloseFd(int &fd)
 {
     if (fd > 0) {
-        close(fd);
+        fdsan_close_with_tag(fd, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
         fd = -1;
     }
 }

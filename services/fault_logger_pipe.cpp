@@ -46,6 +46,10 @@ FaultLoggerPipe::FaultLoggerPipe()
     DFXLOGD("%{public}s :: create pipe.", __func__);
     readFd_ = fds[PIPE_READ];
     writeFd_ = fds[PIPE_WRITE];
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(readFd_, 0, ownerTag);
+    fdsan_exchange_owner_tag(writeFd_, 0, ownerTag);
+
     if (fcntl(readFd_, F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0 || fcntl(writeFd_, F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0) {
         DFXLOGE("%{public}s :: Failed to set pipe size, errno: %{public}d.", __func__, errno);
     }
@@ -98,7 +102,7 @@ int FaultLoggerPipe::GetWriteFd()
 void FaultLoggerPipe::Close(int& fd)
 {
     if (fd > 0) {
-        syscall(SYS_close, fd);
+        fdsan_close_with_tag(fd, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
         fd = -1;
     }
 }

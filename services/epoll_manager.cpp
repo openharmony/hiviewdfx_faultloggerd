@@ -27,6 +27,11 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002D11
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 
@@ -113,6 +118,7 @@ bool EpollManager::Init(int maxPollEvent)
         DFXLOGE("%s :: Failed to create eventFd.", EPOLL_MANAGER);
         return false;
     }
+    fdsan_exchange_owner_tag(eventFd_, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
     return true;
 }
 
@@ -146,7 +152,7 @@ void EpollManager::StopEpoll()
         for (const auto& listener : listeners_) {
             DelEpollEvent(listener->GetFd());
         }
-        close(eventFd_);
+        fdsan_close_with_tag(eventFd_, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
         eventFd_ = -1;
     }
 }
@@ -162,10 +168,13 @@ std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workF
         DFXLOGE("%{public}s :: failed to create time fd, errno: %{public}d", EPOLL_MANAGER, errno);
         return nullptr;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(timefd, 0, ownerTag);
+
     struct itimerspec timeOption{};
     timeOption.it_value.tv_sec = timeout;
     if (timerfd_settime(timefd, 0, &timeOption, nullptr) == -1) {
-        close(timefd);
+        fdsan_close_with_tag(timefd, ownerTag);
         DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
         return nullptr;
     }

@@ -124,6 +124,10 @@ void DfxSigDumpHandler::RunThread()
         }
         int fd = pipeWriteFd[0];
         int resFd = pipeWriteFd[1];
+        uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+        fdsan_exchange_owner_tag(fd, 0, ownerTag);
+        fdsan_exchange_owner_tag(resFd, 0, ownerTag);
+
         std::string dumpInfo = OHOS::HiviewDFX::GetProcessStacktrace();
         const ssize_t nwrite = static_cast<ssize_t>(dumpInfo.length());
         if (!dumpInfo.empty() &&
@@ -137,8 +141,8 @@ void DfxSigDumpHandler::RunThread()
         if (nres != sizeof(res)) {
             DFXLOGE("Pid %{public}d Write Res Pipe Failed(%{public}d), nres(%{public}zd)", pid, errno, nres);
         }
-        close(fd);
-        close(resFd);
+        fdsan_close_with_tag(fd, ownerTag);
+        fdsan_close_with_tag(resFd, ownerTag);
     }
 }
 

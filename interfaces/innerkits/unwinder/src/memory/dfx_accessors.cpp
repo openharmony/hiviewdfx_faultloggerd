@@ -70,14 +70,18 @@ bool DfxAccessorsLocal::CreatePipe()
     if (!initPipe_ && syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
         initPipe_ = true;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(pfd_[PIPE_WRITE], 0, ownerTag);
+    fdsan_exchange_owner_tag(pfd_[PIPE_READ], 0, ownerTag);
     return initPipe_;
 }
 
 DfxAccessorsLocal::~DfxAccessorsLocal(void)
 {
     if (initPipe_) {
-        syscall(SYS_close, pfd_[PIPE_WRITE]);
-        syscall(SYS_close, pfd_[PIPE_READ]);
+        uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+        fdsan_close_with_tag(pfd_[PIPE_WRITE], ownerTag);
+        fdsan_close_with_tag(pfd_[PIPE_READ], ownerTag);
         initPipe_ = false;
     }
 }
