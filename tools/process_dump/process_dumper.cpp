@@ -65,6 +65,7 @@
 #include "reporter.h"
 #include "unwinder_config.h"
 #ifndef is_ohos_lite
+#include "hitrace/hitracechainc.h"
 #include "parameters.h"
 #endif // !is_ohos_lite
 #include "info/fatal_message.h"
@@ -220,7 +221,15 @@ int ProcessDumper::DumpProcess(ProcessDumpRequest& request)
     if (dumpRes != DumpErrorCode::DUMP_ESUCCESS) {
         return dumpRes;
     }
-
+#ifndef is_ohos_lite
+    if (sizeof(HiTraceIdStruct) == sizeof(DumpHiTraceIdStruct)) {
+        HiTraceIdStruct* hitraceIdPtr = reinterpret_cast<HiTraceIdStruct*>(&request.hitraceId);
+        hitraceIdPtr->flags |= HITRACE_FLAG_INCLUDE_ASYNC;
+        HiTraceChainSetId(hitraceIdPtr);
+    } else {
+        DFXLOGE("No invalid hitraceId struct size!");
+    }
+#endif
     SetProcessdumpTimeout(request.siginfo);
     DFXLOGI("Processdump SigVal(%{public}d), TargetPid(%{public}d:%{public}d), TargetTid(%{public}d), " \
         "threadname(%{public}s).",

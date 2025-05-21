@@ -32,6 +32,13 @@
 #include "process_dumper.h"
 #include "faultlogger_client_msg.h"
 
+#ifndef is_ohos_lite
+#include "file_util.h"
+#include "hitrace/hitracechainc.h"
+
+#define HITRACE_CHAIN_ID_MASK 0x0FFFFFFFFFFFFFFF
+#endif
+
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
@@ -421,4 +428,57 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
     ins.WriteDumpResIfNeed(request, 1);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest018: end.";
 }
+
+#ifndef is_ohos_lite
+static pid_t CreateProcessCrashWithHitraceId(uint64_t& hitraceChainId)
+{
+    int pipeFd[2]; // 2 : pipe fd num
+    if (pipe(pipeFd) == -1) {
+        GTEST_LOG_(ERROR) << "Failed to create pipe.";
+        return 0;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Fail to fork new test process";
+        return 0;
+    } else if (pid == 0) {
+        close(pipeFd[0]);
+        HiTraceIdStruct hitraceId = HiTraceChainBegin("test", HITRACE_FLAG_DEFAULT);
+        uint64_t val = static_cast<uint64_t>(hitraceId.chainId & HITRACE_CHAIN_ID_MASK);
+        write(pipeFd[1], &val, sizeof(val));
+        close(pipeFd[1]);
+        raise(SIGSEGV);
+    }
+    close(pipeFd[1]);
+    read(pipeFd[0], &hitraceChainId, sizeof(hitraceChainId));
+    return pid;
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest019
+ * @tc.desc: Testing get hitrace id
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest019, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest019: start.";
+    uint64_t hitraceChainId = 0;
+    pid_t testProcess = CreateProcessCrashWithHitraceId(hitraceChainId);
+    ASSERT_TRUE(testProcess > 0) << "Fail to fork test process";
+    GTEST_LOG_(INFO) << "Process pid: " << testProcess;
+    ASSERT_NE(hitraceChainId, 0) << "Fail to set process hitrace id";
+    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
+    ASSERT_FALSE(filename.empty()) << "Fail to create crash file";
+    std::stringstream ss;
+    ss << std::hex << hitraceChainId;
+    std::string hexStr = ss.str();
+    GTEST_LOG_(INFO) << "hitrace id: " << hexStr;
+    std::string fileContext;
+    ASSERT_TRUE(LoadStringFromFile(filename, fileContext)) << "Get file context fail";
+    size_t pos = fileContext.rfind(hexStr);
+    ASSERT_TRUE(pos != std::string::npos) << "find no hitrace id in crash hilog";
+    GTEST_LOG_(INFO) << "hitrace pos: " << pos;
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest019: end.";
+}
+#endif
 }
