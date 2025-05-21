@@ -709,7 +709,7 @@ int32_t FaultLoggerDaemon::CreateFileForRequest(int32_t type, int32_t pid, int32
         DFXLOG_ERROR("%s :: Open %s fail, please check it under valid path.\n", FAULTLOGGERD_TAG.c_str(), path.c_str());
         return -1;
     }
-    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(path.c_str(), O_RDWR | O_CREAT, FAULTLOG_FILE_PROP));
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(path.c_str(), O_WRONLY | O_TRUNC | O_CREAT, FAULTLOG_FILE_PROP));
     if (fd != -1) {
         if (!ChangeModeFile(path, FAULTLOG_FILE_PROP)) {
             DFXLOG_ERROR("%s :: Failed to ChangeMode CreateFileForRequest", FAULTLOGGERD_TAG.c_str());
