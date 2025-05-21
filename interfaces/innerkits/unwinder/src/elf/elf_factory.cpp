@@ -203,11 +203,12 @@ std::shared_ptr<DfxElf> CompressHapElfFactory::Create()
         DFXLOGE("current hap map item or prev map item , maybe pc is wrong?");
         return nullptr;
     }
-    if (!StartsWith(filePath_, "/proc") || !EndsWith(filePath_, ".hap")) {
-        DFXLOGD("Illegal file path, please check file: %{public}s", filePath_.c_str());
+    std::string realPath = filePath_;
+    if (!RealPath(filePath_, realPath) || !EndsWith(realPath, ".hap") || !StartsWith(realPath, "/proc")) {
+        DFXLOGE("Illegal file path, please check file: %{public}s", realPath.c_str());
         return nullptr;
     }
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(filePath_.c_str(), O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY));
     if (fd < 0) {
         DFXLOGE("Failed to open hap file, errno(%{public}d)", errno);
         return nullptr;
