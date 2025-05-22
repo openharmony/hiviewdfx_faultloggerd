@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <limits.h>
 #include <stdlib.h>
 #include <string>
 #include <string.h>
@@ -25,9 +26,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-#ifndef PATH_MAX
-#define PATH_MAX        1024
-#endif
 
 inline bool RealPath(const std::string& path, std::string& realPath)
 {

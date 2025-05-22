@@ -34,7 +34,6 @@ AT_SYMBOL_HIDDEN uint64_t GetTimeMilliSeconds(void);
 AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSeconds(void);
 AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
 AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
-AT_SYMBOL_HIDDEN bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths);
 AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
 AT_SYMBOL_HIDDEN bool IsBetaVersion();
 AT_SYMBOL_HIDDEN bool IsDeveloperMode();

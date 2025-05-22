@@ -154,30 +154,9 @@ std::string ThreadInfo::ToString() const
         schedstat_.ToString();
 }
 
-static bool ParseStatFromString(const std::string& statStr, ProcessInfo& info)
+static bool ParseStatSubString(const std::string& statSubStr, ProcessInfo& info)
 {
-    size_t commStart = statStr.find_first_of("(");
-    size_t commEnd = statStr.find_last_of(")");
-    if (commStart == std::string::npos || commEnd == std::string::npos ||
-        commStart >= commEnd || commEnd - commStart > TASK_COMM_LEN + 1) {
-        DFXLOGE("parser comm error. %{public}zu", commEnd - commStart);
-        return false;
-    }
-
-    // pid(1)
-    int parsed = sscanf_s(statStr.c_str(), "%d (", &info.pid);
-    if (parsed != 1) {
-        DFXLOGE("parser pid failed.");
-        return false;
-    }
-
-    // comm(2)
-    std::string comm = statStr.substr(commStart + 1, commEnd - commStart - 1);
-    if (memcpy_s(info.comm, TASK_COMM_LEN, comm.c_str(), comm.length()) != EOK) {
-        DFXLOGE("Failed to copy comm.");
-        return false;
-    }
-    parsed = sscanf_s(statStr.substr(commEnd).c_str(),
+    int parsed = sscanf_s(statSubStr.c_str(),
         ") %c "             // state(3)
         "%d "               // ppid(4)
         "%*d%*d%*d%*d"      // skip pgrp(5), session(6), tty(7), tpgid(8)
@@ -210,6 +189,32 @@ static bool ParseStatFromString(const std::string& statStr, ProcessInfo& info)
         return false;
     }
     return true;
+}
+
+static bool ParseStatFromString(const std::string& statStr, ProcessInfo& info)
+{
+    size_t commStart = statStr.find_first_of("(");
+    size_t commEnd = statStr.find_last_of(")");
+    if (commStart == std::string::npos || commEnd == std::string::npos ||
+        commStart >= commEnd || commEnd - commStart > TASK_COMM_LEN + 1) {
+        DFXLOGE("parser comm error. %{public}zu", commEnd - commStart);
+        return false;
+    }
+
+    // pid(1)
+    int parsed = sscanf_s(statStr.c_str(), "%d (", &info.pid);
+    if (parsed != 1) {
+        DFXLOGE("parser pid failed.");
+        return false;
+    }
+
+    // comm(2)
+    std::string comm = statStr.substr(commStart + 1, commEnd - commStart - 1);
+    if (memcpy_s(info.comm, TASK_COMM_LEN, comm.c_str(), comm.length()) != EOK) {
+        DFXLOGE("Failed to copy comm.");
+        return false;
+    }
+    return ParseStatSubString(statStr.substr(commEnd), info);
 }
 
 bool ParseStat(const std::string& statPath, ProcessInfo& info)
