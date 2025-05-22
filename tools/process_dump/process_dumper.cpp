@@ -320,6 +320,10 @@ void ProcessDumper::WriteDumpResIfNeed(const ProcessDumpRequest& request, int32_
             DFXLOGE("%{public}s request pipe failed, err:%{public}d", __func__, errno);
             return;
         }
+        uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+        fdsan_exchange_owner_tag(pipeWriteFd[PIPE_BUF_INDEX], 0, ownerTag);
+        fdsan_exchange_owner_tag(pipeWriteFd[PIPE_RES_INDEX], 0, ownerTag);
+
         CloseFd(pipeWriteFd[PIPE_BUF_INDEX]);
         int resFd = pipeWriteFd[PIPE_RES_INDEX];
         DfxBufferWriter::GetInstance().SetWriteResFd(resFd);
@@ -386,10 +390,13 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
         DFXLOGE("request jitlog fd failed.");
         return;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(fd, 0, ownerTag);
+
     if (unwinder_->ArkWriteJitCodeToFile(fd) < 0) {
         DFXLOGE("jit code write file failed.");
     }
-    (void)close(fd);
+    fdsan_close_with_tag(fd, ownerTag);
 }
 
 void ProcessDumper::PrintDumpInfo(const ProcessDumpRequest& request, int& dumpRes)
@@ -551,9 +558,11 @@ int ProcessDumper::InitBufferWriter(const ProcessDumpRequest& request)
 {
     DFX_TRACE_SCOPED("InitBufferWriter");
     int bufferFd = -1;
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
     if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         int pipeWriteFd[] = { -1, -1 };
         if (RequestPipeFd(request.pid, FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == 0) {
+            fdsan_exchange_owner_tag(pipeWriteFd[PIPE_RES_INDEX], 0, ownerTag);
             bufferFd = pipeWriteFd[PIPE_BUF_INDEX];
             DfxBufferWriter::GetInstance().SetWriteResFd(pipeWriteFd[PIPE_RES_INDEX]);
         }
@@ -571,7 +580,10 @@ int ProcessDumper::InitBufferWriter(const ProcessDumpRequest& request)
             bufferFd = CreateFileForCrash(request.pid, request.timeStamp);
         }
     }
-
+    if (bufferFd > 0) {
+        fdsan_exchange_owner_tag(bufferFd, 0, ownerTag);
+    }
+    
     int result = bufferFd;
     DfxBufferWriter::GetInstance().SetWriteBufFd(bufferFd);
     return result;

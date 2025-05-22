@@ -52,6 +52,8 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
         DFXLOGW("Failed to open bbox, pid:%{public}d, errno:%{public}d", pid, errno);
         return KERNELSTACK_EOPEN;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(fd, 0, ownerTag);
 
     int ret = ioctl(fd, LOGGER_GET_STACK, kstackBuf.get());
     int32_t res = KERNELSTACK_ESUCCESS;
@@ -61,7 +63,7 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
     } else {
         kernelStack = std::string(kstackBuf->hstackLogBuff);
     }
-    close(fd);
+    fdsan_close_with_tag(fd, ownerTag);
     return res;
 }
 

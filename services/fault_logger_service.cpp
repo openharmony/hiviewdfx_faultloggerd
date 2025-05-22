@@ -238,13 +238,15 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
     if (fd < 0) {
         return ResponseCode::ABNORMAL_SERVICE;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(fd, 0, ownerTag);
 #ifndef is_ohos_lite
     TempFileManager::RecordFileCreation(requestData.type, requestData.pid);
 #endif
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     SendFileDescriptorToSocket(connectionFd, &fd, 1);
-    close(fd);
+    fdsan_close_with_tag(fd, ownerTag);
     return responseData;
 }
 
