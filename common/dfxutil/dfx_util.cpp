@@ -151,20 +151,6 @@ bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
     return !files.empty();
 }
 
-bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths)
-{
-    if (validPaths.empty()) {
-        return true;
-    }
-
-    for (const auto &validPath : validPaths) {
-        if (filePath.find(validPath) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid)
 {
     const int flagOffset = 63;
