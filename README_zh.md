@@ -236,6 +236,83 @@ ohos_executable("dumpcatcherdemo") {
 #14 pc 00000000000008c4(00000000004a88c4) /data/test/dumpcatcherdemo
 ```
 
+### Backtrace 接口
+
+接口定义：
+* 获取指定线程的栈：`bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true);`
+    接口参数说明：
+    * 接口返回值：
+      * `true`：回栈成功，回栈信息存储在`out`字符串对象中。
+      * `false`：回栈失败。
+    * 输入参数：
+      * `tid`：指定回栈的线程号。
+      * `skipFrameNum`：指定跳过的帧数。
+      * `fast`: 指定回栈方式。`true`: fp回栈；`false`：dwarf回栈。
+      * `maxFrameNums`: 最大回栈帧数。默认值：256。
+      * `enableKernelStack`: 使能内核栈，需要进程具有ioctl的权限。在Linux内核上不生效。默认值：true。
+    * 输出参数：
+      * `out`：如果回栈成功，则通过`out`输出回栈后的信息。
+* 获取指定线程的栈（支持混合栈）：`bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFrameNum, bool fast, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true);`
+    接口参数说明：
+    * 接口返回值：
+      * `true`：回栈成功，回栈信息存储在`out`字符串对象中。
+      * `false`：回栈失败。
+    * 输入参数：
+      * `tid`：指定回栈的线程号。
+      * `skipFrameNum`：指定跳过的帧数。
+      * `fast`: 指定回栈方式。`true`: fp回栈；`false`：dwarf回栈。
+      * `maxFrameNums`: 最大回栈帧数。默认值：256。
+      * `enableKernelStack`: 使能内核栈，需要进程具有ioctl的权限。在Linux内核上不生效。默认值：true。
+    * 输出参数：
+      * `out`：如果回栈成功，则通过`out`输出回栈后的信息。
+* 打印当前线程的堆栈到指定fd：`bool PrintBacktrace(int32_t fd = -1, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);`
+    接口参数说明：
+    * 接口返回值：
+      * `true`：回栈成功，回栈信息输出到指定fd。
+      * `false`：回栈失败。
+    * 输入参数：
+      * `fd`: 需要输出回栈信息的fd，小于0时认为无效。默认值：-1。
+      * `fast`: 指定回栈方式。`true`: fp回栈；`false`：dwarf回栈。默认值：false。
+      * `maxFrameNums`: 最大回栈帧数。默认值：256
+* 获取当前线程的调用栈：`bool GetBacktrace(std::string& out, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);`，`bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast = false, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);`
+    接口参数说明：
+    * 接口返回值：
+      * `true`：回栈成功，回栈信息存储在`out`字符串对象中。
+      * `false`：回栈失败。
+    * 输入参数：
+      * `skipFrameNum`：指定跳过的帧数。
+      * `fast`: 指定回栈方式。`true`: fp回栈；`false`：dwarf回栈。默认值：false。
+      * `maxFrameNums`: 最大回栈帧数。默认值：256。
+    * 输出参数：
+      * `out`：如果回栈成功，则通过`out`输出回栈后的信息。
+* 获取当前进程的调用栈(不包含当前线程): `std::string GetProcessStacktrace(size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM, bool enableKernelStack = true, bool includeThreadInfo = true);`
+    接口参数说明：
+    * 接口返回值：
+      * `std::string`：获取到的堆栈结果保存在返回值中。
+    * 输入参数：
+      * `maxFrameNums`: 最大回栈帧数。默认值：256。
+      * `enableKernelStack`: 使能内核栈，需要进程具有ioctl的权限。在Linux内核上不生效。默认值：true。
+      * `includeThreadInfo`: 获取线程状态信息。默认值：true。
+
+使用案例
+* 导入依赖
+```
+  external_deps += [ "faultloggerd:libbacktrace_local" ]
+```
+* 导入头文件
+```
+#include "backtrace_local.h"
+```
+* 调用接口使用
+```
+namespace OHOS {
+void Test()
+{
+    HiviewDFX::PrintBacktrace();
+}
+}
+```
+
 ### DumpCatcher 命令行工具
 
 DumpCatcher 是指提供给用户的一个抓取调用栈命令行工具，由 DumpCatcher innerkits 接口封装实现，该工具通过 `-p`、`-t` 参数指定进程和线程，命令执行后在命令行窗口打印指定的进程的线程栈信息。
@@ -255,7 +332,18 @@ DumpCatcher 是指提供给用户的一个抓取调用栈命令行工具，由 D
 
 ### Rust Panic 故障处理器
 
-> TODO
+Rust Panic 故障处理器是发生panic时收集故障堆栈的处理器。需要调用注册函数进行注册，
+发生panic后在`/data/log/faultlog/faultlogger`下生成故障日志。
+
+```rust
+extern crate panic_handler;
+extern crate stacktrace_rust;
+
+fn main() {
+    panic_handler::init();
+    ...
+}
+```
 
 ## 处理流程
 
