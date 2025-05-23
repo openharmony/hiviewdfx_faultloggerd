@@ -38,7 +38,7 @@ HWTEST_F(FpBacktraceTest, FpBacktraceTestTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: start.";
     auto fpBacktrace = FpBacktrace::CreateInstance();
-#if is_ohos && !is_mingw
+#if is_ohos && !is_mingw && __aarch64__
     ASSERT_NE(nullptr, fpBacktrace);
     void* pcArray[DEFAULT_MAX_FRAME_NUM]{0};
     int size = fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, DEFAULT_MAX_FRAME_NUM);

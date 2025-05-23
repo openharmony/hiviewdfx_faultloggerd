@@ -15,7 +15,7 @@
 
 #include "fp_backtrace.h"
 
-#if is_ohos && !is_mingw
+#if is_ohos && !is_mingw && __aarch64__
 #include <mutex>
 
 #include "dfx_ark.h"
@@ -30,7 +30,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-#if is_ohos && !is_mingw
+#if is_ohos && !is_mingw && __aarch64__
 #undef LOG_DOMAIN
 #undef LOG_TAG
 #define LOG_TAG "FpBacktrace"
@@ -142,7 +142,7 @@ DfxFrame* FpBacktraceImpl::SymbolicAddress(void* pc)
 
 FpBacktrace* FpBacktrace::CreateInstance()
 {
-#if is_ohos && !is_mingw
+#if is_ohos && !is_mingw && __aarch64__
     auto fpBacktraceImpl =  new (std::nothrow) FpBacktraceImpl();
     if (fpBacktraceImpl == nullptr) {
         return nullptr;
