@@ -218,7 +218,7 @@ void TempFileManager::ClearBigFilesOnStart(bool isSizeOverLimit, std::list<std::
     } else {
         auto tempFileRemover = DelayTask::CreateInstance([files] {
             std::for_each(files.begin(), files.end(), RemoveTempFile);
-        }, fileClearTime, epollManager_);
+        }, fileClearTime);
         epollManager_.AddListener(std::move(tempFileRemover));
     }
 }
@@ -342,7 +342,7 @@ std::unique_ptr<TempFileManager::TempFileWatcher> TempFileManager::TempFileWatch
 }
 
 TempFileManager::TempFileWatcher::TempFileWatcher(TempFileManager& tempFileManager, int32_t fd)
-    : EpollListener(fd), tempFileManager_(tempFileManager) {}
+    : EpollListener(fd, true), tempFileManager_(tempFileManager) {}
 
 bool TempFileManager::TempFileWatcher::AddWatchEvent(const char* watchPath, uint32_t watchEvent)
 {
@@ -417,7 +417,7 @@ void TempFileManager::TempFileWatcher::HandleFileCreate(const std::string& fileP
     if (fileConfig.overTimeFileDeleteType == OverTimeFileDeleteType::ACTIVE) {
         auto tempFileRemover = DelayTask::CreateInstance([filePath] {
             RemoveTempFile(filePath);
-        }, fileConfig.fileExistTime, tempFileManager_.epollManager_);
+        }, fileConfig.fileExistTime);
         tempFileManager_.epollManager_.AddListener(std::move(tempFileRemover));
     }
     if ((fileConfig.keepFileCount >= 0 && currentFileCount > fileConfig.keepFileCount) ||

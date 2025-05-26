@@ -159,7 +159,6 @@ FaultLoggerConfig::FaultLoggerConfig()
     if (json == nullptr) {
         DFXLOGE("%{public}s :: failed to parse json from the content of file(%{public}s).",
                 FAULTLOGGER_CONFIG_TAG, CONFIG_FILE_PATH);
-        return;
     }
     ParseDirectoryConfig(json, directoryConfig_);
     cJSON_Delete(json);
