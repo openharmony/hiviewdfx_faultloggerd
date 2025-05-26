@@ -49,10 +49,31 @@ HWTEST_F(FpBacktraceTest, FpBacktraceTestTest001, TestSize.Level2)
     for (int i = 0; i < size; i++) {
         ASSERT_NE(fpBacktrace->SymbolicAddress(pcArray[i]), nullptr);
     }
-    GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 #else
     ASSERT_EQ(nullptr, fpBacktrace);
 #endif
+    GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
+}
+
+/**
+ * @tc.name: FpBacktraceTestTest002
+ * @tc.desc: test get backtrace by a invalid fp.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FpBacktraceTest, FpBacktraceTestTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest002: start.";
+    auto fpBacktrace = FpBacktrace::CreateInstance();
+#if is_ohos && !is_mingw && __aarch64__
+    ASSERT_NE(nullptr, fpBacktrace);
+    void* pcArray[DEFAULT_MAX_FRAME_NUM]{0};
+    uint64_t address = std::numeric_limits<uint64_t>::max();
+    int size = fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(address), pcArray, DEFAULT_MAX_FRAME_NUM);
+    ASSERT_EQ(size, 0);
+#else
+    ASSERT_EQ(nullptr, fpBacktrace);
+#endif
+    GTEST_LOG_(INFO) << "BacktraceLocalTest002: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
