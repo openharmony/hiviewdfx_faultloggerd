@@ -130,7 +130,6 @@ bool FaultLoggerdSocket::CreateSocketFileDescriptor(uint32_t timeout)
         LOGE(signalSafely_, "%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
         return false;
     }
-    fdsan_exchange_owner_tag(socketFd_, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
     if (timeout > 0) {
         SetSocketTimeOut(timeout, SO_RCVTIMEO);
         SetSocketTimeOut(timeout, SO_SNDTIMEO);
@@ -141,7 +140,7 @@ bool FaultLoggerdSocket::CreateSocketFileDescriptor(uint32_t timeout)
 void FaultLoggerdSocket::CloseSocketFileDescriptor()
 {
     if (socketFd_ >= 0) {
-        fdsan_close_with_tag(socketFd_, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
+        close(socketFd_);
         socketFd_ = -1;
     }
 }
