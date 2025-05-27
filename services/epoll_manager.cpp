@@ -184,13 +184,10 @@ std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workF
         DFXLOGE("%{public}s :: failed to create time fd, errno: %{public}d", EPOLL_MANAGER, errno);
         return nullptr;
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(timefd, 0, ownerTag);
-
     struct itimerspec timeOption{};
     timeOption.it_value.tv_sec = timeout;
     if (timerfd_settime(timefd, 0, &timeOption, nullptr) == -1) {
-        fdsan_close_with_tag(timefd, ownerTag);
+        close(timefd);
         DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
         return nullptr;
     }
