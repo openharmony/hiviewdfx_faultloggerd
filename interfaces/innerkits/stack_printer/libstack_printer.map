@@ -1,0 +1,14 @@
+{
+    global:
+        extern "C++" {
+            OHOS::HiviewDFX::StackPrinter::SetMaps*;
+            OHOS::HiviewDFX::StackPrinter::StackPrinter*;
+            OHOS::HiviewDFX::StackPrinter::PutPcsInTable*;
+            OHOS::HiviewDFX::StackPrinter::GetFullStack*;
+            OHOS::HiviewDFX::StackPrinter::GetTreeStack*;
+            OHOS::HiviewDFX::StackPrinter::GetHeaviestStack*;
+            OHOS::HiviewDFX::StackPrinter::InitUniqueTable*;
+        };
+    local:
+        *;
+};

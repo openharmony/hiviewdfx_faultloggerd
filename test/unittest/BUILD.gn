@@ -33,6 +33,7 @@ group("unittest") {
       "kernel_snapshot:unittest",
       "panic_handler:unittest",
       "rustc_demangle:unittest",
+      "stack_printer:unittest",
       "stacktrace_rust:unittest",
       "unwind:unittest",
     ]
