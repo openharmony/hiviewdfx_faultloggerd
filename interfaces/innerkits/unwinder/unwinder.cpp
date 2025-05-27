@@ -130,6 +130,10 @@ public:
     {
         enableFillFrames_ = enableFillFrames;
     }
+    inline void EnableParseNativeSymbol(bool enableParseNativeSymbol)
+    {
+        enableParseNativeSymbol_ = enableParseNativeSymbol;
+    }
     inline void IgnoreMixstack(bool ignoreMixstack)
     {
         ignoreMixstack_ = ignoreMixstack;
@@ -256,6 +260,7 @@ private:
 #endif
     bool enableCache_ = true;
     bool enableFillFrames_ = true;
+    bool enableParseNativeSymbol_ = true;
     bool enableLrFallback_ = true;
     bool enableFpCheckMapExec_ = false;
     bool isCrash_ = false;
@@ -314,6 +319,11 @@ void Unwinder::EnableFpCheckMapExec(bool enableFpCheckMapExec)
 void Unwinder::EnableFillFrames(bool enableFillFrames)
 {
     impl_->EnableFillFrames(enableFillFrames);
+}
+
+void Unwinder::EnableParseNativeSymbol(bool enableParseNativeSymbol)
+{
+    impl_->EnableParseNativeSymbol(enableParseNativeSymbol);
 }
 
 void Unwinder::IgnoreMixstack(bool ignoreMixstack)
@@ -1152,7 +1162,9 @@ void Unwinder::Impl::DoPcAdjust(uintptr_t& pc)
 
 const std::vector<DfxFrame>& Unwinder::Impl::GetFrames()
 {
-    FillFrames(frames_);
+    if (enableFillFrames_) {
+        FillFrames(frames_);
+    }
     return frames_;
 }
 
@@ -1219,7 +1231,7 @@ void Unwinder::Impl::FillFrames(std::vector<DfxFrame>& frames)
             FillJsFrame(frame);
 #endif
         } else {
-            FillFrame(frame, enableFillFrames_);
+            FillFrame(frame, enableParseNativeSymbol_);
         }
     }
 }
@@ -1326,7 +1338,7 @@ bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, D
     }
 
     frame.map = map;
-    FillFrame(frame, enableFillFrames_);
+    FillFrame(frame, enableParseNativeSymbol_);
     return true;
 }
 
@@ -1382,7 +1394,7 @@ void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<u
             DFXLOGE("Find map error");
         }
         frame.map = map;
-        FillFrame(frame, enableFillFrames_);
+        FillFrame(frame, enableParseNativeSymbol_);
         frames.emplace_back(frame);
     }
 }
