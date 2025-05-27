@@ -77,7 +77,7 @@ SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketSer
     : EpollListener(fd, true), socketServer_(socketServer), socketName_(std::move(socketName)) {}
 
 SocketServer::ClientRequestListener::ClientRequestListener(SocketServerListener& socketServerListener, int32_t fd,
-    uid_t clientUid) : EpollListener(fd), socketServerListener_(socketServerListener), clientUid_(clientUid){}
+    uid_t clientUid) : EpollListener(fd), socketServerListener_(socketServerListener), clientUid_(clientUid) {}
 
 SocketServer::ClientRequestListener::~ClientRequestListener()
 {
@@ -134,7 +134,7 @@ void SocketServer::SocketServerListener::OnEventPoll()
     socklen_t len = sizeof(credentials);
     if (getsockopt(connectionFd, SOL_SOCKET, SO_PEERCRED, &credentials, &len) == -1) {
         DFXLOGE("%{public}s :: Failed to GetCredential, errno: %{public}d", FAULTLOGGERD_SERVER_TAG, errno);
-        return;;
+        return;
     }
     auto& connectionNum = socketServer_.connectionNums_[credentials.uid];
 #ifdef FAULTLOGGERD_TEST
