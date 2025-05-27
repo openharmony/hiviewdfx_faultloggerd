@@ -44,6 +44,7 @@ enum DumpCatchErrorCode : int32_t {
     DUMPCATCH_DUMP_EMAP,                              /* failed to find map */
     DUMPCATCH_DUMP_ESYMBOL_NO_PARSE,                  /* no enough time to parse symbol */
     DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT,             /* parse symbol timeout */
+    DUMPCATCH_DUMP_SELF_FAIL,                         /* dump self fail */
 
     DUMPCATCH_TIMEOUT_SIGNAL_BLOCK = 301,             /* signal has been block by target process */
     DUMPCATCH_TIMEOUT_KERNEL_FROZEN,                  /* target process has been frozen in kernel */
