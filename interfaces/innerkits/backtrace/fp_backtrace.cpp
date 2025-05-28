@@ -17,12 +17,13 @@
 
 #if is_ohos && !is_mingw && __aarch64__
 #include <mutex>
-#include <sys/uio.h>
 
 #include "dfx_ark.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"
 #include "dfx_symbols.h"
+#include "dfx_util.h"
+#include "stack_utils.h"
 #include "unwinder.h"
 #endif
 
@@ -54,20 +55,7 @@ private:
 
 bool FpBacktraceImpl::ReadProcMem(const uint64_t addr, void* data, size_t size) const
 {
-    uint64_t currentAddr = addr;
-    if (__builtin_add_overflow(currentAddr, size, &currentAddr)) {
-        return false;
-    }
-    struct iovec remoteIov = {
-        .iov_base = reinterpret_cast<void*>(addr),
-        .iov_len = size,
-    };
-    struct iovec dataIov = {
-        .iov_base = static_cast<uint8_t*>(data),
-        .iov_len = size,
-    }
-    ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIov, 1, 0);
-    return static_cast<size_t>(readCount) == size;
+    return ReadProcMemByPid(pid_, addr, data, size) == size;
 }
 
 bool FpBacktraceImpl::Init()
