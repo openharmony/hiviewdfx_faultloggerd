@@ -156,6 +156,7 @@ if (defined(ohos_lite)) {
       "c_utils:utils",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
+      "hitrace:libhitracechain",
       "init:libbegetutil",
       "jsoncpp:jsoncpp",
     ]
@@ -185,7 +186,7 @@ if (defined(ohos_lite)) {
     }
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
@@ -200,9 +201,10 @@ if (defined(ohos_lite)) {
     external_deps = [
       "cJSON:cjson",
       "c_utils:utils",
-      "hilog:libhilog_base",
+      "hilog:libhilog",
       "hisysevent:libhisysevent",
       "hitrace:hitrace_meter",
+      "hitrace:libhitracechain",
       "init:libbegetutil",
       "jsoncpp:jsoncpp",
     ]

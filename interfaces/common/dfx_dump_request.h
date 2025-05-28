@@ -56,6 +56,30 @@ typedef struct {
     char body[MAX_FATAL_MSG_SIZE];
 } Message;
 
+#ifndef is_ohos_lite
+typedef struct DumpHiTraceIdStruct {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    uint64_t valid : 1;
+    uint64_t ver : 3;
+    uint64_t chainId : 60;
+
+    uint64_t flags : 12;
+    uint64_t spanId : 26;
+    uint64_t parentSpanId : 26;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    uint64_t chainId : 60;
+    uint64_t ver : 3;
+    uint64_t valid : 1;
+
+    uint64_t parentSpanId : 26;
+    uint64_t spanId : 26;
+    uint64_t flags : 12;
+#else
+#error "ERROR: No BIG_LITTLE_ENDIAN defines."
+#endif
+} DumpHiTraceIdStruct;
+#endif
+
 /**
  * @brief ProcessDump request information
  * It is used to save and transfer the current process context from signalhandler to processdump,
@@ -103,6 +127,9 @@ struct ProcessDumpRequest {
     intptr_t unwindResultAddr;
     uintptr_t crashObj;
     uint64_t crashLogConfig;
+#ifndef is_ohos_lite
+    DumpHiTraceIdStruct hitraceId;
+#endif
 };
 
 static const int CRASH_BLOCK_EXIT_FLAG  = 0x13579BDF;
