@@ -5,6 +5,7 @@
       OHOS::HiviewDFX::Unwinder::EnableUnwindCache*;
       OHOS::HiviewDFX::Unwinder::EnableFpCheckMapExec*;
       OHOS::HiviewDFX::Unwinder::EnableFillFrames*;
+      OHOS::HiviewDFX::Unwinder::EnableParseNativeSymbol*;
       OHOS::HiviewDFX::Unwinder::IgnoreMixstack*;
       OHOS::HiviewDFX::Unwinder::SetRegs*;
       OHOS::HiviewDFX::Unwinder::GetRegs*;

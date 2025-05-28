@@ -488,7 +488,7 @@ bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, int &dumpRes
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
 #endif
     unwinder_ = std::make_shared<Unwinder>(realPid, vmPid, request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
-    unwinder_->EnableFillFrames(false);
+    unwinder_->EnableParseNativeSymbol(false);
     if (unwinder_->GetMaps() == nullptr) {
         ReportCrashException(CrashExceptionCode::CRASH_LOG_EMAPLOS);
         DFXLOGE("Mapinfo of crashed process is not exist!");
