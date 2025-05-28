@@ -982,7 +982,6 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest039, TestSize.Level
                 ExecuteCommands(startProcessCmd);
                 GTEST_LOG_(INFO) << result.second;
                 ASSERT_TRUE(result.first == 1);
-            
                 GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest039: end.";
             }
         }
@@ -1192,6 +1191,24 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest043, TestSize.Level
     ASSERT_EQ(result, true);
 #endif
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest044
+ * @tc.desc: test DumpCatchWithTimeout dump self
+ * @tc.type: FUNC
+ * @tc.require: ICAOEX
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest044, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest044: start.";
+    DfxDumpCatcher dumplog;
+    std::string msg = "";
+    int currentPid = getpid();
+    auto result = dumplog.DumpCatchWithTimeout(currentPid, msg);
+    GTEST_LOG_(INFO) << result.second;
+    EXPECT_TRUE(result.first == 0);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest044: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

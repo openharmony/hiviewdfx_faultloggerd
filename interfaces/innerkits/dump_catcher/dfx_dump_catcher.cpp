@@ -560,9 +560,8 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DumpCatchWithTimeout(int pid, 
         std::unique_lock<std::mutex> lck(mutex_);
         int currentPid = getpid();
         if (pid == currentPid) {
-            DFXLOGE("DumpCatchWithTimeout:: param error (don't support dumpcatch self)");
-            dumpcatchErrno = DUMPCATCH_EPARAM;
-            break;
+            bool ret = DoDumpLocalLocked(pid, tid, msg, DEFAULT_MAX_FRAME_NUM);
+            dumpcatchErrno = ret ? DUMPCATCH_ESUCCESS : DUMPCATCH_DUMP_SELF_FAIL;
         } else {
             DFXLOGI("Receive DumpCatch request for cPid:(%{public}d), pid(%{public}d)", currentPid, pid);
             dumpcatchErrno = DoDumpRemoteLocked(pid, tid, msg, isJson, timeout);
