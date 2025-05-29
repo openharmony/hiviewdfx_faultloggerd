@@ -67,7 +67,6 @@ if (defined(ohos_lite)) {
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
-      "jsoncpp:jsoncpp",
     ]
 
     part_name = "faultloggerd"

@@ -36,7 +36,7 @@ if (defined(ohos_lite)) {
     version_script = "libjson_stack_formatter.map"
     external_deps = [
       "bounds_checking_function:libsec_shared",
-      "jsoncpp:jsoncpp",
+      "cJSON:cjson",
     ]
 
     install_images = [
