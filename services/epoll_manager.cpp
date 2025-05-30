@@ -152,9 +152,11 @@ void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
                 continue;
             }
             const auto listener = GetTargetListener(events[i].data.fd);
-            if (listener != nullptr) {
-                listener->OnEventPoll();
+            if (listener == nullptr) {
+                RemoveListener(events[i].data.fd);
+                continue;
             }
+            listener->OnEventPoll();
             if (!listener->IsPersist()) {
                 RemoveListener(events[i].data.fd);
             }
