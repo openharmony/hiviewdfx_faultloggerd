@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include "csignal"
 #include "proc_util.h"
 
 using namespace testing::ext;
@@ -229,6 +230,86 @@ HWTEST(ProcUtilTest, ParseStatTest009, TestSize.Level2)
     ASSERT_TRUE(ParseStat(path, info));
     ASSERT_EQ(info.pid, getpid());
     ASSERT_EQ(info.comm, std::string("test_common"));
+}
+
+/**
+ * @tc.name: GetFirstNumberSeqTest010
+ * @tc.desc: get first number sequence.
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, GetFirstNumberSeqTest010, TestSize.Level2)
+{
+    std::string str = "abc";
+    std::string result = GetFirstNumberSeq(str);
+    ASSERT_EQ(result, "");
+
+    std::string data = "123456";
+    result = GetFirstNumberSeq(data);
+    ASSERT_EQ(result, data);
+
+    result = GetFirstNumberSeq("abc123456");
+    ASSERT_EQ(result, data);
+
+    result = GetFirstNumberSeq("abc123456   ");
+    ASSERT_EQ(result, data);
+
+    result = GetFirstNumberSeq("abc123456 adc");
+    ASSERT_EQ(result, data);
+
+    result = GetFirstNumberSeq("abc123456  123");
+    ASSERT_EQ(result, data);
+
+    result = GetFirstNumberSeq("123456  123");
+    ASSERT_EQ(result, data);
+}
+
+/**
+ * @tc.name: IsSigDumpMaskTest011
+ * @tc.desc: is sig dump mask.
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, IsSigDumpMaskTest011, TestSize.Level2)
+{
+    uint64_t sigBlk = 0x00000000;
+    ASSERT_FALSE(IsSigDumpMask(sigBlk));
+
+    sigBlk = 0x00000004;
+    ASSERT_FALSE(IsSigDumpMask(sigBlk));
+    // SigBlk: 0000000400000000
+    sigBlk = 0x0000000400000000;
+    ASSERT_TRUE(IsSigDumpMask(sigBlk));
+
+    sigBlk = 0x4000000000;
+    ASSERT_FALSE(IsSigDumpMask(sigBlk));
+}
+
+/**
+ * @tc.name: ParsePidStatus013
+ * @tc.desc: is hap.
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, ParsePidStatus013, TestSize.Level2)
+{
+    pid_t pid = 99999; // 99999 : Invalid PID
+    long uid = 0;
+    uint64_t sigBlk = 0;
+    auto result = GetUidAndSigBlk(pid, uid, sigBlk);
+    EXPECT_TRUE(uid == 0);
+    EXPECT_TRUE(sigBlk == 0);
+
+    pid = getpid();
+    result = GetUidAndSigBlk(pid, uid, sigBlk);
+    EXPECT_TRUE(sigBlk == 0);
+
+    sigset_t sigSet;
+    sigemptyset(&sigSet);
+    sigaddset(&sigSet, SIGQUIT);
+    sigprocmask(SIG_BLOCK, &sigSet, nullptr);
+
+    result = GetUidAndSigBlk(pid, uid, sigBlk);
+    EXPECT_TRUE(sigBlk ==  (1 << (SIGQUIT -1)));
+
+    sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

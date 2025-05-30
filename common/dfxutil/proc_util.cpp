@@ -15,6 +15,7 @@
 
 #include "proc_util.h"
 
+#include <algorithm>
 #include <fcntl.h>
 #include <string>
 #include <unistd.h>
@@ -244,6 +245,60 @@ bool ParseProcInfo(pid_t pid, ProcessInfo& info)
 {
     std::string path = "/proc/" + std::to_string(pid) + "/stat";
     return ParseStat(path, info);
+}
+
+std::string GetFirstNumberSeq(const std::string& cont)
+{
+    auto start = std::find_if(cont.begin(), cont.end(), isdigit);
+    if (start == cont.end()) {
+        return "";
+    }
+    auto end = std::find_if_not(start, cont.end(), isdigit);
+    return std::string(start, end);
+}
+
+bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk)
+{
+    std::string procPath = "/proc/" + std::to_string(pid) + "/task/" + std::to_string(pid) + "/status";
+    FILE *fp = fopen(procPath.c_str(), "r");
+    if (fp == nullptr) {
+        return false;
+    }
+    char line[256] = {0}; // 256 : read status line is enough
+    std::string uidStr;
+    std::string sigBlkStr;
+    while (fgets(line, sizeof(line) - 1, fp) != nullptr) {
+        std::string strLine(line);
+        if (uidStr.empty() && strLine.find("Uid:") != std::string::npos) {
+            uidStr = GetFirstNumberSeq(strLine);
+        } else if (strLine.find("SigBlk:") != std::string::npos) {
+            sigBlkStr = GetFirstNumberSeq(strLine);
+            break;
+        }
+    }
+    (void)fclose(fp);
+
+    if (uidStr.empty() || sigBlkStr.empty()) {
+        return false;
+    }
+
+    char* end;
+    uid = strtol(uidStr .c_str(), &end, 10); // 10 : Uid is in decimal format
+    if (errno == ERANGE || *end != '\0') {
+        return false;
+    }
+
+    sigBlk = strtoull(sigBlkStr.c_str(), &end, 16); // 16 : SigBlk is in hex format
+    if (errno == ERANGE || *end != '\0') {
+        return false;
+    }
+    return true;
+}
+
+bool IsSigDumpMask(uint64_t sigBlk)
+{
+    constexpr uint64_t sigDumpMask = UINT64_C(1) << 34; // 34 : SIGDUMP signal is the 35th bit (0-indexed)
+    return (sigBlk & sigDumpMask) != 0;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

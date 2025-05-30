@@ -354,5 +354,25 @@ uint64_t GetProcRssMemInfo(pid_t pid)
     rss = (rss * pageSizeKB * sizekiB) / sizekB;
     return rss;
 }
+
+pid_t GetTidByThreadName(pid_t pid, const std::string& threadName)
+{
+    if (pid <= 0) {
+        return -1;
+    }
+    std::vector<int> tids;
+    std::vector<int> nstids;
+    if (!GetTidsByPid(pid, tids, nstids)) {
+        return -1;
+    }
+    for (const auto tid : tids) {
+        std::string tmpThreadName;
+        ReadThreadNameByPidAndTid(pid, tid, tmpThreadName);
+        if (tmpThreadName == threadName) {
+            return tid;
+        }
+    }
+    return -1;
+}
 }   // namespace HiviewDFX
 }   // namespace OHOS

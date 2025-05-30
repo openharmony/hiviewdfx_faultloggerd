@@ -85,6 +85,9 @@ struct ProcessInfo {
 std::string ThreadStateToString(ThreadState state);
 bool ParseStat(const std::string& statPath, ProcessInfo& info);
 bool ParseProcInfo(pid_t pid, ProcessInfo& info);
+std::string GetFirstNumberSeq(const std::string& cont);
+bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk);
+bool IsSigDumpMask(uint64_t sigBlk);
 } // namespace Dfx
 } // namespace OHOS
 #endif // PROC_UTIL_H
