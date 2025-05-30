@@ -577,7 +577,8 @@ static int ProcessDump(int signo)
         SetKernelSnapshot(true);
 #ifndef is_ohos_lite
         DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
-        if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId), &hitraceChainId, sizeof(hitraceChainId)) != 0) {
+        if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
+                     &hitraceChainId, sizeof(hitraceChainId)) != 0) {
             DFXLOGE("memcpy hitrace fail");
         }
         HiLogRecordSnapshot(HILOG_SNAPSHOT_LINES, g_request->timeStamp);
