@@ -467,8 +467,11 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest019, TestSize.Level2)
     ASSERT_TRUE(testProcess > 0) << "Fail to fork test process";
     GTEST_LOG_(INFO) << "Process pid: " << testProcess;
     ASSERT_NE(hitraceChainId, 0) << "Fail to set process hitrace id";
-    auto filename = WaitCreateCrashFile("cppcrash", testProcess);
+    std::regex reg(R"(cppcrash-test_processdump-0-\d{17}.log)");
+    const std::string folder = "/data/log/faultlog/faultlogger/";
+    auto filename = WaitCreateFile(folder, reg);
     ASSERT_FALSE(filename.empty()) << "Fail to create crash file";
+    GTEST_LOG_(INFO) << "fileName: " << filename;
     std::stringstream ss;
     ss << std::hex << hitraceChainId;
     std::string hexStr = ss.str();
