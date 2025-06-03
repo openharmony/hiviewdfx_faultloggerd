@@ -509,15 +509,19 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
         errno = EINVAL;
         return -1;
     }
+    const uint64_t extendPrintPcLrMask = 0xfffffffffffffffe;
+    const int moveBit = 32;
+    const uint64_t cutOffLogMask = 0xffffffff;
+    const uint64_t simplifyVmaMask = 0xfffffffffffffffd;
     switch (type) {
         case EXTEND_PRINT_PC_LR:
-            g_crashLogConfig = (g_crashLogConfig & 0xfffffffffffffffe) + value;
+            g_crashLogConfig = (g_crashLogConfig & extendPrintPcLrMask) + value;
             break;
         case CUT_OFF_LOG_FILE:
-            g_crashLogConfig = ((uint64_t)value << 32) + (g_crashLogConfig & 0xffffffff); // 32 : high 32bit save cutoff size
+            g_crashLogConfig = ((uint64_t)value << moveBit) + (g_crashLogConfig & cutOffLogMask);
             break;
         case SIMPLIFY_PRINT_MAPS:
-            g_crashLogConfig = (g_crashLogConfig & 0xfffffffffffffffd) + (value << 1);
+            g_crashLogConfig = (g_crashLogConfig & simplifyVmaMask) + (value << 1);
             break;
         default:
             errno = EINVAL;

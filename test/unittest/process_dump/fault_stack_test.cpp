@@ -39,7 +39,7 @@ public:
     void SetUp();
     void TearDown() {}
 
-    static int WriteLogFunc(int32_t fd, const char *buf, int len);
+    static int WriteLogFunc(int32_t fd, const char *buf, size_t len);
     static std::string result;
 };
 } // namespace HiviewDFX
@@ -57,7 +57,7 @@ void FaultStackUnittest::SetUp(void)
     DfxBufferWriter::GetInstance().SetWriteFunc(FaultStackUnittest::WriteLogFunc);
 }
 
-int FaultStackUnittest::WriteLogFunc(int32_t fd, const char *buf, int len)
+int FaultStackUnittest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
 {
     FaultStackUnittest::result.append(std::string(buf, len));
     return 0;

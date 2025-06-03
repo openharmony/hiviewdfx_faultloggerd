@@ -49,7 +49,6 @@ void DumpInfoHeader::Print(DfxProcess& process, const ProcessDumpRequest& reques
         headerInfo = "Build info:" + buildInfo + "\n";
 #endif
         headerInfo += GetCrashLogConfigInfo(request, process);
-
     }
     headerInfo += "Timestamp:" + GetCurrentTimeStr(request.timeStamp);
     headerInfo += StringPrintf("Pid:%d\nUid:%d\nProcess name:%s\n",

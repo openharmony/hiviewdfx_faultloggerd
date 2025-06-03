@@ -37,7 +37,7 @@ public:
     static void TearDownTestCase(void) {}
     void SetUp();
     void TearDown() {}
-    static int WriteLogFunc(int32_t fd, const char *buf, int len);
+    static int WriteLogFunc(int32_t fd, const char *buf, size_t len);
     static std::string result;
 };
 } // namespace HiviewDFX
@@ -55,7 +55,7 @@ void OpenFilesTest::SetUp(void)
     DfxBufferWriter::GetInstance().SetWriteFunc(OpenFilesTest::WriteLogFunc);
 }
 
-int OpenFilesTest::WriteLogFunc(int32_t fd, const char *buf, int len)
+int OpenFilesTest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
 {
     OpenFilesTest::result.append(std::string(buf, len));
     return 0;

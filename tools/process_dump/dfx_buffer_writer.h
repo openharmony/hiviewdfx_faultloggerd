@@ -27,7 +27,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-typedef int (*BufferWriteFunc) (int32_t fd, const char *buf, const int len);
+typedef int (*BufferWriteFunc) (int32_t fd, const char *buf, const size_t len);
 
 class DfxBufferWriter final {
 public:
@@ -46,7 +46,7 @@ public:
     void AppendBriefDumpInfo(const std::string& info);
     void PrintBriefDumpInfo();
 private:
-    static int DefaultWrite(int32_t fd, const char *buf, const int len);
+    static int DefaultWrite(int32_t fd, const char *buf, const size_t len);
 
     DfxBufferWriter() = default;
     DISALLOW_COPY_AND_MOVE(DfxBufferWriter);

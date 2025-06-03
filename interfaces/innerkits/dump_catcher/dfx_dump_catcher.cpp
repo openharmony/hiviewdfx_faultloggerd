@@ -720,7 +720,7 @@ int32_t DfxDumpCatcher::Impl::KernelRet2DumpcatchRet(int32_t ret)
         case KernelStackAsyncCollector::STACK_TIMEOUT:
             return DUMPCATCH_KERNELSTACK_TIMEOUT;
         case KernelStackAsyncCollector::STACK_OVER_LIMIT:
-            return DUMPCATCH_KERNELSTACK_OVER_LIMITL;
+            return DUMPCATCH_KERNELSTACK_OVER_LIMIT;
         default:
             return DUMPCATCH_UNKNOWN;
     }

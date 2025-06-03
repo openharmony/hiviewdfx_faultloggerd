@@ -418,33 +418,35 @@ void ProcessDumper::PrintDumpInfo(const ProcessDumpRequest& request, int& dumpRe
     if (dumpInfoComponent.empty()) {
         return;
     }
-    
     // Create objects using reflection
     auto threadDumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[0]);
     auto prevDumpInfo = threadDumpInfo;
     auto dumpInfo = threadDumpInfo;
     for (size_t index = 1; index < dumpInfoComponent.size(); index++) {
-        if (DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[index]) == nullptr) {
+        auto tempDumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[index]);
+        if (tempDumpInfo == nullptr) {
             DFXLOGE("Failed to crreate object%{public}s.", dumpInfoComponent[index].c_str());
             continue;
         }
-        dumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[index]);
+        dumpInfo = tempDumpInfo;
         dumpInfo->SetDumpInfo(prevDumpInfo);
         if (dumpInfoComponent[index] == OTHER_THREAD_DUMP_INFO) {
             threadDumpInfo = dumpInfo;
         }
         prevDumpInfo = dumpInfo;
     }
-    int unwindSuccessCnt = threadDumpInfo->UnwindStack(*process_, *unwinder_);
-    DFXLOGI("unwind success thread count(%{public}d)", unwindSuccessCnt);
-    if (unwindSuccessCnt > 0) {
-        dumpRes = ParseSymbols(request, threadDumpInfo);
-    } else {
-        dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
-        DFXLOGE("Failed to unwind process."); 
+    if (threadDumpInfo != nullptr) {
+        int unwindSuccessCnt = threadDumpInfo->UnwindStack(*process_, *unwinder_);
+        DFXLOGI("unwind success thread count(%{public}d)", unwindSuccessCnt);
+        if (unwindSuccessCnt > 0) {
+            dumpRes = ParseSymbols(request, threadDumpInfo);
+        } else {
+            dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
+            DFXLOGE("Failed to unwind process.");
+        }
     }
 
-    if (!isJsonDump_) { // isJsonDump_ will print after format json
+    if (dumpInfo != nullptr && !isJsonDump_) { // isJsonDump_ will print after format json
         dumpInfo->Print(*process_, request, *unwinder_);
     }
 }

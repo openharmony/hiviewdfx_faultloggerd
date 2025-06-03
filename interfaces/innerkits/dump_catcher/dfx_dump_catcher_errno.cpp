@@ -45,7 +45,7 @@ const DumpCatchErrInfo ERROR_CODE_MAPS[] = {
     { DUMPCATCH_KERNELSTACK_EOPEN, "kernelstack fail due to open bbox fail" },
     { DUMPCATCH_KERNELSTACK_EIOCTL, "kernelstack fail due to ioctl fail" },
     { DUMPCATCH_KERNELSTACK_TIMEOUT, "kernelstack fail due to wait timeout" },
-    { DUMPCATCH_KERNELSTACK_OVER_LIMITL, "kernelstack fail due to over limit" },
+    { DUMPCATCH_KERNELSTACK_OVER_LIMIT, "kernelstack fail due to over limit" },
     { DUMPCATCH_KERNELSTACK_NONEED, "no need to dump kernelstack" },
     { DUMPCATCH_DUMP_ESYMBOL_NO_PARSE, "no enough time to parse symbol" },
     { DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT, "parse symbol timeout" },
