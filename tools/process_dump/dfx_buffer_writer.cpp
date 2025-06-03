@@ -42,7 +42,7 @@ void DfxBufferWriter::WriteMsg(const std::string& msg)
     }
     constexpr size_t step = 1024 * 1024;
     for (size_t i = 0; i < msg.size(); i += step) {
-        int length = (i + step) < msg.size() ? step : msg.size() - i;
+        size_t length = (i + step) < msg.size() ? step : msg.size() - i;
         writeFunc_(bufFd_, msg.substr(i, length).c_str(), length);
     }
 }
@@ -53,7 +53,7 @@ bool DfxBufferWriter::WriteDumpRes(int32_t dumpRes)
         return false;
     }
     ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &dumpRes, sizeof(dumpRes)));
-    if (nwrite != sizeof(dumpRes)) {
+    if (nwrite != static_cast<ssize_t>(sizeof(dumpRes))) {
         DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
         return false;
     }
@@ -128,7 +128,7 @@ void DfxBufferWriter::SetWriteFunc(BufferWriteFunc func)
     writeFunc_ = func;
 }
 
-int DfxBufferWriter::DefaultWrite(int32_t fd, const char *buf, const int len)
+int DfxBufferWriter::DefaultWrite(int32_t fd, const char *buf, const size_t len)
 {
     if (buf == nullptr) {
         return -1;
