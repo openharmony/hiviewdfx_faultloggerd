@@ -18,6 +18,7 @@
 
 #include "string"
 #include "vector"
+#include "csignal"
 #include "cstdint"
 #include "dfx_socket_request.h"
 #include "temp_file_manager.h"
@@ -101,6 +102,8 @@ public:
                       const SdkDumpRequestData& requestData) override;
 private:
     static int32_t Filter(const std::string& socketName, const SdkDumpRequestData& requestData, uint32_t uid);
+    static int32_t SendSigDumpToProcess(pid_t pid, siginfo_t& si);
+    static int32_t SendSigDumpToHapWatchdog(pid_t pid, siginfo_t& si);
 };
 
 class PipeService : public FaultLoggerService<PipFdRequestData> {

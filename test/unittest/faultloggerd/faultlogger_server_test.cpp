@@ -26,6 +26,7 @@
 #include "dfx_log.h"
 #include "dfx_socket_request.h"
 #include "dfx_util.h"
+#include "dfx_test_util.h"
 #include "fault_logger_daemon.h"
 #include "fault_logger_pipe.h"
 #include "faultloggerd_client.h"
@@ -214,6 +215,29 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest03, TestSize.Level2)
     requestData.pid = requestData.head.clientPid;
     int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
     ASSERT_EQ(retCode, ResponseCode::SDK_PROCESS_CRASHED);
+}
+/**
+ * @tc.name: SdkDumpServiceTest001
+ * @tc.desc: request sdk dumpJson after request a fd for cppcrash.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, SdkDumpServiceTest001, TestSize.Level2)
+{
+    pid_t pid;
+    pid = getpid(); // 99999 : Invalid pid
+    siginfo_t si;
+    auto ret = SdkDumpService::SendSigDumpToHapWatchdog(pid, si);
+    EXPECT_EQ(ret, ResponseCode::DEFAULT_ERROR_CODE);
+#if defined(__aarch64__)
+    std::string appName = "com.ohos.sceneboard";
+    pid = GetProcessPid(appName);
+    if (pid > 0) {
+        ret = SdkDumpService::SendSigDumpToHapWatchdog(pid, si); // sceneboard is mask
+        EXPECT_EQ(ret, ResponseCode::DEFAULT_ERROR_CODE);
+    } else {
+        FAIL() << "SdkDumpServiceTest001: " << appName << " not running.";
+    }
+#endif
 }
 /**
  * @tc.name: PipeFdClientTest01
@@ -537,4 +561,3 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest007, TestSize.Level2)
 }
 } // namespace HiviewDFX
 } // namespace OHOS
-

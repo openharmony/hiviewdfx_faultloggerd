@@ -27,6 +27,8 @@
 #include "dfx_util.h"
 #include "fault_logger_daemon.h"
 #include "faultloggerd_socket.h"
+#include "procinfo.h"
+#include "proc_util.h"
 
 #ifndef is_ohos_lite
 #include "fault_logger_pipe.h"
@@ -283,6 +285,47 @@ int32_t SdkDumpService::Filter(const std::string& socketName, const SdkDumpReque
     return ResponseCode::REQUEST_SUCCESS;
 }
 
+int32_t SdkDumpService::SendSigDumpToHapWatchdog(pid_t pid, siginfo_t& si)
+{
+    long uid = 0;
+    uint64_t sigBlk = 0;
+    if (!GetUidAndSigBlk(pid, uid, sigBlk)) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    };
+    constexpr long minUid = 10000; // 10000 : minimum uid for hap
+    if (uid < minUid || IsSigDumpMask(sigBlk)) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+
+    pid_t tid = GetTidByThreadName(pid, "OS_DfxWatchdog");
+    if (tid <= 0) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+#ifndef FAULTLOGGERD_TEST
+    if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
+        DFXLOGE("%{public}s :: Failed to SYS_rt_tgsigqueueinfo signal(%{public}d), errno(%{public}d).",
+            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+        return ResponseCode::SDK_DUMP_NOPROC;
+    }
+#endif
+    return ResponseCode::REQUEST_SUCCESS;
+}
+
+int32_t SdkDumpService::SendSigDumpToProcess(pid_t pid, siginfo_t& si)
+{
+    auto ret = SendSigDumpToHapWatchdog(pid, si);
+    if (ret == ResponseCode::SDK_DUMP_NOPROC || ResponseCode::REQUEST_SUCCESS) {
+        return ret;
+    }
+
+    if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
+        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
+            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+        return ResponseCode::SDK_DUMP_NOPROC;
+    }
+    return ResponseCode::REQUEST_SUCCESS;
+}
+
 int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connectionFd,
     const SdkDumpRequestData& requestData)
 {
@@ -345,11 +388,9 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
      */
     auto& faultLoggerPipe = FaultLoggerPipePair::CreateSdkDumpPipePair(requestData.pid, requestData.time);
 #ifndef FAULTLOGGERD_TEST
-    if (syscall(SYS_rt_sigqueueinfo, requestData.pid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+    if (auto ret = SendSigDumpToProcess(requestData.pid, si); ret != ResponseCode::REQUEST_SUCCESS) {
         FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
-        return ResponseCode::SDK_DUMP_NOPROC;
+        return ret;
     }
 #endif
 
