@@ -314,7 +314,7 @@ int32_t SdkDumpService::SendSigDumpToHapWatchdog(pid_t pid, siginfo_t& si)
 int32_t SdkDumpService::SendSigDumpToProcess(pid_t pid, siginfo_t& si)
 {
     auto ret = SendSigDumpToHapWatchdog(pid, si);
-    if (ret == ResponseCode::SDK_DUMP_NOPROC || ResponseCode::REQUEST_SUCCESS) {
+    if (ret == ResponseCode::SDK_DUMP_NOPROC || ret == ResponseCode::REQUEST_SUCCESS) {
         return ret;
     }
 
