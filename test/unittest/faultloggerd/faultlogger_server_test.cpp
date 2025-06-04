@@ -218,13 +218,13 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest03, TestSize.Level2)
 }
 /**
  * @tc.name: SdkDumpServiceTest001
- * @tc.desc: request sdk dumpJson after request a fd for cppcrash.
+ * @tc.desc: request sdk dump to hap watchdog thread.
  * @tc.type: FUNC
  */
 HWTEST_F(FaultLoggerdServiceTest, SdkDumpServiceTest001, TestSize.Level2)
 {
     pid_t pid;
-    pid = getpid(); // 99999 : Invalid pid
+    pid = getpid();
     siginfo_t si;
     auto ret = SdkDumpService::SendSigDumpToHapWatchdog(pid, si);
     EXPECT_EQ(ret, ResponseCode::DEFAULT_ERROR_CODE);
@@ -238,6 +238,18 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpServiceTest001, TestSize.Level2)
         FAIL() << "SdkDumpServiceTest001: " << appName << " not running.";
     }
 #endif
+}
+/**
+ * @tc.name: SdkDumpServiceTest002
+ * @tc.desc: request sdk dump .
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, SdkDumpServiceTest002, TestSize.Level2)
+{
+    pid_t pid = getpid();
+    siginfo_t si;
+    auto ret = SdkDumpService::SendSigDumpToProcess(pid, si);
+    EXPECT_EQ(ret, ResponseCode::REQUEST_SUCCESS);
 }
 /**
  * @tc.name: PipeFdClientTest01

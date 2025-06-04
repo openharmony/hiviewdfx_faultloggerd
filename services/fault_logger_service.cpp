@@ -317,12 +317,13 @@ int32_t SdkDumpService::SendSigDumpToProcess(pid_t pid, siginfo_t& si)
     if (ret == ResponseCode::SDK_DUMP_NOPROC || ret == ResponseCode::REQUEST_SUCCESS) {
         return ret;
     }
-
+#ifndef FAULTLOGGERD_TEST
     if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
         DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
             FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
         return ResponseCode::SDK_DUMP_NOPROC;
     }
+#endif
     return ResponseCode::REQUEST_SUCCESS;
 }
 
@@ -387,12 +388,11 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
      * threads that does not currently have the signal blocked.
      */
     auto& faultLoggerPipe = FaultLoggerPipePair::CreateSdkDumpPipePair(requestData.pid, requestData.time);
-#ifndef FAULTLOGGERD_TEST
+
     if (auto ret = SendSigDumpToProcess(requestData.pid, si); ret != ResponseCode::REQUEST_SUCCESS) {
         FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
         return ret;
     }
-#endif
 
     int32_t fds[PIPE_NUM_SZ] = {
         faultLoggerPipe.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ),
