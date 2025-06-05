@@ -50,7 +50,10 @@ ohos_unittest("backtrace_local_test") {
     "$faultloggerd_interfaces_path/innerkits/backtrace",
     "$faultloggerd_interfaces_path/innerkits/unwinder/include",
   ]
-  sources = [ "backtrace_local_test.cpp" ]
+  sources = [
+    "backtrace_local_test.cpp",
+    "fp_backtrace_test.cpp",
+  ]
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
@@ -108,7 +111,10 @@ ohos_unittest("backtrace_local_test_static") {
     "BACKTRACE_LOCAL_TEST_STATIC",
     "DFX_LOG_HILOG_BASE",
   ]
-  sources = [ "backtrace_local_test.cpp" ]
+  sources = [
+    "backtrace_local_test.cpp",
+    "fp_backtrace_test.cpp",
+  ]
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     "$faultloggerd_common_path/dfxutil:dfx_util_static",

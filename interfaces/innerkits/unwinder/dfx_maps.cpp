@@ -152,7 +152,7 @@ void DfxMaps::HandleSpecialMap(const std::shared_ptr<DfxMap>& map)
         stackBottom_ = static_cast<uintptr_t>(map->begin);
         stackTop_ = static_cast<uintptr_t>(map->end);
     }
-    if (map->IsArkExecutable()) {
+    if (map->IsArkExecutable() || (map->IsMapExec() && map->name.find("stub.an") != std::string::npos)) {
         ArkStackStart_ = static_cast<uintptr_t>(map->begin);
         ArkStackEnd_ = static_cast<uintptr_t>(map->end);
     }
