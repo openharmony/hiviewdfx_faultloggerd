@@ -162,7 +162,8 @@ public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<Maps>(); }
 private:
-    void SimplifyVma(DfxProcess& process, const std::shared_ptr<DfxMaps>& maps, std::set<DfxMap>& mapSet);
+    void SimplifyVma(DfxProcess& process, const ProcessDumpRequest& request,
+                       const std::shared_ptr<DfxMaps>& maps, std::set<DfxMap>& mapSet);
 };
 
 struct FDInfo {

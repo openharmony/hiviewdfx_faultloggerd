@@ -14,12 +14,13 @@
  */
 #include "decorative_dump_info.h"
 #include <set>
+#include "dfx_buffer_writer.h"
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
-#include "unwinder.h"
+#include "dfx_signal.h"
 #include "dfx_log.h"
-#include "dfx_buffer_writer.h"
 #include "process_dump_config.h"
+#include "unwinder.h"
 namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(Maps);
@@ -36,7 +37,7 @@ void Maps::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinde
     if (ProcessDumpConfig::GetInstance().GetConfig().simplifyVmaPrinting ||
         (process.GetCrashLogConfig().simplifyVmaPrinting)) {
         std::set<DfxMap> simplifyMaps;
-        SimplifyVma(process, maps, simplifyMaps);
+        SimplifyVma(process, request, maps, simplifyMaps);
         for (const auto& simplifyMap : simplifyMaps) {
             DfxBufferWriter::GetInstance().WriteMsg(simplifyMap.ToString());
         }
@@ -49,12 +50,16 @@ void Maps::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinde
     }
 }
 
-void Maps::SimplifyVma(DfxProcess& process, const std::shared_ptr<DfxMaps>& maps, std::set<DfxMap>& mapSet)
+void Maps::SimplifyVma(DfxProcess& process, const ProcessDumpRequest& request,
+                       const std::shared_ptr<DfxMaps>& maps, std::set<DfxMap>& mapSet)
 {
     std::set<uintptr_t> interestedAddrs = process.GetMemoryValues();
     auto regsData = process.GetFaultThreadRegisters()->GetRegsData();
     interestedAddrs.insert(regsData.begin(), regsData.end());
-
+    DfxSignal dfxSignal(request.siginfo.si_signo);
+    if (dfxSignal.IsAddrAvailable()) {
+        interestedAddrs.insert(reinterpret_cast<uintptr_t>(request.siginfo.si_addr));
+    }
     auto threads = process.GetOtherThreads();
     threads.emplace_back(process.GetKeyThread());
     std::set<std::string> mapNames;

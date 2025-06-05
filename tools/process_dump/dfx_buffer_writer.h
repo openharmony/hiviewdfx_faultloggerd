@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef DFX_RING_BUFFER_WRAPPER_H
-#define DFX_RING_BUFFER_WRAPPER_H
+#ifndef DFX_BUFFER_WRITER_H
+#define DFX_BUFFER_WRITER_H
 
 #include <cinttypes>
 #include <condition_variable>
