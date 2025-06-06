@@ -16,6 +16,7 @@
 #define DFX_ASYNC_STACK_H
 
 #include <inttypes.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -30,8 +31,16 @@ void SetStackId(uint64_t stackId);
 // get stack id from TLS
 uint64_t GetStackId(void);
 
+/**
+ * @brief get submitter stack in local case
+ *
+ * @param stackTrace  stackTrace of submitter
+ * @param bufferSize  buffer size of stackTrace
+ * @return if succeed return 0, otherwise return -1
+*/
+int DfxGetSubmitterStackLocal(char* stackTrace, size_t bufferSize);
+
 #ifdef __cplusplus
 }
 #endif
-
 #endif

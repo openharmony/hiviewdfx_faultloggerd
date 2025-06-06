@@ -21,9 +21,7 @@ ohos_unittest("stack_printer_test") {
   module_out_path = module_output_path
   visibility = [ "*:*" ]
   include_dirs = [ "." ]
-  sources = [
-    "stack_printer_test.cpp",
-  ]
+  sources = [ "stack_printer_test.cpp" ]
   deps = [
     "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
     "$faultloggerd_interfaces_path/innerkits/stack_printer:libstack_printer",

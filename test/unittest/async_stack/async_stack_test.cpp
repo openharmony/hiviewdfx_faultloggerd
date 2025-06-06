@@ -31,6 +31,7 @@
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 #include "fp_unwinder.h"
+#include "uv.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -62,14 +63,64 @@ void AsyncStackTest::SetUp()
 void AsyncStackTest::TearDown()
 {}
 
+constexpr size_t BUFFER_SIZE = 64 * 1024;
+char *g_stackTrace = new (std::nothrow) char[BUFFER_SIZE];
+int g_result = -1;
+static bool g_done = false;
+
+NOINLINE static void WorkCallback(uv_work_t* req)
+{
+    g_result = DfxGetSubmitterStackLocal(g_stackTrace, BUFFER_SIZE);
+}
+
+NOINLINE static void AfterWorkCallback(uv_work_t* req, int status)
+{
+    if (!g_done) {
+        uv_queue_work(req->loop, req, WorkCallback, AfterWorkCallback);
+    }
+}
+
+static void TimerCallback(uv_timer_t* handle)
+{
+    g_done = true;
+}
 /**
  * @tc.name: AsyncStackTest001
- * @tc.desc: test GetStackId()
+ * @tc.desc: test GetAsyncStackLocal
  * @tc.type: FUNC
  */
 HWTEST_F(AsyncStackTest, AsyncStackTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "AsyncStackTest001: start.";
+    setenv("HAP_DEBUGGABLE", "true", 1);
+    ASSERT_EQ(DfxGetSubmitterStackLocal(g_stackTrace, BUFFER_SIZE), -1);
+    uv_timer_t timerHandle;
+    uv_work_t work;
+    uv_loop_t* loop = uv_default_loop();
+    int timeout = 1000;
+    uv_timer_init(loop, &timerHandle);
+    uv_timer_start(&timerHandle, TimerCallback, timeout, 0);
+    uv_queue_work(loop, &work, WorkCallback, AfterWorkCallback);
+    uv_run(loop, UV_RUN_DEFAULT);
+#if defined(__aarch64__)
+    ASSERT_EQ(g_result, 0);
+    std::string stackTrace = std::string(g_stackTrace);
+    ASSERT_GT(stackTrace.size(), 0) << stackTrace;
+#else
+    ASSERT_EQ(g_result, -1);
+#endif
+    ASSERT_EQ(DfxGetSubmitterStackLocal(g_stackTrace, 0), -1);
+    GTEST_LOG_(INFO) << "AsyncStackTest001: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest002
+ * @tc.desc: test GetStackId()
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest002: start.";
     SetStackId(1);
     auto res = GetStackId();
     GTEST_LOG_(INFO) << "res: " << res;
@@ -79,43 +130,22 @@ HWTEST_F(AsyncStackTest, AsyncStackTest001, TestSize.Level2)
     ASSERT_NE(0, res);
 #endif
 
-    GTEST_LOG_(INFO) << "AsyncStackTest001: end.";
-}
-
-/**
- * @tc.name: AsyncStackTest002
- * @tc.desc: test CollectAsyncStack()
- * @tc.type: FUNC
- */
-HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "AsyncStackTest002: start.";
-    auto ret = CollectAsyncStack();
-#if defined(__aarch64__)
-    ASSERT_NE(0, ret);
-#else
-    ASSERT_EQ(0, ret);
-#endif
     GTEST_LOG_(INFO) << "AsyncStackTest002: end.";
 }
 
 /**
  * @tc.name: AsyncStackTest003
- * @tc.desc: test UnwindFallback Function
+ * @tc.desc: test CollectAsyncStack()
  * @tc.type: FUNC
  */
 HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "AsyncStackTest003: start.";
-    const int32_t maxSize = 16;
-    uintptr_t pcs[maxSize] = {0};
-    int32_t skipFrameNum = 2;
-    std::thread (FpUnwinder::Unwind, pcs, maxSize, skipFrameNum).join();
-    [[maybe_unused]] int32_t ret = FpUnwinder::UnwindFallback(pcs, maxSize, skipFrameNum);
-#if defined(__arm__)
-    ASSERT_EQ(0, ret);
-#elif defined(__aarch64__)
+    auto ret = CollectAsyncStack();
+#if defined(__aarch64__)
     ASSERT_NE(0, ret);
+#else
+    ASSERT_EQ(0, ret);
 #endif
     GTEST_LOG_(INFO) << "AsyncStackTest003: end.";
 }
