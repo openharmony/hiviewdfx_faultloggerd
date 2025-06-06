@@ -866,7 +866,7 @@ bool DfxDumpCatcher::Impl::DoReadBuf(DumpCatcherPipeData& pipeData)
         }
         DFXLOGD("%{public}s :: nread: %{public}zu", __func__, nread);
         ret = true;
-        pipeData.bufMsg.append(buffer);
+        pipeData.bufMsg.append(buffer, static_cast<size_t>(nread));
     } while (false);
     delete []buffer;
     return ret;

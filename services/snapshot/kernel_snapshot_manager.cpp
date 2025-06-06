@@ -63,7 +63,7 @@ std::string KernelSnapshotManager::ReadKernelSnapshot()
     do {
         ret = read(snapshotFd, buffer, BUFFER_LEN - 1);
         if (ret > 0) {
-            snapshotCont += buffer;
+            snapshotCont.append(buffer, static_cast<size_t>(ret));
         }
         if (ret < 0) {
             DFXLOGE("read snapshot filed %{public}d", errno);
