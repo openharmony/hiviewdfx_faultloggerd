@@ -102,11 +102,7 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value);
 static bool ReadProcessDumpGetRegsMsg(void);
 
 #ifndef is_ohos_lite
-__attribute__((weak)) DumpHiTraceIdStruct HiTraceChainGetId()
-{
-    DumpHiTraceIdStruct hitraceId = {0};
-    return hitraceId;
-}
+DumpHiTraceIdStruct HiTraceChainGetId() __attribute__((weak));
 #endif
 
 static void ResetFlags(void)
@@ -576,10 +572,12 @@ static int ProcessDump(int signo)
         ResetFlags();
         SetKernelSnapshot(true);
 #ifndef is_ohos_lite
-        DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
-        if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
-                     &hitraceChainId, sizeof(hitraceChainId)) != 0) {
-            DFXLOGE("memcpy hitrace fail");
+        if (HiTraceChainGetId != NULL) {
+            DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
+            if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
+                         &hitraceChainId, sizeof(hitraceChainId)) != 0) {
+                DFXLOGE("memcpy hitrace fail");
+            }
         }
         HiLogRecordSnapshot(HILOG_SNAPSHOT_LINES, g_request->timeStamp);
 #endif
