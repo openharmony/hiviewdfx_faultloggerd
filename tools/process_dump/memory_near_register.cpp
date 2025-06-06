@@ -28,6 +28,8 @@ const char* const NAME_PREFIX = "r";
 #else
 const char* const NAME_PREFIX = "x";
 #endif
+const char* const LR_REG_NAME = "lr";
+const char* const PC_REG_NAME = "pc";
 }
 REGISTER_DUMP_INFO_CLASS(MemoryNearRegister);
 
@@ -76,10 +78,7 @@ void MemoryNearRegister::CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxReg
 #endif
         index++;
         std::shared_ptr<DfxMap> map;
-        if (!maps->FindMapByAddr(data, map)) {
-            continue;
-        }
-        if ((map->prots & PROT_READ) == 0) {
+        if (!maps->FindMapByAddr(data, map) || (map->prots & PROT_READ) == 0) {
             continue;
         }
         std::string name = regs->GetSpecialRegsNameByIndex(index - 1);
@@ -89,7 +88,7 @@ void MemoryNearRegister::CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxReg
         constexpr size_t size = sizeof(uintptr_t);
         uintptr_t count = 32;
         uintptr_t forwardSize = 2;
-        if (extendPcLrPrinting && (name == "lr" || name == "pc")) {
+        if (extendPcLrPrinting && (name == LR_REG_NAME || name == PC_REG_NAME)) {
             forwardSize = 31; // 31 : forward count of print value
             count = 64; // // 64 : total count of print value
         }

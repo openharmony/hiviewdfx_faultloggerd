@@ -395,8 +395,8 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
     struct ProcessDumpRequest request{};
     ASSERT_FALSE(ins.InitDfxProcess(request));
 
-    request.pid = 1;
-    request.nsPid = 1;
+    request.pid = -1;
+    request.nsPid = -1;
     ASSERT_FALSE(ins.InitDfxProcess(request));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: end.";
 }

@@ -55,7 +55,9 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request)
     if (!keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
         DFXLOGE("Failed to attach key thread(%{public}d).", nsTid);
         ReportCrashException(CrashExceptionCode::CRASH_DUMP_EATTACH);
-        return false;
+        if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+            return false;
+        }
     }
     if (keyThread_->GetThreadInfo().threadName.empty()) {
         keyThread_->SetThreadName(std::string(request.threadName));
