@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,13 +17,14 @@
 #include <cerrno>
 #include <unistd.h>
 
-#include "dfx_fault_stack.h"
+#include "decorative_dump_info.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
-#include "dfx_ring_buffer_wrapper.h"
+#include "dfx_buffer_writer.h"
+#include "dfx_test_util.h"
 #include "dfx_thread.h"
-#include "dfx_unwind_remote.h"
+#include "multithread_constructor.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -34,11 +35,11 @@ namespace HiviewDFX {
 class FaultStackUnittest : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
+    static void TearDownTestCase(void) {}
     void SetUp();
-    void TearDown();
+    void TearDown() {}
 
-    static int WriteLogFunc(int32_t fd, const char *buf, int len);
+    static int WriteLogFunc(int32_t fd, const char *buf, size_t len);
     static std::string result;
 };
 } // namespace HiviewDFX
@@ -51,22 +52,13 @@ void FaultStackUnittest::SetUpTestCase(void)
     result = "";
 }
 
-void FaultStackUnittest::TearDownTestCase(void)
-{
-}
-
 void FaultStackUnittest::SetUp(void)
 {
-    DfxRingBufferWrapper::GetInstance().SetWriteFunc(FaultStackUnittest::WriteLogFunc);
+    DfxBufferWriter::GetInstance().SetWriteFunc(FaultStackUnittest::WriteLogFunc);
 }
 
-void FaultStackUnittest::TearDown(void)
+int FaultStackUnittest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
 {
-}
-
-int FaultStackUnittest::WriteLogFunc(int32_t fd, const char *buf, int len)
-{
-    printf("%d: %s", fd, buf);
     FaultStackUnittest::result.append(std::string(buf, len));
     return 0;
 }
@@ -80,54 +72,34 @@ namespace {
 HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "FaultStackUnittest001: start.";
-
-    auto unwinder = std::make_shared<Unwinder>();
-    bool unwRet = unwinder->UnwindLocal();
-    if (!unwRet) {
-        FAIL() << "Failed to unwind local";
-    }
-    auto frames = unwinder->GetFrames();
-    int childPid = fork();
-    bool isSuccess = childPid >= 0;
+    pid_t testProcess = CreateMultiThreadProcess(10); // 10 : create a process with ten threads
+    bool isSuccess = testProcess >= 0;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         printf("Failed to fork child process, errno(%d).\n", errno);
-        return;
+    } else {
+        sleep(1);
+        pid_t tid = testProcess;
+        pid_t nsPid = testProcess;
+        pid_t pid = testProcess;
+        ProcessDumpRequest request = {
+            .type = ProcessDumpType::DUMP_TYPE_CPP_CRASH,
+            .tid = tid,
+            .pid = pid,
+            .nsPid = pid,
+        };
+        DfxProcess process;
+        process.InitProcessInfo(pid, nsPid, getuid(), "");
+        process.InitKeyThread(request);
+        Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
+        unwinder.SetRegs(DfxRegs::CreateRemoteRegs(pid));
+        unwinder.UnwindRemote(tid, true);
+        process.GetKeyThread()->SetFrames(unwinder.GetFrames());
+        FaultStack faultStack;
+        faultStack.Print(process, request, unwinder);
+        EXPECT_TRUE(result.find("FaultStack:") != std::string::npos) << result;
+        EXPECT_TRUE(result.find("sp0") != std::string::npos) << result;
+        GTEST_LOG_(INFO) << "FaultStackUnittest001: end.";
     }
-    if (childPid == 0) {
-        uint32_t left = 10;
-        while (left > 0) {
-            left = sleep(left);
-        }
-        _exit(0);
-    }
-    DfxThread thread(childPid, childPid, childPid);
-    ASSERT_EQ(true, thread.Attach());
-    auto maps = DfxMaps::Create(childPid);
-    auto reg = DfxRegs::CreateRemoteRegs(childPid);
-    std::unique_ptr<FaultStack> stack = std::make_unique<FaultStack>(childPid);
-    stack->CollectStackInfo(frames);
-    stack->CollectRegistersBlock(reg, maps);
-    stack->Print();
-    thread.Detach();
-
-    if (result.find("Memory near registers") == std::string::npos) {
-        FAIL();
-    }
-
-    if (result.find("FaultStack") == std::string::npos) {
-        FAIL();
-    }
-
-    if (result.find("pc") == std::string::npos) {
-        FAIL();
-    }
-
-    if (result.find("sp2:") == std::string::npos) {
-        FAIL();
-    }
-    GTEST_LOG_(INFO) << "Result Log length:" << result.length();
-    ASSERT_GT(result.length(), 0);
-    GTEST_LOG_(INFO) << "FaultStackUnittest001: end.";
 }
 }

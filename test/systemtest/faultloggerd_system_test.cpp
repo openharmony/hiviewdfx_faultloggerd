@@ -1129,23 +1129,23 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest102, TestSize.Level2)
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         GTEST_LOG_(INFO) << "FaultLoggerdSystemTest102: Failed to clone new process. errno:" << errno;
-        return;
+    } else {
+        // wait for get realpid, too long will not monitor create crash file
+        sleep(1);
+        int readPid = ReadRealPid();
+        string fileName = WaitCreateCrashFile("cppcrash", readPid);
+        EXPECT_NE(0, fileName.size());
+        printf("PidNs Crash File:%s\n", fileName.c_str());
+        string log[] = {
+            "Pid:", "Uid", "SIGSEGV", "Tid:", "#00",
+            "Registers:", REGISTERS, "FaultStack:", "Maps:"
+        };
+        int minRegIdx = 5; // 5 : index of first REGISTERS - 1
+        int expectNum = sizeof(log) / sizeof(log[0]);
+        int count = CheckKeyWords(fileName, log, expectNum, minRegIdx);
+        EXPECT_EQ(count, expectNum);
+        GTEST_LOG_(INFO) << "FaultLoggerdSystemTest102: end.";
     }
-    // wait for get realpid, too long will not monitor create crash file
-    sleep(1);
-    int readPid = ReadRealPid();
-    string fileName = WaitCreateCrashFile("cppcrash", readPid);
-    EXPECT_NE(0, fileName.size());
-    printf("PidNs Crash File:%s\n", fileName.c_str());
-    string log[] = {
-        "Pid:", "Uid", "SIGSEGV", "Tid:", "#00",
-        "Registers:", REGISTERS, "FaultStack:", "Maps:"
-    };
-    int minRegIdx = 5; // 5 : index of first REGISTERS - 1
-    int expectNum = sizeof(log) / sizeof(log[0]);
-    int count = CheckKeyWords(fileName, log, expectNum, minRegIdx);
-    EXPECT_EQ(count, expectNum);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest102: end.";
 }
 
 /**

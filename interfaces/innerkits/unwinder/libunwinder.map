@@ -5,6 +5,7 @@
       OHOS::HiviewDFX::Unwinder::EnableUnwindCache*;
       OHOS::HiviewDFX::Unwinder::EnableFpCheckMapExec*;
       OHOS::HiviewDFX::Unwinder::EnableFillFrames*;
+      OHOS::HiviewDFX::Unwinder::EnableParseNativeSymbol*;
       OHOS::HiviewDFX::Unwinder::IgnoreMixstack*;
       OHOS::HiviewDFX::Unwinder::SetRegs*;
       OHOS::HiviewDFX::Unwinder::GetRegs*;
@@ -37,9 +38,9 @@
       OHOS::HiviewDFX::Unwinder::FillLocalFrames*;
       OHOS::HiviewDFX::Unwinder::GetLockInfo*;
       OHOS::HiviewDFX::Unwinder::AccessMem*;
+      OHOS::HiviewDFX::Unwinder::ParseFrameSymbol*;
       OHOS::HiviewDFX::UnwinderConfig::enableLoadSymbolLazily_*;
       OHOS::HiviewDFX::UnwinderConfig::enableMiniDebugInfo_*;
-      OHOS::HiviewDFX::DfxConfig::GetConfig*;
       OHOS::HiviewDFX::DfxElf::Clear*;
       OHOS::HiviewDFX::DfxElf::DfxElf*;
       OHOS::HiviewDFX::DfxElf::IsValid*;
@@ -60,6 +61,7 @@
       OHOS::HiviewDFX::DfxMaps::Create*;
       OHOS::HiviewDFX::DfxMaps::ToString*;
       OHOS::HiviewDFX::DfxMaps::FindMapByAddr*;
+      OHOS::HiviewDFX::DfxMaps::FindMapGroupByAddr*;
       OHOS::HiviewDFX::DfxMaps::FindMapsByName*;
       OHOS::HiviewDFX::DfxMaps::GetStackRange*;
       OHOS::HiviewDFX::DfxRegs::CreateRemoteRegs*;
@@ -93,12 +95,15 @@
       OHOS::HiviewDFX::DfxSymbols::ParseSymbols*;
       OHOS::HiviewDFX::DfxSymbols::AddSymbolsByPlt*;
       OHOS::HiviewDFX::DfxSymbols::GetFuncNameAndOffsetByPc*;
+      OHOS::HiviewDFX::DfxArk::InitArkFunction*;
       OHOS::HiviewDFX::DfxArk::Instance*;
       OHOS::HiviewDFX::DfxArk::ArkCreateJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;
+      OHOS::HiviewDFX::DfxArk::StepArkFrame*;
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
+      OHOS::HiviewDFX::DfxMaps::GetArkStackRange*;
       OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
       OHOS::HiviewDFX::LocalThreadContextMix::GetInstance*;
       OHOS::HiviewDFX::LocalThreadContextMix::GetMapByPc*;

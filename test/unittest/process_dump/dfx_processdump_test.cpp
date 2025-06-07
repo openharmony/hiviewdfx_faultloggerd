@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,9 +23,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "dfx_config.h"
 #include "dfx_define.h"
-#include "dfx_logger.h"
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
@@ -33,6 +31,13 @@
 #include "multithread_constructor.h"
 #include "process_dumper.h"
 #include "faultlogger_client_msg.h"
+
+#ifndef is_ohos_lite
+#include "file_util.h"
+#include "hitrace/hitracechainc.h"
+
+#define HITRACE_CHAIN_ID_MASK 0x0FFFFFFFFFFFFFFF
+#endif
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -44,65 +49,13 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxProcessDumpTest : public testing::Test {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
+    static void SetUpTestCase(void) {}
+    static void TearDownTestCase(void) {}
+    void SetUp() {}
+    void TearDown() {}
 };
 } // namespace HiviewDFX
 } // namespace OHOS
-
-void DfxProcessDumpTest::SetUpTestCase(void)
-{
-}
-
-void DfxProcessDumpTest::TearDownTestCase(void)
-{
-}
-
-void DfxProcessDumpTest::SetUp(void)
-{
-}
-
-void DfxProcessDumpTest::TearDown(void)
-{
-}
-
-static pid_t CreateMultiThreadProcess(int threadNum)
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        (void)MultiThreadConstructor(threadNum);
-    }
-    return pid;
-}
-
-static pid_t CreateMultiThreadForThreadCrash(int threadNum)
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        (void)MultiThreadConstructorForThreadCrash(threadNum);
-    }
-    return pid;
-}
-
-static pid_t CreateMultiThreadForThreadCrashWithOpen(int threadNum, int openNum)
-{
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        for (int i = 0; i < openNum; ++i) {
-            fopen("/dev/null", "r");
-        }
-        (void)MultiThreadConstructorForThreadCrash(threadNum);
-    }
-    return pid;
-}
 
 static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
@@ -125,11 +78,11 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
         sigKeyword = iter->second;
     }
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "test_processdump", sigKeyword, "Tid:", "#00", "Registers:", REGISTERS,
-        "FaultStack:", "Maps:", "test_processdump"
+        "Pid:" + to_string(pid), "Uid:", "test_processdump", "Rss", sigKeyword, "Tid:", "#00", "Registers:",
+        REGISTERS, "FaultStack:", "Maps:", "test_processdump"
     };
     int length = sizeof(keywords) / sizeof(keywords[0]);
-    int minRegIdx = 6; // 6 : index of REGISTERS
+    int minRegIdx = 7; // 7 : index of REGISTERS
     int count = CheckKeyWords(filePath, keywords, length, minRegIdx);
     return count == length;
 }
@@ -400,13 +353,14 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest014, TestSize.Level2)
     info.pid = 1;
     info.pipeFd = -1;
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
+    info.logFileCutoffSizeBytes = 0;
     info.module = "";
     info.reason = "";
     info.summary = "";
     info.registers = "";
     addFaultLog(&info);
     dlclose(handle);
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest01: end.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest014: end.";
 }
 
 /**
@@ -428,9 +382,10 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest015, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest015: end.";
 }
 
+
 /**
  * @tc.name: DfxProcessDumpTest017
- * @tc.desc: Testing InitProcessInfo、InitKeyThread、InitRegs exception
+ * @tc.desc: Testing InitDfxProcess、InitRegs exception
  * @tc.type: FUNC
  */
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
@@ -438,63 +393,95 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
     struct ProcessDumpRequest request{};
-    int result = ins.InitProcessInfo(request);
-    ASSERT_EQ(result, -1);
+    ASSERT_FALSE(ins.InitDfxProcess(request));
 
-    request.pid = 1;
-    request.nsPid = 1;
-    result = ins.InitProcessInfo(request);
-    ASSERT_EQ(result, -1);
-    ins.isCrash_ = true;
-    result = ins.InitProcessInfo(request);
-    ASSERT_EQ(result, 0);
-
-    ins.process_ = nullptr;
-    bool ret = ins.InitKeyThread(request);
-    ASSERT_FALSE(ret);
-
-    ins.process_ = std::make_shared<DfxProcess>(request.pid, request.nsPid);
-    ret = ins.InitKeyThread(request);
-    ASSERT_TRUE(ret);
-    ins.process_->keyThread_ = nullptr;
-    ret = ins.InitKeyThread(request);
-    ASSERT_TRUE(ret);
+    request.pid = -1;
+    request.nsPid = -1;
+    ASSERT_FALSE(ins.InitDfxProcess(request));
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: end.";
 }
 
 /**
- * @tc.name: DfxProcessDumpTest020
- * @tc.desc: Testing InitProcessInfo Function
+ * @tc.name: DfxProcessDumpTest018
+ * @tc.desc: Testing InitDfxProcess Function
  * @tc.type: FUNC
  */
-HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest020, TestSize.Level2)
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: start.";
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest018: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
-    ProcessDumpRequest request{};
-    ins.isCrash_ = true;
-    request.siginfo.si_signo = SIGLEAK_STACK;
-    int result = ins.InitPrintThread(request);
+    ProcessDumpRequest request{
+        .type = ProcessDumpType::DUMP_TYPE_MEM_LEAK,
+    };
+    int result = ins.InitBufferWriter(request);
     ASSERT_NE(result, -1);
-    ins.isCrash_ = true;
-    request.siginfo.si_signo = CPP_CRASH;
-    result = ins.InitPrintThread(request);
+
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    result = ins.InitBufferWriter(request);
     ASSERT_NE(result, -1);
-    ins.isCrash_ = false;
-    request.siginfo.si_signo = SIGLEAK_STACK;
-    result = ins.InitPrintThread(request);
-    ASSERT_NE(result, -1);
-    ins.isCrash_ = false;
-    ins.bufferFd_ = -1;
-    request.siginfo.si_signo = CPP_CRASH;
-    result = ins.InitPrintThread(request);
+
+    request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    result = ins.InitBufferWriter(request);
     ASSERT_EQ(result, -1);
 
-    result = ins.WriteDumpBuf(1, nullptr, 1);
-    ASSERT_EQ(result, -1);
-    ins.resFd_ = -1;
-    ins.WriteDumpRes(1, getpid());
-    ASSERT_EQ(ins.resFd_, -1);
-    GTEST_LOG_(INFO) << "DfxProcessDumpTest020: end.";
+    request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    ins.WriteDumpResIfNeed(request, 1);
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest018: end.";
 }
+
+#ifndef is_ohos_lite
+static pid_t CreateProcessCrashWithHitraceId(uint64_t& hitraceChainId)
+{
+    int pipeFd[2]; // 2 : pipe fd num
+    if (pipe(pipeFd) == -1) {
+        GTEST_LOG_(ERROR) << "Failed to create pipe.";
+        return 0;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Fail to fork new test process";
+        return 0;
+    } else if (pid == 0) {
+        close(pipeFd[0]);
+        HiTraceIdStruct hitraceId = HiTraceChainBegin("test", HITRACE_FLAG_DEFAULT);
+        uint64_t val = static_cast<uint64_t>(hitraceId.chainId & HITRACE_CHAIN_ID_MASK);
+        write(pipeFd[1], &val, sizeof(val));
+        close(pipeFd[1]);
+        raise(SIGSEGV);
+    }
+    close(pipeFd[1]);
+    read(pipeFd[0], &hitraceChainId, sizeof(hitraceChainId));
+    return pid;
+}
+
+/**
+ * @tc.name: DfxProcessDumpTest019
+ * @tc.desc: Testing get hitrace id
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest019, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest019: start.";
+    uint64_t hitraceChainId = 0;
+    pid_t testProcess = CreateProcessCrashWithHitraceId(hitraceChainId);
+    ASSERT_TRUE(testProcess > 0) << "Fail to fork test process";
+    GTEST_LOG_(INFO) << "Process pid: " << testProcess;
+    ASSERT_NE(hitraceChainId, 0) << "Fail to set process hitrace id";
+    std::regex reg(R"(cppcrash-test_processdump-0-\d{17}.log)");
+    const std::string folder = "/data/log/faultlog/faultlogger/";
+    auto filename = WaitCreateFile(folder, reg);
+    ASSERT_FALSE(filename.empty()) << "Fail to create crash file";
+    GTEST_LOG_(INFO) << "fileName: " << filename;
+    std::stringstream ss;
+    ss << std::hex << hitraceChainId;
+    std::string hexStr = ss.str();
+    GTEST_LOG_(INFO) << "hitrace id: " << hexStr;
+    std::string fileContext;
+    ASSERT_TRUE(LoadStringFromFile(filename, fileContext)) << "Get file context fail";
+    size_t pos = fileContext.rfind(hexStr);
+    ASSERT_TRUE(pos != std::string::npos) << "find no hitrace id in crash hilog";
+    GTEST_LOG_(INFO) << "hitrace pos: " << pos;
+    GTEST_LOG_(INFO) << "DfxProcessDumpTest019: end.";
+}
+#endif
 }

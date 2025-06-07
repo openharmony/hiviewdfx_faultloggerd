@@ -170,16 +170,15 @@ HWTEST_F(ArkTest, ArkTest006, TestSize.Level2)
     bool isSuccess = waitpid(pid, &status, 0) != -1;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        int exitCode = -1;
+        if (WIFEXITED(status)) {
+            exitCode = WEXITSTATUS(status);
+            printf("Exit status was %d\n", exitCode);
+        }
+        ASSERT_EQ(exitCode, 0);
+        GTEST_LOG_(INFO) << "ArkTest006: end.";
     }
-
-    int exitCode = -1;
-    if (WIFEXITED(status)) {
-        exitCode = WEXITSTATUS(status);
-        printf("Exit status was %d\n", exitCode);
-    }
-    ASSERT_EQ(exitCode, 0);
-    GTEST_LOG_(INFO) << "ArkTest006: end.";
 }
 
 /**

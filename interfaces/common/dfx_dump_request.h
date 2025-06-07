@@ -28,10 +28,12 @@ extern "C" {
  * @brief ProcessDump type
  */
 enum ProcessDumpType : int32_t {
-    /** dump process stack */
-    DUMP_TYPE_PROCESS,
-    /** dump thread stack */
-    DUMP_TYPE_THREAD,
+    DUMP_TYPE_CPP_CRASH,
+    DUMP_TYPE_DUMP_CATCH,
+    DUMP_TYPE_MEM_LEAK,
+    DUMP_TYPE_FDSAN,
+    DUMP_TYPE_JEMALLOC,
+    DUMP_TYPE_BADFD,
 };
 
 /**
@@ -54,6 +56,30 @@ typedef struct {
     char body[MAX_FATAL_MSG_SIZE];
 } Message;
 
+#ifndef is_ohos_lite
+typedef struct DumpHiTraceIdStruct {
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    uint64_t valid : 1;
+    uint64_t ver : 3;
+    uint64_t chainId : 60;
+
+    uint64_t flags : 12;
+    uint64_t spanId : 26;
+    uint64_t parentSpanId : 26;
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    uint64_t chainId : 60;
+    uint64_t ver : 3;
+    uint64_t valid : 1;
+
+    uint64_t parentSpanId : 26;
+    uint64_t spanId : 26;
+    uint64_t flags : 12;
+#else
+#error "ERROR: No BIG_LITTLE_ENDIAN defines."
+#endif
+} DumpHiTraceIdStruct;
+#endif
+
 /**
  * @brief ProcessDump request information
  * It is used to save and transfer the current process context from signalhandler to processdump,
@@ -65,7 +91,6 @@ struct ProcessDumpRequest {
     /** thread id */
     int32_t tid;
     /** asynchronous thread id */
-    int32_t recycleTid;
     /** process id */
     int32_t pid;
     /** namespace process id */
@@ -101,6 +126,10 @@ struct ProcessDumpRequest {
     /** whether processdump unwind crash success */
     intptr_t unwindResultAddr;
     uintptr_t crashObj;
+    uint64_t crashLogConfig;
+#ifndef is_ohos_lite
+    DumpHiTraceIdStruct hitraceId;
+#endif
 };
 
 static const int CRASH_BLOCK_EXIT_FLAG  = 0x13579BDF;

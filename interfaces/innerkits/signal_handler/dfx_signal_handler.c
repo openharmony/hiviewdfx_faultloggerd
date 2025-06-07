@@ -98,6 +98,7 @@ void __attribute__((constructor)) InitHandler(void)
 static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_key_t g_crashObjKey;
+static uint64_t g_crashLogConfig = 0;
 static bool g_crashObjInit = false;
 static BOOL g_hasInit = FALSE;
 static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
@@ -238,11 +239,30 @@ static bool IsDumpSignal(int signo)
 {
     return signo == SIGDUMP || signo == SIGLEAK_STACK;
 }
+static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
+{
+    if (signo == SIGDUMP) {
+        return DUMP_TYPE_DUMP_CATCH;
+    } else if (signo == SIGLEAK_STACK) {
+        switch (si->si_code) {
+            case SIGLEAK_STACK_FDSAN:
+                return DUMP_TYPE_FDSAN;
+            case SIGLEAK_STACK_JEMALLOC:
+                return DUMP_TYPE_JEMALLOC;
+            case SIGLEAK_STACK_BADFD:
+                return DUMP_TYPE_BADFD;
+            default:
+                return DUMP_TYPE_MEM_LEAK;
+        }
+    } else {
+        return DUMP_TYPE_CPP_CRASH;
+    }
+}
 
 static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
 {
     memset(&g_request, 0, sizeof(g_request));
-    g_request.type = signo;
+    g_request.type = GetDumpType(signo, si);
     g_request.pid = GetRealPid();
     g_request.nsPid = syscall(SYS_getpid);
     g_request.tid = syscall(SYS_gettid);
@@ -282,7 +302,7 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
         }
     }
     g_request.crashObj = (uintptr_t)pthread_getspecific(g_crashObjKey);
-
+    g_request.crashLogConfig = g_crashLogConfig;
     return ret;
 }
 
@@ -374,8 +394,8 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
             signo, g_request.pid, g_request.tid);
         return IsDumpSignal(signo);
     }
-    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), \
-        threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
+    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
+        "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
     DumpRequest(signo);
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
@@ -476,4 +496,36 @@ void DFX_ResetCrashObj(uintptr_t crashObj)
 #if defined __LP64__
     pthread_setspecific(g_crashObjKey, (void*)(crashObj));
 #endif
+}
+
+int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
+{
+    if (!g_hasInit) {
+        errno = EPERM;
+        return -1;
+    }
+    if ((type == EXTEND_PRINT_PC_LR || type == SIMPLIFY_PRINT_MAPS) && value > 1) {
+        DFXLOGE("invalid value %{public}u", value);
+        errno = EINVAL;
+        return -1;
+    }
+    const uint64_t extendPrintPcLrMask = 0xfffffffffffffffe;
+    const int moveBit = 32;
+    const uint64_t cutOffLogMask = 0xffffffff;
+    const uint64_t simplifyVmaMask = 0xfffffffffffffffd;
+    switch (type) {
+        case EXTEND_PRINT_PC_LR:
+            g_crashLogConfig = (g_crashLogConfig & extendPrintPcLrMask) + value;
+            break;
+        case CUT_OFF_LOG_FILE:
+            g_crashLogConfig = ((uint64_t)value << moveBit) + (g_crashLogConfig & cutOffLogMask);
+            break;
+        case SIMPLIFY_PRINT_MAPS:
+            g_crashLogConfig = (g_crashLogConfig & simplifyVmaMask) + (value << 1);
+            break;
+        default:
+            errno = EINVAL;
+            return -1;
+    }
+    return 0;
 }

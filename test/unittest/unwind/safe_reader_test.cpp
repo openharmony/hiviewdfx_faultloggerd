@@ -43,7 +43,7 @@ HWTEST(SafeReaderTest, SafeReaderTest001, TestSize.Level2)
 {
     /**
      * @tc.steps: step1. read maps.
-     * @tc.expected: read sucess
+     * @tc.expected: read success
      */
     auto maps = DfxMaps::Create(getpid(), false);
     uintptr_t bottom;
@@ -57,7 +57,7 @@ HWTEST(SafeReaderTest, SafeReaderTest001, TestSize.Level2)
 
     /**
      * @tc.steps: step2. read stack form bottom.
-     * @tc.expected: read sucess
+     * @tc.expected: read success
      */
     uintptr_t stackSize = top - bottom;
     auto ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
@@ -66,7 +66,7 @@ HWTEST(SafeReaderTest, SafeReaderTest001, TestSize.Level2)
 
     /**
      * @tc.steps: step3. read stack form top - 2048.
-     * @tc.expected: read sucess
+     * @tc.expected: read success
      */
     constexpr uintptr_t offset = 2048;
     ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(stackBuf.data()), stackBuf.size(),
@@ -95,7 +95,7 @@ HWTEST(SafeReaderTest, SafeReaderTest002, TestSize.Level2)
 {
     /**
      * @tc.steps: step1. read data from /dev/random.
-     * @tc.expected: read sucess
+     * @tc.expected: read success
      */
     SmartFd fd(open("/dev/random", O_RDONLY));
     std::vector<uint8_t> srcBuf;
@@ -110,7 +110,7 @@ HWTEST(SafeReaderTest, SafeReaderTest002, TestSize.Level2)
 
     /**
      * @tc.steps: step2. test CopyReadbaleBufSafe.
-     * @tc.expected: copy sucess
+     * @tc.expected: copy success
      */
     SafeReader reader;
     ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(destBuf.data()), destBuf.size(),
@@ -132,7 +132,7 @@ HWTEST(SafeReaderTest, SafeReaderTest002, TestSize.Level2)
 
     /**
      * @tc.steps: step5. test CopyReadbaleBufSafe.
-     * @tc.expected: copy sucess
+     * @tc.expected: copy success
      */
     ret = reader.CopyReadbaleBufSafe(reinterpret_cast<uintptr_t>(destBuf.data()), destBuf.size(),
                                       reinterpret_cast<uintptr_t>(srcBuf.data()), srcBuf.size());

@@ -43,10 +43,11 @@
 #endif
 #include "dfx_log.h"
 
-#ifdef LOG_DOMAIN
+// defile Domain ID
+#ifndef LOG_DOMAIN
 #undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D11
 #endif
+#define LOG_DOMAIN 0xD002D11
 
 #ifdef LOG_TAG
 #undef LOG_TAG
@@ -151,20 +152,6 @@ bool ReadDirFiles(const std::string& path, std::vector<std::string>& files)
     return !files.empty();
 }
 
-bool VerifyFilePath(const std::string& filePath, const std::vector<const std::string>& validPaths)
-{
-    if (validPaths.empty()) {
-        return true;
-    }
-
-    for (const auto &validPath : validPaths) {
-        if (filePath.find(validPath) == 0) {
-            return true;
-        }
-    }
-    return false;
-}
-
 void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid)
 {
     const int flagOffset = 63;
@@ -194,6 +181,17 @@ bool IsDeveloperMode()
     const char *const developerMode = "const.security.developermode.state";
     static bool isDeveloperMode = OHOS::system::GetParameter(developerMode, "") == "true";
     return isDeveloperMode;
+#else
+    return false;
+#endif
+}
+
+bool IsOversea()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+    const char *const globalRegion = "const.global.region";
+    static bool isOversea = OHOS::system::GetParameter(globalRegion, "CN") != "CN";
+    return isOversea;
 #else
     return false;
 #endif
@@ -231,7 +229,7 @@ bool ReadFdToString(int fd, std::string& content)
 void CloseFd(int &fd)
 {
     if (fd > 0) {
-        close(fd);
+        fdsan_close_with_tag(fd, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
         fd = -1;
     }
 }

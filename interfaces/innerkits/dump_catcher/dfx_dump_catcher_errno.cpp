@@ -40,12 +40,16 @@ const DumpCatchErrInfo ERROR_CODE_MAPS[] = {
     { DUMPCATCH_TIMEOUT_KERNEL_FROZEN, "target process has been frozen in kernel" },
     { DUMPCATCH_TIMEOUT_PROCESS_KILLED, "target process has been killed during dumping" },
     { DUMPCATCH_TIMEOUT_DUMP_SLOW, "failed to fully dump due to timeout" },
+    { DUMPCATCH_TIMEOUT_DUMP_IN_SLOWPERIOD, "in dump slow period and return kernel stack" },
     { DUMPCATCH_KERNELSTACK_ECREATE, "kernelstack fail due to create hstackval fail" },
     { DUMPCATCH_KERNELSTACK_EOPEN, "kernelstack fail due to open bbox fail" },
     { DUMPCATCH_KERNELSTACK_EIOCTL, "kernelstack fail due to ioctl fail" },
     { DUMPCATCH_KERNELSTACK_TIMEOUT, "kernelstack fail due to wait timeout" },
-    { DUMPCATCH_KERNELSTACK_OVER_LIMITL, "kernelstack fail due to over limit" },
+    { DUMPCATCH_KERNELSTACK_OVER_LIMIT, "kernelstack fail due to over limit" },
     { DUMPCATCH_KERNELSTACK_NONEED, "no need to dump kernelstack" },
+    { DUMPCATCH_DUMP_ESYMBOL_NO_PARSE, "no enough time to parse symbol" },
+    { DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT, "parse symbol timeout" },
+    { DUMPCATCH_DUMP_SELF_FAIL, "dump self fail" },
     { DUMPCATCH_UNKNOWN, "unknown reason" }
 };
 

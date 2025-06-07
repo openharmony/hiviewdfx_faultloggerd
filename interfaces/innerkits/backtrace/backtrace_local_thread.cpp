@@ -96,6 +96,12 @@ std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
         ReadThreadName(tid_, threadName);
         ss = "Tid:" + std::to_string(tid_) + ", Name:" + threadName + "\n";
     }
+    if (includeThreadInfo_) {
+        ThreadInfo info;
+        if (info.ParserThreadInfo(tid_)) {
+            ss += "ThreadInfo:" + info.ToString() + "\n";
+        }
+    }
     ss += Unwinder::GetFramesStr(frames_);
     return ss;
 }

@@ -1,0 +1,50 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+if (defined(ohos_lite)) {
+  shared_library("libstack_printer") {
+    # current shared library is unuseful in ohos_lite type
+  }
+} else {
+  config("stack_printer_config") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [ "include" ]
+  }
+
+  ohos_shared_library("libstack_printer") {
+    sources = [ "src/stack_printer.cpp" ]
+
+    public_configs = [ ":stack_printer_config" ]
+
+    deps = [
+      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    ]
+
+    external_deps = [ "c_utils:utils" ]
+
+    defines = []
+
+    innerapi_tags = [
+      "chipsetsdk_indirect",
+      "platformsdk_indirect",
+    ]
+
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+    version_script = "libstack_printer.map"
+  }
+}

@@ -192,16 +192,16 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest004, TestSize.Level2)
     std::ifstream snapshotFile(snapshotFilePath);
     if (snapshotFile.is_open()) {
         std::string content((std::istreambuf_iterator<char>(snapshotFile)), std::istreambuf_iterator<char>());
-        EXPECT_TRUE(content.find("Build info") != std::string::npos) << "KernelSnapshotTest003 Failed";
-        EXPECT_TRUE(content.find("Timestamp") != std::string::npos) << "KernelSnapshotTest003 Failed";
-        EXPECT_TRUE(content.find("Pid") != std::string::npos) << "KernelSnapshotTest003 Failed";
-        EXPECT_TRUE(content.find("Process name:") != std::string::npos) << "KernelSnapshotTest003 Failed";
-        EXPECT_TRUE(content.find("Reason:") != std::string::npos) << "KernelSnapshotTest003 Failed";
-        EXPECT_TRUE(content.find("#01") != std::string::npos) << "KernelSnapshotTest003 Failed";
-        EXPECT_TRUE(content.find("Registers:") != std::string::npos) << "KernelSnapshotTest003 Failed";
-        EXPECT_TRUE(content.find("Elfs:") != std::string::npos) << "KernelSnapshotTest003 Failed";
+        EXPECT_TRUE(content.find("Build info") != std::string::npos) << "KernelSnapshotTest004 Failed";
+        EXPECT_TRUE(content.find("Timestamp") != std::string::npos) << "KernelSnapshotTest004 Failed";
+        EXPECT_TRUE(content.find("Pid") != std::string::npos) << "KernelSnapshotTest004 Failed";
+        EXPECT_TRUE(content.find("Process name:") != std::string::npos) << "KernelSnapshotTest004 Failed";
+        EXPECT_TRUE(content.find("Reason:") != std::string::npos) << "KernelSnapshotTest004 Failed";
+        EXPECT_TRUE(content.find("#01") != std::string::npos) << "KernelSnapshotTest004 Failed";
+        EXPECT_TRUE(content.find("Registers:") != std::string::npos) << "KernelSnapshotTest004 Failed";
+        EXPECT_TRUE(content.find("Elfs:") != std::string::npos) << "KernelSnapshotTest004 Failed";
     } else {
-        EXPECT_TRUE(false) << "KernelSnapshotTest003 Failed";
+        EXPECT_TRUE(false) << "KernelSnapshotTest004 Failed";
     }
 
     std::string recoverProcessdump = "mv /system/bin/processdump.bak /system/bin/processdump";
@@ -386,7 +386,7 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest021, TestSize.Level2)
         }
         file.close();
     } else {
-        EXPECT_EQ(true, false) << "Failed to open file: " << KERNEL_SNAPSHOT_EXECPTION_FILE;
+        FAIL() << "Failed to open file: " << KERNEL_SNAPSHOT_EXECPTION_FILE;
     }
 
     size_t index = 0;

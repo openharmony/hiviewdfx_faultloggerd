@@ -61,20 +61,5 @@ HWTEST_F(ParamTest, TraceTest001, TestSize.Level0)
     ASSERT_EQ(name, nullptr);
     GTEST_LOG_(INFO) << "TraceTest001: end.";
 }
-
-/**
- * @tc.name: DfxutilTest001
- * @tc.desc: test TrimAndDupStr functions
- * @tc.type: FUNC
- */
-HWTEST_F(ParamTest, DfxutilTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxutilTest001: start.";
-    std::string filePath = "";
-    std::vector<const std::string> validPaths;
-    bool ret = VerifyFilePath(filePath, validPaths);
-    ASSERT_EQ(ret, true);
-    GTEST_LOG_(INFO) << "DfxutilTest001: end.";
-}
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -36,6 +36,22 @@ public:
 };
 
 namespace {
+#if defined(__aarch64__)
+constexpr int VREGS_ARRAY_LEN = 32;
+
+struct Aarch64CtxHead {
+    uint32_t magic;
+    uint32_t size;
+};
+
+struct Aarch64FpsimdContext {
+    struct Aarch64CtxHead head;
+    uint32_t fpsr;
+    uint32_t fpcr;
+    __uint128_t vregs[VREGS_ARRAY_LEN];
+};
+#endif
+
 /**
  * @tc.name: DfxRegsTest001
  * @tc.desc: test DfxRegs SetRegsData & GetRegsData functions
@@ -149,12 +165,18 @@ HWTEST_F(DfxRegsTest, DfxRegsTest003, TestSize.Level2)
     context.uc_mcontext.arm_sp = 13; // 13 : the 14st register of arm
     context.uc_mcontext.arm_lr = 14; // 14 : the 15st register of arm
     context.uc_mcontext.arm_pc = 15; // 15 : the 16st register of arm
+    context.uc_mcontext.arm_cpsr = 16; // 16 : the 17st register of arm
 #elif defined(__aarch64__)
     for (int i = 0; i < 31; i++) {
         context.uc_mcontext.regs[i] = i;
     }
     context.uc_mcontext.sp = 31; // 31 : the 32st register of aarch64
     context.uc_mcontext.pc = 32; // 32 : the 33st register of aarch64
+    context.uc_mcontext.pstate = 33;
+    uint8_t* pMctxRes = reinterpret_cast<uint8_t*>(const_cast<long double*>(&context.uc_mcontext.__reserved[0]));
+    uintptr_t* pEsr = reinterpret_cast<uintptr_t*>(pMctxRes + sizeof(Aarch64FpsimdContext) +
+        sizeof(Aarch64CtxHead));
+    *pEsr = 34;
 #elif defined(__x86_64__)
     context.uc_mcontext.gregs[REG_RAX] = 0; // 0 : the 1st register of x86_64
     context.uc_mcontext.gregs[REG_RDX] = 1; // 1 : the 2st register of x86_64

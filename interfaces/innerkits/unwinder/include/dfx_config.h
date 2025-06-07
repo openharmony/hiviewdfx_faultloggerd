@@ -26,9 +26,10 @@ struct DfxConfigInfo {
     bool displayMaps = true;
     bool displayFaultStack = true;
     bool dumpOtherThreads = true;
-    unsigned int lowAddressStep = 16;
+    unsigned int lowAddressStep = 32;
     unsigned int highAddressStep = 512;
     unsigned int maxFrameNums = 256;
+    unsigned int reservedParseSymbolTime = 100;
 };
 
 class DfxConfig {

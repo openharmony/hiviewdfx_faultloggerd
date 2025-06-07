@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef KERNEL_SNAPSHOT_OBSERVER_IMPL_H
-#define KERNEL_SNAPSHOT_OBSERVER_IMPL_H
+#ifndef KERNEL_SNAPSHOT_PROCESSOR_IMPL_H
+#define KERNEL_SNAPSHOT_PROCESSOR_IMPL_H
 
 #include "i_kernel_snapshot_processor.h"
 

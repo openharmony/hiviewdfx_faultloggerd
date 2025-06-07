@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,63 +23,53 @@
 #include <string>
 #include <thread>
 
-#include "cppcrash_reporter.h"
+#include "reporter.h"
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
+#include "dump_info.h"
 #include "nocopyable.h"
 #include "unwinder.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+enum DumpType  {
+    THREAD_STATUS_INVALID = -1,
+    THREAD_STATUS_INIT = 0,
+    THREAD_STATUS_ATTACHED = 1
+};
 class ProcessDumper final {
 public:
     static ProcessDumper &GetInstance();
-    ~ProcessDumper() = default;
-
     void Dump();
-    void WriteDumpRes(int32_t res, pid_t pid);
-    bool IsCrash() const;
 
 private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
-    static int WriteDumpBuf(int fd, const char* buf, const int len);
-    int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
-    static void RemoveFileIfNeed();
     int DumpProcess(ProcessDumpRequest& request);
-    bool InitKeyThread(ProcessDumpRequest& request);
-    int InitPrintThread(const ProcessDumpRequest& request);
-    int InitProcessInfo(ProcessDumpRequest& request);
-    bool InitUnwinder(const ProcessDumpRequest& request, pid_t &vmPid, int &dumpRes);
-    void InitRegs(const ProcessDumpRequest& request, int &dumpRes);
-    bool Unwind(const ProcessDumpRequest& request, int &dumpRes, pid_t vmPid);
-    static int GetLogTypeByRequest(const ProcessDumpRequest &request);
-    void ReportSigDumpStats(const ProcessDumpRequest& request) const;
-    void ReportCrashInfo(const std::string& jsonInfo, const ProcessDumpRequest &request);
+    int32_t ReadRequestAndCheck(ProcessDumpRequest& request);
+    int InitBufferWriter(const ProcessDumpRequest& request);
+    bool InitDfxProcess(ProcessDumpRequest& request);
+    bool InitUnwinder(const ProcessDumpRequest& request, int &dumpRes);
+    int GeFaultloggerdRequestType(const ProcessDumpRequest &request);
+    void ReportSigDumpStats(const ProcessDumpRequest& request, uint64_t startTime, uint64_t finishTime) const;
     void UnwindWriteJit(const ProcessDumpRequest &request);
-    void Report(const ProcessDumpRequest& request, std::string &jsonInfo);
-    void ReadFdTable(const ProcessDumpRequest &request);
-    static std::string ReadStringByPtrace(pid_t tid, uintptr_t addr, size_t maxLen = DEFAULT_MAX_STRING_LEN);
-    void UpdateFatalMessageWhenDebugSignal(const ProcessDumpRequest& request, pid_t vmPid);
-    std::string ReadCrashObjString(pid_t tid, uintptr_t addr) const;
-    std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length) const;
-    void GetCrashObj(const ProcessDumpRequest& request);
-    void ReportAddrSanitizer(const ProcessDumpRequest &request, std::string &jsonInfo);
-    void UnwindFinish(const ProcessDumpRequest& request, pid_t vmPid);
+    void FormatJsonInfoIfNeed(const ProcessDumpRequest& request);
+    void UpdateConfigByRequest(const ProcessDumpRequest &request);
+    void WriteDumpResIfNeed(const ProcessDumpRequest& request, int32_t resDump);
+    void PrintDumpInfo(const ProcessDumpRequest& request, int& dumpRes);
+    int ParseSymbols(const ProcessDumpRequest& request, std::shared_ptr<DumpInfo> threadDumpInfo);
+    std::vector<std::string> FindDumpInfoByType(const ProcessDumpType& dumpType);
+    int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
+    void RemoveFileIfNeed(const std::string& dirPath) const;
 
 private:
+    void SetProcessdumpTimeout(siginfo_t &si);
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<Unwinder> unwinder_ = nullptr;
 
-    bool isCrash_ = false;
-    bool isJsonDump_ = false;
-    int32_t resFd_ = -1;
-    int32_t bufferFd_ = -1;
-    int32_t resDump_ = 0;
-
-    uint64_t startTime_ = 0;
-    uint64_t finishTime_ = 0;
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
+    bool isJsonDump_ = false;
+    uint64_t expectedDumpFinishTime_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

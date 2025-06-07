@@ -130,6 +130,10 @@ public:
     {
         enableFillFrames_ = enableFillFrames;
     }
+    inline void EnableParseNativeSymbol(bool enableParseNativeSymbol)
+    {
+        enableParseNativeSymbol_ = enableParseNativeSymbol;
+    }
     inline void IgnoreMixstack(bool ignoreMixstack)
     {
         ignoreMixstack_ = ignoreMixstack;
@@ -183,7 +187,8 @@ public:
         return pcs_;
     }
     void FillFrames(std::vector<DfxFrame>& frames);
-    void FillFrame(DfxFrame& frame);
+    void FillFrame(DfxFrame& frame, bool needSymParse = true);
+    void ParseFrameSymbol(DfxFrame& frame);
     void FillJsFrame(DfxFrame& frame);
     bool GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame& frame);
     void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
@@ -255,6 +260,7 @@ private:
 #endif
     bool enableCache_ = true;
     bool enableFillFrames_ = true;
+    bool enableParseNativeSymbol_ = true;
     bool enableLrFallback_ = true;
     bool enableFpCheckMapExec_ = false;
     bool isCrash_ = false;
@@ -313,6 +319,11 @@ void Unwinder::EnableFpCheckMapExec(bool enableFpCheckMapExec)
 void Unwinder::EnableFillFrames(bool enableFillFrames)
 {
     impl_->EnableFillFrames(enableFillFrames);
+}
+
+void Unwinder::EnableParseNativeSymbol(bool enableParseNativeSymbol)
+{
+    impl_->EnableParseNativeSymbol(enableParseNativeSymbol);
 }
 
 void Unwinder::IgnoreMixstack(bool ignoreMixstack)
@@ -416,9 +427,14 @@ void Unwinder::FillFrames(std::vector<DfxFrame>& frames)
     impl_->FillFrames(frames);
 }
 
-void Unwinder::FillFrame(DfxFrame& frame)
+void Unwinder::FillFrame(DfxFrame& frame, bool needSymParse)
 {
-    impl_->FillFrame(frame);
+    impl_->FillFrame(frame, needSymParse);
+}
+
+void Unwinder::ParseFrameSymbol(DfxFrame& frame)
+{
+    impl_->ParseFrameSymbol(frame);
 }
 
 void Unwinder::FillJsFrame(DfxFrame& frame)
@@ -1187,11 +1203,21 @@ void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
     }
     auto it = frames.begin();
     while (it != frames.end()) {
-        if (dl_iterate_phdr(Unwinder::Impl::DlPhdrCallback, &(*it)) != 1) {
+        it->pc = StripPac(it->pc, 0);
+        Dl_info symInfo;
+        if (dladdr(reinterpret_cast<void*>(static_cast<uintptr_t>(it->pc)), &symInfo) == 0) {
             // clean up frames after first invalid frame
             frames.erase(it, frames.end());
             break;
         }
+        it->relPc = it->pc - reinterpret_cast<uintptr_t>(symInfo.dli_fbase);
+        it->mapName = symInfo.dli_fname;
+        if (symInfo.dli_sname == nullptr || symInfo.dli_saddr == nullptr) {
+            it++;
+            continue;
+        }
+        it->funcName = DfxSymbols::Demangle(symInfo.dli_sname);
+        it->funcOffset = it->pc - reinterpret_cast<uintptr_t>(symInfo.dli_saddr);
         it++;
     }
 }
@@ -1205,24 +1231,16 @@ void Unwinder::Impl::FillFrames(std::vector<DfxFrame>& frames)
             FillJsFrame(frame);
 #endif
         } else {
-            FillFrame(frame);
+            FillFrame(frame, enableParseNativeSymbol_);
         }
     }
 }
 
-void Unwinder::Impl::FillFrame(DfxFrame& frame)
+void Unwinder::Impl::ParseFrameSymbol(DfxFrame& frame)
 {
     if (frame.map == nullptr) {
-        frame.relPc = frame.pc;
-        frame.mapName = "Not mapped";
-        DFXLOGU("Current frame is not mapped.");
         return;
     }
-    frame.mapName = frame.map->GetElfName();
-    DFX_TRACE_SCOPED_DLSYM("FillFrame:%s", frame.mapName.c_str());
-    frame.relPc = frame.map->GetRelPc(frame.pc);
-    frame.mapOffset = frame.map->offset;
-    DFXLOGU("mapName: %{public}s, mapOffset: %{public}" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
 #if defined(ENABLE_MIXSTACK)
@@ -1237,6 +1255,24 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame)
             frame.relPc, frame.mapName.c_str());
     }
     frame.buildId = elf->GetBuildId();
+}
+
+void Unwinder::Impl::FillFrame(DfxFrame& frame, bool needSymParse)
+{
+    if (frame.map == nullptr) {
+        frame.relPc = frame.pc;
+        frame.mapName = "Not mapped";
+        DFXLOGU("Current frame is not mapped.");
+        return;
+    }
+    frame.mapName = frame.map->GetElfName();
+    DFX_TRACE_SCOPED_DLSYM("FillFrame:%s", frame.mapName.c_str());
+    frame.relPc = frame.map->GetRelPc(frame.pc);
+    frame.mapOffset = frame.map->offset;
+    DFXLOGU("mapName: %{public}s, mapOffset: %{public}" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
+    if (needSymParse) {
+        ParseFrameSymbol(frame);
+    }
 }
 
 void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
@@ -1302,7 +1338,7 @@ bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, D
     }
 
     frame.map = map;
-    FillFrame(frame);
+    FillFrame(frame, enableParseNativeSymbol_);
     return true;
 }
 
@@ -1358,9 +1394,7 @@ void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<u
             DFXLOGE("Find map error");
         }
         frame.map = map;
-        if (enableFillFrames_) {
-            FillFrame(frame);
-        }
+        FillFrame(frame, enableParseNativeSymbol_);
         frames.emplace_back(frame);
     }
 }

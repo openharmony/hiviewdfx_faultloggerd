@@ -28,6 +28,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
         "$faultloggerd_path/interfaces/innerkits/procinfo/include",
+        "$faultloggerd_path/test/utils",
         "$hilog_lite_include_path",
       ]
 
@@ -37,6 +38,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
+        "$faultloggerd_path/test/utils:dfx_test_util",
         "$hilog_lite_deps_path",
       ]
     }
@@ -54,7 +56,10 @@ if (defined(ohos_lite)) {
   config("module_private_config") {
     visibility = [ ":*" ]
 
-    include_dirs = [ "$faultloggerd_interfaces_path/common" ]
+    include_dirs = [
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/test/utils",
+    ]
   }
 
   module_output_path = "faultloggerd/faultloggerd/procinfo"
@@ -68,6 +73,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_path/test/utils:dfx_test_util",
     ]
 
     external_deps = [

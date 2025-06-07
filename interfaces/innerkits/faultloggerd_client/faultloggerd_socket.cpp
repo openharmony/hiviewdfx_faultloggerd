@@ -47,6 +47,7 @@ static bool GetServerSocket(int32_t& sockFd, const char* name)
         DFXLOGE("%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
         return false;
     }
+    fdsan_exchange_owner_tag(sockFd, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
 
     std::string path = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(name);
     struct sockaddr_un server{0};
@@ -91,7 +92,7 @@ bool StartListen(int32_t& sockFd, const char* name, uint32_t listenCnt)
 
     if (listen(sockFd, listenCnt) < 0) {
         DFXLOGE("%{public}s :: Failed to listen socket, errno(%{public}d)", __func__, errno);
-        close(sockFd);
+        fdsan_close_with_tag(sockFd, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
         sockFd = -1;
         return false;
     }

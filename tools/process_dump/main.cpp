@@ -63,7 +63,6 @@ int main(int argc, char *argv[])
     bool isSignalHdlr = false;
 
     alarm(PROCESSDUMP_TIMEOUT);
-    DFXLOGI("Start alarm %{public}d seconds for processdump", PROCESSDUMP_TIMEOUT);
     setsid();
 
     if (!ParseParameters(argc, argv, isSignalHdlr)) {

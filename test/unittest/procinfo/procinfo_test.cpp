@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include "dfx_util.h"
+#include "dfx_test_util.h"
 #include "procinfo.h"
 
 using namespace OHOS::HiviewDFX;
@@ -133,4 +134,28 @@ HWTEST_F(ProcinfoTest, ProcinfoTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << result;
     ASSERT_TRUE(result.find("test_procinfo") != std::string::npos);
     GTEST_LOG_(INFO) << "ProcinfoTest005: end.";
+}
+
+/**
+ * @tc.name: GetTidByThreadName006
+ * @tc.desc: test GetWatchdogTidByPid
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcinfoTest, GetTidByThreadName006, TestSize.Level2)
+{
+    pid_t watchdogTid = GetTidByThreadName(-1, "OS_DfxWatchdog");
+    ASSERT_TRUE(watchdogTid == -1);
+
+    watchdogTid = GetTidByThreadName(getpid(), "OS_DfxWatchdog");
+    ASSERT_TRUE(watchdogTid == -1);
+
+    std::thread watchdogThread([] {
+        pthread_setname_np(pthread_self(), "OS_DfxWatchdog");
+        std::this_thread::sleep_for(std::chrono::seconds(2)); // 2 : sleep for 2 seconds
+    });
+    usleep(5000); // 5 : sleep for 5 milliseconds
+    watchdogTid = GetTidByThreadName(getpid(), "OS_DfxWatchdog");
+    ASSERT_TRUE(watchdogTid != -1);
+
+    watchdogThread.join();
 }

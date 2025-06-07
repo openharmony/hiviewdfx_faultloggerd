@@ -54,6 +54,8 @@ std::string KernelSnapshotManager::ReadKernelSnapshot()
         DFXLOGE("open snapshot filed %{public}d", errno);
         return "";
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(snapshotFd, 0, ownerTag);
 
     char buffer[BUFFER_LEN] = {0};
     std::string snapshotCont;
@@ -61,14 +63,14 @@ std::string KernelSnapshotManager::ReadKernelSnapshot()
     do {
         ret = read(snapshotFd, buffer, BUFFER_LEN - 1);
         if (ret > 0) {
-            snapshotCont += buffer;
+            snapshotCont.append(buffer, static_cast<size_t>(ret));
         }
         if (ret < 0) {
             DFXLOGE("read snapshot filed %{public}d", errno);
         }
     } while (ret > 0);
 
-    close(snapshotFd);
+    fdsan_close_with_tag(snapshotFd, ownerTag);
     return snapshotCont;
 }
 

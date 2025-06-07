@@ -55,7 +55,7 @@ std::shared_ptr<DfxElf> MiniDebugInfoFactory::Create()
     std::vector<uint8_t> miniDebugInfoData;
     if (!XzDecompress(reinterpret_cast<uint8_t *>(gnuDebugDataHdr_.address),
         gnuDebugDataHdr_.size, miniDebugInfoData)) {
-        DFXLOGE("Failed to decompressed .gnu_debugdata seciton.");
+        DFXLOGU("Failed to decompressed .gnu_debugdata seciton.");
         return nullptr;
     }
     // miniDebugInfoData store the decompressed bytes.
@@ -151,6 +151,8 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
         DFXLOGE("Failed to open file: %{public}s, errno(%{public}d)", filePath_.c_str(), errno);
         return regularElf;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(fd, 0, ownerTag);
     do {
         auto size = static_cast<size_t>(GetFileSize(fd));
         auto mMap = std::make_shared<DfxMmap>();
@@ -160,7 +162,7 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
         }
         regularElf->SetMmap(mMap);
     } while (false);
-    close(fd);
+    fdsan_close_with_tag(fd, ownerTag);
     return regularElf;
 }
 
@@ -203,15 +205,18 @@ std::shared_ptr<DfxElf> CompressHapElfFactory::Create()
         DFXLOGE("current hap map item or prev map item , maybe pc is wrong?");
         return nullptr;
     }
-    if (!StartsWith(filePath_, "/proc") || !EndsWith(filePath_, ".hap")) {
-        DFXLOGD("Illegal file path, please check file: %{public}s", filePath_.c_str());
+    std::string realPath = filePath_;
+    if (!RealPath(filePath_, realPath) || !EndsWith(realPath, ".hap") || !StartsWith(realPath, "/proc")) {
+        DFXLOGE("Illegal file path, please check file: %{public}s", realPath.c_str());
         return nullptr;
     }
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(filePath_.c_str(), O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY));
     if (fd < 0) {
         DFXLOGE("Failed to open hap file, errno(%{public}d)", errno);
         return nullptr;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(fd, 0, ownerTag);
     std::shared_ptr<DfxElf> compressHapElf = nullptr;
     do {
         size_t elfSize = 0;
@@ -232,7 +237,7 @@ std::shared_ptr<DfxElf> CompressHapElfFactory::Create()
             break;
         }
     } while (false);
-    close(fd);
+    fdsan_close_with_tag(fd, ownerTag);
     return compressHapElf;
 }
 

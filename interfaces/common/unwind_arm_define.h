@@ -41,6 +41,7 @@ enum RegsEnumArm : uint16_t {
     REG_ARM_R13,
     REG_ARM_R14,
     REG_ARM_R15,
+    REG_ARM_CPSR,
     REG_ARM_LAST,
 
     REG_FP = REG_ARM_R11,

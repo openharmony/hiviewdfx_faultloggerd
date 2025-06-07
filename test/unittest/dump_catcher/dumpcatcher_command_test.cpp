@@ -113,24 +113,24 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest003, TestSize.Level2)
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
+    } else {
+        isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
+            GTEST_LOG_(ERROR) << "Error process comm";
+        } else {
+            string testCommand = "dumpcatcher -p " + to_string(g_testPid);
+            string dumpRes = ExecuteCommands(testCommand);
+            GTEST_LOG_(INFO) << dumpRes;
+            string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
+            log[0] = log[0] + to_string(g_testPid);
+            log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
+            int len = sizeof(log) / sizeof(log[0]);
+            int count = GetKeywordsNum(dumpRes, log, len);
+            EXPECT_EQ(count, len) << "DumpCatcherCommandTest003 Failed";
+            GTEST_LOG_(INFO) << "DumpCatcherCommandTest003: end.";
+        }
     }
-    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
-    if (!isSuccess) {
-        ASSERT_FALSE(isSuccess);
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    string testCommand = "dumpcatcher -p " + to_string(g_testPid);
-    string dumpRes = ExecuteCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(g_testPid);
-    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
-    int len = sizeof(log) / sizeof(log[0]);
-    int count = GetKeywordsNum(dumpRes, log, len);
-    EXPECT_EQ(count, len) << "DumpCatcherCommandTest003 Failed";
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest003: end.";
 }
 
 /**
@@ -145,24 +145,24 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest004, TestSize.Level2)
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
+    } else {
+        isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
+            GTEST_LOG_(ERROR) << "Error process comm";
+        } else {
+            string testCommand = "dumpcatcher -p " + to_string(g_testPid) + " -t " + to_string(g_testPid);
+            string dumpRes = ExecuteCommands(testCommand);
+            GTEST_LOG_(INFO) << dumpRes;
+            string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
+            log[0] = log[0] + to_string(g_testPid);
+            log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
+            int len = sizeof(log) / sizeof(log[0]);
+            int count = GetKeywordsNum(dumpRes, log, len);
+            EXPECT_EQ(count, len) << "DumpCatcherCommandTest004 Failed";
+            GTEST_LOG_(INFO) << "DumpCatcherCommandTest004: end.";
+        }
     }
-    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
-    if (!isSuccess) {
-        ASSERT_FALSE(isSuccess);
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    string testCommand = "dumpcatcher -p " + to_string(g_testPid) + " -t " + to_string(g_testPid);
-    string dumpRes = ExecuteCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(g_testPid);
-    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
-    int len = sizeof(log) / sizeof(log[0]);
-    int count = GetKeywordsNum(dumpRes, log, len);
-    EXPECT_EQ(count, len) << "DumpCatcherCommandTest004 Failed";
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest004: end.";
 }
 
 /**
@@ -177,24 +177,24 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest005, TestSize.Level2)
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
         GTEST_LOG_(ERROR) << "Failed to launch target hap.";
-        return;
+    } else {
+        isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
+            GTEST_LOG_(ERROR) << "Error process comm";
+        } else {
+            string testCommand = "dumpcatcher -p " + to_string(g_testPid);
+            string dumpRes = ExecuteCommands(testCommand);
+            GTEST_LOG_(INFO) << dumpRes;
+            string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
+            log[0] = log[0] + to_string(g_testPid);
+            log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
+            int len = sizeof(log) / sizeof(log[0]);
+            int count = GetKeywordsNum(dumpRes, log, len);
+            EXPECT_EQ(count, len) << "DumpCatcherCommandTest005 Failed";
+            GTEST_LOG_(INFO) << "DumpCatcherCommandTest005: end.";
+        }
     }
-    isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
-    if (!isSuccess) {
-        ASSERT_FALSE(isSuccess);
-        GTEST_LOG_(ERROR) << "Error process comm";
-        return;
-    }
-    string testCommand = "dumpcatcher -p " + to_string(g_testPid);
-    string dumpRes = ExecuteCommands(testCommand);
-    GTEST_LOG_(INFO) << dumpRes;
-    string log[] = {"Pid:", "Name:", "#00", "#01", "#02"};
-    log[0] = log[0] + to_string(g_testPid);
-    log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
-    int len = sizeof(log) / sizeof(log[0]);
-    int count = GetKeywordsNum(dumpRes, log, len);
-    EXPECT_EQ(count, len) << "DumpCatcherCommandTest005 Failed";
-    GTEST_LOG_(INFO) << "DumpCatcherCommandTest005: end.";
 }
 
 /**

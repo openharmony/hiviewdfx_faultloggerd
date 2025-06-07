@@ -145,6 +145,20 @@ __attribute__((noinline)) void Test001()
     Test002();
 }
 
+__attribute__((noinline)) void Test003()
+{
+    g_mutex.lock();
+    printf("Test003:%d\n", gettid());
+    std::thread backtraceThread(Test001);
+    sleep(1);
+    std::string stacktrace = GetProcessStacktrace();
+    g_mutex.unlock();
+    ASSERT_GT(stacktrace.size(), 0);
+    GTEST_LOG_(INFO) << stacktrace;
+    backtraceThread.join();
+    return;
+}
+
 __attribute__((noinline)) void TestMaskSigDumpLocalInner()
 {
     printf("TestMaskSigDumpLocalInner\n");
@@ -397,33 +411,34 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest011: start.";
     std::string res = ExecuteCommands("uname");
     if (res.find("Linux") != std::string::npos) {
-        return;
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        std::string kernelStack;
+        ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
+        DfxThreadStack threadStack;
+        ASSERT_TRUE(FormatThreadKernelStack(kernelStack, threadStack));
+        ASSERT_GT(threadStack.frames.size(), 0);
+        for (const auto& frame : threadStack.frames) {
+            auto line = DfxFrameFormatter::GetFrameStr(frame);
+            ASSERT_NE(line.find("#"), std::string::npos);
+            GTEST_LOG_(INFO) << line;
+        }
+        std::vector<DfxThreadStack> processStack;
+        ASSERT_TRUE(FormatProcessKernelStack(kernelStack, processStack));
+        for (const auto& stack : processStack) {
+            ASSERT_GT(stack.frames.size(), 0);
+        }
+        std::string formattedStack;
+        ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, false));
+        ASSERT_GT(formattedStack.size(), 0);
+        ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
+        ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
+    
+        ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, true));
+        ASSERT_TRUE(formattedStack.find("\"tid\":") != std::string::npos) << formattedStack;
+        ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
+        GTEST_LOG_(INFO) << "BacktraceLocalTest011: end.";
     }
-    std::string kernelStack;
-    ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
-    DfxThreadStack threadStack;
-    ASSERT_TRUE(FormatThreadKernelStack(kernelStack, threadStack));
-    ASSERT_GT(threadStack.frames.size(), 0);
-    for (const auto& frame : threadStack.frames) {
-        auto line = DfxFrameFormatter::GetFrameStr(frame);
-        ASSERT_NE(line.find("#"), std::string::npos);
-        GTEST_LOG_(INFO) << line;
-    }
-    std::vector<DfxThreadStack> processStack;
-    ASSERT_TRUE(FormatProcessKernelStack(kernelStack, processStack));
-    for (const auto& stack : processStack) {
-        ASSERT_GT(stack.frames.size(), 0);
-    }
-    std::string formattedStack;
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, false));
-    ASSERT_GT(formattedStack.size(), 0);
-    ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
-    ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
-
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, true));
-    ASSERT_TRUE(formattedStack.find("\"tid\":") != std::string::npos) << formattedStack;
-    ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
-    GTEST_LOG_(INFO) << "BacktraceLocalTest011: end.";
 }
 
 /**
@@ -628,29 +643,30 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest017, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest017: start.";
     std::string res = ExecuteCommands("uname");
     if (res.find("Linux") != std::string::npos) {
-        return;
-    }
-    pid_t pid = GetProcessPid(FOUNDATION_NAME);
-    std::vector<int> tids;
-    std::vector<int> nstids;
-    ASSERT_TRUE(GetTidsByPid(pid, tids, nstids));
-    std::string processKernelStackInfo;
-    for (const auto& tid : tids) {
-        std::string kernelStack;
-        ASSERT_EQ(DfxGetKernelStack(tid, kernelStack), 0);
-        processKernelStackInfo += kernelStack;
-    }
-    std::vector<DfxThreadStack> processStack;
-    ASSERT_TRUE(FormatProcessKernelStack(processKernelStackInfo, processStack));
-    for (const auto& threadStack : processStack) {
-        ASSERT_GT(threadStack.frames.size(), 0);
-        for (auto const& frame : threadStack.frames) {
-            auto line = DfxFrameFormatter::GetFrameStr(frame);
-            ASSERT_NE(line.find("#"), std::string::npos);
-            GTEST_LOG_(INFO) << line;
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        pid_t pid = GetProcessPid(FOUNDATION_NAME);
+        std::vector<int> tids;
+        std::vector<int> nstids;
+        ASSERT_TRUE(GetTidsByPid(pid, tids, nstids));
+        std::string processKernelStackInfo;
+        for (const auto& tid : tids) {
+            std::string kernelStack;
+            ASSERT_EQ(DfxGetKernelStack(tid, kernelStack), 0);
+            processKernelStackInfo += kernelStack;
         }
+        std::vector<DfxThreadStack> processStack;
+        ASSERT_TRUE(FormatProcessKernelStack(processKernelStackInfo, processStack));
+        for (const auto& threadStack : processStack) {
+            ASSERT_GT(threadStack.frames.size(), 0);
+            for (auto const& frame : threadStack.frames) {
+                auto line = DfxFrameFormatter::GetFrameStr(frame);
+                ASSERT_NE(line.find("#"), std::string::npos);
+                GTEST_LOG_(INFO) << line;
+            }
+        }
+        GTEST_LOG_(INFO) << "BacktraceLocalTest017: end.";
     }
-    GTEST_LOG_(INFO) << "BacktraceLocalTest017: end.";
 }
 
 /**
@@ -663,24 +679,38 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest018, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest018: start.";
     std::string res = ExecuteCommands("uname");
     if (res.find("Linux") != std::string::npos) {
-        return;
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        g_mutex.lock();
+        std::thread backtraceThread(TestMaskSigDumpLocal);
+        sleep(1);
+        if (g_tid <= 0) {
+            FAIL() << "Failed to create child thread.\n";
+        }
+        std::string str;
+        ASSERT_TRUE(GetBacktraceStringByTid(str, g_tid, 0, false)) << str;
+        ASSERT_TRUE(GetBacktraceStringByTidWithMix(str, g_tid, 0, false)) << str;
+        ASSERT_TRUE(!GetProcessStacktrace().empty());
+        g_mutex.unlock();
+        g_tid = 0;
+        if (backtraceThread.joinable()) {
+            backtraceThread.join();
+        }
+        GTEST_LOG_(INFO) << "BacktraceLocalTest018: end.";
     }
-    g_mutex.lock();
-    std::thread backtraceThread(TestMaskSigDumpLocal);
-    sleep(1);
-    if (g_tid <= 0) {
-        FAIL() << "Failed to create child thread.\n";
-    }
-    std::string str;
-    ASSERT_TRUE(GetBacktraceStringByTid(str, g_tid, 0, false)) << str;
-    ASSERT_TRUE(GetBacktraceStringByTidWithMix(str, g_tid, 0, false)) << str;
-    ASSERT_TRUE(!GetProcessStacktrace().empty());
-    g_mutex.unlock();
+}
+
+/**
+ * @tc.name: BacktraceLocalTest019
+ * @tc.desc: test get backtrace of current process
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest019, TestSize.Level2)
+{
+    std::thread backtraceThread(Test003);
+    backtraceThread.join();
+    ASSERT_GT(g_tid, 0) << "Failed to create child thread.\n";
     g_tid = 0;
-    if (backtraceThread.joinable()) {
-        backtraceThread.join();
-    }
-    GTEST_LOG_(INFO) << "BacktraceLocalTest018: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

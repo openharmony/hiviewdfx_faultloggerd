@@ -39,7 +39,7 @@ public:
 
     static FaultLoggerDaemon& GetInstance();
     int32_t StartServer();
-    EpollManager* GetEpollManager(EpollManagerType type);
+    static EpollManager& GetEpollManager(EpollManagerType type);
 private:
     FaultLoggerDaemon();
     ~FaultLoggerDaemon();

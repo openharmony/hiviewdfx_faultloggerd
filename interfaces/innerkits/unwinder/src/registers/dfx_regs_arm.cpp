@@ -64,6 +64,7 @@ void DfxRegsArm::SetFromUcontext(const ucontext_t& context)
     regsData_[REG_ARM_R13] = static_cast<uintptr_t>(context.uc_mcontext.arm_sp);
     regsData_[REG_ARM_R14] = static_cast<uintptr_t>(context.uc_mcontext.arm_lr);
     regsData_[REG_ARM_R15] = static_cast<uintptr_t>(context.uc_mcontext.arm_pc);
+    regsData_[REG_ARM_CPSR] = static_cast<uintptr_t>(context.uc_mcontext.arm_cpsr);
 }
 
 void DfxRegsArm::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
@@ -118,6 +119,7 @@ std::string DfxRegsArm::PrintRegs() const
     BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "fp:%08x ip:%08x sp:%08x lr:%08x pc:%08x\n", \
         regs[REG_ARM_R11], regs[REG_ARM_R12], regs[REG_ARM_R13], regs[REG_ARM_R14], regs[REG_ARM_R15]);
 
+    BufferPrintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "cpsr:%08x\n", regs[REG_ARM_CPSR]);
     std::string regString = StringPrintf("Registers:\n%s", buf);
     return regString;
 }

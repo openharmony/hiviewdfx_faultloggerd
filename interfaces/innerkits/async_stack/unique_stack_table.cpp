@@ -151,7 +151,7 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 }
 
 // todo add lock
-uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, uintptr_t* pcs, size_t nr)
+uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, const uintptr_t* pcs, size_t nr)
 {
     if (!Init()) {
         DFXLOGW("init Hashtable failed, fatal error!");

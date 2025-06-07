@@ -45,6 +45,7 @@ if (defined(ohos_lite)) {
       "$hilog_lite_include_path",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
+      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
     ]
 
     sources = faultloggerd_sources
@@ -61,6 +62,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog:dfx_hilog",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     external_deps = [ "hilog_lite:hilog_shared" ]
@@ -95,6 +97,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
       "$faultloggerd_path/interfaces/innerkits/signal_handler",
+      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
     ]
   }
 
@@ -161,6 +164,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/common/trace:dfx_trace",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     if (!is_asan) {
@@ -198,6 +202,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/common/trace:dfx_trace",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     ]
 
     external_deps = [

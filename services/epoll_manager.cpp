@@ -27,6 +27,11 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 
+#ifdef LOG_DOMAIN
+#undef LOG_DOMAIN
+#define LOG_DOMAIN 0xD002D11
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 
@@ -34,7 +39,12 @@ namespace {
 constexpr const char *const EPOLL_MANAGER = "EPOLL_MANAGER";
 }
 
-EpollListener::EpollListener(int32_t fd) : fd_(fd) {}
+EpollListener::EpollListener(int32_t fd, bool persist) : fd_(fd), persist_(persist) {}
+
+bool EpollListener::IsPersist() const
+{
+    return persist_;
+}
 
 int32_t EpollListener::GetFd() const
 {
@@ -55,7 +65,8 @@ bool EpollManager::AddEpollEvent(EpollListener& epollListener) const
     ev.events = EPOLLIN;
     ev.data.fd = epollListener.GetFd();
     if (epoll_ctl(eventFd_, EPOLL_CTL_ADD, ev.data.fd, &ev) < 0) {
-        DFXLOGE("%s :: Failed to epoll ctl add fd(%d), errno(%d)", EPOLL_MANAGER, epollListener.GetFd(), errno);
+        DFXLOGE("%s :: Failed to epoll ctl add fd %{public}d, errno %{public}d",
+            EPOLL_MANAGER, epollListener.GetFd(), errno);
         return false;
     }
     return true;
@@ -70,7 +81,7 @@ bool EpollManager::DelEpollEvent(int32_t fd) const
     ev.events = EPOLLIN;
     ev.data.fd = fd;
     if (epoll_ctl(eventFd_, EPOLL_CTL_DEL, fd, &ev) < 0) {
-        DFXLOGW("%s :: Failed to epoll ctl delete Fd(%d), errno(%d)", EPOLL_MANAGER, fd, errno);
+        DFXLOGW("%s :: Failed to epoll ctl delete Fd %{public}d, errno %{public}d", EPOLL_MANAGER, fd, errno);
         return false;
     }
     return true;
@@ -81,7 +92,8 @@ bool EpollManager::AddListener(std::unique_ptr<EpollListener> epollListener)
     if (!epollListener || epollListener->GetFd() < 0 || !AddEpollEvent(*epollListener)) {
         return false;
     }
-    listeners_.emplace_back(std::move(epollListener));
+    epollListener->IsPersist() ? listeners_.push_back(std::move(epollListener)) :
+        listeners_.push_front(std::move(epollListener));
     return true;
 }
 
@@ -112,25 +124,41 @@ bool EpollManager::Init(int maxPollEvent)
         DFXLOGE("%s :: Failed to create eventFd.", EPOLL_MANAGER);
         return false;
     }
+    fdsan_exchange_owner_tag(eventFd_, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
     return true;
 }
 
-void EpollManager::StartEpoll(int maxConnection)
+void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
 {
     std::vector<epoll_event> events(maxConnection);
     while (eventFd_ >= 0) {
-        int epollNum = OHOS_TEMP_FAILURE_RETRY(epoll_wait(eventFd_, events.data(), maxConnection, -1));
+        int32_t timeOut = (!listeners_.empty() && !listeners_.front()->IsPersist()) ? epollTimeoutInMilliseconds : -1;
+        int epollNum = OHOS_TEMP_FAILURE_RETRY(epoll_wait(eventFd_, events.data(), maxConnection, timeOut));
         std::lock_guard<std::mutex> lck(epollMutex_);
         if (epollNum < 0 || eventFd_ < 0) {
             continue;
         }
+        if (epollNum == 0) {
+            DFXLOGE("%{public}s :: epoll_wait timeout, clean up all temporary event listeners.", EPOLL_MANAGER);
+            listeners_.remove_if([](const std::unique_ptr<EpollListener>& epollLister) {
+                return !epollLister->IsPersist();
+            });
+            continue;
+        }
         for (int i = 0; i < epollNum; i++) {
             if (!(events[i].events & EPOLLIN)) {
+                DFXLOGE("%{public}s :: client fd %{public}d disconnected", EPOLL_MANAGER, events[i].data.fd);
+                RemoveListener(events[i].data.fd);
                 continue;
             }
-            auto listener = GetTargetListener(events[i].data.fd);
-            if (listener != nullptr) {
-                listener->OnEventPoll();
+            const auto listener = GetTargetListener(events[i].data.fd);
+            if (listener == nullptr) {
+                RemoveListener(events[i].data.fd);
+                continue;
+            }
+            listener->OnEventPoll();
+            if (!listener->IsPersist()) {
+                RemoveListener(events[i].data.fd);
             }
         }
     }
@@ -141,15 +169,14 @@ void EpollManager::StopEpoll()
     std::lock_guard<std::mutex> lck(epollMutex_);
     if (eventFd_ >= 0) {
         for (const auto& listener : listeners_) {
-            DelEpollEvent(listener->GetFd());
+            (void)DelEpollEvent(listener->GetFd());
         }
-        close(eventFd_);
+        fdsan_close_with_tag(eventFd_, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
         eventFd_ = -1;
     }
 }
 
-std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workFunc,
-    int32_t timeout, EpollManager& epollManager)
+std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workFunc, int32_t timeout)
 {
     if (timeout <= 0) {
         return nullptr;
@@ -166,11 +193,11 @@ std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workF
         DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
         return nullptr;
     }
-    return std::unique_ptr<DelayTask>(new (std::nothrow)DelayTask(workFunc, timefd, epollManager));
+    return std::unique_ptr<DelayTask>(new (std::nothrow)DelayTask(workFunc, timefd));
 }
 
-DelayTask::DelayTask(std::function<void()> workFunc, int32_t timeFd, EpollManager& epollManager)
-    : EpollListener(timeFd), work_(std::move(workFunc)), epollManager_(epollManager) {}
+DelayTask::DelayTask(std::function<void()> workFunc, int32_t timeFd)
+    : EpollListener(timeFd), work_(std::move(workFunc)) {}
 
 void DelayTask::OnEventPoll()
 {
@@ -181,7 +208,6 @@ void DelayTask::OnEventPoll()
     } else {
         work_();
     }
-    epollManager_.RemoveListener(GetFd());
 }
 }
 }

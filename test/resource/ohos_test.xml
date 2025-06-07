@@ -49,6 +49,8 @@
             <option name="push" value="testdata/syms_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/testmaps_32 -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/testmaps_64 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/stack_printer_testmaps64 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/stack_printer_testmaps32 -> /data/test/resource/testdata/" src="res"/>
         </preparer>
     </target>
     <target name="test_dwarf">
@@ -62,6 +64,17 @@
             <option name="push" value="testdata/kernel_snapshot_abort.txt -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/kernel_snapshot_execption.txt -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/kernel_snapshot_2_execption.txt -> /data/test/resource/testdata/" src="res"/>
+        </preparer>
+    </target>
+    <target name="test_common">
+        <preparer>
+            <option name="push" value="proc/ParseStatTest002/stat -> /data/test/resource/proc/ParseStatTest002/" src="res"/>
+            <option name="push" value="proc/ParseStatTest003/stat -> /data/test/resource/proc/ParseStatTest003/" src="res"/>
+            <option name="push" value="proc/ParseStatTest004/stat -> /data/test/resource/proc/ParseStatTest004/" src="res"/>
+            <option name="push" value="proc/ParseStatTest005/stat -> /data/test/resource/proc/ParseStatTest005/" src="res"/>
+            <option name="push" value="proc/ParseStatTest006/stat -> /data/test/resource/proc/ParseStatTest006/" src="res"/>
+            <option name="push" value="proc/ParseStatTest007/stat -> /data/test/resource/proc/ParseStatTest007/" src="res"/>
+            <option name="push" value="proc/ParseStatTest008/stat -> /data/test/resource/proc/ParseStatTest008/" src="res"/>
         </preparer>
     </target>
 </configuration>

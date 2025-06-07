@@ -26,6 +26,7 @@ group("faultloggerd_targets") {
       deps += [
         "interfaces/innerkits/backtrace:libbacktrace_local",
         "interfaces/innerkits/formatter:libjson_stack_formatter",
+        "interfaces/innerkits/stack_printer:libstack_printer",
         "interfaces/innerkits/unwinder:libunwinder",
         "interfaces/rust:faultloggerd_rust",
         "tools/dump_catcher:dumpcatcher",

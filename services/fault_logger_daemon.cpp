@@ -75,20 +75,21 @@ int32_t FaultLoggerDaemon::StartServer()
         pthread_setname_np(pthread_self(), "HelperServer");
         secondaryEpollManager_.StartEpoll(MAX_CONNECTION);
     }).detach();
-    mainEpollManager_.StartEpoll(MAX_CONNECTION);
+#ifdef FAULTLOGGERD_TEST
+    constexpr auto epollTimeoutInMilliseconds = 3 * 1000;
+#else
+    constexpr auto epollTimeoutInMilliseconds = 20 * 1000;
+#endif
+    mainEpollManager_.StartEpoll(MAX_CONNECTION, epollTimeoutInMilliseconds);
     return 0;
 }
 
-EpollManager* FaultLoggerDaemon::GetEpollManager(EpollManagerType type)
+EpollManager& FaultLoggerDaemon::GetEpollManager(EpollManagerType type)
 {
-    switch (type) {
-        case EpollManagerType::MAIN_SERVER:
-            return &mainEpollManager_;
-        case EpollManagerType::HELPER_SERVER:
-            return &secondaryEpollManager_;
-        default:
-            return nullptr;
+    if (type == EpollManagerType::MAIN_SERVER) {
+        return GetInstance().mainEpollManager_;
     }
+    return GetInstance().secondaryEpollManager_;
 }
 }
 }

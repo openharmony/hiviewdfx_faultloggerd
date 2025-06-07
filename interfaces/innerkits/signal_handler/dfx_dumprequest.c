@@ -65,6 +65,7 @@
 
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
+#define HILOG_SNAPSHOT_LINES 1000
 
 static struct ProcessDumpRequest *g_request = NULL;
 
@@ -99,6 +100,10 @@ static void CleanPipe(void);
 static bool InitPipe(void);
 static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value);
 static bool ReadProcessDumpGetRegsMsg(void);
+
+#ifndef is_ohos_lite
+DumpHiTraceIdStruct HiTraceChainGetId() __attribute__((weak));
+#endif
 
 static void ResetFlags(void)
 {
@@ -566,6 +571,16 @@ static int ProcessDump(int signo)
     if (!IsDumpSignal(signo)) {
         ResetFlags();
         SetKernelSnapshot(true);
+#ifndef is_ohos_lite
+        if (HiTraceChainGetId != NULL) {
+            DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
+            if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
+                         &hitraceChainId, sizeof(hitraceChainId)) != 0) {
+                DFXLOGE("memcpy hitrace fail");
+            }
+        }
+        HiLogRecordSnapshot(HILOG_SNAPSHOT_LINES, g_request->timeStamp);
+#endif
     }
 
     do {

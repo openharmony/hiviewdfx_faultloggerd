@@ -27,6 +27,8 @@
 #include "dfx_util.h"
 #include "fault_logger_daemon.h"
 #include "faultloggerd_socket.h"
+#include "procinfo.h"
+#include "proc_util.h"
 
 #ifndef is_ohos_lite
 #include "fault_logger_pipe.h"
@@ -38,7 +40,6 @@
 
 #include "string_printf.h"
 #include "temp_file_manager.h"
-#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -121,6 +122,10 @@ int32_t ExceptionReportService::OnRequest(const std::string& socketName, int32_t
         "HAPPEN_TIME", requestData.time,
         "ERROR_CODE", requestData.error,
         "ERROR_MSG", requestData.message);
+#ifdef FAULTLOGGERD_TEST
+    int32_t responseData = ResponseCode::REQUEST_SUCCESS;
+    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+#endif
     return ResponseCode::REQUEST_SUCCESS;
 }
 
@@ -216,12 +221,8 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
 
 void StatsService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
 {
-    EpollManager* epollManager = FaultLoggerDaemon::GetInstance().GetEpollManager(EpollManagerType::MAIN_SERVER);
-    if (epollManager == nullptr) {
-        return;
-    }
-    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime, *epollManager);
-    epollManager->AddListener(std::move(delayTask));
+    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime);
+    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
 }
 #endif
 
@@ -238,13 +239,15 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
     if (fd < 0) {
         return ResponseCode::ABNORMAL_SERVICE;
     }
+    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    fdsan_exchange_owner_tag(fd, 0, ownerTag);
 #ifndef is_ohos_lite
     TempFileManager::RecordFileCreation(requestData.type, requestData.pid);
 #endif
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     SendFileDescriptorToSocket(connectionFd, &fd, 1);
-    close(fd);
+    fdsan_close_with_tag(fd, ownerTag);
     return responseData;
 }
 
@@ -282,6 +285,48 @@ int32_t SdkDumpService::Filter(const std::string& socketName, const SdkDumpReque
     return ResponseCode::REQUEST_SUCCESS;
 }
 
+int32_t SdkDumpService::SendSigDumpToHapWatchdog(pid_t pid, siginfo_t& si)
+{
+    long uid = 0;
+    uint64_t sigBlk = 0;
+    if (!GetUidAndSigBlk(pid, uid, sigBlk)) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    };
+    constexpr long minUid = 10000; // 10000 : minimum uid for hap
+    if (uid < minUid || IsSigDumpMask(sigBlk)) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+
+    pid_t tid = GetTidByThreadName(pid, "OS_DfxWatchdog");
+    if (tid <= 0) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+#ifndef FAULTLOGGERD_TEST
+    if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
+        DFXLOGE("%{public}s :: Failed to SYS_rt_tgsigqueueinfo signal(%{public}d), errno(%{public}d).",
+            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+        return ResponseCode::SDK_DUMP_NOPROC;
+    }
+#endif
+    return ResponseCode::REQUEST_SUCCESS;
+}
+
+int32_t SdkDumpService::SendSigDumpToProcess(pid_t pid, siginfo_t& si)
+{
+    auto ret = SendSigDumpToHapWatchdog(pid, si);
+    if (ret == ResponseCode::SDK_DUMP_NOPROC || ret == ResponseCode::REQUEST_SUCCESS) {
+        return ret;
+    }
+#ifndef FAULTLOGGERD_TEST
+    if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
+        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
+            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+        return ResponseCode::SDK_DUMP_NOPROC;
+    }
+#endif
+    return ResponseCode::REQUEST_SUCCESS;
+}
+
 int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connectionFd,
     const SdkDumpRequestData& requestData)
 {
@@ -289,7 +334,6 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
     DFXLOGI("Receive dump request for pid:%{public}d tid:%{public}d.", requestData.pid, requestData.tid);
     struct ucred creds;
     if (!GetUcredByPeerCred(creds, connectionFd)) {
-        DFXLOGE("Sdk dump pid(%{public}d) request failed to get cred.", requestData.pid);
         return ResponseCode::REQUEST_REJECT;
     }
     int32_t responseCode = Filter(socketName, requestData, creds.uid);
@@ -344,14 +388,11 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
      * threads that does not currently have the signal blocked.
      */
     auto& faultLoggerPipe = FaultLoggerPipePair::CreateSdkDumpPipePair(requestData.pid, requestData.time);
-#ifndef FAULTLOGGERD_TEST
-    if (syscall(SYS_rt_sigqueueinfo, requestData.pid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+
+    if (auto ret = SendSigDumpToProcess(requestData.pid, si); ret != ResponseCode::REQUEST_SUCCESS) {
         FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
-        return ResponseCode::SDK_DUMP_NOPROC;
+        return ret;
     }
-#endif
 
     int32_t fds[PIPE_NUM_SZ] = {
         faultLoggerPipe.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ),

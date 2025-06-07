@@ -34,7 +34,6 @@ dfx_unwinder_sources = [
   "src/registers/dfx_regs_x86_64.cpp",
   "src/registers/getcontext_x86_64.S",
   "src/unwind_local/thread_context.cpp",
-  "src/utils/dfx_config.cpp",
   "src/utils/dfx_frame_formatter.cpp",
   "src/utils/dfx_instr_statistic.cpp",
   "src/utils/dfx_instructions.cpp",

@@ -16,7 +16,7 @@
 #ifndef EPOLL_MANAGER_H_
 #define EPOLL_MANAGER_H_
 
-#include <cstdint>
+#include <functional>
 #include <list>
 #include <memory>
 #include <mutex>
@@ -27,12 +27,14 @@ namespace OHOS {
 namespace HiviewDFX {
 class EpollListener {
 public:
-    explicit EpollListener(int32_t fd);
+    explicit EpollListener(int32_t fd, bool persist = false);
     virtual ~EpollListener() = default;
     virtual void OnEventPoll() = 0;
+    virtual bool IsPersist() const final;
     int32_t GetFd() const;
 private:
     const SmartFd fd_;
+    bool persist_{false};
 };
 
 class EpollManager {
@@ -44,7 +46,7 @@ public:
     EpollManager(EpollManager&&) noexcept = delete;
     EpollManager& operator=(EpollManager&&) noexcept = delete;
     bool Init(int maxPollEvent);
-    void StartEpoll(int maxConnection);
+    void StartEpoll(int maxConnection, int epollTimeoutInMilliseconds = -1);
     void StopEpoll();
     bool AddListener(std::unique_ptr<EpollListener> epollListener);
     bool RemoveListener(int32_t fd);
@@ -53,7 +55,7 @@ private:
     bool DelEpollEvent(int32_t fd) const;
     EpollListener* GetTargetListener(int32_t fd);
     std::list<std::unique_ptr<EpollListener>> listeners_;
-    int32_t eventFd_;
+    int32_t eventFd_{-1};
     std::mutex epollMutex_;
 };
 
@@ -61,13 +63,11 @@ class DelayTask : public EpollListener {
 public:
     DelayTask(const DelayTask&) = delete;
     DelayTask& operator=(const DelayTask&) = delete;
-    static std::unique_ptr<DelayTask> CreateInstance(std::function<void()> workFunc,
-        int32_t timeout, EpollManager& epollManager);
+    static std::unique_ptr<DelayTask> CreateInstance(std::function<void()> workFunc, int32_t timeout);
     void OnEventPoll() override;
 private:
-    DelayTask(std::function<void()> workFunc, int32_t timeFd, EpollManager& epollManager);
+    DelayTask(std::function<void()> workFunc, int32_t timeFd);
     std::function<void()> work_;
-    EpollManager& epollManager_;
 };
 }
 }

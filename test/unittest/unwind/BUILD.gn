@@ -140,7 +140,6 @@ ohos_unittest("test_exidx") {
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/registers/dfx_regs_arm.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/unwind_entry_parser/exidx_entry_parser.cpp",
-    "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_config.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_frame_formatter.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_instructions.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/utils/dfx_ptrace.cpp",

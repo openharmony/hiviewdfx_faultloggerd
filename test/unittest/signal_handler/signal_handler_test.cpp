@@ -66,6 +66,7 @@ extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func) __attribute__((we
 extern "C" void DFX_InstallSignalHandler(void) __attribute__((weak));
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len) __attribute__((weak));
+extern "C" int DFX_SetCrashLogConfig(uint8_t type, uint32_t value) __attribute__((weak));
 static bool CheckCallbackCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -639,58 +640,58 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
     bool isSuccess = DFX_SetAppRunningUniqueId != nullptr;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
-        return;
+    } else {
+        /**
+         * @tc.steps: step1.
+         *            case: appRunningId == nullptr, len= 0
+         * @tc.expected: ret == -1
+         * */
+        int ret = DFX_SetAppRunningUniqueId(nullptr, 0);
+        ASSERT_EQ(ret, -1);
+
+        /**
+         * @tc.steps: step2.
+         *            case: appRunningId == nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
+         * @tc.expected: ret == -1
+         * */
+        ret = DFX_SetAppRunningUniqueId(nullptr, MAX_APP_RUNNING_UNIQUE_ID_LEN);
+        ASSERT_EQ(ret, -1);
+
+        /**
+         * @tc.steps: step3.
+         *            case: appRunningId != nullptr, len= 0
+         * @tc.expected: ret == 0
+         * */
+        constexpr char testId1[] = "App running unique test id";
+        ret = DFX_SetAppRunningUniqueId(testId1, 0);
+        ASSERT_EQ(ret, 0);
+
+        /**
+         * @tc.steps: step4.
+         *            case: appRunningId != nullptr, len= strleng(appRunningId)
+         * @tc.expected: ret == 0
+         * */
+        ret = DFX_SetAppRunningUniqueId(testId1, strlen(testId1));
+        ASSERT_EQ(ret, 0);
+
+        /**
+         * @tc.steps: step5.
+         *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN + 1
+         * @tc.expected: ret == -1
+         * */
+        constexpr size_t testLen = MAX_APP_RUNNING_UNIQUE_ID_LEN + 1;
+        ret = DFX_SetAppRunningUniqueId(testId1, testLen);
+        ASSERT_EQ(ret, -1);
+
+        /**
+         * @tc.steps: step6.
+         *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
+         * @tc.expected: ret == 0
+         * */
+        constexpr char testId2[MAX_APP_RUNNING_UNIQUE_ID_LEN] = "App running unique test id";
+        ret = DFX_SetAppRunningUniqueId(testId2, MAX_APP_RUNNING_UNIQUE_ID_LEN);
+        ASSERT_EQ(ret, -1);
     }
-    /**
-     * @tc.steps: step1.
-     *            case: appRunningId == nullptr, len= 0
-     * @tc.expected: ret == -1
-     * */
-    int ret = DFX_SetAppRunningUniqueId(nullptr, 0);
-    ASSERT_EQ(ret, -1);
-
-    /**
-     * @tc.steps: step2.
-     *            case: appRunningId == nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
-     * @tc.expected: ret == -1
-     * */
-    ret = DFX_SetAppRunningUniqueId(nullptr, MAX_APP_RUNNING_UNIQUE_ID_LEN);
-    ASSERT_EQ(ret, -1);
-
-    /**
-     * @tc.steps: step3.
-     *            case: appRunningId != nullptr, len= 0
-     * @tc.expected: ret == 0
-     * */
-    constexpr char testId1[] = "App running unique test id";
-    ret = DFX_SetAppRunningUniqueId(testId1, 0);
-    ASSERT_EQ(ret, 0);
-
-    /**
-     * @tc.steps: step4.
-     *            case: appRunningId != nullptr, len= strleng(appRunningId)
-     * @tc.expected: ret == 0
-     * */
-    ret = DFX_SetAppRunningUniqueId(testId1, strlen(testId1));
-    ASSERT_EQ(ret, 0);
-
-    /**
-     * @tc.steps: step5.
-     *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN + 1
-     * @tc.expected: ret == -1
-     * */
-    constexpr size_t testLen = MAX_APP_RUNNING_UNIQUE_ID_LEN + 1;
-    ret = DFX_SetAppRunningUniqueId(testId1, testLen);
-    ASSERT_EQ(ret, -1);
-
-    /**
-     * @tc.steps: step6.
-     *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
-     * @tc.expected: ret == 0
-     * */
-    constexpr char testId2[MAX_APP_RUNNING_UNIQUE_ID_LEN] = "App running unique test id";
-    ret = DFX_SetAppRunningUniqueId(testId2, MAX_APP_RUNNING_UNIQUE_ID_LEN);
-    ASSERT_EQ(ret, -1);
 }
 
 /**
@@ -725,11 +726,10 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest017, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
+    } else {
+        bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_FDSAN);
+        ASSERT_TRUE(ret);
     }
-
-    bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_FDSAN);
-    ASSERT_TRUE(ret);
 }
 
 /**
@@ -743,11 +743,10 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest018, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
+    } else {
+        bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_JEMALLOC);
+        ASSERT_TRUE(ret);
     }
-
-    bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_JEMALLOC);
-    ASSERT_TRUE(ret);
 }
 
 /**
@@ -761,11 +760,10 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest019, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
+    } else {
+        bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_BADFD);
+        ASSERT_TRUE(ret);
     }
-
-    bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_BADFD);
-    ASSERT_TRUE(ret);
 }
 
 /**
@@ -779,26 +777,26 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest020, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
-    }
-    int interestedSiCodeList[] = {
-        SIGLEAK_STACK_FDSAN, SIGLEAK_STACK_JEMALLOC
-    };
-    for (int siCode : interestedSiCodeList) {
-        pid_t pid = fork();
-        if (pid < 0) {
-            GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-        } else if (pid == 0) {
-            if (DFX_InstallSignalHandler != nullptr) {
-                DFX_InstallSignalHandler();
+    } else {
+        int interestedSiCodeList[] = {
+            SIGLEAK_STACK_FDSAN, SIGLEAK_STACK_JEMALLOC
+        };
+        for (int siCode : interestedSiCodeList) {
+            pid_t pid = fork();
+            if (pid < 0) {
+                GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+            } else if (pid == 0) {
+                if (DFX_InstallSignalHandler != nullptr) {
+                    DFX_InstallSignalHandler();
+                }
+                constexpr int diffMs = -10000; // 10s
+                SaveDebugMessage(siCode, diffMs, "test123");
+                sleep(5); // 5: wait for stacktrace generating
+                _exit(0);
+            } else {
+                auto fileName = WaitCreateCrashFile("stacktrace", pid);
+                ASSERT_TRUE(fileName.empty());
             }
-            constexpr int diffMs = -10000; // 10s
-            SaveDebugMessage(siCode, diffMs, "test123");
-            sleep(5); // 5: wait for stacktrace generating
-            _exit(0);
-        } else {
-            auto fileName = WaitCreateCrashFile("stacktrace", pid);
-            ASSERT_TRUE(fileName.empty());
         }
     }
 }
@@ -814,23 +812,23 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest021, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
-    }
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        if (DFX_InstallSignalHandler != nullptr) {
-            DFX_InstallSignalHandler();
-        }
-        TestFdsan();
-        sleep(5); // 5: wait for stacktrace generating
-        _exit(0);
     } else {
-        constexpr int siCode = SIGLEAK_STACK_FDSAN;
-        auto fileName = WaitCreateCrashFile("stacktrace", pid);
-        bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
-        ASSERT_TRUE(ret);
+        pid_t pid = fork();
+        if (pid < 0) {
+            GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+        } else if (pid == 0) {
+            if (DFX_InstallSignalHandler != nullptr) {
+                DFX_InstallSignalHandler();
+            }
+            TestFdsan();
+            sleep(5); // 5: wait for stacktrace generating
+            _exit(0);
+        } else {
+            constexpr int siCode = SIGLEAK_STACK_FDSAN;
+            auto fileName = WaitCreateCrashFile("stacktrace", pid);
+            bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
+            ASSERT_TRUE(ret);
+        }
     }
 }
 
@@ -845,23 +843,23 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
-    }
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        if (DFX_InstallSignalHandler != nullptr) {
-            DFX_InstallSignalHandler();
-        }
-        SaveDebugMessage(SIGLEAK_STACK_BADFD, 0, nullptr);
-        sleep(5); // 5: wait for stacktrace generating
-        _exit(0);
     } else {
-        constexpr int siCode = SIGLEAK_STACK_BADFD;
-        auto fileName = WaitCreateCrashFile("stacktrace", pid);
-        bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
-        ASSERT_TRUE(ret);
+        pid_t pid = fork();
+        if (pid < 0) {
+            GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+        } else if (pid == 0) {
+            if (DFX_InstallSignalHandler != nullptr) {
+                DFX_InstallSignalHandler();
+            }
+            SaveDebugMessage(SIGLEAK_STACK_BADFD, 0, nullptr);
+            sleep(5); // 5: wait for stacktrace generating
+            _exit(0);
+        } else {
+            constexpr int siCode = SIGLEAK_STACK_BADFD;
+            auto fileName = WaitCreateCrashFile("stacktrace", pid);
+            bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
+            ASSERT_TRUE(ret);
+        }
     }
 }
 
@@ -876,20 +874,19 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest023, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
+    } else {
+        if (DFX_InstallSignalHandler != nullptr) {
+            DFX_InstallSignalHandler();
+        }
+    
+        constexpr int maxCnt = 3; // Run the test 3 times
+        std::thread testBadfdThread(TestBadfdThread, maxCnt);
+        for (int i = 0; i < maxCnt; i++) {
+            auto fileName = WaitCreateCrashFile("stacktrace", getpid());
+            ASSERT_TRUE(!fileName.empty());
+        }
+        testBadfdThread.join();
     }
-
-    if (DFX_InstallSignalHandler != nullptr) {
-        DFX_InstallSignalHandler();
-    }
-
-    constexpr int maxCnt = 3; // Run the test 3 times
-    std::thread testBadfdThread(TestBadfdThread, maxCnt);
-    for (int i = 0; i < maxCnt; i++) {
-        auto fileName = WaitCreateCrashFile("stacktrace", getpid());
-        ASSERT_TRUE(!fileName.empty());
-    }
-    testBadfdThread.join();
 }
 
 /**
@@ -903,78 +900,196 @@ HWTEST_F(SignalHandlerTest, FdTableTest001, TestSize.Level2)
     bool linuxKernel = res.find("Linux") != std::string::npos;
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
-        return;
-    }
-    /**
-     * @tc.steps: step1. open 128 fd files
-     *            case: open success
-     * @tc.expected: fp != nullptr
-     * */
-    constexpr int maxOpenNum = 128; // open fd table
-    FILE* fdList[maxOpenNum] = {nullptr};
-    for (int i = 0; i < maxOpenNum; i++) {
-        fdList[i] = fopen("/dev/null", "r");
-        ASSERT_NE(fdList[i], nullptr);
-    }
+    } else {
+        /**
+         * @tc.steps: step1. open 128 fd files
+         *            case: open success
+         * @tc.expected: fp != nullptr
+         * */
+        constexpr int maxOpenNum = 128; // open fd table
+        FILE* fdList[maxOpenNum] = {nullptr};
+        for (int i = 0; i < maxOpenNum; i++) {
+            fdList[i] = fopen("/dev/null", "r");
+            ASSERT_NE(fdList[i], nullptr);
+        }
 
-    /**
-     * @tc.steps: step2. open test fd
-     *            case: open success
-     * @tc.expected: fp != nullptr
-     * */
-    FILE *fp = fopen("/dev/null", "r");
-    ASSERT_NE(fp, nullptr);
+        /**
+         * @tc.steps: step2. open test fd
+         *            case: open success
+         * @tc.expected: fp != nullptr
+         * */
+        FILE *fp = fopen("/dev/null", "r");
+        ASSERT_NE(fp, nullptr);
 
-    /**
-     * @tc.steps: step3. Clean up resources
-     * */
-    for (int i = 0; i < maxOpenNum; i++) {
-        if (fdList[i] != nullptr) {
-            fclose(fdList[i]);
-            fdList[i] = nullptr;
+        /**
+         * @tc.steps: step3. Clean up resources
+         * */
+        for (int i = 0; i < maxOpenNum; i++) {
+            if (fdList[i] != nullptr) {
+                fclose(fdList[i]);
+                fdList[i] = nullptr;
+            }
+        }
+
+        /**
+         * @tc.steps: step4. Get fd tag
+         * */
+        uint64_t ownerTag = fdsan_get_owner_tag(fileno(fp));
+        uint64_t tag = fdsan_get_tag_value(ownerTag);
+
+        pid_t pid = fork();
+        if (pid < 0) {
+            GTEST_LOG_(ERROR) << "Failed to fork new process.";
+        } else if (pid == 0) {
+            // The child process has disabled fdsan detection by default
+            fdsan_set_error_level(FDSAN_ERROR_LEVEL_WARN_ONCE);
+            /**
+             * @tc.steps: step5. Trigger fdsan
+             * */
+            close(fileno(fp));
+        } else {
+            /**
+             * @tc.steps: step6. Waiting for the completion of stack grabbing
+             * */
+            sleep(3); // 3 : sleep 3 seconds
+
+            string keywords[] = {
+                to_string(fileno(fp)) + "->/dev/null", to_string(tag)
+            };
+            fclose(fp);
+
+            /**
+             * @tc.steps: step7. Check key words
+             * @tc.expected: check success
+             * */
+            auto filePath = GetDumpLogFileName("stacktrace", pid, TEMP_DIR);
+            ASSERT_FALSE(filePath.empty());
+
+            int length = sizeof(keywords) / sizeof(keywords[0]);
+            int minRegIdx = -1;
+            ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
         }
     }
+}
 
-    /**
-     * @tc.steps: step4. Get fd tag
-     * */
-    uint64_t ownerTag = fdsan_get_owner_tag(fileno(fp));
-    uint64_t tag = fdsan_get_tag_value(ownerTag);
-
+/**
+ * @tc.name: SetCrashLogConfig001
+ * @tc.desc: Verify the set crash Log config
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SetCrashLogConfig001, TestSize.Level2)
+{
+    if (DFX_SetCrashLogConfig == nullptr) {
+        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
+        return;
+    }
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new process.";
     } else if (pid == 0) {
-        // The child process has disabled fdsan detection by default
-        fdsan_set_error_level(FDSAN_ERROR_LEVEL_WARN_ONCE);
-        /**
-         * @tc.steps: step5. Trigger fdsan
-         * */
-        close(fileno(fp));
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 10000), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        abort();
     } else {
-        /**
-         * @tc.steps: step6. Waiting for the completion of stack grabbing
-         * */
-        sleep(3);
-
+        sleep(3); // 3 : sleep 3 seconds
         string keywords[] = {
-            to_string(fileno(fp)) + "->/dev/null", to_string(tag)
+            "configs:",
+            "printing:true",
+            "size:10000B",
+            "printing:true",
         };
-        fclose(fp);
-
-        /**
-         * @tc.steps: step7. Check key words
-         * @tc.expected: check success
-         * */
-        auto filePath = GetDumpLogFileName("stacktrace", pid, TEMP_DIR);
+        auto filePath = GetDumpLogFileName("cppcrash", pid, TEMP_DIR);
         ASSERT_FALSE(filePath.empty());
 
         int length = sizeof(keywords) / sizeof(keywords[0]);
         int minRegIdx = -1;
         ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
     }
+}
 
-    return;
+/**
+ * @tc.name: SetCrashLogConfig002
+ * @tc.desc: Verify the set crash Log config twice
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SetCrashLogConfig002, TestSize.Level2)
+{
+    if (DFX_SetCrashLogConfig == nullptr) {
+        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
+        return;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new process.";
+    } else if (pid == 0) {
+        // once
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 10000), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        // twice
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 0), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 9999), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        abort();
+    } else {
+        sleep(3); // 3 : sleep 3 seconds
+        string keywords[] = {
+            "configs:",
+            "size:9999B",
+            "printing:true",
+        };
+        auto filePath = GetDumpLogFileName("cppcrash", pid, TEMP_DIR);
+        ASSERT_FALSE(filePath.empty());
+
+        int length = sizeof(keywords) / sizeof(keywords[0]);
+        int minRegIdx = -1;
+        ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
+    }
+}
+
+/**
+ * @tc.name: SetCrashLogConfig003
+ * @tc.desc: Verify the set crash Log config three times
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SetCrashLogConfig003, TestSize.Level2)
+{
+    if (DFX_SetCrashLogConfig == nullptr) {
+        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
+        return;
+    }
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new process.";
+    } else if (pid == 0) {
+        // once
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 10000), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        // twice
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 0), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 9999), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 1), 0);
+        // three times
+        ASSERT_EQ(DFX_SetCrashLogConfig(0, 1), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(1, 1024), 0);
+        ASSERT_EQ(DFX_SetCrashLogConfig(2, 0), 0);
+        abort();
+    } else {
+        sleep(3); // 3 : sleep 3 seconds
+        string keywords[] = {
+            "configs:",
+            "printing:true",
+            "size:1024B",
+        };
+        auto filePath = GetDumpLogFileName("cppcrash", pid, TEMP_DIR);
+        ASSERT_FALSE(filePath.empty());
+
+        int length = sizeof(keywords) / sizeof(keywords[0]);
+        int minRegIdx = -1;
+        ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
+    }
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
