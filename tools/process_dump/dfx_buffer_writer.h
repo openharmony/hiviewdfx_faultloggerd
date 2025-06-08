@@ -23,6 +23,7 @@
 #include <string>
 #include "dfx_buffer_writer.h"
 #include "nocopyable.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -35,8 +36,8 @@ public:
     ~DfxBufferWriter() = default;
     void Finish();
 
-    void SetWriteBufFd(int32_t fd);
-    void SetWriteResFd(int32_t fd);
+    void SetWriteBufFd(SmartFd fd);
+    void SetWriteResFd(SmartFd fd);
     void SetWriteFunc(BufferWriteFunc func);
     bool WriteDumpRes(int32_t dumpRes);
 
@@ -52,8 +53,8 @@ private:
     DISALLOW_COPY_AND_MOVE(DfxBufferWriter);
 
     BufferWriteFunc writeFunc_ = nullptr;
-    int32_t bufFd_ = -1;
-    int32_t resFd_ = -1;
+    SmartFd bufFd_;
+    SmartFd resFd_;
     std::string briefDumpInfo_;
 };
 } // namespace HiviewDFX

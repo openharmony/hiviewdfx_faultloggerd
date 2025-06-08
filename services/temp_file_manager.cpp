@@ -332,17 +332,17 @@ void TempFileManager::RecordFileCreation(int32_t type, int32_t pid)
 std::unique_ptr<TempFileManager::TempFileWatcher> TempFileManager::TempFileWatcher::CreateInstance(
     TempFileManager& tempFileManager)
 {
-    int32_t watchFd = inotify_init();
-    if (watchFd < 0) {
-        DFXLOGE("%{public}s :: failed to init inotify fd: %{public}d.", TEMP_FILE_MANAGER_TAG, watchFd);
+    SmartFd watchFd{inotify_init()};
+    if (!watchFd) {
+        DFXLOGE("%{public}s :: failed to init inotify fd: %{public}d.", TEMP_FILE_MANAGER_TAG, watchFd.GetFd());
         return nullptr;
     }
     return std::unique_ptr<TempFileManager::TempFileWatcher>(new (std::nothrow)TempFileWatcher(tempFileManager,
-        watchFd));
+        std::move(watchFd)));
 }
 
-TempFileManager::TempFileWatcher::TempFileWatcher(TempFileManager& tempFileManager, int32_t fd)
-    : EpollListener(fd, true), tempFileManager_(tempFileManager) {}
+TempFileManager::TempFileWatcher::TempFileWatcher(TempFileManager& tempFileManager, SmartFd fd)
+    : EpollListener(std::move(fd), true), tempFileManager_(tempFileManager) {}
 
 bool TempFileManager::TempFileWatcher::AddWatchEvent(const char* watchPath, uint32_t watchEvent)
 {

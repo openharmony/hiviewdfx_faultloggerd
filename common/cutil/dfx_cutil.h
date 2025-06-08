@@ -38,7 +38,7 @@ AT_SYMBOL_HIDDEN bool TrimAndDupStr(const char* src, char* dst);
 
 AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSeconds(void);
 
-AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t* si, uint64_t* endTime, int* tid);
+AT_SYMBOL_HIDDEN void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* tid);
 
 #ifdef __cplusplus
 }

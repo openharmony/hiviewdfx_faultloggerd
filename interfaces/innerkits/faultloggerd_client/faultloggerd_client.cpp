@@ -26,6 +26,7 @@
 #include "dfx_util.h"
 #include "faultloggerd_socket.h"
 
+using namespace OHOS::HiviewDFX;
 namespace {
 constexpr const char* const FAULTLOGGERD_CLIENT_TAG = "FAULT_LOGGERD_CLIENT";
 constexpr int32_t SDKDUMP_SOCKET_TIMEOUT = 1;
@@ -120,7 +121,7 @@ int32_t RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2], bool isJs
     request.tid = tid;
     request.callerTid = gettid();
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
-    request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
+    request.endTime = ::GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     SocketFdData socketFdData = {pipeReadFd, PIPE_NUM_SZ};
     return SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, socketRequestData, SDKDUMP_SOCKET_TIMEOUT, &socketFdData);

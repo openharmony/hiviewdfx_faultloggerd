@@ -226,14 +226,6 @@ bool ReadFdToString(int fd, std::string& content)
     return (n == 0);
 }
 
-void CloseFd(int &fd)
-{
-    if (fd > 0) {
-        fdsan_close_with_tag(fd, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
-        fd = -1;
-    }
-}
-
 uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
 {
     uintptr_t outAddr = inAddr;

@@ -47,7 +47,7 @@ private:
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     int DumpProcess(ProcessDumpRequest& request);
     int32_t ReadRequestAndCheck(ProcessDumpRequest& request);
-    int InitBufferWriter(const ProcessDumpRequest& request);
+    bool InitBufferWriter(const ProcessDumpRequest& request);
     bool InitDfxProcess(ProcessDumpRequest& request);
     bool InitUnwinder(const ProcessDumpRequest& request, int &dumpRes);
     int GeFaultloggerdRequestType(const ProcessDumpRequest &request);

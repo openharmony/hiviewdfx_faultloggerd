@@ -22,6 +22,7 @@
 #include <mutex>
 #include <string>
 #include "dfx_define.h"
+#include "smart_fd.h"
 #include "unwind_context.h"
 
 #if is_mingw
@@ -51,7 +52,7 @@ public:
 class DfxAccessorsLocal : public DfxAccessors {
 public:
     DfxAccessorsLocal() = default;
-    ~DfxAccessorsLocal();
+    ~DfxAccessorsLocal() override = default;
 
     int AccessMem(uintptr_t addr, uintptr_t *val, void *arg) override;
     int AccessReg(int regIdx, uintptr_t *val, void *arg) override;
@@ -63,8 +64,8 @@ private:
     bool CreatePipe();
 
     std::mutex mutex_;
-    int32_t pfd_[PIPE_NUM_SZ] = {-1, -1};
-    bool initPipe_ = false;
+    SmartFd readFd_;
+    SmartFd writeFd_;
 };
 
 class DfxAccessorsRemote : public DfxAccessors {

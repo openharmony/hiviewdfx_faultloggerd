@@ -12,10 +12,15 @@
 # limitations under the License.
 
 import("//build/ohos.gni")
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (!defined(ohos_lite)) {
   ohos_executable("crashvalidator") {
-    include_dirs = [ "." ]
+    include_dirs = [
+      ".",
+      "$faultloggerd_common_path/dfxutil",
+      "$faultloggerd_common_path/dfxlog"
+    ]
     sources = [
       "crash_validator.cpp",
       "main.cpp",

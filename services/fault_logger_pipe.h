@@ -20,24 +20,24 @@
 #include <list>
 
 #include "dfx_socket_request.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 class FaultLoggerPipe {
 public:
     FaultLoggerPipe();
-    ~FaultLoggerPipe();
+    ~FaultLoggerPipe() = default;
     FaultLoggerPipe(const FaultLoggerPipe&) = delete;
     FaultLoggerPipe& operator=(const FaultLoggerPipe&) = delete;
-    FaultLoggerPipe(FaultLoggerPipe&& rhs) noexcept;
-    FaultLoggerPipe& operator=(FaultLoggerPipe&& rhs) noexcept;
+    FaultLoggerPipe(FaultLoggerPipe&& rhs) noexcept = default;
+    FaultLoggerPipe& operator=(FaultLoggerPipe&& rhs) noexcept = default;
     int GetReadFd() const;
     int GetWriteFd();
 private:
-    static void Close(int& fd);
     bool write_{false};
-    int readFd_{-1};
-    int writeFd_{-1};
+    SmartFd readFd_;
+    SmartFd writeFd_;
 };
 
 enum class PipeFdUsage {

@@ -62,28 +62,20 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
 
 bool DfxAccessorsLocal::CreatePipe()
 {
-    if (initPipe_) {
+    if (readFd_) {
         return true;
     }
-
     std::lock_guard<std::mutex> lock(mutex_);
-    if (!initPipe_ && syscall(SYS_pipe2, pfd_, O_CLOEXEC | O_NONBLOCK) == 0) {
-        initPipe_ = true;
+    if (readFd_) {
+        return true;
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(pfd_[PIPE_WRITE], 0, ownerTag);
-    fdsan_exchange_owner_tag(pfd_[PIPE_READ], 0, ownerTag);
-    return initPipe_;
-}
-
-DfxAccessorsLocal::~DfxAccessorsLocal(void)
-{
-    if (initPipe_) {
-        uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-        fdsan_close_with_tag(pfd_[PIPE_WRITE], ownerTag);
-        fdsan_close_with_tag(pfd_[PIPE_READ], ownerTag);
-        initPipe_ = false;
+    int pipe[PIPE_NUM_SZ] = {-1, -1};
+    if (syscall(SYS_pipe2, pipe, O_CLOEXEC | O_NONBLOCK) != 0) {
+        return false;
     }
+    readFd_ = SmartFd{pipe[PIPE_READ]};
+    writeFd_ = SmartFd{pipe[PIPE_WRITE]};
+    return static_cast<bool>(readFd_);
 }
 
 NO_SANITIZE int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
@@ -108,11 +100,11 @@ NO_SANITIZE int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, voi
         DFXLOGU("Failed to access addr, the pipe create fail, errno:%{public}d", errno);
         return UNW_ERROR_INVALID_MEMORY;
     }
-    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, writeFd_.GetFd(), addr, sizeof(uintptr_t))) == -1) {
         DFXLOGU("Failed to access addr, the pipe write fail, errno:%{public}d", errno);
         return UNW_ERROR_INVALID_MEMORY;
     }
-    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], val, sizeof(uintptr_t))) == -1) {
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, readFd_.GetFd(), val, sizeof(uintptr_t))) == -1) {
         DFXLOGU("Failed to access addr, the pipe read fail, errno:%{public}d", errno);
         return UNW_ERROR_INVALID_MEMORY;
     }

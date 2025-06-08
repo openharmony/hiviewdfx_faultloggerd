@@ -30,6 +30,7 @@
 #include "dfx_dump_res.h"
 #include "dfx_log.h"
 #include "faultloggerd_client.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -122,27 +123,22 @@ void DfxSigDumpHandler::RunThread()
             DFXLOGE("Pid %{public}d RequestPipeFd Failed", pid);
             continue;
         }
-        int fd = pipeWriteFd[0];
-        int resFd = pipeWriteFd[1];
-        uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-        fdsan_exchange_owner_tag(fd, 0, ownerTag);
-        fdsan_exchange_owner_tag(resFd, 0, ownerTag);
+        SmartFd bufFd(pipeWriteFd[0]);
+        SmartFd resFd(pipeWriteFd[1]);
 
         std::string dumpInfo = OHOS::HiviewDFX::GetProcessStacktrace();
         const ssize_t nwrite = static_cast<ssize_t>(dumpInfo.length());
         if (!dumpInfo.empty() &&
-                OHOS_TEMP_FAILURE_RETRY(write(fd, dumpInfo.data(), dumpInfo.length())) != nwrite) {
+                OHOS_TEMP_FAILURE_RETRY(write(bufFd.GetFd(), dumpInfo.data(), dumpInfo.length())) != nwrite) {
             DFXLOGE("Pid %{public}d Write Buf Pipe Failed(%{public}d), nwrite(%{public}zd)", pid, errno, nwrite);
             res = DUMP_EBADFRAME;
         } else if (dumpInfo.empty()) {
             res = DUMP_ENOINFO;
         }
-        ssize_t nres = OHOS_TEMP_FAILURE_RETRY(write(resFd, &res, sizeof(res)));
+        ssize_t nres = OHOS_TEMP_FAILURE_RETRY(write(resFd.GetFd(), &res, sizeof(res)));
         if (nres != sizeof(res)) {
             DFXLOGE("Pid %{public}d Write Res Pipe Failed(%{public}d), nres(%{public}zd)", pid, errno, nres);
         }
-        fdsan_close_with_tag(fd, ownerTag);
-        fdsan_close_with_tag(resFd, ownerTag);
     }
 }
 

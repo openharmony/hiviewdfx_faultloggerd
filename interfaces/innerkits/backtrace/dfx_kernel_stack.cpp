@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "dfx_log.h"
+#include "smart_fd.h"
 
 #define LOGGER_GET_STACK    _IO(0xAB, 9)
 namespace OHOS {
@@ -47,15 +48,13 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
     }
     kstackBuf->pid = pid;
     kstackBuf->magic = MAGIC_NUM;
-    int fd = open(BBOX_PATH, O_WRONLY | O_CLOEXEC);
-    if (fd < 0) {
+    SmartFd fd(open(BBOX_PATH, O_WRONLY | O_CLOEXEC));
+    if (!fd) {
         DFXLOGW("Failed to open bbox, pid:%{public}d, errno:%{public}d", pid, errno);
         return KERNELSTACK_EOPEN;
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(fd, 0, ownerTag);
 
-    int ret = ioctl(fd, LOGGER_GET_STACK, kstackBuf.get());
+    int ret = ioctl(fd.GetFd(), LOGGER_GET_STACK, kstackBuf.get());
     int32_t res = KERNELSTACK_ESUCCESS;
     if (ret != 0) {
         DFXLOGW("Failed to get pid(%{public}d) kernel stack, errno:%{public}d", pid, errno);
@@ -63,7 +62,6 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
     } else {
         kernelStack = std::string(kstackBuf->hstackLogBuff);
     }
-    fdsan_close_with_tag(fd, ownerTag);
     return res;
 }
 

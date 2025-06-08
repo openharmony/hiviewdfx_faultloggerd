@@ -20,6 +20,7 @@
 #include <string>
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -44,7 +45,7 @@ private:
     void ReportToHiview(DfxProcess& process, const ProcessDumpRequest &request);
     void ReportToAbilityManagerService(const DfxProcess& process);
     std::string GetRegsString(std::shared_ptr<DfxRegs> regs);
-    int32_t TranferCrashInfoToHiview(const std::string& cppCrashInfo);
+    SmartFd TranferCrashInfoToHiview(const std::string& cppCrashInfo);
     std::string GetSummary(DfxProcess& process);
 };
 

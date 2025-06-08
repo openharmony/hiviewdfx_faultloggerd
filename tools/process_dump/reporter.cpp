@@ -28,7 +28,6 @@
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
-#include "smart_fd.h"
 
 const char* const FOUNDATION_PROCESS_NAME = "foundation";
 const char* const HIVIEW_PROCESS_NAME = "/system/bin/hiview";
@@ -90,7 +89,8 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.time = request.timeStamp;
     info.id = process.GetProcessInfo().uid;
     info.pid = process.GetProcessInfo().pid;
-    info.pipeFd = TranferCrashInfoToHiview(process.GetCrashInfoJson());
+    SmartFd fdRead = TranferCrashInfoToHiview(process.GetCrashInfoJson());
+    info.pipeFd = fdRead.GetFd(); // free after addFaultLog
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
     info.logFileCutoffSizeBytes = process.GetCrashLogConfig().logFileCutoffSizeBytes;
     info.module = process.GetProcessInfo().processName;
@@ -129,32 +129,32 @@ std::string CppCrashReporter::GetSummary(DfxProcess& process)
 }
 
 // read fd will be closed after transfering to hiview
-int32_t CppCrashReporter::TranferCrashInfoToHiview(const std::string& cppCrashInfo)
+SmartFd CppCrashReporter::TranferCrashInfoToHiview(const std::string& cppCrashInfo)
 {
     size_t crashInfoSize = cppCrashInfo.size();
     if (crashInfoSize > MAX_PIPE_SIZE) {
         DFXLOGE("the size of json string is greater than max pipe size, do not report");
-        return -1;
+        return {};
     }
     int pipeFd[PIPE_NUM_SZ] = {-1, -1};
     if (pipe2(pipeFd, O_NONBLOCK) != 0) {
         DFXLOGE("Failed to create pipe.");
-        return -1;
+        return {};
     }
     SmartFd writeFd(pipeFd[PIPE_WRITE]);
     SmartFd readFd(pipeFd[PIPE_READ]);
-    if (fcntl(readFd, F_SETPIPE_SZ, crashInfoSize) < 0 ||
-        fcntl(writeFd, F_SETPIPE_SZ, crashInfoSize) < 0) {
+    if (fcntl(readFd.GetFd(), F_SETPIPE_SZ, crashInfoSize) < 0 ||
+        fcntl(writeFd.GetFd(), F_SETPIPE_SZ, crashInfoSize) < 0) {
         DFXLOGE("[%{public}d]: failed to set pipe size.", __LINE__);
-        return -1;
+        return {};
     }
     ssize_t realWriteSize = -1;
-    realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(writeFd, cppCrashInfo.c_str(), crashInfoSize));
+    realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(writeFd.GetFd(), cppCrashInfo.c_str(), crashInfoSize));
     if (static_cast<ssize_t>(crashInfoSize) != realWriteSize) {
         DFXLOGE("Failed to write pipe. realWriteSize %{public}zd, json size %{public}zd", realWriteSize, crashInfoSize);
-        return -1;
+        return {};
     }
-    return readFd.Release();
+    return readFd;
 }
 
 void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process)

@@ -17,9 +17,9 @@
 #define DFX_FAULTLOGGERD_SOCKET_H
 
 #include <cstdint>
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "smart_fd.h"
+namespace OHOS {
+namespace HiviewDFX {
 const char* const FAULTLOGGERD_SOCK_BASE_PATH = "/dev/unix/socket/";
 
 #ifdef FAULTLOGGERD_TEST
@@ -32,14 +32,10 @@ const char* const SERVER_CRASH_SOCKET_NAME = "faultloggerd.crash.server";
 const char* const SERVER_SDKDUMP_SOCKET_NAME = "faultloggerd.sdkdump.server";
 #endif
 
-bool StartListen(int32_t& sockFd, const char* name, uint32_t listenCnt);
+SmartFd StartListen(const char* name, uint32_t listenCnt);
 bool SendFileDescriptorToSocket(int32_t sockFd, const int32_t* fds, uint32_t nFds);
 bool SendMsgToSocket(int32_t sockFd, const void* data, uint32_t dataLength);
 bool GetMsgFromSocket(int32_t sockFd, void* data, uint32_t dataLength);
-
-#ifdef __cplusplus
-}
-#endif
 
 typedef struct SocketRequestData {
     /** request data **/
@@ -74,5 +70,8 @@ private:
     int32_t socketFd_ = -1;
     bool signalSafely_;
 };
+
+}
+}
 
 #endif

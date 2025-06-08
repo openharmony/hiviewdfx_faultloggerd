@@ -46,7 +46,7 @@ private:
         bool AddWatchEvent(const char* watchPath, uint32_t watchEvent);
         void OnEventPoll() override;
     private:
-        TempFileWatcher(TempFileManager& tempFileManager, int32_t fd);
+        TempFileWatcher(TempFileManager& tempFileManager, SmartFd fd);
         void HandleEvent(uint32_t eventMask, const std::string& filePath, const SingleFileConfig& fileConfig);
         void HandleFileCreate(const std::string& filePath, const SingleFileConfig& fileConfig);
         void HandleFileDeleteOrMove(const std::string& filePath, const SingleFileConfig& fileConfig);

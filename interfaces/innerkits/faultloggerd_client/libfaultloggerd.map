@@ -1,14 +1,13 @@
 {
   global:
     extern "C" {
-      FaultLogger*;
       Request*;
-      CheckConnectStatus;
-      StartListen*;
-      SendFileDescriptorToSocket*;
       ReportDumpStats*;
-      SendMsgToSocket*;
-      GetMsgFromSocket*;
+    };
+    extern "C++" {
+      OHOS::HiviewDFX::StartListen*;
+      OHOS::HiviewDFX::SendMsgToSocket*;
+      OHOS::HiviewDFX::SendFileDescriptorToSocket*;
     };
   local:
     *;

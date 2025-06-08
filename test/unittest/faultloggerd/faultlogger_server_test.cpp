@@ -123,7 +123,7 @@ HWTEST_F(FaultLoggerdServiceTest, LogFileDesClientTest01, TestSize.Level2)
     int32_t fd{-1};
     RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData), &fd);
     SmartFd sFd(fd);
-    ASSERT_GE(sFd, 0);
+    ASSERT_GE(sFd.GetFd(), 0);
 }
 
 /**
@@ -171,10 +171,10 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpClientTest01, TestSize.Level2)
     requestData.pid = requestData.head.clientPid;
     int32_t fds[FD_PAIR_NUM] = {-1, -1};
     RequestFileDescriptorFromServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData), fds, FD_PAIR_NUM);
-    SmartFd buffReadFd = fds[0];
-    SmartFd resReadFd = fds[FD_PAIR_NUM - 1];
-    ASSERT_GE(buffReadFd, 0);
-    ASSERT_GE(resReadFd, 0);
+    SmartFd buffReadFd{fds[0]};
+    SmartFd resReadFd{fds[FD_PAIR_NUM - 1]};
+    ASSERT_GE(buffReadFd.GetFd(), 0);
+    ASSERT_GE(resReadFd.GetFd(), 0);
 
     int32_t retCode = SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, &requestData, sizeof(requestData));
     ASSERT_EQ(retCode, ResponseCode::SDK_DUMP_REPEAT);
@@ -266,10 +266,10 @@ HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest01, TestSize.Level2)
     int32_t readFds[FD_PAIR_NUM] = {-1, -1};
     RequestFileDescriptorFromServer(SERVER_SDKDUMP_SOCKET_NAME, &sdkDumpRequestData, sizeof(sdkDumpRequestData),
         readFds, FD_PAIR_NUM);
-    SmartFd buffReadFd = readFds[0];
-    SmartFd resReadFd = readFds[FD_PAIR_NUM - 1];
-    ASSERT_GE(buffReadFd, 0);
-    ASSERT_GE(resReadFd, 0);
+    SmartFd buffReadFd{readFds[0]};
+    SmartFd resReadFd{readFds[FD_PAIR_NUM - 1]};
+    ASSERT_GE(buffReadFd.GetFd(), 0);
+    ASSERT_GE(resReadFd.GetFd(), 0);
 
     PipFdRequestData requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_CLIENT);
@@ -281,19 +281,19 @@ HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest01, TestSize.Level2)
     int32_t retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
     ASSERT_EQ(retCode, ResponseCode::ABNORMAL_SERVICE);
 
-    SmartFd buffWriteFd = writeFds[0];
-    SmartFd resWriteFd = writeFds[FD_PAIR_NUM - 1];
-    ASSERT_GE(buffWriteFd, 0);
-    ASSERT_GE(resWriteFd, 0);
+    SmartFd buffWriteFd{writeFds[0]};
+    SmartFd resWriteFd{writeFds[FD_PAIR_NUM - 1]};
+    ASSERT_GE(buffWriteFd.GetFd(), 0);
+    ASSERT_GE(resWriteFd.GetFd(), 0);
 
     int sendMsg = 10;
     int recvMsg = 0;
-    ASSERT_TRUE(SendMsgToSocket(buffWriteFd, &sendMsg, sizeof (sendMsg)));
-    ASSERT_TRUE(GetMsgFromSocket(buffReadFd, &recvMsg, sizeof (recvMsg)));
+    ASSERT_TRUE(SendMsgToSocket(buffWriteFd.GetFd(), &sendMsg, sizeof (sendMsg)));
+    ASSERT_TRUE(GetMsgFromSocket(buffReadFd.GetFd(), &recvMsg, sizeof (recvMsg)));
     ASSERT_EQ(sendMsg, recvMsg);
 
-    ASSERT_TRUE(SendMsgToSocket(resWriteFd, &sendMsg, sizeof (sendMsg)));
-    ASSERT_TRUE(GetMsgFromSocket(resReadFd, &recvMsg, sizeof (recvMsg)));
+    ASSERT_TRUE(SendMsgToSocket(resWriteFd.GetFd(), &sendMsg, sizeof (sendMsg)));
+    ASSERT_TRUE(GetMsgFromSocket(resReadFd.GetFd(), &recvMsg, sizeof (recvMsg)));
     ASSERT_EQ(sendMsg, recvMsg);
     RequestDelPipeFd(requestData.pid);
 }
@@ -438,13 +438,14 @@ HWTEST_F(FaultLoggerdServiceTest, FaultloggerdSocketAbnormalTest, TestSize.Level
     faultLoggerdSocket.CloseSocketFileDescriptor();
     ASSERT_FALSE(faultLoggerdSocket.StartConnect(SERVER_CRASH_SOCKET_NAME));
     ASSERT_FALSE(faultLoggerdSocket.ReadFileDescriptorFromSocket(&fd, 0));
-    int32_t sockFd = -1;
     constexpr int32_t maxConnection = 30;
-    ASSERT_FALSE(StartListen(sockFd, nullptr, maxConnection));
-    ASSERT_TRUE(StartListen(sockFd, "FaultloggerdSocketAbnormalTest", maxConnection));
-    ASSERT_FALSE(SendFileDescriptorToSocket(sockFd, nullptr, 0));
-    ASSERT_FALSE(SendMsgToSocket(sockFd, nullptr, 0));
-    ASSERT_FALSE(GetMsgFromSocket(sockFd, nullptr, 0));
+    SmartFd sockFd = StartListen(nullptr, maxConnection);
+    ASSERT_FALSE(sockFd);
+    sockFd = StartListen("FaultloggerdSocketAbnormalTest", maxConnection);
+    ASSERT_TRUE(sockFd);
+    ASSERT_FALSE(SendFileDescriptorToSocket(sockFd.GetFd(), nullptr, 0));
+    ASSERT_FALSE(SendMsgToSocket(sockFd.GetFd(), nullptr, 0));
+    ASSERT_FALSE(GetMsgFromSocket(sockFd.GetFd(), nullptr, 0));
 }
 
 /**
@@ -454,9 +455,8 @@ HWTEST_F(FaultLoggerdServiceTest, FaultloggerdSocketAbnormalTest, TestSize.Level
  */
 HWTEST_F(FaultLoggerdServiceTest, AbnormalTest001, TestSize.Level2)
 {
-    int32_t sockFd = 0;
-    char* name = nullptr;
-    ASSERT_FALSE(StartListen(sockFd, name, 0));
+    SmartFd sockFd = StartListen(nullptr, 0);
+    ASSERT_FALSE(sockFd);
 }
 
 /**

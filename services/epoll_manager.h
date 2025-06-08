@@ -27,7 +27,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class EpollListener {
 public:
-    explicit EpollListener(int32_t fd, bool persist = false);
+    explicit EpollListener(SmartFd fd, bool persist = false);
     virtual ~EpollListener() = default;
     virtual void OnEventPoll() = 0;
     virtual bool IsPersist() const final;
@@ -55,7 +55,7 @@ private:
     bool DelEpollEvent(int32_t fd) const;
     EpollListener* GetTargetListener(int32_t fd);
     std::list<std::unique_ptr<EpollListener>> listeners_;
-    int32_t eventFd_{-1};
+    SmartFd eventFd_;
     std::mutex epollMutex_;
 };
 
@@ -66,7 +66,7 @@ public:
     static std::unique_ptr<DelayTask> CreateInstance(std::function<void()> workFunc, int32_t timeout);
     void OnEventPoll() override;
 private:
-    DelayTask(std::function<void()> workFunc, int32_t timeFd);
+    DelayTask(std::function<void()> workFunc, SmartFd timeFd);
     std::function<void()> work_;
 };
 }

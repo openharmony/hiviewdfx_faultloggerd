@@ -27,7 +27,6 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static const int32_t INVALID_FD = -1;
 
 DfxBufferWriter &DfxBufferWriter::GetInstance()
 {
@@ -43,16 +42,16 @@ void DfxBufferWriter::WriteMsg(const std::string& msg)
     constexpr size_t step = 1024 * 1024;
     for (size_t i = 0; i < msg.size(); i += step) {
         size_t length = (i + step) < msg.size() ? step : msg.size() - i;
-        writeFunc_(bufFd_, msg.substr(i, length).c_str(), length);
+        writeFunc_(bufFd_.GetFd(), msg.substr(i, length).c_str(), length);
     }
 }
 
 bool DfxBufferWriter::WriteDumpRes(int32_t dumpRes)
 {
-    if (resFd_ == -1) {
+    if (!resFd_) {
         return false;
     }
-    ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_, &dumpRes, sizeof(dumpRes)));
+    ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_.GetFd(), &dumpRes, sizeof(dumpRes)));
     if (nwrite != static_cast<ssize_t>(sizeof(dumpRes))) {
         DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
         return false;
@@ -96,31 +95,27 @@ void DfxBufferWriter::PrintBriefDumpInfo()
 
 void DfxBufferWriter::Finish()
 {
-    if (bufFd_ != INVALID_FD) {
-        if (fsync(bufFd_) == -1) {
-            DFXLOGW("Failed to fsync fd.");
-        }
-        CloseFd(bufFd_);
+    if (bufFd_ && fsync(bufFd_.GetFd()) == -1) {
+        DFXLOGW("Failed to fsync fd.");
     }
-    CloseFd(resFd_);
 }
 
-void DfxBufferWriter::SetWriteResFd(int32_t fd)
+void DfxBufferWriter::SetWriteResFd(SmartFd fd)
 {
-    if (fd < 0) {
+    if (!fd) {
         DFXLOGE("invalid res fd, failed to set fd.\n");
         return;
     }
-    resFd_ = fd;
+    resFd_ = std::move(fd);
 }
 
-void DfxBufferWriter::SetWriteBufFd(int32_t fd)
+void DfxBufferWriter::SetWriteBufFd(SmartFd fd)
 {
-    if (fd < 0) {
+    if (!fd) {
         DFXLOGE("invalid buffer fd, failed to set fd.\n");
         return;
     }
-    bufFd_ = fd;
+    bufFd_ = std::move(fd);
 }
 
 void DfxBufferWriter::SetWriteFunc(BufferWriteFunc func)

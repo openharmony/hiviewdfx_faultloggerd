@@ -105,7 +105,7 @@ HWTEST(SafeReaderTest, SafeReaderTest002, TestSize.Level2)
     constexpr uintptr_t destBuf2 = 1024 * 3;
     srcBuf.resize(socLen, 1);
     destBuf.resize(destBuf1, 0);
-    ssize_t ret = read(fd, srcBuf.data(), srcBuf.size());
+    ssize_t ret = read(fd.GetFd(), srcBuf.data(), srcBuf.size());
     ASSERT_EQ(ret, srcBuf.size());
 
     /**

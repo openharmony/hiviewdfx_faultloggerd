@@ -382,7 +382,6 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest015, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessDumpTest015: end.";
 }
 
-
 /**
  * @tc.name: DfxProcessDumpTest017
  * @tc.desc: Testing InitDfxProcess、InitRegs exception
@@ -413,16 +412,13 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
     ProcessDumpRequest request{
         .type = ProcessDumpType::DUMP_TYPE_MEM_LEAK,
     };
-    int result = ins.InitBufferWriter(request);
-    ASSERT_NE(result, -1);
+    ASSERT_TRUE(ins.InitBufferWriter(request));
 
     request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
-    result = ins.InitBufferWriter(request);
-    ASSERT_NE(result, -1);
+    ASSERT_TRUE(ins.InitBufferWriter(request));
 
     request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
-    result = ins.InitBufferWriter(request);
-    ASSERT_EQ(result, -1);
+    ASSERT_FALSE(ins.InitBufferWriter(request));
 
     request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
     ins.WriteDumpResIfNeed(request, 1);

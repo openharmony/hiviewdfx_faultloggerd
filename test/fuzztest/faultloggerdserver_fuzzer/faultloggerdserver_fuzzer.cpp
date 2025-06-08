@@ -64,13 +64,13 @@ void FaultLoggerdClientTest(const uint8_t* data, size_t size)
     RequestFileDescriptor(request.type);
     int pipeReadFd[PIPE_NUM_SZ] = {-1, -1};
     RequestSdkDump(request.pid, request.tid, pipeReadFd);
-    CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
-    CloseFd(pipeReadFd[PIPE_RES_INDEX]);
+    SmartFd {pipeReadFd[PIPE_BUF_INDEX]};
+    SmartFd {pipeReadFd[PIPE_RES_INDEX]};
     RequestPipeFd(request.pid, request.type, pipeReadFd);
-    CloseFd(pipeReadFd[PIPE_BUF_INDEX]);
-    CloseFd(pipeReadFd[PIPE_RES_INDEX]);
+    SmartFd {pipeReadFd[PIPE_BUF_INDEX]};
+    SmartFd {pipeReadFd[PIPE_RES_INDEX]};
     RequestDelPipeFd(request.pid);
-    RequestFileDescriptorEx(&request);
+    SmartFd {RequestFileDescriptorEx(&request)};
 }
 
 void FaultLoggerdServerTest(const uint8_t* data, size_t size)
@@ -91,7 +91,7 @@ void FileDesServiceTest(const uint8_t* data, size_t size)
     int32_t fd = -1;
     struct SocketFdData fds =  {&fd, 1};
     SendRequestToServer({&requestData, sizeof(FaultLoggerdRequest)}, &fds);
-    CloseFd(fd);
+    SmartFd {fd};
 }
 
 void ExceptionReportServiceTest(const uint8_t* data, size_t size)
@@ -124,8 +124,8 @@ void SdkDumpServiceTest(const uint8_t* data, size_t size)
     int32_t fds[PIPE_NUM_SZ] = {-1, -1};
     struct SocketFdData fdPair =  {fds, 2};
     SendRequestToServer({&requestData, sizeof(SdkDumpRequestData)}, &fdPair);
-    CloseFd(fds[PIPE_BUF_INDEX]);
-    CloseFd(fds[PIPE_RES_INDEX]);
+    SmartFd {fds[PIPE_BUF_INDEX]};
+    SmartFd {fds[PIPE_RES_INDEX]};
     RequestDelPipeFd(requestData.pid);
 }
 
@@ -139,8 +139,8 @@ void PipServiceTest(const uint8_t* data, size_t size)
     int32_t fds[PIPE_NUM_SZ] = {-1, -1};
     struct SocketFdData fdPair =  {fds, 2};
     SendRequestToServer({&requestData, sizeof(PipFdRequestData)}, &fdPair);
-    CloseFd(fds[PIPE_BUF_INDEX]);
-    CloseFd(fds[PIPE_RES_INDEX]);
+    SmartFd {fds[PIPE_BUF_INDEX]};
+    SmartFd {fds[PIPE_RES_INDEX]};
     RequestDelPipeFd(requestData.pid);
 }
 

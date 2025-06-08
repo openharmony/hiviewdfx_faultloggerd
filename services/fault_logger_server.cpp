@@ -64,20 +64,21 @@ void SocketServer::AddService(int32_t clientType, std::unique_ptr<IFaultLoggerSe
 
 bool SocketServer::AddServerListener(const char* socketName)
 {
-    int32_t fd;
     constexpr int32_t maxConnection = 30;
-    if (!StartListen(fd, socketName, maxConnection)) {
+    SmartFd fd = StartListen(socketName, maxConnection);
+    if (!fd) {
         return false;
     }
-    std::unique_ptr<EpollListener> serverListener(new (std::nothrow)SocketServerListener(*this, fd, socketName));
+    std::unique_ptr<EpollListener> serverListener(new SocketServerListener(*this, std::move(fd), socketName));
     return epollManager_.AddListener(std::move(serverListener));
 }
 
-SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer, int32_t fd, std::string socketName)
-    : EpollListener(fd, true), socketServer_(socketServer), socketName_(std::move(socketName)) {}
+SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer, SmartFd fd, std::string socketName)
+    : EpollListener(std::move(fd), true), socketServer_(socketServer), socketName_(std::move(socketName)) {}
 
-SocketServer::ClientRequestListener::ClientRequestListener(SocketServerListener& socketServerListener, int32_t fd,
-    uid_t clientUid) : EpollListener(fd), socketServerListener_(socketServerListener), clientUid_(clientUid) {}
+SocketServer::ClientRequestListener::ClientRequestListener(
+    SocketServerListener& socketServerListener, SmartFd fd, uid_t clientUid)
+    : EpollListener(std::move(fd)), socketServerListener_(socketServerListener), clientUid_(clientUid) {}
 
 SocketServer::ClientRequestListener::~ClientRequestListener()
 {
@@ -102,7 +103,7 @@ void SocketServer::ClientRequestListener::OnEventPoll()
     constexpr int32_t maxBuffSize = 2048;
     std::vector<uint8_t> buf(maxBuffSize, 0);
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), buf.data(), maxBuffSize));
-    if (nread >= sizeof(RequestDataHead)) {
+    if (nread >= static_cast<ssize_t>(sizeof(RequestDataHead))) {
         auto dataHead = reinterpret_cast<RequestDataHead*>(buf.data());
         DFXLOGI("%{public}s :: %{public}s receive request from pid: %{public}d, clientType: %{public}d",
                 FAULTLOGGERD_SERVER_TAG, socketServerListener_.socketName_.c_str(),
@@ -123,16 +124,16 @@ void SocketServer::SocketServerListener::OnEventPoll()
 {
     struct sockaddr_un clientAddr{};
     auto clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
-    SmartFd connectionFd =
-        OHOS_TEMP_FAILURE_RETRY(accept(GetFd(), reinterpret_cast<struct sockaddr*>(&clientAddr), &clientAddrSize));
-    if (connectionFd < 0) {
+    SmartFd connectionFd{static_cast<int>(OHOS_TEMP_FAILURE_RETRY(accept(GetFd(),
+        reinterpret_cast<struct sockaddr*>(&clientAddr), &clientAddrSize)))};
+    if (!connectionFd) {
         DFXLOGW("%{public}s :: Failed to accept connection from %{public}s",
             FAULTLOGGERD_SERVER_TAG, socketName_.c_str());
         return;
     }
     struct ucred credentials{};
     socklen_t len = sizeof(credentials);
-    if (getsockopt(connectionFd, SOL_SOCKET, SO_PEERCRED, &credentials, &len) == -1) {
+    if (getsockopt(connectionFd.GetFd(), SOL_SOCKET, SO_PEERCRED, &credentials, &len) == -1) {
         DFXLOGE("%{public}s :: Failed to GetCredential, errno: %{public}d", FAULTLOGGERD_SERVER_TAG, errno);
         return;
     }
@@ -148,7 +149,7 @@ void SocketServer::SocketServerListener::OnEventPoll()
     }
     connectionNum++;
     std::unique_ptr<EpollListener> clientRequestListener(
-        new (std::nothrow) ClientRequestListener(*this, connectionFd.Release(), credentials.uid));
+        new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid));
     socketServer_.epollManager_.AddListener(std::move(clientRequestListener));
 }
 }
