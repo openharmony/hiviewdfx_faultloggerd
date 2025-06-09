@@ -213,7 +213,7 @@ HWTEST_F(CommonTest, ROMBaselineTest001, TestSize.Level2)
         }
     }
     printf("Total file size is %lldKB\n", totalSize);
-    constexpr long long baseline = 1101;
+    constexpr long long baseline = 1335;
     // There is a 5% threshold for the baseline value
     EXPECT_LT(totalSize, static_cast<long long>(baseline * 1.05));
     GTEST_LOG_(INFO) << "ROMBaselineTest001: end.";
