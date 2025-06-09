@@ -33,6 +33,10 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#if defined __LP64__
+#include <sys/socket.h>
+#include <sys/un.h>
+#endif
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -85,6 +89,17 @@
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
+#if defined __LP64__
+#define MSG_VER (0)
+#define INVALID_RESULT (-1)
+#define SOCKET_FILE_DIR "/dev/unix/socket/"
+#define INPUT_SOCKET_NAME "hilogInput"
+#define PUBLIC_SOCKET_NAME "hilogControlPub"
+#define HILOG_SNAPSHOT_LINES 1000
+#define NS_PER_SECOND (1000 * 1000 * 1000)
+#define SOCKET_TIMEOUT_SECOND 2
+#endif
+
 #ifndef __MUSL__
 void __attribute__((constructor)) InitHandler(void)
 {
@@ -124,6 +139,29 @@ enum DumpPreparationStage {
     INHERIT_CAP_FAIL,
     EXEC_FAIL,
 };
+
+#if defined __LP64__
+static const struct sockaddr_un CTL_SOCKET_ADDR = {AF_UNIX, SOCKET_FILE_DIR PUBLIC_SOCKET_NAME};
+typedef enum {
+    INVALID = -1,
+    RECORD_SNAPSHOT_RQST,
+    RECORD_SNAPSHOT_RSP,
+    ERROR_RSP,
+} PublicCmd;
+
+struct MsgHeader {
+    uint8_t ver;
+    uint8_t cmd;
+    int16_t err;
+    uint16_t len;
+} __attribute__((__packed__));
+
+struct RecordSnapshotRqst {
+    uint32_t lines;
+    int64_t time;
+    int64_t callTime;
+} __attribute__((__packed__));
+#endif
 
 TraceInfo HiTraceGetId(void) __attribute__((weak));
 static void FillTraceIdLocked(struct ProcessDumpRequest* request)
@@ -789,11 +827,94 @@ static void ReadUnwindFinishMsg(int sig)
     }
 }
 
+#if defined __LP64__
+static int WriteData(int fd, const char *data, unsigned int len)
+{
+    if (fd < 0 || data == NULL) {
+        return -1;
+    }
+
+    const char *ptr = data;
+    int sizeLeft = (int)(len);
+    int midRes = 0;
+    while (sizeLeft > 0) {
+        midRes = TEMP_FAILURE_RETRY(write(fd, ptr, sizeLeft));
+        if (midRes < 0) {
+            break;
+        }
+        sizeLeft -= midRes;
+        ptr += midRes;
+    }
+    return (midRes < 0) ? midRes : (int)(len);
+}
+
+static int GetControlSocketFd(void)
+{
+    int fd = TEMP_FAILURE_RETRY(socket(AF_UNIX, SOCK_SEQPACKET, 0));
+    if (fd == INVALID_FD) {
+        return INVALID_FD;
+    }
+    struct timeval timev = { SOCKET_TIMEOUT_SECOND, 0 };
+    if (TEMP_FAILURE_RETRY(setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timev, sizeof(timev))) != 0) {
+        syscall(SYS_close, fd);
+        return INVALID_FD;
+    }
+    int result =
+        TEMP_FAILURE_RETRY(connect(fd, (const struct sockaddr *)(&CTL_SOCKET_ADDR), sizeof(CTL_SOCKET_ADDR)));
+    if (result == INVALID_RESULT) {
+        syscall(SYS_close, fd);
+        return INVALID_FD;
+    }
+
+    return fd;
+}
+
+static int HiLogRecordSnapshotInSigHandler(uint32_t lines, int64_t time)
+{
+    int result = 0;
+    int fd = GetControlSocketFd();
+    if (fd == INVALID_FD) {
+        return -1;
+    }
+    do {
+        struct MsgHeader header = {MSG_VER, (uint8_t)(RECORD_SNAPSHOT_RQST), 0, sizeof(struct RecordSnapshotRqst)};
+        int ret = WriteData(fd, (const char*)(&header), sizeof(header));
+        if (ret < 0) {
+            result = -1;
+            break;
+        }
+
+        struct RecordSnapshotRqst rqst = {0};
+        rqst.lines = lines;
+        rqst.time = time;
+        struct timespec ts = {0};
+        (void)clock_gettime(CLOCK_REALTIME, &ts);
+        rqst.callTime = ts.tv_sec * NS_PER_SECOND + ts.tv_nsec;
+
+        ret = WriteData(fd, (const char*)(&rqst), sizeof(rqst));
+        if (ret < 0) {
+            result = -1;
+            break;
+        }
+    } while (0);
+
+    syscall(SYS_close, fd);
+    return result;
+}
+#endif
+
 static int ProcessDump(int sig)
 {
     int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
-
+#if defined __LP64__
+    if (!IsDumpSignal(sig)) {
+        int snapRet = HiLogRecordSnapshotInSigHandler(HILOG_SNAPSHOT_LINES, g_request.timeStamp);
+        if (snapRet) {
+            DFXLOG_ERROR("HiLogRecordSnapshot Err: %d(%d)", snapRet, errno);
+        }
+    }
+#endif
     if (!InitPipe()) {
         return -1;
     }
