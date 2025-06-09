@@ -253,7 +253,10 @@ std::string DfxRegs::GetSpecialRegsNameByIndex(int index) const
 
 std::string DfxRegs::PrintSpecialRegs() const
 {
-    uintptr_t fp = 0, lr = 0, sp = 0, pc = 0;
+    uintptr_t fp = 0;
+    uintptr_t lr = 0;
+    uintptr_t sp = 0;
+    uintptr_t pc = 0;
     GetSpecialRegs(fp, lr, sp, pc);
     std::string regsStr;
 #ifdef __LP64__
