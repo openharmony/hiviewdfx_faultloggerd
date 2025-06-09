@@ -186,7 +186,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
         }
     }
 
-    int i, end;
+    int end;
     if (sizeof(long) == FOUR_BYTES && sizeof(uintptr_t) == EIGHT_BYTES) {
         end = 2; // 2 : read two times
     } else {
@@ -194,7 +194,7 @@ int DfxAccessorsRemote::AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
     }
 
     uintptr_t tmpVal;
-    for (i = 0; i < end; i++) {
+    for (int i = 0; i < end; i++) {
         uintptr_t tmpAddr = ((i == 0) ? addr : addr + FOUR_BYTES);
         errno = 0;
 
