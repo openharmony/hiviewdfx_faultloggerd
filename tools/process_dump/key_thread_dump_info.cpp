@@ -62,6 +62,7 @@ bool ParseUnwindStack(const std::vector<uintptr_t>& stackValues,
         DfxFrame frame;
         frame.index = index;
         frame.pc = value;
+        frame.relPc = map->GetRelPc(frame.pc);
         frame.map = map;
         frame.mapName = map->name;
         frames.emplace_back(frame);
