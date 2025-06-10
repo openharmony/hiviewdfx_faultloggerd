@@ -28,6 +28,7 @@
 #ifndef is_ohos_lite
 #include "parameter.h"
 #include "parameters.h"
+#include "hitrace/hitracechainc.h"
 #endif
 #include "procinfo.h"
 #include "info/fatal_message.h"
@@ -51,10 +52,13 @@ void DumpInfoHeader::Print(DfxProcess& process, const ProcessDumpRequest& reques
         headerInfo += GetCrashLogConfigInfo(request, process);
     }
     headerInfo += "Timestamp:" + GetCurrentTimeStr(request.timeStamp);
-    headerInfo += StringPrintf("Pid:%d\nUid:%d\nProcess name:%s\n",
-                               process.GetProcessInfo().pid,
-                               process.GetProcessInfo().uid,
-                               process.GetProcessInfo().processName.c_str());
+    headerInfo += StringPrintf("Pid:%d\nUid:%d\n", process.GetProcessInfo().pid, process.GetProcessInfo().uid);
+#ifndef is_ohos_lite
+    if (request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH && request.hitraceId.valid == HITRACE_ID_VALID) {
+        headerInfo += StringPrintf("HiTraceId:%" PRIx64 "\n", static_cast<uint64_t>(request.hitraceId.chainId));
+    }
+#endif
+    headerInfo += StringPrintf("Process name:%s\n", process.GetProcessInfo().processName.c_str());
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         headerInfo += ("Process life time:" + process.GetProcessLifeCycle() + "\n");
         if (process.GetProcessLifeCycle().empty()) {
