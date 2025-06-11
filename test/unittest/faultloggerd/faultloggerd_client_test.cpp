@@ -80,7 +80,7 @@ HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestFileDescriptorTest001: start.";
     SmartFd sFd(RequestFileDescriptor(FaultLoggerType::CPP_CRASH));
-    ASSERT_GT(sFd, 0);
+    ASSERT_GT(sFd.GetFd(), 0);
     GTEST_LOG_(INFO) << "RequestFileDescriptorTest001: end.";
 }
 
@@ -93,7 +93,7 @@ HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestFileDescriptorTest002: start.";
     SmartFd sFd(RequestFileDescriptor(FaultLoggerType::FFRT_CRASH_LOG));
-    ASSERT_EQ(sFd, -1);
+    ASSERT_EQ(sFd.GetFd(), -1);
     GTEST_LOG_(INFO) << "RequestFileDescriptorTest002: end.";
 }
 
@@ -111,7 +111,7 @@ HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorEx001, TestSize.Level2)
     faultLoggerdRequest.tid = gettid();
     faultLoggerdRequest.time = GetTimeMilliSeconds();
     SmartFd sFd(RequestFileDescriptorEx(&faultLoggerdRequest));
-    ASSERT_GE(sFd, 0);
+    ASSERT_GE(sFd.GetFd(), 0);
     GTEST_LOG_(INFO) << "RequestFileDescriptorEx001: end.";
 }
 
@@ -124,7 +124,7 @@ HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorEx002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestFileDescriptorEx002: start.";
     SmartFd sFd(RequestFileDescriptorEx(nullptr));
-    ASSERT_EQ(sFd, -1);
+    ASSERT_EQ(sFd.GetFd(), -1);
     GTEST_LOG_(INFO) << "RequestFileDescriptorEx002: end.";
 }
 
@@ -155,10 +155,10 @@ HWTEST_F(FaultloggerdClientTest, RequestPipeFdTest001, TestSize.Level2)
     ASSERT_EQ(RequestPipeFd(0, PIPE_FD_READ - 1, pipeFds), -1);
     ASSERT_EQ(RequestPipeFd(0, PIPE_FD_DELETE + 1, pipeFds), -1);
     ASSERT_EQ(RequestPipeFd(getpid(), PIPE_FD_READ, pipeFds), ResponseCode::REQUEST_SUCCESS);
-    SmartFd buffFd = pipeFds[0];
-    SmartFd resFd = pipeFds[1];
-    ASSERT_GE(buffFd, 0);
-    ASSERT_GE(resFd, 0);
+    SmartFd buffFd{pipeFds[0]};
+    SmartFd resFd{pipeFds[1]};
+    ASSERT_GE(buffFd.GetFd(), 0);
+    ASSERT_GE(resFd.GetFd(), 0);
     GTEST_LOG_(INFO) << "RequestPipeFd001: end.";
 }
 

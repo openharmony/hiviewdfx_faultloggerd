@@ -28,6 +28,7 @@
 
 #include "kernel_snapshot_processor_impl.h"
 #include "kernel_snapshot_util.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -49,19 +50,17 @@ int KernelSnapshotManager::GetSnapshotCheckInterval()
 
 std::string KernelSnapshotManager::ReadKernelSnapshot()
 {
-    int snapshotFd = open(KERNEL_KBOX_SNAPSHOT, O_RDONLY);
-    if (snapshotFd < 0) {
+    SmartFd snapshotFd(open(KERNEL_KBOX_SNAPSHOT, O_RDONLY));
+    if (!snapshotFd) {
         DFXLOGE("open snapshot filed %{public}d", errno);
         return "";
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(snapshotFd, 0, ownerTag);
 
     char buffer[BUFFER_LEN] = {0};
     std::string snapshotCont;
     ssize_t ret = 0;
     do {
-        ret = read(snapshotFd, buffer, BUFFER_LEN - 1);
+        ret = read(snapshotFd.GetFd(), buffer, BUFFER_LEN - 1);
         if (ret > 0) {
             snapshotCont.append(buffer, static_cast<size_t>(ret));
         }
@@ -69,8 +68,6 @@ std::string KernelSnapshotManager::ReadKernelSnapshot()
             DFXLOGE("read snapshot filed %{public}d", errno);
         }
     } while (ret > 0);
-
-    fdsan_close_with_tag(snapshotFd, ownerTag);
     return snapshotCont;
 }
 

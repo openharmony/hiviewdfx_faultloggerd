@@ -40,65 +40,66 @@ constexpr int SOCKET_BUFFER_SIZE = 32;
     if (!isSigalSafe) \
         DFXLOGE(fmt, ##__VA_ARGS__)
 
-static bool GetServerSocket(int32_t& sockFd, const char* name)
+namespace OHOS {
+namespace HiviewDFX {
+
+static SmartFd GetServerSocket(const char* name)
 {
-    sockFd = OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0));
-    if (sockFd < 0) {
+    SmartFd sockFd{static_cast<int>(OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0)))};
+    if (!sockFd) {
         DFXLOGE("%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
-        return false;
+        return {};
     }
-    fdsan_exchange_owner_tag(sockFd, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
 
     std::string path = std::string(FAULTLOGGERD_SOCK_BASE_PATH) + std::string(name);
     struct sockaddr_un server{0};
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), path.c_str(), sizeof(server.sun_path) - 1) != 0) {
         DFXLOGE("%{public}s :: strncpy failed.", __func__);
-        return false;
+        return {};
     }
 
     chmod(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH);
     unlink(path.c_str());
 
     int optval = 1;
-    int ret = OHOS_TEMP_FAILURE_RETRY(setsockopt(sockFd, SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)));
+    int ret = OHOS_TEMP_FAILURE_RETRY(setsockopt(sockFd.GetFd(), SOL_SOCKET, SO_PASSCRED, &optval, sizeof(optval)));
     if (ret < 0) {
         DFXLOGE("%{public}s :: Failed to set socket option, errno(%{public}d)", __func__, errno);
-        return false;
+        return {};
     }
 
-    if (bind(sockFd, reinterpret_cast<struct sockaddr *>(&server),
+    if (bind(sockFd.GetFd(), reinterpret_cast<struct sockaddr *>(&server),
         offsetof(struct sockaddr_un, sun_path) + strlen(server.sun_path)) < 0) {
         DFXLOGE("%{public}s :: Failed to bind socket, errno(%{public}d)", __func__, errno);
-        return false;
+        return {};
     }
 
-    return true;
+    return sockFd;
 }
 
-bool StartListen(int32_t& sockFd, const char* name, uint32_t listenCnt)
+SmartFd StartListen(const char* name, uint32_t listenCnt)
 {
     if (name == nullptr) {
-        return false;
+        return {};
     }
-    sockFd = GetControlSocket(name);
-    if (sockFd < 0) {
+    SmartFd sockFd{GetControlSocket(name)};
+    if (!sockFd) {
         DFXLOGW("%{public}s :: Failed to get socket fd by cfg", __func__);
-        if (!GetServerSocket(sockFd, name)) {
+        sockFd = GetServerSocket(name);
+        if (!sockFd) {
             DFXLOGE("%{public}s :: Failed to get socket fd by path", __func__);
-            return false;
+            return {};
         }
     }
 
-    if (listen(sockFd, listenCnt) < 0) {
+    if (listen(sockFd.GetFd(), listenCnt) < 0) {
         DFXLOGE("%{public}s :: Failed to listen socket, errno(%{public}d)", __func__, errno);
-        fdsan_close_with_tag(sockFd, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
-        sockFd = -1;
-        return false;
+        return {};
     }
 
     DFXLOGI("%{public}s :: success to listen socket %{public}s", __func__, name);
-    return true;
+    return sockFd;
 }
 
 bool SendFileDescriptorToSocket(int32_t sockFd, const int32_t* fds, uint32_t nFds)
@@ -269,7 +270,7 @@ bool FaultLoggerdSocket::SendMsgToSocket(const void *data, uint32_t dataLength) 
     if (socketFd_ < 0 || data == nullptr || dataLength == 0) {
         return false;
     }
-    if (OHOS_TEMP_FAILURE_RETRY(write(socketFd_, data, dataLength)) != dataLength) {
+    if (OHOS_TEMP_FAILURE_RETRY(write(socketFd_, data, dataLength)) != static_cast<ssize_t>(dataLength)) {
         LOGE(signalSafely_, "Failed to write request message to socket, errno(%{public}d).", errno);
         return false;
     }
@@ -308,4 +309,7 @@ int32_t FaultLoggerdSocket::RequestFdsFromServer(const SocketRequestData &socket
     }
     return ReadFileDescriptorFromSocket(socketFdData.fds, socketFdData.nFds) ? ResponseCode::REQUEST_SUCCESS :
         ResponseCode::RECEIVE_DATA_FAILED;
+}
+
+}
 }

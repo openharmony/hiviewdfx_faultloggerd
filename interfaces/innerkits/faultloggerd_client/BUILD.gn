@@ -41,6 +41,7 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "hilog_lite:hilog_shared",
       "init:libbegetutil",
     ]
@@ -80,7 +81,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxutil:dfx_util",
     ]
     external_deps = [
-      "c_utils:utils",
+      "bounds_checking_function:libsec_shared",
       "hilog:libhilog",
       "init:libbegetutil",
     ]

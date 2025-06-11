@@ -44,49 +44,19 @@ FaultLoggerPipe::FaultLoggerPipe()
         return;
     }
     DFXLOGD("%{public}s :: create pipe.", __func__);
-    readFd_ = fds[PIPE_READ];
-    writeFd_ = fds[PIPE_WRITE];
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(readFd_, 0, ownerTag);
-    fdsan_exchange_owner_tag(writeFd_, 0, ownerTag);
+    readFd_ = SmartFd{fds[PIPE_READ]};
+    writeFd_ = SmartFd{fds[PIPE_WRITE]};
 
-    if (fcntl(readFd_, F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0 || fcntl(writeFd_, F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0) {
+    if (fcntl(readFd_.GetFd(), F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0 ||
+        fcntl(writeFd_.GetFd(), F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0) {
         DFXLOGE("%{public}s :: Failed to set pipe size, errno: %{public}d.", __func__, errno);
     }
-}
-
-FaultLoggerPipe::~FaultLoggerPipe()
-{
-    DFXLOGD("%{public}s :: close pipe.", __func__);
-    Close(readFd_);
-    Close(writeFd_);
-}
-
-FaultLoggerPipe::FaultLoggerPipe(FaultLoggerPipe&& rhs) noexcept: write_(rhs.write_),
-    readFd_(rhs.readFd_), writeFd_(rhs.writeFd_)
-{
-    rhs.readFd_ = -1;
-    rhs.writeFd_ = -1;
-}
-
-FaultLoggerPipe& FaultLoggerPipe::operator=(FaultLoggerPipe&& rhs) noexcept
-{
-    if (this != &rhs) {
-        Close(readFd_);
-        Close(writeFd_);
-        readFd_ = rhs.readFd_;
-        writeFd_ = rhs.writeFd_;
-        write_ = rhs.write_;
-        rhs.readFd_ = -1;
-        rhs.writeFd_ = -1;
-    }
-    return *this;
 }
 
 int FaultLoggerPipe::GetReadFd() const
 {
     DFXLOGD("%{public}s :: pipe read fd: %{public}d", __func__, readFd_);
-    return readFd_;
+    return readFd_.GetFd();
 }
 
 int FaultLoggerPipe::GetWriteFd()
@@ -94,17 +64,9 @@ int FaultLoggerPipe::GetWriteFd()
     DFXLOGD("%{public}s :: pipe write fd: %{public}d", __func__, writeFd_);
     if (!write_) {
         write_ = true;
-        return writeFd_;
+        return writeFd_.GetFd();
     }
     return -1;
-}
-
-void FaultLoggerPipe::Close(int& fd)
-{
-    if (fd > 0) {
-        fdsan_close_with_tag(fd, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
-        fd = -1;
-    }
 }
 
 std::list<FaultLoggerPipePair> FaultLoggerPipePair::sdkDumpPipes_{};

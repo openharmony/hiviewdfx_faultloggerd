@@ -23,6 +23,7 @@
 #include <unistd.h>
 
 #include "hisysevent_manager.h"
+#include "smart_fd.h"
 
 // defile Domain ID
 #ifndef LOG_DOMAIN
@@ -277,23 +278,21 @@ void CrashValidator::CheckOutOfDateEvents()
 
 void CrashValidator::ReadServiceCrashStatus()
 {
-    char kmsg[KMSG_SIZE];
-    int fd = open("/dev/kmsg", O_RDONLY | O_NONBLOCK);
-    if (fd == -1) {
+    SmartFd fd(open("/dev/kmsg", O_RDONLY | O_NONBLOCK));
+    if (!fd) {
         printf("Failed to open /dev/kmsg.\n");
         return;
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(fd, 0, ownerTag);
-    lseek(fd, 0, 3); // 3 : SEEK_DATA
+
+    lseek(fd.GetFd(), 0, 3); // 3 : SEEK_DATA
+    char kmsg[KMSG_SIZE];
     while (true) {
         ssize_t len;
-        if (((len = read(fd, kmsg, sizeof(kmsg) - 1)) == -1) && errno == EPIPE) {
+        if (((len = read(fd.GetFd(), kmsg, sizeof(kmsg) - 1)) == -1) && errno == EPIPE) {
             continue;
         }
         if (len == -1 && errno == EINVAL) {
             printf("Failed to read kmsg\n");
-            fdsan_close_with_tag(fd, ownerTag);
             return;
         }
         if (len < 1) {
@@ -324,7 +323,6 @@ void CrashValidator::ReadServiceCrashStatus()
         HiSysEventWrite(HiSysEvent::Domain::STARTUP, KEY_PROCESS_EXIT, HiSysEvent::EventType::BEHAVIOR,
             KEY_NAME, name, KEY_PID, pid, KEY_UID, uid, KEY_STATUS, status);
     }
-    fdsan_close_with_tag(fd, ownerTag);
 }
 
 bool CrashValidator::ValidateLogContent(const CrashEvent& event)

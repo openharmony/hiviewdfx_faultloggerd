@@ -115,9 +115,26 @@ if (defined(ohos_lite)) {
     ]
   }
 
+  ohos_unittest("test_smartfd") {
+    module_out_path = module_output_path
+    sources = [
+      "smart_fd_test.cpp",
+    ]
+    configs = [ ":module_private_config" ]
+
+    external_deps = [
+      "c_utils:utils",
+      "googletest:gmock_main",
+      "googletest:gtest_main",
+      "init:libbegetutil",
+    ]
+  }
   group("unittest") {
     testonly = true
-    deps = [ ":test_common" ]
+    deps = [
+      ":test_common",
+      ":test_smartfd"
+    ]
     if (!defined(ohos_lite)) {
       deps += [ ":test_param" ]
     }

@@ -32,7 +32,7 @@ private:
     bool AddServerListener(const char* socketName);
     class SocketServerListener : public EpollListener {
     public:
-        SocketServerListener(SocketServer& socketServer, int32_t fd, std::string socketName);
+        SocketServerListener(SocketServer& socketServer, SmartFd fd, std::string socketName);
         void OnEventPoll() override;
         SocketServer& socketServer_;
         const std::string socketName_;
@@ -40,7 +40,7 @@ private:
 
     class ClientRequestListener : public EpollListener {
     public:
-        ClientRequestListener(SocketServerListener& socketServerListener, int32_t fd, uid_t clientUid);
+        ClientRequestListener(SocketServerListener& socketServerListener, SmartFd fd, uid_t clientUid);
         ~ClientRequestListener() override;
         void OnEventPoll() override;
     private:

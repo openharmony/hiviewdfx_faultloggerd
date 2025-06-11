@@ -94,24 +94,17 @@ uint64_t GetTimeMilliseconds(void)
 
 bool TrimAndDupStr(const char* src, char* dst)
 {
-    if ((src == NULL) || (dst == NULL)) {
+    if (src == NULL || dst == NULL) {
         return false;
     }
 
-    size_t i = 0, j = 0;
-    for (; i < strlen(src); ++i) {
-        if (src[i] != ' ') {
-            dst[j++] = src[i];
+    for (char ch = *src; ch != '\0' && ch != '\n';) {
+        if (ch != ' ') {
+            *dst++ = ch;
         }
+        ch = *++src;
     }
-    for (; j <= i; j++) {
-        dst[j] = '\0';
-    }
-
-    dst = strchr(dst, '\n');
-    if (dst != NULL) {
-        *dst = '\0';
-    }
+    *dst = '\0';
     return true;
 }
 
@@ -123,7 +116,7 @@ uint64_t GetAbsTimeMilliSeconds(void)
         ((uint64_t)(ts.tv_nsec) / NUMBER_ONE_MILLION);
 }
 
-void ParseSiValue(siginfo_t* si, uint64_t* endTime, int* tid)
+void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* tid)
 {
     const int flagOffset = 63;
     if (((uint64_t)si->si_value.sival_ptr & (1ULL << flagOffset)) != 0) {

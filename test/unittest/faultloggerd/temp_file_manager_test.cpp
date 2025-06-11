@@ -82,14 +82,15 @@ bool TempFileManagerTest::IsFileExist(const string &fileName)
 SmartFd TempFileManagerTest::CreateTestFile(const string& fileName, uint32_t fileSize)
 {
     GTEST_LOG_(INFO) << "Create test file: " << fileName;
-    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(fileName.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP));
-    if (fd < 0 || fileSize == 0) {
+    SmartFd fd{static_cast<int>(OHOS_TEMP_FAILURE_RETRY(open(fileName.c_str(),
+        O_RDWR | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP)))};
+    if (!fd|| fileSize == 0) {
         return fd;
     }
     constexpr int oneKb = 1024;
     char testContent[oneKb] = "";
     for (uint32_t i = 0; i < fileSize; ++i) {
-        write(fd, testContent, oneKb);
+        write(fd.GetFd(), testContent, oneKb);
     }
     return fd;
 }
@@ -102,7 +103,7 @@ SmartFd TempFileManagerTest::CreateTestFile(const string& fileName, uint32_t fil
 HWTEST_F(TempFileManagerTest, InvalidTempFileTest01, TestSize.Level2)
 {
     string testFileName = GetFileName("testFiles", 0);
-    ASSERT_GE(CreateTestFile(testFileName), 0);
+    ASSERT_TRUE(CreateTestFile(testFileName));
     this_thread::sleep_for(chrono::milliseconds(100));
     error_code errorCode;
     ASSERT_FALSE(IsFileExist(testFileName));
@@ -115,15 +116,15 @@ HWTEST_F(TempFileManagerTest, InvalidTempFileTest01, TestSize.Level2)
  */
 HWTEST_F(TempFileManagerTest, OverTimeFileDeleteTest01, TestSize.Level2)
 {
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 66)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 65)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 64)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 63)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 62)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 66)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 65)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 64)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 63)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 62)));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(CountTempFiles(), 5);
 
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 61)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 61)));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(CountTempFiles(), 0);
 }
@@ -136,18 +137,18 @@ HWTEST_F(TempFileManagerTest, OverTimeFileDeleteTest01, TestSize.Level2)
 HWTEST_F(TempFileManagerTest, OverTimeFileDeleteTest02, TestSize.Level2)
 {
     string oldFilePath1 = GetFileName(CPP_CRASH_FILE, 66);
-    ASSERT_GE(CreateTestFile(oldFilePath1), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath1));
     string oldFilePath2 = GetFileName(CPP_CRASH_FILE, 65);
-    ASSERT_GE(CreateTestFile(oldFilePath2), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath2));
     string oldFilePath3 = GetFileName(CPP_CRASH_FILE, 64);
-    ASSERT_GE(CreateTestFile(oldFilePath3), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath3));
 
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 50)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 49)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 50)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 49)));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(CountTempFiles(), 5);
 
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 48)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 48)));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(CountTempFiles(), 3);
     ASSERT_FALSE(IsFileExist(oldFilePath1));
@@ -162,8 +163,8 @@ HWTEST_F(TempFileManagerTest, OverTimeFileDeleteTest02, TestSize.Level2)
  */
 HWTEST_F(TempFileManagerTest, OverTimeFileDeleteTest03, TestSize.Level2)
 {
-    ASSERT_GE(CreateTestFile(GetFileName(JS_HEAP, 0)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(JS_HEAP, 1)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 0)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 1)));
     ASSERT_EQ(CountTempFiles(), 2);
     this_thread::sleep_for(chrono::milliseconds(3100));
     ASSERT_EQ(CountTempFiles(), 0);
@@ -177,19 +178,19 @@ HWTEST_F(TempFileManagerTest, OverTimeFileDeleteTest03, TestSize.Level2)
  */
 HWTEST_F(TempFileManagerTest, OverMaxFileCountTest01, TestSize.Level2)
 {
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 48)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 47)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 46)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 45)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 44)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 48)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 47)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 46)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 45)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 44)));
     string oldFilePath1 = GetFileName(CPP_CRASH_FILE, 50);
-    ASSERT_GE(CreateTestFile(oldFilePath1), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath1));
     string oldFilePath2 = GetFileName(CPP_CRASH_FILE, 49);
-    ASSERT_GE(CreateTestFile(oldFilePath2), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath2));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(CountTempFiles(), 7);
 
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 43)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 43)));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(CountTempFiles(), 5);
     ASSERT_FALSE(IsFileExist(oldFilePath1));
@@ -203,11 +204,11 @@ HWTEST_F(TempFileManagerTest, OverMaxFileCountTest01, TestSize.Level2)
  */
 HWTEST_F(TempFileManagerTest, OverMaxFileCountTest02, TestSize.Level2)
 {
-    ASSERT_GE(CreateTestFile(GetFileName(LEAK_STACK, 48)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(LEAK_STACK, 48)));
     string oldFilePath1 = GetFileName(LEAK_STACK, 49);
-    ASSERT_GE(CreateTestFile(oldFilePath1), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath1));
     ASSERT_EQ(CountTempFiles(), 2);
-    ASSERT_GE(CreateTestFile(GetFileName(LEAK_STACK, 46)), 0);
+    ASSERT_TRUE(CreateTestFile(GetFileName(LEAK_STACK, 46)));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(CountTempFiles(), 2);
     ASSERT_FALSE(IsFileExist(oldFilePath1));
@@ -221,7 +222,7 @@ HWTEST_F(TempFileManagerTest, OverMaxFileCountTest02, TestSize.Level2)
 HWTEST_F(TempFileManagerTest, OverFileSizeFileTest01, TestSize.Level2)
 {
     string testFileName = GetFileName(CPP_CRASH_FILE, 50);
-    ASSERT_GE(CreateTestFile(testFileName, 6), 0);
+    ASSERT_TRUE(CreateTestFile(testFileName, 6));
     this_thread::sleep_for(chrono::milliseconds(100));
     error_code errorCode;
     uint64_t fileSize = filesystem::file_size(testFileName, errorCode);
@@ -236,7 +237,7 @@ HWTEST_F(TempFileManagerTest, OverFileSizeFileTest01, TestSize.Level2)
 HWTEST_F(TempFileManagerTest, OverFileSizeFileTest02, TestSize.Level2)
 {
     string testFileName = GetFileName(JS_HEAP, 0);
-    ASSERT_GE(CreateTestFile(testFileName, 6), 0);
+    ASSERT_TRUE(CreateTestFile(testFileName, 6));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_FALSE(IsFileExist(testFileName));
 }
@@ -249,8 +250,8 @@ HWTEST_F(TempFileManagerTest, OverFileSizeFileTest02, TestSize.Level2)
 HWTEST_F(TempFileManagerTest, ScanCurrentFilesOnStartTest01, TestSize.Level2)
 {
     string testFileName = GetFileName(JS_HEAP, 0);
-    ASSERT_GE(CreateTestFile(testFileName, 5), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(JS_HEAP, 1)), 0);
+    ASSERT_TRUE(CreateTestFile(testFileName, 5));
+    ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 1)));
     this_thread::sleep_for(chrono::milliseconds(100));
     ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 2);
     tempFileManager.ScanTempFilesOnStart();
@@ -268,17 +269,17 @@ HWTEST_F(TempFileManagerTest, ScanCurrentFilesOnStartTest02, TestSize.Level2)
         tempFileManager.epollManager_.DelEpollEvent(listener->GetFd());
     }
     string oldFilePath1 = GetFileName(JS_HEAP, 0);
-    ASSERT_GE(CreateTestFile(oldFilePath1), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath1));
     string oldFilePath2 = GetFileName(JS_HEAP, 1);
-    ASSERT_GE(CreateTestFile(oldFilePath2), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 1)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 2)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 3)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 4)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 5)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 6)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 7)), 0);
-    ASSERT_GE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 8)), 0);
+    ASSERT_TRUE(CreateTestFile(oldFilePath2));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 1)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 2)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 3)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 4)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 5)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 6)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 7)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 8)));
     tempFileManager.ScanTempFilesOnStart();
     ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::CPP_CRASH), 5);
     ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 2);

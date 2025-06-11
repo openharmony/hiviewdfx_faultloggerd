@@ -243,7 +243,7 @@ int ProcessDumper::DumpProcess(ProcessDumpRequest& request)
     if (!InitUnwinder(request, dumpRes)) {
         return dumpRes;
     }
-    if (InitBufferWriter(request) < 0) {
+    if (!InitBufferWriter(request)) {
         DFXLOGE("Failed to init buffer writer.");
         dumpRes = DumpErrorCode::DUMP_EGETFD;
     }
@@ -329,13 +329,9 @@ void ProcessDumper::WriteDumpResIfNeed(const ProcessDumpRequest& request, int32_
             DFXLOGE("%{public}s request pipe failed, err:%{public}d", __func__, errno);
             return;
         }
-        uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-        fdsan_exchange_owner_tag(pipeWriteFd[PIPE_BUF_INDEX], 0, ownerTag);
-        fdsan_exchange_owner_tag(pipeWriteFd[PIPE_RES_INDEX], 0, ownerTag);
-
-        CloseFd(pipeWriteFd[PIPE_BUF_INDEX]);
-        int resFd = pipeWriteFd[PIPE_RES_INDEX];
-        DfxBufferWriter::GetInstance().SetWriteResFd(resFd);
+        SmartFd bufFd(pipeWriteFd[PIPE_BUF_INDEX]);
+        SmartFd resFd(pipeWriteFd[PIPE_RES_INDEX]);
+        DfxBufferWriter::GetInstance().SetWriteResFd(std::move(resFd));
         DfxBufferWriter::GetInstance().WriteDumpRes(resDump);
     }
 }
@@ -394,18 +390,15 @@ void ProcessDumper::UnwindWriteJit(const ProcessDumpRequest &request)
         .tid = request.tid,
         .time = request.timeStamp
     };
-    int32_t fd = RequestFileDescriptorEx(&jitRequest);
-    if (fd == -1) {
+    SmartFd fd(RequestFileDescriptorEx(&jitRequest));
+    if (!fd) {
         DFXLOGE("request jitlog fd failed.");
         return;
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(fd, 0, ownerTag);
 
-    if (unwinder_->ArkWriteJitCodeToFile(fd) < 0) {
+    if (unwinder_->ArkWriteJitCodeToFile(fd.GetFd()) < 0) {
         DFXLOGE("jit code write file failed.");
     }
-    fdsan_close_with_tag(fd, ownerTag);
 }
 
 void ProcessDumper::PrintDumpInfo(const ProcessDumpRequest& request, int& dumpRes)
@@ -565,17 +558,15 @@ int ProcessDumper::GeFaultloggerdRequestType(const ProcessDumpRequest &request)
     }
 }
 
-int ProcessDumper::InitBufferWriter(const ProcessDumpRequest& request)
+bool ProcessDumper::InitBufferWriter(const ProcessDumpRequest& request)
 {
     DFX_TRACE_SCOPED("InitBufferWriter");
-    int bufferFd = -1;
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+    SmartFd bufferFd;
     if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         int pipeWriteFd[] = { -1, -1 };
         if (RequestPipeFd(request.pid, FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == 0) {
-            fdsan_exchange_owner_tag(pipeWriteFd[PIPE_RES_INDEX], 0, ownerTag);
-            bufferFd = pipeWriteFd[PIPE_BUF_INDEX];
-            DfxBufferWriter::GetInstance().SetWriteResFd(pipeWriteFd[PIPE_RES_INDEX]);
+            bufferFd = SmartFd{pipeWriteFd[PIPE_BUF_INDEX]};
+            DfxBufferWriter::GetInstance().SetWriteResFd(SmartFd{pipeWriteFd[PIPE_RES_INDEX]});
         }
     } else {
         struct FaultLoggerdRequest faultloggerdRequest{
@@ -584,20 +575,17 @@ int ProcessDumper::InitBufferWriter(const ProcessDumpRequest& request)
             .tid = request.tid,
             .time = request.timeStamp
         };
-        bufferFd = RequestFileDescriptorEx(&faultloggerdRequest);
-        if (bufferFd == -1) {
+        bufferFd = SmartFd {RequestFileDescriptorEx(&faultloggerdRequest)};
+        if (!bufferFd) {
             DFXLOGW("Failed to request fd from faultloggerd.");
             ReportCrashException(CrashExceptionCode::CRASH_DUMP_EWRITEFD);
-            bufferFd = CreateFileForCrash(request.pid, request.timeStamp);
+            bufferFd = SmartFd {CreateFileForCrash(request.pid, request.timeStamp)};
         }
     }
-    if (bufferFd > 0) {
-        fdsan_exchange_owner_tag(bufferFd, 0, ownerTag);
-    }
     
-    int result = bufferFd;
-    DfxBufferWriter::GetInstance().SetWriteBufFd(bufferFd);
-    return result;
+    bool rst{bufferFd};
+    DfxBufferWriter::GetInstance().SetWriteBufFd(std::move(bufferFd));
+    return rst;
 }
 
 int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const

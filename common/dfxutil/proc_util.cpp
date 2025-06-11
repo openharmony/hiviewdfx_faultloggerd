@@ -50,13 +50,13 @@ bool Schedstat::ParseSchedstat(const std::string& schedstatPath)
     }
 
     SmartFd fd(open(realPath, O_RDONLY));
-    if (fd < 0) {
+    if (!fd) {
         DFXLOGE("open %{public}s failed. %{public}d", schedstatPath.c_str(), errno);
         return false;
     }
 
     std::string line;
-    if (!ReadFdToString(fd, line)) {
+    if (!ReadFdToString(fd.GetFd(), line)) {
         DFXLOGE("Schedstat::FromProc read failed.");
         return false;
     }
@@ -227,13 +227,13 @@ bool ParseStat(const std::string& statPath, ProcessInfo& info)
     }
 
     SmartFd fd(open(realPath, O_RDONLY));
-    if (fd < 0) {
+    if (!fd) {
         DFXLOGE("open %{public}s failed. %{public}d", statPath.c_str(), errno);
         return false;
     }
 
     std::string line;
-    if (!ReadFdToString(fd, line)) {
+    if (!ReadFdToString(fd.GetFd(), line)) {
         DFXLOGE("read file %{public}s failed.", statPath.c_str());
         return false;
     }

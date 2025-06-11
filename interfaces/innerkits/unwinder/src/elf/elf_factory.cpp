@@ -29,6 +29,7 @@
 #include "dfx_maps.h"
 #include "dfx_trace_dlsym.h"
 #include "dfx_util.h"
+#include "smart_fd.h"
 #if defined(ENABLE_MINIDEBUGINFO)
 #include "7zCrc.h"
 #include "unwinder_config.h"
@@ -147,22 +148,17 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
 #else
     int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY));
 #endif
-    if (fd <= 0) {
+    SmartFd smartFd(fd);
+    if (!smartFd) {
         DFXLOGE("Failed to open file: %{public}s, errno(%{public}d)", filePath_.c_str(), errno);
         return regularElf;
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(fd, 0, ownerTag);
-    do {
-        auto size = static_cast<size_t>(GetFileSize(fd));
-        auto mMap = std::make_shared<DfxMmap>();
-        if (!mMap->Init(fd, size, 0)) {
-            DFXLOGE("Failed to mmap init.");
-            break;
-        }
-        regularElf->SetMmap(mMap);
-    } while (false);
-    fdsan_close_with_tag(fd, ownerTag);
+    auto mMap = std::make_shared<DfxMmap>();
+    if (!mMap->Init(smartFd.GetFd(), static_cast<size_t>(GetFileSize(smartFd.GetFd())), 0)) {
+        DFXLOGE("Failed to mmap init.");
+        return regularElf;
+    }
+    regularElf->SetMmap(mMap);
     return regularElf;
 }
 
@@ -210,34 +206,28 @@ std::shared_ptr<DfxElf> CompressHapElfFactory::Create()
         DFXLOGE("Illegal file path, please check file: %{public}s", realPath.c_str());
         return nullptr;
     }
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY));
-    if (fd < 0) {
+    SmartFd smartFd(static_cast<int>(OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY))));
+    if (!smartFd) {
         DFXLOGE("Failed to open hap file, errno(%{public}d)", errno);
         return nullptr;
     }
-    uint64_t ownerTag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
-    fdsan_exchange_owner_tag(fd, 0, ownerTag);
-    std::shared_ptr<DfxElf> compressHapElf = nullptr;
-    do {
-        size_t elfSize = 0;
-        if (!VerifyElf(fd, elfSize)) {
-            break;
-        }
-        DFXLOGU("elfSize: %{public}zu", elfSize);
-        auto mMap = std::make_shared<DfxMmap>();
-        if (!mMap->Init(fd, elfSize, prevMap_->offset)) {
-            DFXLOGE("Failed to init mmap_!");
-            break;
-        }
-        compressHapElf = std::make_shared<DfxElf>(mMap);
-        compressHapElf->SetBaseOffset(prevMap_->offset);
-        if (!compressHapElf->IsValid()) {
-            DFXLOGE("Failed to parse compress hap Elf.");
-            compressHapElf = nullptr;
-            break;
-        }
-    } while (false);
-    fdsan_close_with_tag(fd, ownerTag);
+
+    size_t elfSize = 0;
+    if (!VerifyElf(smartFd.GetFd(), elfSize)) {
+        return {};
+    }
+    DFXLOGU("elfSize: %{public}zu", elfSize);
+    auto mMap = std::make_shared<DfxMmap>();
+    if (!mMap->Init(smartFd.GetFd(), elfSize, prevMap_->offset)) {
+        DFXLOGE("Failed to init mmap_!");
+        return {};
+    }
+    std::shared_ptr<DfxElf> compressHapElf = std::make_shared<DfxElf>(mMap);
+    compressHapElf->SetBaseOffset(prevMap_->offset);
+    if (!compressHapElf->IsValid()) {
+        DFXLOGE("Failed to parse compress hap Elf.");
+        return {};
+    }
     return compressHapElf;
 }
 
@@ -250,7 +240,7 @@ bool CompressHapElfFactory::VerifyElf(int fd, size_t& elfSize)
         return false;
     }
     const uint8_t* data = static_cast<const uint8_t*>(mmap->Get());
-    if (memcmp(data, ELFMAG, SELFMAG) != 0) {
+    if (data == nullptr || memcmp(data, ELFMAG, SELFMAG) != 0) {
         DFXLOGE("Invalid elf hdr?");
         return false;
     }
