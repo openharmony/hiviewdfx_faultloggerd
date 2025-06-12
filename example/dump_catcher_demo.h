@@ -19,7 +19,7 @@
 #define NOINLINE __attribute__((noinline))
 
 #define GEN_TEST_FUNCTION(FuncNumA, FuncNumB)          \
-    __attribute__((noinline)) int TestFunc##FuncNumA() \
+    __attribute__((optnone)) int TestFunc##FuncNumA() \
     {                                                  \
         return TestFunc##FuncNumB();                   \
     }
