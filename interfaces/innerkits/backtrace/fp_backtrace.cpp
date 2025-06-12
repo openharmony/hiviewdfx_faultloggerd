@@ -17,13 +17,14 @@
 
 #if is_ohos && !is_mingw && __aarch64__
 #include <mutex>
-#include <sys/uio.h>
-
 #include "dfx_ark.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"
 #include "dfx_symbols.h"
 #include "dfx_util.h"
+#include "memory_reader.h"
+#include "smart_fd.h"
+#include "stack_utils.h"
 #include "unwinder.h"
 #endif
 
@@ -31,10 +32,18 @@ namespace OHOS {
 namespace HiviewDFX {
 
 #if is_ohos && !is_mingw && __aarch64__
+namespace {
+
 #undef LOG_DOMAIN
 #undef LOG_TAG
 #define LOG_TAG "FpBacktrace"
 #define LOG_DOMAIN 0xD002D11
+}
+
+extern "C" __attribute__((weak)) bool ffrt_get_current_coroutine_stack(void** stackAddr, size_t* size)
+{
+    return false;
+}
 
 class FpBacktraceImpl : public FpBacktrace {
 public:
@@ -42,66 +51,70 @@ public:
     uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size) override;
     DfxFrame* SymbolicAddress(void* pc) override;
 private:
-    bool ReadProcMem(const uint64_t addr, void* data, size_t size) const;
+    uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size, MemoryReader& memoryReader) const;
+    bool GetCurrentThreadRange(uintptr_t startFp, uintptr_t& threadBegin, uintptr_t& threadEnd);
     std::shared_ptr<DfxMaps> maps_ = nullptr;
     Unwinder unwinder_{false};
-    uintptr_t arkStubBegin_ = 0;
-    uintptr_t arkStubEnd_ = 0;
+    uintptr_t mainStackBegin_{0};
+    uintptr_t mainStackEnd_{0};
     std::map<void*, std::unique_ptr<DfxFrame>> cachedFrames_;
-    bool withArk_ = false;
-    pid_t pid_ = 0;
     std::mutex mutex_;
 };
 
-bool FpBacktraceImpl::ReadProcMem(const uint64_t addr, void* data, size_t size) const
-{
-    uint64_t currentAddr = addr;
-    if (__builtin_add_overflow(currentAddr, size, &currentAddr)) {
-        return false;
-    }
-    struct iovec remoteIov = {
-        .iov_base = reinterpret_cast<void*>(addr),
-        .iov_len = size,
-    };
-    struct iovec dataIov = {
-        .iov_base = static_cast<uint8_t*>(data),
-        .iov_len = size,
-    };
-    ssize_t readCount = process_vm_readv(pid_, &dataIov, 1, &remoteIov, 1, 0);
-    return static_cast<size_t>(readCount) == size;
-}
-
 bool FpBacktraceImpl::Init()
 {
+    static std::once_flag flag;
+    std::call_once(flag, []() {
+        void* stackBegin = 0;
+        size_t stackSize = 0;
+        ffrt_get_current_coroutine_stack(&stackBegin, &stackSize);
+        DfxArk::Instance().InitArkFunction(ArkFunction::STEP_ARK);
+    });
+    StackUtils::Instance().GetMainStackRange(mainStackBegin_, mainStackEnd_);
     maps_ = DfxMaps::Create(0, false);
     if (maps_ == nullptr) {
         DFXLOGI("failed creat maps");
         return false;
     }
-    withArk_ = maps_->GetArkStackRange(arkStubBegin_, arkStubEnd_) &&
-        DfxArk::Instance().InitArkFunction(ArkFunction::STEP_ARK);
-    pid_ = getpid();
     return true;
 }
 
 uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_t size)
 {
+    if (!maps_ || startFp == nullptr || pcArray == nullptr || size == 0) {
+        return 0;
+    }
+    uintptr_t stackBegin = 0;
+    uintptr_t stackEnd = 0;
+    if (GetCurrentThreadRange(reinterpret_cast<uintptr_t>(startFp), stackBegin, stackEnd)) {
+        ThreadMemoryReader memoryReader(stackBegin, stackEnd);
+        return BacktraceFromFp(startFp, pcArray, size, memoryReader);
+    }
+    ProcessMemoryReader memoryReader;
+    return BacktraceFromFp(startFp, pcArray, size, memoryReader);
+}
+
+uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_t size,
+    MemoryReader& memoryReader) const
+{
     uint32_t index = 0;
     bool isJsFrame = false;
-    constexpr auto pcIndex = 1;
-    constexpr auto fpIndex = 0;
     uintptr_t registerState[] = {reinterpret_cast<uintptr_t>(startFp), 0};
     uintptr_t sp = 0 ;
+    uintptr_t arkStubBegin{0};
+    uintptr_t arkStubEnd{0};
+    maps_->GetArkStackRange(arkStubBegin, arkStubEnd);
     while (index < size) {
+        constexpr auto fpIndex = 0;
+        constexpr auto pcIndex = 1;
         uintptr_t preFp = registerState[fpIndex] ;
-        if (isJsFrame ||
-            (withArk_ && registerState[pcIndex] >= arkStubBegin_ && registerState[pcIndex] < arkStubEnd_)) {
+        if (isJsFrame || (registerState[pcIndex] < arkStubEnd && registerState[pcIndex] >= arkStubBegin)) {
             ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame);
-            DfxArk::Instance().StepArkFrame(this, [](void* fpBacktrace, uintptr_t addr, uintptr_t* val) {
-                return reinterpret_cast<FpBacktraceImpl*>(fpBacktrace)->ReadProcMem(addr, val, sizeof(uintptr_t));
+            DfxArk::Instance().StepArkFrame(&memoryReader, [](void* memoryReader, uintptr_t addr, uintptr_t* val) {
+                return reinterpret_cast<MemoryReader*>(memoryReader)->ReadMemory(addr, val, sizeof(uintptr_t));
             }, &arkParam);
         } else {
-            if (!ReadProcMem(registerState[fpIndex], registerState, sizeof(registerState))) {
+            if (!memoryReader.ReadMemory(registerState[fpIndex], registerState, sizeof(registerState))) {
                 break;
             }
         }
@@ -118,6 +131,28 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
         }
     }
     return index;
+}
+
+bool FpBacktraceImpl::GetCurrentThreadRange(uintptr_t startFp, uintptr_t& threadBegin, uintptr_t& threadEnd)
+{
+    if (getpid() == gettid() && startFp >= mainStackBegin_ && startFp < mainStackEnd_) {
+        threadBegin = mainStackBegin_;
+        threadEnd = mainStackEnd_;
+        return true;
+    }
+    if (StackUtils::GetSelfStackRange(threadBegin, threadEnd)) {
+        if (startFp >= threadBegin && startFp < threadEnd) {
+            return true;
+        }
+    }
+    size_t stackSize = 0;
+    if (ffrt_get_current_coroutine_stack(reinterpret_cast<void**>(&threadBegin), &stackSize)) {
+        if (startFp >= threadBegin && startFp < threadBegin + stackSize) {
+            threadEnd = threadBegin + stackSize;
+            return true;
+        }
+    }
+    return false;
 }
 
 DfxFrame* FpBacktraceImpl::SymbolicAddress(void* pc)

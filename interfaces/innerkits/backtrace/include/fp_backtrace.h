@@ -30,5 +30,4 @@ public:
 }
 }
 
-
 #endif //FP_BACKTRACE_H

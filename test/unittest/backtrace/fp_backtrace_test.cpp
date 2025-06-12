@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 #include <securec.h>
 
+#include "ffrt_inner.h"
 #include "fp_backtrace.h"
 
 using namespace testing;
@@ -55,25 +56,66 @@ HWTEST_F(FpBacktraceTest, FpBacktraceTestTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 }
 
+#if is_ohos && !is_mingw && __aarch64__
 /**
  * @tc.name: FpBacktraceTestTest002
- * @tc.desc: test get backtrace by a invalid fp.
+ * @tc.desc: test get backtrace by a invalid parameter.
  * @tc.type: FUNC
  */
 HWTEST_F(FpBacktraceTest, FpBacktraceTestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest002: start.";
     auto fpBacktrace = FpBacktrace::CreateInstance();
-#if is_ohos && !is_mingw && __aarch64__
     ASSERT_NE(nullptr, fpBacktrace);
     void* pcArray[DEFAULT_MAX_FRAME_NUM]{0};
     uint64_t address = std::numeric_limits<uint64_t>::max();
-    int size = fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(address), pcArray, DEFAULT_MAX_FRAME_NUM);
-    ASSERT_EQ(size, 0);
-#else
-    ASSERT_EQ(nullptr, fpBacktrace);
-#endif
+    ASSERT_EQ(fpBacktrace->BacktraceFromFp(nullptr, nullptr, 0), 0);
+    ASSERT_EQ(fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(address), nullptr, 0), 0);
+    ASSERT_EQ(fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(address), pcArray, 0), 0);
+    ASSERT_EQ(fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(address), pcArray, DEFAULT_MAX_FRAME_NUM), 0);
     GTEST_LOG_(INFO) << "BacktraceLocalTest002: end.";
 }
+
+/**
+ * @tc.name: FpBacktraceTestTest003
+ * @tc.desc: test get backtrace for ffrt thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FpBacktraceTest, FpBacktraceTestTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest003: start.";
+    auto fpBacktrace = FpBacktrace::CreateInstance();
+    ASSERT_NE(nullptr, fpBacktrace);
+    int size = 0;
+    ffrt::submit([&] {
+        void* pcArray[DEFAULT_MAX_FRAME_NUM]{0};
+        size = fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, DEFAULT_MAX_FRAME_NUM);
+    }, {}, {});
+    ffrt::wait();
+    ASSERT_GT(size, 0);
+    GTEST_LOG_(INFO) << "BacktraceLocalTest003: end.";
+}
+
+/**
+ * @tc.name: FpBacktraceTestTest004
+ * @tc.desc: test get backtrace for other thread.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FpBacktraceTest, FpBacktraceTestTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest004: start.";
+    auto fpBacktrace = FpBacktrace::CreateInstance();
+    ASSERT_NE(nullptr, fpBacktrace);
+    int size = 0;
+    auto startFp = __builtin_frame_address(0);
+    ffrt::submit([&] {
+        void* pcArray[DEFAULT_MAX_FRAME_NUM]{0};
+        size = fpBacktrace->BacktraceFromFp(startFp, pcArray, DEFAULT_MAX_FRAME_NUM);
+    }, {}, {});
+    ffrt::wait();
+    ASSERT_GT(size, 0);
+    GTEST_LOG_(INFO) << "BacktraceLocalTest004: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namepsace OHOS
