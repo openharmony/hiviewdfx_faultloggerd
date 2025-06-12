@@ -63,7 +63,7 @@ void SignalHandlerTest::TearDown()
 {}
 
 extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func) __attribute__((weak));
-extern "C" void DFX_InstallSignalHandler(void) __attribute__((weak));
+extern "C" __attribute__((weak)) void DFX_InstallSignalHandler(void) {}
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len) __attribute__((weak));
 extern "C" int DFX_SetCrashLogConfig(uint8_t type, uint32_t value) __attribute__((weak));
@@ -786,9 +786,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest020, TestSize.Level2)
             if (pid < 0) {
                 GTEST_LOG_(ERROR) << "Failed to fork new test process.";
             } else if (pid == 0) {
-                if (DFX_InstallSignalHandler != nullptr) {
-                    DFX_InstallSignalHandler();
-                }
+                DFX_InstallSignalHandler();
                 constexpr int diffMs = -10000; // 10s
                 SaveDebugMessage(siCode, diffMs, "test123");
                 sleep(5); // 5: wait for stacktrace generating

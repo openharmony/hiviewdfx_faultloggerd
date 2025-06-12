@@ -557,7 +557,6 @@ static std::vector<uint64_t> timestamps = {
 
 void StackPrinterTest::SetUpTestCase(void)
 {
-    
     GTEST_LOG_(INFO) << "SetUpTestCase.";
 }
 
