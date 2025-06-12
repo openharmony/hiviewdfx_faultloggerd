@@ -29,16 +29,17 @@ struct TimeStampedPcs {
 
 class StackPrinter final {
 public:
-    StackPrinter(const std::shared_ptr<Unwinder>& unwinder);
+    StackPrinter();
     StackPrinter(const StackPrinter& other) = delete;
     StackPrinter& operator=(const StackPrinter& other) = delete;
 
-    void SetMaps(std::shared_ptr<DfxMaps> maps);
+    bool InitUniqueTable(pid_t pid, uint32_t size, std::string name = "unique_stack_table");
     bool PutPcsInTable(const std::vector<uintptr_t>& pcs, uint64_t snapshotTime);
+
+    void SetUnwindInfo(const std::shared_ptr<Unwinder>& unwinder, const std::shared_ptr<DfxMaps>& maps);
     std::string GetFullStack(const std::vector<TimeStampedPcs>& timeStampedPcsVec);
     std::string GetTreeStack(bool printTimes = false, uint64_t beginTime = 0, uint64_t endTime = 0);
     std::string GetHeaviestStack(uint64_t beginTime = 0, uint64_t endTime = 0);
-    bool InitUniqueTable(pid_t pid, uint32_t size, std::string name = "unique_stack_table");
 
 private:
     class Impl;

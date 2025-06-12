@@ -80,13 +80,13 @@ static std::vector<StackRecord> TimeFilter(const std::vector<StackRecord>& stack
     std::vector<StackRecord> vec;
     for (const auto& stackRecord : stackRecordVec) {
         StackRecord record;
-        record.stackId = stackRecord.stackId;
         for (auto t : stackRecord.snapshotTimes) {
             if (t >= beginTime && t < endTime) {
                 record.snapshotTimes.emplace_back(t);
             }
         }
         if (!record.snapshotTimes.empty()) {
+            record.stackId = stackRecord.stackId;
             vec.emplace_back(std::move(record));
         }
     }
@@ -95,19 +95,20 @@ static std::vector<StackRecord> TimeFilter(const std::vector<StackRecord>& stack
 
 class StackPrinter::Impl {
 public:
-    Impl(const std::shared_ptr<Unwinder>& unwinder) : root_(nullptr), unwinder_(unwinder)
+    Impl() : root_(nullptr)
     {}
     
-    inline void SetMaps(std::shared_ptr<DfxMaps> maps)
+    inline void SetUnwindInfo(const std::shared_ptr<Unwinder>& unwinder, const std::shared_ptr<DfxMaps>& maps)
     {
+        unwinder_ = unwinder;
         maps_ = maps;
     }
 
+    bool InitUniqueTable(pid_t pid, uint32_t size, std::string name = "unique_stack_table");
     bool PutPcsInTable(const std::vector<uintptr_t>& pcs, uint64_t snapshotTime);
     std::string GetFullStack(const std::vector<TimeStampedPcs>& timeStampedPcsVec);
     std::string GetTreeStack(bool printTimes = false, uint64_t beginTime = 0, uint64_t endTime = 0);
     std::string GetHeaviestStack(uint64_t beginTime = 0, uint64_t endTime = 0);
-    bool InitUniqueTable(pid_t pid, uint32_t size, std::string name = "unique_stack_table");
 
 private:
     void Insert(const std::vector<uintptr_t>& pcs, int32_t count, StackId stackId);
@@ -115,7 +116,10 @@ private:
         uintptr_t pc, int32_t count, uint64_t level, std::shared_ptr<StackItem> acientNode);
     std::shared_ptr<StackItem> AdjustSiblings(std::shared_ptr<StackItem> acient,
         std::shared_ptr<StackItem> cur, std::shared_ptr<StackItem> node);
-    std::string Print(bool printTimes);
+    std::string PrintTreeStack(bool printTimes);
+    std::string PrintStackByPcs(const std::vector<uintptr_t>& pcs);
+    void PrintTimesStr(std::string& frameStr, const std::vector<uint64_t>& snapshotTimes);
+
     std::shared_ptr<StackItem> root_;
     std::shared_ptr<Unwinder> unwinder_;
     std::shared_ptr<DfxMaps> maps_;
@@ -123,12 +127,12 @@ private:
     std::vector<StackRecord> stackRecordVec_;
 };
 
-StackPrinter::StackPrinter(const std::shared_ptr<Unwinder>& unwinder) : impl_(std::make_shared<Impl>(unwinder))
+StackPrinter::StackPrinter() : impl_(std::make_shared<Impl>())
 {}
 
-void StackPrinter::SetMaps(std::shared_ptr<DfxMaps> maps)
+void StackPrinter::SetUnwindInfo(const std::shared_ptr<Unwinder>& unwinder, const std::shared_ptr<DfxMaps>& maps)
 {
-    impl_->SetMaps(maps);
+    impl_->SetUnwindInfo(unwinder, maps);
 }
 
 bool StackPrinter::PutPcsInTable(const std::vector<uintptr_t>& pcs, uint64_t snapshotTime)
@@ -272,24 +276,19 @@ bool StackPrinter::Impl::PutPcsInTable(const std::vector<uintptr_t>& pcs, uint64
 
 std::string StackPrinter::Impl::GetFullStack(const std::vector<TimeStampedPcs>& timeStampedPcsVec)
 {
-    std::string stack;
+    if (unwinder_ == nullptr || maps_ == nullptr) {
+        return std::string("");
+    }
+
+    std::stringstream stack;
     for (const auto& timeStampedPcs : timeStampedPcsVec) {
         std::string snapshotTimeStr = TimeFormat(timeStampedPcs.snapshotTime);
-        if (snapshotTimeStr.empty()) {
-            return stack;
-        }
-        stack += ("\nSnapshotTime:" + snapshotTimeStr + "\n");
+        stack << "SnapshotTime:" << snapshotTimeStr << "\n";
         std::vector<uintptr_t> pcs = timeStampedPcs.pcVec;
-        for (size_t i = 0; i < pcs.size(); i++) {
-            DfxFrame frame;
-            unwinder_->GetFrameByPc(pcs[i], maps_, frame);
-            frame.index = i;
-            auto frameStr = DfxFrameFormatter::GetFrameStr(frame);
-            stack += frameStr;
-        }
-        stack += "\n";
+        stack << PrintStackByPcs(pcs);
+        stack << "\n";
     }
-    return stack;
+    return stack.str();
 }
 
 std::string StackPrinter::Impl::GetTreeStack(bool printTimes, uint64_t beginTime, uint64_t endTime)
@@ -298,7 +297,6 @@ std::string StackPrinter::Impl::GetTreeStack(bool printTimes, uint64_t beginTime
     std::sort(vec.begin(), vec.end(), [](const auto& a, const auto& b) {
         return a.snapshotTimes.size() > b.snapshotTimes.size();
     });
-    std::string stack;
     for (const auto& record : vec) {
         std::vector<uintptr_t> pcs;
         StackId stackId;
@@ -307,31 +305,28 @@ std::string StackPrinter::Impl::GetTreeStack(bool printTimes, uint64_t beginTime
             Insert(pcs, record.snapshotTimes.size(), stackId);
         }
     }
-    stack = Print(printTimes);
-    return stack;
+    return PrintTreeStack(printTimes);
 }
 
 std::string StackPrinter::Impl::GetHeaviestStack(uint64_t beginTime, uint64_t endTime)
 {
+    if (unwinder_ == nullptr || maps_ == nullptr) {
+        return std::string("");
+    }
+
     std::vector<StackRecord> vec = TimeFilter(stackRecordVec_, beginTime, endTime);
     std::sort(vec.begin(), vec.end(), [](const auto& a, const auto& b) {
         return a.snapshotTimes.size() > b.snapshotTimes.size();
     });
-    std::string heaviestStack;
+    std::stringstream heaviestStack;
     auto it = vec.begin();
     std::vector<uintptr_t> pcs;
     StackId stackId;
     stackId.value = it->stackId;
     uniqueStackTable_->GetPcsByStackId(stackId, pcs);
-    heaviestStack = "heaviest stack: \nstack counts: " + std::to_string(it->snapshotTimes.size()) + "\n";
-    for (auto i = pcs.size(); i > 0; i--) {
-        DfxFrame frame;
-        unwinder_->GetFrameByPc(pcs[i - 1], maps_, frame);
-        frame.index = pcs.size() - i;
-        auto frameStr = DfxFrameFormatter::GetFrameStr(frame);
-        heaviestStack += frameStr;
-    }
-    return heaviestStack;
+    heaviestStack << "heaviest stack: \nstack counts: " << std::to_string(it->snapshotTimes.size()) << "\n";
+    heaviestStack << PrintStackByPcs(pcs);
+    return heaviestStack.str();
 }
 
 bool StackPrinter::Impl::InitUniqueTable(pid_t pid, uint32_t size, std::string name)
@@ -347,13 +342,28 @@ bool StackPrinter::Impl::InitUniqueTable(pid_t pid, uint32_t size, std::string n
     return true;
 }
 
-std::string StackPrinter::Impl::Print(bool printTimes)
+void StackPrinter::Impl::PrintTimesStr(std::string& frameStr, const std::vector<uint64_t>& snapshotTimes)
 {
-    if (root_ == nullptr) {
+    // rm last '\n'
+    auto pos = frameStr.find("\n");
+    if (pos != std::string::npos) {
+        frameStr.replace(pos, 1, "");
+    }
+    
+    for (auto t : snapshotTimes) {
+        frameStr.append(" ");
+        frameStr.append(TimeFormat(t));
+    }
+    frameStr.append("\n");
+}
+
+std::string StackPrinter::Impl::PrintTreeStack(bool printTimes)
+{
+    if (root_ == nullptr || unwinder_ == nullptr || maps_ == nullptr) {
         return std::string("");
     }
 
-    std::stringstream ret;
+    std::stringstream ss;
     std::vector<std::shared_ptr<StackItem>> nodes;
     nodes.push_back(root_);
     const int indent = 2;
@@ -375,24 +385,30 @@ std::string StackPrinter::Impl::Print(bool printTimes)
         if (child != nullptr) {
             nodes.push_back(child);
         } else if (printTimes) {
-            auto pos = frameStr.find("\n");
-            if (pos != std::string::npos) {
-                frameStr.replace(pos, 1, "");
-            }
             uint64_t stackId = back->stackId;
             auto it = std::find_if(stackRecordVec_.begin(), stackRecordVec_.end(),
                 [&stackId](const auto& stackIdTimes) {
-                    return stackIdTimes.stackId == stackId;
-                });
-            for (auto t : it->snapshotTimes) {
-                frameStr += " ";
-                frameStr += TimeFormat(t);
-            }
+                return stackIdTimes.stackId == stackId;
+            });
+            PrintTimesStr(frameStr, it->snapshotTimes);
         }
-        ret << space << back->pcCount << " " << frameStr;
+        ss << space << back->pcCount << " " << frameStr;
     }
     root_ = nullptr;
-    return ret.str();
+    return ss.str();
+}
+
+std::string StackPrinter::Impl::PrintStackByPcs(const std::vector<uintptr_t>& pcs)
+{
+    std::stringstream ss;
+    for (size_t i = 0; i < pcs.size(); i++) {
+        DfxFrame frame;
+        unwinder_->GetFrameByPc(pcs[i], maps_, frame);
+        frame.index = i;
+        auto frameStr = DfxFrameFormatter::GetFrameStr(frame);
+        ss << frameStr;
+    }
+    return ss.str();
 }
 } // end of namespace HiviewDFX
 } // end of namespace OHOS
