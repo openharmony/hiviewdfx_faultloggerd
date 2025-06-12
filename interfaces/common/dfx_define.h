@@ -77,6 +77,8 @@ static const char* const PROC_SELF_EXE_PATH = "/proc/self/exe";
 #define AT_SYMBOL_DEFAULT       __attribute__ ((visibility("default")))
 #define AT_SYMBOL_HIDDEN        __attribute__ ((visibility("hidden")))
 #define AT_ALWAYS_INLINE        __attribute__((always_inline))
+#define AT_NOINLINE             __attribute__((noinline))
+#define AT_OPT_NONE             __attribute__((optnone))
 #define AT_WARN_UNUSED          __attribute__((warn_unused_result))
 #define AT_UNUSED               __attribute__((unused))
 #define MAYBE_UNUSED            [[maybe_unused]]

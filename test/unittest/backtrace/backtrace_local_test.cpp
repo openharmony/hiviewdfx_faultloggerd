@@ -390,6 +390,11 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest010, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest010: start.";
     UnwinderConfig::SetEnableMiniDebugInfo(true);
+    std::string frameAll;
+    GetBacktrace(frameAll, DEFAULT_MAX_FRAME_NUM, false, DEFAULT_MAX_FRAME_NUM);
+    GTEST_LOG_(INFO) << "--------all frames begin-----------";
+    GTEST_LOG_(INFO) << frameAll;
+    GTEST_LOG_(INFO) << "--------all frames end-----------";
     std::string frame;
     ASSERT_EQ(true, GetBacktrace(frame, 0, false, DEFAULT_MAX_FRAME_NUM));
     int start = frame.find("#00");

@@ -100,7 +100,7 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
     return ret;
 }
 
-bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
+AT_NOINLINE bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
 {
     ElapsedTime et;
     bool ret = GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, 2,
@@ -109,7 +109,7 @@ bool GetBacktrace(std::string& out, bool fast, size_t maxFrameNums)
     return ret;
 }
 
-bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
+AT_NOINLINE bool GetBacktrace(std::string& out, size_t skipFrameNum, bool fast, size_t maxFrameNums)
 {
     ElapsedTime et;
     bool ret = GetBacktraceStringByTid(out, BACKTRACE_CURRENT_THREAD, skipFrameNum + 1, fast, maxFrameNums, false);

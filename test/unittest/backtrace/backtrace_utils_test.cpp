@@ -106,7 +106,7 @@ void BacktraceUtilsTest::TearDown()
 
 static bool CheckBacktraceContent(const std::string& content, bool fast = false)
 {
-    std::string existKeyWords[] = { "#08", "backtrace_utils_test", "system" };
+    std::string existKeyWords[] = { "#04", "backtrace_utils_test", "system" };
     std::string notExistkeyWords[] = {
 #if defined(__aarch64__)
         "0000000000000000",

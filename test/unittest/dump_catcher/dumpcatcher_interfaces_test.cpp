@@ -75,7 +75,7 @@ void DumpCatcherInterfacesTest::SetUp()
 void DumpCatcherInterfacesTest::TearDown()
 {}
 
-static void TestFunRecursive(int recursiveCount)
+AT_OPT_NONE static void TestFunRecursive(int recursiveCount)
 {
     GTEST_LOG_(INFO) << "Enter TestFunRecursive recursiveCount:" << recursiveCount;
     if (recursiveCount <= 0) {
