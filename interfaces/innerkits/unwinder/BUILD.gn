@@ -200,7 +200,7 @@ if (defined(ohos_lite)) {
       "updater",
     ]
     innerapi_tags = [
-      "chipsetsdk_indirect",
+      "chipsetsdk_sp_indirect",
       "platformsdk_indirect",
     ]
     part_name = "faultloggerd"
