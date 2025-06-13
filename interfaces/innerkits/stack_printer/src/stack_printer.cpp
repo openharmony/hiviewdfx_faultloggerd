@@ -72,7 +72,7 @@ static std::string TimeFormat(uint64_t time)
 }
 
 static std::vector<StackRecord> TimeFilter(const std::vector<StackRecord>& stackRecordVec,
-        uint64_t beginTime, uint64_t endTime)
+    uint64_t beginTime, uint64_t endTime)
 {
     if ((beginTime == 0 && endTime == 0) || (beginTime > endTime)) {
         return stackRecordVec;
@@ -148,7 +148,7 @@ std::string StackPrinter::GetTreeStack(bool printTimes, uint64_t beginTime, uint
 
 std::string StackPrinter::GetHeaviestStack(uint64_t beginTime, uint64_t endTime)
 {
-    return impl_->GetHeaviestStack( beginTime, endTime);
+    return impl_->GetHeaviestStack(beginTime, endTime);
 }
 
 bool StackPrinter::InitUniqueTable(pid_t pid, uint32_t size, std::string name)
@@ -374,21 +374,19 @@ std::string StackPrinter::Impl::Print(bool printTimes)
 
         if (child != nullptr) {
             nodes.push_back(child);
-        } else {
-            if (printTimes) {
-                auto pos = frameStr.find("\n");
-                if (pos != std::string::npos) {
-                    frameStr.replace(pos, 1, "");
-                }
-                uint64_t stackId = back->stackId;
-                auto it = std::find_if(stackRecordVec_.begin(), stackRecordVec_.end(),
-                        [&stackId](const auto& stackIdTimes) {
+        } else if (printTimes) {
+            auto pos = frameStr.find("\n");
+            if (pos != std::string::npos) {
+                frameStr.replace(pos, 1, "");
+            }
+            uint64_t stackId = back->stackId;
+            auto it = std::find_if(stackRecordVec_.begin(), stackRecordVec_.end(),
+                [&stackId](const auto& stackIdTimes) {
                     return stackIdTimes.stackId == stackId;
                 });
-                for (auto t : it->snapshotTimes) {
-                    frameStr += " ";
-                    frameStr += TimeFormat(t);
-                }
+            for (auto t : it->snapshotTimes) {
+                frameStr += " ";
+                frameStr += TimeFormat(t);
             }
         }
         ret << space << back->pcCount << " " << frameStr;
