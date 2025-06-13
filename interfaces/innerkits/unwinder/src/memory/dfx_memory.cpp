@@ -99,7 +99,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
             }
             uintptr_t valp = static_cast<uintptr_t>(tmpVal);
             size_t copyBytes = std::min(static_cast<size_t>(alignBytes_) - alignBytes, size);
-            if (memcpy_s(val, copyBytes, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes) != 0) {
+            if (memcpy_s(val, size, reinterpret_cast<uint8_t*>(&valp) + alignBytes, copyBytes) != 0) {
                 return bytesRead;
             }
             tmpAddr += copyBytes;
