@@ -34,7 +34,9 @@
 #include <unistd.h>
 #include <vector>
 
+#ifndef is_ohos_lite
 #include "async_stack.h"
+#endif
 #include "dfx_crash.h"
 #include "dfx_define.h"
 #ifndef is_ohos_lite
@@ -591,6 +593,7 @@ NOINLINE int DfxCrasher::TestGetCrashObjMemory()
     return 0;
 }
 
+#ifndef is_ohos_lite
 static void* CrashInSubThread(void* stackIdPtr)
 {
     uint64_t value = *reinterpret_cast<uint64_t *>(stackIdPtr);
@@ -600,7 +603,6 @@ static void* CrashInSubThread(void* stackIdPtr)
     return nullptr;
 }
 
-#ifndef is_ohos_lite
 NOINLINE int DfxCrasher::AsyncStacktrace()
 {
 #ifdef __aarch64__

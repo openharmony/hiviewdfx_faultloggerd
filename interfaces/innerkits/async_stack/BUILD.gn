@@ -15,28 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 if (defined(ohos_lite)) {
   shared_library("libasync_stack") {
-    include_dirs = [
-      "include",
-      ".",
-      "$faultloggerd_interfaces_path/common",
-      "$faultloggerd_common_path/dfxutil",
-    ]
-    sources = [
-      "async_stack.cpp",
-      "fp_unwinder.cpp",
-      "unique_stack_table.cpp",
-    ]
-    defines = [
-      "is_ohos=${is_ohos}",
-      "is_ohos_lite",
-    ]
-    deps = [
-      "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_path/common/cutil:dfx_cutil",
-      "$faultloggerd_path/common/dfxlog:dfx_hilog",
-    ]
-
-    external_deps = [ "bounds_checking_function:libsec_static" ]
+    # current shared library is unuseful in ohos_lite type
   }
 } else {
   config("async_stack_config") {
@@ -59,12 +38,13 @@ if (defined(ohos_lite)) {
 
     sources = [
       "async_stack.cpp",
-      "fp_unwinder.cpp",
       "unique_stack_table.cpp",
     ]
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
     external_deps = [
       "c_utils:utils",

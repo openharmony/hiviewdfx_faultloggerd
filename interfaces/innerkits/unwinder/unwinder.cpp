@@ -1243,11 +1243,6 @@ void Unwinder::Impl::ParseFrameSymbol(DfxFrame& frame)
     }
     auto elf = frame.map->GetElf();
     if (elf == nullptr) {
-#if defined(ENABLE_MIXSTACK)
-        if (pid_ == UNWIND_TYPE_LOCAL || pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL) {
-            FillJsFrame(frame);
-        }
-#endif
         return;
     }
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
@@ -1299,6 +1294,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
             return;
         }
     }
+    frame.isJsFrame = true;
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
     frame.packageName = std::string(jsFunction.packageName);
@@ -1338,7 +1334,11 @@ bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, D
     }
 
     frame.map = map;
-    FillFrame(frame, enableParseNativeSymbol_);
+    if (DfxMaps::IsArkHapMapItem(map->name) || DfxMaps::IsArkCodeMapItem(map->name)) {
+        FillJsFrame(frame);
+    } else {
+        FillFrame(frame, enableParseNativeSymbol_);
+    }
     return true;
 }
 
@@ -1391,10 +1391,17 @@ void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<u
             DFXLOGU("map had matched");
         } else if (!maps_->FindMapByAddr(pcs[i], map)) {
             map = nullptr;
+            frame.relPc = frame.pc;
+            frame.mapName = "Not mapped";
             DFXLOGE("Find map error");
+            continue;
         }
         frame.map = map;
-        FillFrame(frame, enableParseNativeSymbol_);
+        if (DfxMaps::IsArkHapMapItem(map->name) || DfxMaps::IsArkCodeMapItem(map->name)) {
+            FillJsFrame(frame);
+        } else {
+            FillFrame(frame, enableParseNativeSymbol_);
+        }
         frames.emplace_back(frame);
     }
 }

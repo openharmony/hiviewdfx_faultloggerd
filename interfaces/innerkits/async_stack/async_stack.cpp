@@ -16,15 +16,20 @@
 #include "async_stack.h"
 
 #include <pthread.h>
+#include <securec.h>
 #include <threads.h>
-#include "unique_stack_table.h"
-#include "fp_unwinder.h"
 
+#include "dfx_frame_formatter.h"
 #include "dfx_log.h"
+#include "fp_backtrace.h"
+#include "unique_stack_table.h"
+#include "unwinder.h"
 
+using namespace OHOS::HiviewDFX;
 #if defined(__aarch64__)
 static pthread_key_t g_stackidKey;
 static bool g_init = false;
+OHOS::HiviewDFX::FpBacktrace* fpBacktrace = nullptr;
 
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 static void InitAsyncStackInner(void)
@@ -49,6 +54,7 @@ static void InitAsyncStackInner(void)
 
     // set callback for DfxSignalHandler to read stackId
     SetAsyncStackCallbackFunc((void*)(&GetStackId));
+    fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
 }
 
 static bool InitAsyncStack(void)
@@ -65,13 +71,16 @@ extern "C" uint64_t CollectAsyncStack(void)
     if (!InitAsyncStack()) {
         return 0;
     }
-    const int32_t maxSize = 16;
-    uintptr_t pcs[maxSize] = {0};
-    int32_t skipFrameNum = 2;
-    size_t sz = static_cast<size_t>(OHOS::HiviewDFX::FpUnwinder::Unwind(pcs, maxSize, skipFrameNum));
+    const uint32_t maxSize = 16;
+    void* pcArray[maxSize] = {0};
+    if (fpBacktrace == nullptr) {
+        return 0;
+    }
+    size_t size = fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, maxSize);
     uint64_t stackId = 0;
     auto stackIdPtr = reinterpret_cast<OHOS::HiviewDFX::StackId*>(&stackId);
-    OHOS::HiviewDFX::UniqueStackTable::Instance()->PutPcsInTable(stackIdPtr, pcs, sz);
+    uintptr_t* pcs = reinterpret_cast<uintptr_t*>(pcArray);
+    OHOS::HiviewDFX::UniqueStackTable::Instance()->PutPcsInTable(stackIdPtr, pcs, size);
     return stackId;
 #else
     return 0;
@@ -99,5 +108,34 @@ extern "C" uint64_t GetStackId()
     return reinterpret_cast<uint64_t>(pthread_getspecific(g_stackidKey));
 #else
     return 0;
+#endif
+}
+
+extern "C" int DfxGetSubmitterStackLocal(char* stackTraceBuf, size_t bufferSize)
+{
+#if defined(__aarch64__)
+    uint64_t stackId = reinterpret_cast<uint64_t>(pthread_getspecific(g_stackidKey));
+    std::vector<uintptr_t> pcs;
+    StackId id;
+    id.value = stackId;
+    if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->GetPcsByStackId(id, pcs)) {
+        DFXLOGW("Failed to get pcs by stackId");
+        return -1;
+    }
+    std::vector<DfxFrame> submitterFrames;
+    Unwinder unwinder;
+    std::string stackTrace;
+    unwinder.GetFramesByPcs(submitterFrames, pcs);
+    for (const auto& frame : submitterFrames) {
+        stackTrace += DfxFrameFormatter::GetFrameStr(frame);
+    }
+    auto result = strncpy_s(stackTraceBuf, bufferSize - 1, stackTrace.c_str(), stackTrace.size());
+    if (result != EOK) {
+        DFXLOGE("strncpy failed, err = %{public}d.", result);
+        return -1;
+    }
+    return 0;
+#else
+    return -1;
 #endif
 }
