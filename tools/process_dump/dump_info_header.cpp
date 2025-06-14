@@ -142,12 +142,10 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
 std::string DumpInfoHeader::GetLastFatalMsg(DfxProcess& process, const ProcessDumpRequest& request)
 {
     std::string lastFatalMsg = "";
-    if (!IsOversea() || IsBetaVersion()) {
-        if (request.msg.type == MESSAGE_FATAL || request.msg.type == MESSAGE_CALLBACK) {
-            lastFatalMsg += request.msg.body;
-        }
-        lastFatalMsg += UpdateFatalMessageWhenDebugSignal(process, request);
+    if (request.msg.type == MESSAGE_FATAL || request.msg.type == MESSAGE_CALLBACK) {
+        lastFatalMsg += request.msg.body;
     }
+    lastFatalMsg += UpdateFatalMessageWhenDebugSignal(process, request);
     lastFatalMsg += ReadCrashObjString(request);
     return lastFatalMsg;
 }
