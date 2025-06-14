@@ -86,7 +86,7 @@ size_t DfxMmap::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     size_t left = size_ - ptr;
     const uint8_t* actualBase = static_cast<const uint8_t*>(mmap_) + ptr;
     size_t actualLen = std::min(left, size);
-    if (memcpy_s(val, actualLen, actualBase, actualLen) != 0) {
+    if (memcpy_s(val, size, actualBase, actualLen) != 0) {
         DFXLOGE("Failed to memcpy_s");
         return 0;
     }
