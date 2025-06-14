@@ -583,8 +583,7 @@ void StackPrinterTest::TearDown(void)
 HWTEST_F(StackPrinterTest, StackPrinterTest_001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "StackPrinterTest_001: start.";
-    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>();
-    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>(unwinder);
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
     bool flag = stackPrinter->InitUniqueTable(getpid(), 0);
     ASSERT_FALSE(flag);
     uint32_t uniqueStableSize = 128 * 1024;
@@ -595,14 +594,13 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_001, TestSize.Level2)
 
 /**
  * @tc.name: StackPrinterTest002
- * @tc.desc: test StackTable functions
+ * @tc.desc: test StackPrinter functions
  * @tc.type: FUNC
  */
 HWTEST_F(StackPrinterTest, StackPrinterTest_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "StackPrinterTest_002: start.";
-    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>();
-    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>(unwinder);
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
     bool flag = stackPrinter->PutPcsInTable(pcsVec[0], timestamps[0]);
     ASSERT_FALSE(flag);
 
@@ -617,25 +615,26 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_002, TestSize.Level2)
 
 /**
  * @tc.name: StackPrinterTest003
- * @tc.desc: test StackTable functions
+ * @tc.desc: test StackPrinter functions
  * @tc.type: FUNC
  */
 HWTEST_F(StackPrinterTest, StackPrinterTest_003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "StackPrinterTest_003: start.";
-    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>();
-    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>(unwinder);
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
-    stackPrinter->SetMaps(maps);
-    std::vector<TimeStampedPcs> timeStampedPcsList;
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
+    std::vector<TimeStampedPcs> timeStampedPcsVec;
     for (size_t i = 0; i < pcsVec.size(); i++) {
         TimeStampedPcs p = {
             .snapshotTime = timestamps[i],
             .pcVec = pcsVec[i]
         };
-        timeStampedPcsList.emplace_back(p);
+        timeStampedPcsVec.emplace_back(p);
     }
-    std::string stack = stackPrinter->GetFullStack(timeStampedPcsList);
+
+    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
+    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
+    stackPrinter->SetUnwindInfo(unwinder, maps);
+    std::string stack = stackPrinter->GetFullStack(timeStampedPcsVec);
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
     GTEST_LOG_(INFO) << "StackPrinterTest_001: end.\n";
@@ -643,21 +642,22 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_003, TestSize.Level2)
 
 /**
  * @tc.name: StackPrinterTest004
- * @tc.desc: test StackTable functions
+ * @tc.desc: test StackPrinter functions
  * @tc.type: FUNC
  */
 HWTEST_F(StackPrinterTest, StackPrinterTest_004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "StackPrinterTest_004: start.";
-    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>();
-    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>(unwinder);
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
     uint32_t uniqueStableSize = 128 * 1024;
     stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
-    stackPrinter->SetMaps(maps);
     for (size_t i = 0; i < pcsVec.size(); i++) {
         stackPrinter->PutPcsInTable(pcsVec[i], timestamps[i]);
     }
+
+    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
+    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
+    stackPrinter->SetUnwindInfo(unwinder, maps);
     std::string stack = stackPrinter->GetTreeStack();
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
@@ -676,21 +676,22 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_004, TestSize.Level2)
 
 /**
  * @tc.name: StackPrinterTest005
- * @tc.desc: test StackTable functions
+ * @tc.desc: test StackPrinter functions
  * @tc.type: FUNC
  */
 HWTEST_F(StackPrinterTest, StackPrinterTest_005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "StackPrinterTest_005: start.";
-    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>();
-    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>(unwinder);
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
     uint32_t uniqueStableSize = 128 * 1024;
     stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
-    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
-    stackPrinter->SetMaps(maps);
     for (size_t i = 0; i < pcsVec.size(); i++) {
         stackPrinter->PutPcsInTable(pcsVec[i], timestamps[i]);
     }
+
+    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
+    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
+    stackPrinter->SetUnwindInfo(unwinder, maps);
     std::string stack = stackPrinter->GetHeaviestStack();
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";

@@ -39,7 +39,7 @@ if (defined(ohos_lite)) {
     defines = []
 
     innerapi_tags = [
-      "chipsetsdk_indirect",
+      "chipsetsdk_sp_indirect",
       "platformsdk_indirect",
     ]
 
