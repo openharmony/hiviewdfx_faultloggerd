@@ -1203,21 +1203,11 @@ void Unwinder::FillLocalFrames(std::vector<DfxFrame>& frames)
     }
     auto it = frames.begin();
     while (it != frames.end()) {
-        it->pc = StripPac(it->pc, 0);
-        Dl_info symInfo;
-        if (dladdr(reinterpret_cast<void*>(static_cast<uintptr_t>(it->pc)), &symInfo) == 0) {
+        if (dl_iterate_phdr(Unwinder::Impl::DlPhdrCallback, &(*it)) != 1) {
             // clean up frames after first invalid frame
             frames.erase(it, frames.end());
             break;
         }
-        it->relPc = it->pc - reinterpret_cast<uintptr_t>(symInfo.dli_fbase);
-        it->mapName = symInfo.dli_fname;
-        if (symInfo.dli_sname == nullptr || symInfo.dli_saddr == nullptr) {
-            it++;
-            continue;
-        }
-        it->funcName = DfxSymbols::Demangle(symInfo.dli_sname);
-        it->funcOffset = it->pc - reinterpret_cast<uintptr_t>(symInfo.dli_saddr);
         it++;
     }
 }
