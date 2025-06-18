@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#include "stack_printer_test.h"
-
+#include <gtest/gtest.h>
 #include <vector>
 
 #include "stack_printer.h"
@@ -553,6 +552,14 @@ static std::vector<uint64_t> timestamps = {
     1719392400124506789,
     1719392400124656789,
     1719392400124706789,
+};
+
+class StackPrinterTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void SetUp();
+    void TearDown();
 };
 
 void StackPrinterTest::SetUpTestCase(void)
