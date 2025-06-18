@@ -122,7 +122,6 @@ if (defined(ohos_lite)) {
       "googletest:gtest_main",
       "hilog:libhilog",
       "hitrace:libhitracechain",
-      "jsoncpp:jsoncpp",
     ]
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]

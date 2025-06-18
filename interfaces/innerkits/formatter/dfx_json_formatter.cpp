@@ -19,7 +19,7 @@
 #include <securec.h>
 #include "dfx_kernel_stack.h"
 #ifndef is_ohos_lite
-#include "json/json.h"
+#include "cJSON.h"
 #endif
 
 namespace OHOS {
@@ -27,7 +27,39 @@ namespace HiviewDFX {
 #ifndef is_ohos_lite
 namespace {
 const int FRAME_BUF_LEN = 1024;
-static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
+static bool IsConvertToString(const cJSON *json)
+{
+    if (json == nullptr) {
+        return false;
+    }
+    return cJSON_IsString(json) || cJSON_IsNumber(json) || cJSON_IsBool(json) || cJSON_IsNull(json);
+}
+
+static std::string GetStringValueFromItem(const cJSON *item)
+{
+    std::string ret{};
+    if (cJSON_IsString(item)) {
+        ret = item->valuestring;
+    } else if (cJSON_IsNumber(item)) {
+        ret = std::to_string(item->valueint);
+    } else if (cJSON_IsBool(item)) {
+        ret = cJSON_IsTrue(item) ? "true" : "false";
+    } else {
+        ret = "";
+    }
+    return ret;
+}
+
+static std::string GetStringValue(const cJSON *json, const std::string& key)
+{
+    if (!cJSON_IsObject(json)) {
+        return "";
+    }
+    cJSON *item = cJSON_GetObjectItemCaseSensitive(json, key.c_str());
+    return GetStringValueFromItem(item);
+}
+
+static bool FormatJsFrame(const cJSON *frames, const uint32_t& frameIdx, std::string& outStr)
 {
     const int jsIdxLen = 10;
     char buf[jsIdxLen] = { 0 };
@@ -36,32 +68,40 @@ static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, s
         return false;
     }
     outStr = std::string(buf);
-    std::string symbol = frames[frameIdx]["symbol"].asString();
+    cJSON *item = cJSON_GetArrayItem(frames, frameIdx);
+    if (item == nullptr) {
+        return false;
+    }
+    std::string symbol = GetStringValue(item, "symbol");
     if (!symbol.empty()) {
         outStr.append(" " + symbol);
     }
-    std::string packageName = frames[frameIdx]["packageName"].asString();
+    std::string packageName = GetStringValue(item, "packageName");
     if (!packageName.empty()) {
         outStr.append(" " + packageName);
     }
-    std::string file = frames[frameIdx]["file"].asString();
+    std::string file = GetStringValue(item, "file");
     if (!file.empty()) {
-        std::string line = frames[frameIdx]["line"].asString();
-        std::string column = frames[frameIdx]["column"].asString();
+        std::string line = GetStringValue(item, "line");
+        std::string column = GetStringValue(item, "column");
         outStr.append(" (" + file + ":" + line + ":" + column + ")");
     }
     return true;
 }
 
-static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
+static bool FormatNativeFrame(const cJSON *frames, const uint32_t& frameIdx, std::string& outStr)
 {
     char buf[FRAME_BUF_LEN] = {0};
     char format[] = "#%02u pc %s %s";
-    std::string buildId = frames[frameIdx]["buildId"].asString();
-    std::string file = frames[frameIdx]["file"].asString();
-    std::string offset = frames[frameIdx]["offset"].asString();
-    std::string pc = frames[frameIdx]["pc"].asString();
-    std::string symbol = frames[frameIdx]["symbol"].asString();
+    cJSON *item = cJSON_GetArrayItem(frames, frameIdx);
+    if (item == nullptr) {
+        return false;
+    }
+    std::string buildId = GetStringValue(item, "buildId");
+    std::string file = GetStringValue(item, "file");
+    std::string offset = GetStringValue(item, "offset");
+    std::string pc = GetStringValue(item, "pc");
+    std::string symbol = GetStringValue(item, "symbol");
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frameIdx, pc.c_str(),
                    file.empty() ? "Unknown" : file.c_str()) <= 0) {
         return false;
@@ -79,25 +119,28 @@ static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameId
 
 bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr)
 {
-    Json::Reader reader;
-    Json::Value threads;
-    if (!(reader.parse(jsonStack, threads))) {
+    cJSON *root = cJSON_Parse(jsonStack.c_str());
+    if (root == nullptr) {
         outStackStr.append("Failed to parse json stack info.");
         return false;
     }
 
-    for (uint32_t i = 0; i < threads.size(); ++i) {
+    cJSON *item;
+    cJSON_ArrayForEach(item, root) {
         std::string ss;
-        Json::Value thread = threads[i];
-        if (thread["tid"].isConvertibleTo(Json::stringValue) &&
-            thread["thread_name"].isConvertibleTo(Json::stringValue)) {
-            ss += "Tid:" + thread["tid"].asString() + ", Name:" + thread["thread_name"].asString() + "\n";
+        cJSON *thread_tid = cJSON_GetObjectItemCaseSensitive(item, "tid");
+        cJSON *thread_name = cJSON_GetObjectItemCaseSensitive(item, "thread_name");
+        if ((IsConvertToString(thread_tid)) && (IsConvertToString(thread_name))) {
+            ss += "Tid:" + GetStringValueFromItem(thread_tid) +
+                ", Name:" + GetStringValueFromItem(thread_name) + "\n";
         }
-        const Json::Value frames = thread["frames"];
-        for (uint32_t j = 0; j < frames.size(); ++j) {
+        const cJSON *frames = cJSON_GetObjectItemCaseSensitive(item, "frames");
+        int frameSize = cJSON_GetArraySize(frames);
+        for (int j = 0; j < frameSize; ++j) {
             std::string frameStr = "";
             bool formatStatus = false;
-            if (frames[j]["line"].asString().empty()) {
+            std::string line = GetStringValue(item, "line");
+            if (line.empty()) {
                 formatStatus = FormatNativeFrame(frames, j, frameStr);
             } else {
                 formatStatus = FormatJsFrame(frames, j, frameStr);
@@ -112,6 +155,7 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
         }
         outStackStr.append(ss);
     }
+    cJSON_Delete(root);
     return true;
 }
 
@@ -139,35 +183,58 @@ static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack
     return true;
 }
 
+static void AddItemToKernelStack(const DfxThreadStack& threadStack, cJSON *jsonInfo)
+{
+    cJSON *threadInfo = cJSON_CreateArray();
+    if (threadInfo == nullptr) {
+        return;
+    }
+    cJSON_AddStringToObject(threadInfo, "thread_name", threadStack.threadName.c_str());
+    cJSON_AddNumberToObject(threadInfo, "tid", threadStack.tid);
+    cJSON *frames = cJSON_CreateArray();
+    if (frames == nullptr) {
+        cJSON_Delete(threadInfo);
+        return;
+    }
+    for (const auto& frame : threadStack.frames) {
+        cJSON *frameJson = cJSON_CreateObject();
+        if (frameJson == nullptr) {
+            continue;
+        }
+        char buf[FRAME_BUF_LEN] = {0};
+        char format[] = "%016" PRIx64;
+        if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) <= 0) {
+            cJSON_Delete(frameJson);
+            continue;
+        }
+        cJSON_AddStringToObject(frameJson, "pc", buf);
+        cJSON_AddStringToObject(frameJson, "symbol", "");
+        cJSON_AddNumberToObject(frameJson, "offset", 0);
+        std::string file = frame.mapName.empty() ? "Unknown" : frame.mapName;
+        cJSON_AddStringToObject(frameJson, "file", file.c_str());
+        cJSON_AddStringToObject(frameJson, "buildId", "");
+        cJSON_AddItemToArray(frames, frameJson);
+    }
+    cJSON_AddItemToObject(threadInfo, "frames", frames);
+    cJSON_AddItemToArray(jsonInfo, threadInfo);
+}
+
 static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std::string& formattedStack)
 {
     if (processStack.empty()) {
         return false;
     }
-    Json::Value jsonInfo;
-    for (const auto &threadStack : processStack) {
-        Json::Value threadInfo;
-        threadInfo["thread_name"] = threadStack.threadName;
-        threadInfo["tid"] = threadStack.tid;
-        Json::Value frames(Json::arrayValue);
-        for (const auto& frame : threadStack.frames) {
-            Json::Value frameJson;
-            char buf[FRAME_BUF_LEN] = {0};
-            char format[] = "%016" PRIx64;
-            if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) <= 0) {
-                continue;
-            }
-            frameJson["pc"] = std::string(buf);
-            frameJson["symbol"] = "";
-            frameJson["offset"] = 0;
-            frameJson["file"] = frame.mapName.empty() ? "Unknown" : frame.mapName;
-            frameJson["buildId"] = "";
-            frames.append(frameJson);
-        }
-        threadInfo["frames"] = frames;
-        jsonInfo.append(threadInfo);
+    cJSON *jsonInfo = cJSON_CreateObject();
+    if (jsonInfo == nullptr) {
+        return false;
     }
-    formattedStack = Json::FastWriter().write(jsonInfo);
+    for (const auto &threadStack : processStack) {
+        AddItemToKernelStack(threadStack, jsonInfo);
+    }
+    auto itemStr = cJSON_PrintUnformatted(jsonInfo);
+    formattedStack = itemStr;
+    cJSON_free(itemStr);
+    cJSON_Delete(jsonInfo);
     return true;
 }
 #endif

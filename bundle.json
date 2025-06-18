@@ -33,7 +33,6 @@
         "hitrace",
         "init",
         "ipc",
-        "jsoncpp",
         "libuv",
         "lzma",
         "selinux"
