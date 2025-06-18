@@ -29,6 +29,9 @@ namespace {
 const int FRAME_BUF_LEN = 1024;
 static bool IsConvertToString(const cJSON *json)
 {
+    if (json == nullptr) {
+        return false;
+    }
     return cJSON_IsString(json) || cJSON_IsNumber(json) || cJSON_IsBool(json) || cJSON_IsNull(json);
 }
 
@@ -66,8 +69,7 @@ static bool FormatJsFrame(const cJSON *frames, const uint32_t& frameIdx, std::st
     }
     outStr = std::string(buf);
     cJSON *item = cJSON_GetArrayItem(frames, frameIdx);
-    if (!item) {
-        printf("Get cJson array item failed in FormatJsFrame.");
+    if (item == nullptr) {
         return false;
     }
     std::string symbol = GetStringValue(item, "symbol");
@@ -92,8 +94,7 @@ static bool FormatNativeFrame(const cJSON *frames, const uint32_t& frameIdx, std
     char buf[FRAME_BUF_LEN] = {0};
     char format[] = "#%02u pc %s %s";
     cJSON *item = cJSON_GetArrayItem(frames, frameIdx);
-    if (!item) {
-        printf("Get cJson array item failed in FormatNativeFrame.");
+    if (item == nullptr) {
         return false;
     }
     std::string buildId = GetStringValue(item, "buildId");
@@ -129,8 +130,7 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
         std::string ss;
         cJSON *thread_tid = cJSON_GetObjectItemCaseSensitive(item, "tid");
         cJSON *thread_name = cJSON_GetObjectItemCaseSensitive(item, "thread_name");
-        if ((!thread_tid && IsConvertToString(thread_tid)) &&
-            (!thread_name && IsConvertToString(thread_name))) {
+        if ((IsConvertToString(thread_tid)) && (IsConvertToString(thread_name))) {
             ss += "Tid:" + GetStringValueFromItem(thread_tid) +
                 ", Name:" + GetStringValueFromItem(thread_name) + "\n";
         }
@@ -185,23 +185,20 @@ static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack
 
 static void AddItemToKernelStack(const DfxThreadStack& threadStack, cJSON *jsonInfo)
 {
-    cJSON *threadInfo = cJSON_CreateObject();
-    if (!threadInfo) {
-        printf("Create cJson threadInfo object failed.");
+    cJSON *threadInfo = cJSON_CreateArray();
+    if (threadInfo == nullptr) {
         return;
     }
     cJSON_AddStringToObject(threadInfo, "thread_name", threadStack.threadName.c_str());
     cJSON_AddNumberToObject(threadInfo, "tid", threadStack.tid);
     cJSON *frames = cJSON_CreateArray();
-    if (!frames) {
-        printf("Create cJson frames array failed, continue.");
+    if (frames == nullptr) {
         cJSON_Delete(threadInfo);
         return;
     }
     for (const auto& frame : threadStack.frames) {
         cJSON *frameJson = cJSON_CreateObject();
-        if (!frameJson) {
-            printf("Create cJson frameJson object failed.");
+        if (frameJson == nullptr) {
             continue;
         }
         char buf[FRAME_BUF_LEN] = {0};
@@ -228,8 +225,7 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
         return false;
     }
     cJSON *jsonInfo = cJSON_CreateObject();
-    if (!jsonInfo) {
-        printf("Create cJson object failed.");
+    if (jsonInfo == nullptr) {
         return false;
     }
     for (const auto &threadStack : processStack) {

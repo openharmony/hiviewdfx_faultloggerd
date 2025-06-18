@@ -35,20 +35,26 @@ bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request,
     std::string& jsonStringInfo)
 {
 #ifndef is_ohos_lite
-    cJSON *jsonInfo = cJSON_CreateObject();
-    if (!jsonInfo) {
-        DFXLOGE("Create cJson jsonInfo object failed.");
-        return false;
-    }
+    cJSON *jsonInfo = nullptr;
     switch (request.type) {
         case ProcessDumpType::DUMP_TYPE_CPP_CRASH:
+            jsonInfo = cJSON_CreateObject();
+            if (!jsonInfo) {
+                DFXLOGE("Create cJson jsonInfo object failed.");
+                return false;
+            }
             GetCrashJsonFormatInfo(request, process, jsonInfo);
             break;
         case ProcessDumpType::DUMP_TYPE_DUMP_CATCH:
+            jsonInfo = cJSON_CreateArray();
+            if (!jsonInfo) {
+                DFXLOGE("Create cJson jsonInfo array failed.");
+                return false;
+            }
             GetDumpJsonFormatInfo(process, jsonInfo);
             break;
         default:
-            break;
+            return false;
     }
     auto itemStr = cJSON_PrintUnformatted(jsonInfo);
     jsonStringInfo = itemStr;
