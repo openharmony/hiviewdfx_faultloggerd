@@ -25,6 +25,7 @@
       "components": [
         "ability_base",
         "bounds_checking_function",
+        "bundle_framework",
         "cJSON",
         "c_utils",
         "ffrt",
@@ -36,6 +37,7 @@
         "jsoncpp",
         "libuv",
         "lzma",
+        "samgr",
         "selinux"
       ]
     },

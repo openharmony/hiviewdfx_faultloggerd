@@ -23,6 +23,8 @@
 #include "dfx_socket_request.h"
 #include "temp_file_manager.h"
 #include "dfx_exception.h"
+#include <unordered_map>
+#include <vector>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -81,6 +83,17 @@ struct DumpStats {
     std::string targetProcessName;
 };
 
+struct CoredumpProcessInfo {
+    int32_t targetPid;
+    int32_t workerPid;
+    int32_t coredumpSocketId;
+    int endTime;
+    bool deleteFlag;
+
+    CoredumpProcessInfo(int32_t target, int32_t worker, int32_t connectionFd, int time, bool flag)
+        : targetPid(target), workerPid(worker), coredumpSocketId(connectionFd), endTime(time), deleteFlag(flag) {}
+};
+
 class StatsService : public FaultLoggerService<FaultLoggerdStatsRequest> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
@@ -112,6 +125,29 @@ public:
                       const PipFdRequestData& requestData) override;
 private:
     static bool Filter(const std::string& socketName, int32_t connectionFd, const PipFdRequestData& requestData);
+};
+
+class CoredumpService : public FaultLoggerService<CoreDumpRequestData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const CoreDumpRequestData& requestData) override;
+private:
+    static int32_t Filter(const std::string& socketName, const CoreDumpRequestData& requestData, uint32_t uid);
+    void StartDelayTask(std::function<void()> workFunc, int32_t delayTime);
+};
+
+class CancelCoredumpService : public FaultLoggerService<CoreDumpRequestData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const CoreDumpRequestData& requestData) override;
+private:
+    static int32_t Filter(const std::string& socketName, const CoreDumpRequestData& requestData, uint32_t uid);
+};
+
+class CoredumpStatusService : public FaultLoggerService<CoreDumpStatusData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const CoreDumpStatusData& requestData) override;
 };
 #endif
 }

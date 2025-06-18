@@ -344,7 +344,7 @@ static bool WaitProcessExitTimeout(pid_t pid, int timeoutMs)
 
 static bool StartProcessdump(void)
 {
-    uint64_t startTime = GetAbsTimeMilliSeconds();
+    uint64_t startTime = GetAbsTimeMilliSecondsCInterce();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork dummy processdump(%{public}d)", errno);
@@ -366,7 +366,7 @@ static bool StartProcessdump(void)
             uint64_t endTime;
             int tid;
             ParseSiValue(&g_request->siginfo, &endTime, &tid);
-            uint64_t curTime = GetAbsTimeMilliSeconds();
+            uint64_t curTime = GetAbsTimeMilliSecondsCInterce();
             DFXLOGI("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
             if (endTime != 0) {
                 DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
@@ -387,7 +387,7 @@ static bool StartProcessdump(void)
 
 static bool StartVMProcessUnwind(void)
 {
-    uint32_t startTime = GetAbsTimeMilliSeconds();
+    uint32_t startTime = GetAbsTimeMilliSecondsCInterce();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork vm process(%{public}d)", errno);
@@ -396,7 +396,8 @@ static bool StartVMProcessUnwind(void)
     if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
-            DFXLOGI("start vm process, fork spend time %{public}" PRIu64 "ms", GetAbsTimeMilliSeconds() - startTime);
+            DFXLOGI("start vm process, fork spend time %{public}" PRIu64 "ms",
+                    GetAbsTimeMilliSecondsCInterce() - startTime);
             g_vmRealPid = GetRealPid();
             DFXLOGI("vm prorcecc read pid = %{public}ld", g_vmRealPid);
             _exit(0);
@@ -587,7 +588,7 @@ static int ProcessDump(int signo)
         uint64_t endTime;
         int tid;
         ParseSiValue(&g_request->siginfo, &endTime, &tid);
-        if (endTime != 0 && endTime <= GetAbsTimeMilliSeconds()) {
+        if (endTime != 0 && endTime <= GetAbsTimeMilliSecondsCInterce()) {
             DFXLOGI("enter processdump has coat all time, just exit");
             break;
         }

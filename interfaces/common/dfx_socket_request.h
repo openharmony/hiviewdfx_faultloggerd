@@ -71,6 +71,12 @@ typedef enum FaultLoggerClientType : int8_t {
     REPORT_EXCEPTION_CLIENT,
     /** For report dump stats */
     DUMP_STATS_CLIENT,
+    /** For request to coredump */
+    DO_COREDUMP_CLIENT,
+    /** For request to cancel coredump */
+    CANCEL_COREDUMP_CLIENT,
+    /** For request to report coredump status */
+    COREDUMP_PROCESS_DUMP_CLIENT,
 } FaultLoggerClientType;
 
 typedef struct RequestDataHead {
@@ -79,6 +85,51 @@ typedef struct RequestDataHead {
     /** target process id outside sandbox */
     int32_t clientPid;
 } __attribute__((packed)) RequestDataHead;
+
+typedef struct CoreDumpRequestData {
+    /** request data head **/
+    RequestDataHead head;
+    /** target id */
+    int32_t pid;
+    /** endtime ms */
+    uint64_t endTime;
+} __attribute__((packed)) CoreDumpRequestData;
+
+/**
+ * @brief  type of coredump Status
+ *
+*/
+typedef enum CoreDumpStatus : int32_t {
+    /** core dump start */
+    CORE_DUMP_START = 1,
+    /** core dump end */
+    CORE_DUMP_END,
+    /** core dump error */
+    CORE_DUMP_ERROR,
+} CoreDumpStatus;
+
+typedef struct CoreDumpStatusData {
+    /** request data head **/
+    RequestDataHead head;
+    /** target id */
+    int32_t pid;
+    /** process id */
+    int32_t processDumpPid;
+    /** coredump status */
+    // 1 start  2 end  3 error
+    int32_t coredumpStatus;
+    /** coredump file name */
+    char fileName[256];
+    /** coredump result */
+    int32_t retCode;
+} __attribute__((packed)) CoreDumpStatusData;
+
+typedef struct SocketReceiveData {
+    /** coredump file name **/
+    char fileName[256];
+    /** coredump result */
+    int32_t retCode;
+} __attribute__((packed)) SocketReceiveData;
 
 typedef struct SdkDumpRequestData {
     /** request data head **/
@@ -202,6 +253,14 @@ typedef enum ResponseCode : int32_t {
     SDK_DUMP_NOPROC,
     /** the process to dump has crashed */
     SDK_PROCESS_CRASHED,
+    /** repeat coredump */
+    CORE_DUMP_REPEAT,
+    /** the process to coredump has crashed */
+    CORE_PROCESS_CRASHED,
+    /** the process to coredump not exist */
+    CORE_DUMP_NOPROC,
+    /** cancel coredump */
+    CORE_DUMP_CANCEL,
 } ResponseCode;
 
 #ifdef __cplusplus

@@ -30,6 +30,7 @@ using namespace OHOS::HiviewDFX;
 namespace {
 constexpr const char* const FAULTLOGGERD_CLIENT_TAG = "FAULT_LOGGERD_CLIENT";
 constexpr int32_t SDKDUMP_SOCKET_TIMEOUT = 1;
+constexpr int32_t COREDUMP_SOCKET_TIMEOUT = 5;
 constexpr int32_t CRASHDUMP_SOCKET_TIMEOUT = 3;
 std::string GetSocketName()
 {
@@ -121,7 +122,7 @@ int32_t RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2], bool isJs
     request.tid = tid;
     request.callerTid = gettid();
     request.time = OHOS::HiviewDFX::GetTimeMilliSeconds();
-    request.endTime = ::GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
+    request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     SocketFdData socketFdData = {pipeReadFd, PIPE_NUM_SZ};
     return SendRequestToServer(SERVER_SDKDUMP_SOCKET_NAME, socketRequestData, SDKDUMP_SOCKET_TIMEOUT, &socketFdData);
@@ -182,4 +183,124 @@ int32_t ReportDumpStats(struct FaultLoggerdStatsRequest *request)
     faultLoggerdSocket.CloseSocketFileDescriptor();
 #endif
     return retCode;
+}
+
+std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeout)
+{
+#ifndef is_ohos_lite
+    DFXLOGI("%{public}s.%{public}s :: pid: %{public}d.", FAULTLOGGERD_CLIENT_TAG, __func__, targetPid);
+    if (targetPid <= 0) {
+        return "";
+    }
+
+    struct CoreDumpRequestData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::DO_COREDUMP_CLIENT);
+    request.pid = targetPid;
+    request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
+
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    FaultLoggerdSocket faultLoggerdSocket;
+    int32_t retCode{ResponseCode::DEFAULT_ERROR_CODE};
+    if (!faultLoggerdSocket.CreateSocketFileDescriptor(COREDUMP_SOCKET_TIMEOUT)) {
+        DFXLOGE("%{public}s create socket fail", __func__);
+        return "";
+    }
+    if (!faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME)) {
+        retCode = ResponseCode::CONNECT_FAILED;
+    } else {
+        retCode = faultLoggerdSocket.RequestServer(socketRequestData);
+    }
+    if (retCode != ResponseCode::REQUEST_SUCCESS) {
+        DFXLOGE("%{public}s connect server fail, retCode : %{public}d", __func__, retCode);
+        return "";
+    }
+    DFXLOGI("%{public}s connect request retCode : %{public}d", __func__, retCode);
+    SocketReceiveData socketReceiveData;
+    faultLoggerdSocket.GetMsgFromSocket(&socketReceiveData, sizeof(socketReceiveData));
+
+    DFXLOGI("%{public}s has received retCode : %{public}d and filename: %{public}s", __func__,
+            socketReceiveData.retCode, socketReceiveData.fileName);
+    return socketReceiveData.fileName;
+#else
+    return "";
+#endif
+}
+
+int32_t CancelCoredump(int32_t targetPid)
+{
+#ifndef is_ohos_lite
+    DFXLOGI("%{public}s.%{public}s :: pid: %{public}d.", FAULTLOGGERD_CLIENT_TAG, __func__, targetPid);
+    if (targetPid <= 0) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+
+    struct CoreDumpRequestData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::CANCEL_COREDUMP_CLIENT);
+    request.pid = targetPid;
+
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    int32_t retCode =
+        SendRequestToServer(SERVER_SOCKET_NAME, socketRequestData, COREDUMP_SOCKET_TIMEOUT);
+
+    DFXLOGI("%{public}s has received retcode : %{public}d %{public}d", __func__, retCode, __LINE__);
+    return retCode;
+#else
+    return ResponseCode::DEFAULT_ERROR_CODE;
+#endif
+}
+
+int32_t StartCoredumpCb(int32_t targetPid, int32_t workerPid)
+{
+#ifndef is_ohos_lite
+    DFXLOGI("%{public}s.%{public}s :: targetpid: %{public}d, workerpid: %{public}d.",
+        FAULTLOGGERD_CLIENT_TAG, __func__, targetPid, workerPid);
+    if (targetPid <= 0 || workerPid <= 0) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+
+    struct CoreDumpStatusData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::COREDUMP_PROCESS_DUMP_CLIENT);
+    request.pid = targetPid;
+    request.processDumpPid = workerPid;
+    request.coredumpStatus = CoreDumpStatus::CORE_DUMP_START;
+
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    int32_t retCode =
+        SendRequestToServer(SERVER_SOCKET_NAME, socketRequestData, COREDUMP_SOCKET_TIMEOUT);
+
+    DFXLOGI("%{public}s has received retcode : %{public}d %{public}d", __func__, retCode, __LINE__);
+    return retCode;
+#else
+    return ResponseCode::DEFAULT_ERROR_CODE;
+#endif
+}
+
+int32_t FinishCoredumpCb(int32_t targetPid, std::string& fileName, int32_t ret)
+{
+#ifndef is_ohos_lite
+    DFXLOGI("%{public}s.%{public}s :: targetpid: %{public}d.",
+        FAULTLOGGERD_CLIENT_TAG, __func__, targetPid);
+    if (targetPid <= 0) {
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+
+    struct CoreDumpStatusData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::COREDUMP_PROCESS_DUMP_CLIENT);
+    request.pid = targetPid;
+    request.coredumpStatus = CoreDumpStatus::CORE_DUMP_END;
+    request.retCode = ret;
+    if (strncpy_s(request.fileName, sizeof(request.fileName), fileName.c_str(), sizeof(request.fileName) - 1) != 0) {
+        DFXLOGE("%{public}s :: strncpy failed.", __func__);
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    int32_t retCode =
+        SendRequestToServer(SERVER_SOCKET_NAME, socketRequestData, COREDUMP_SOCKET_TIMEOUT);
+
+    DFXLOGI("%{public}s has received retcode : %{public}d %{public}d", __func__, retCode, __LINE__);
+    return retCode;
+#else
+    return ResponseCode::DEFAULT_ERROR_CODE;
+#endif
 }

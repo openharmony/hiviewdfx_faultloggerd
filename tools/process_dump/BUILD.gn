@@ -152,13 +152,16 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "bundle_framework:appexecfwk_base",
+      "bundle_framework:appexecfwk_core",
       "cJSON:cjson",
       "c_utils:utils",
       "hilog:libhilog",
       "hisysevent:libhisysevent",
       "hitrace:libhitracechain",
       "init:libbegetutil",
-      "jsoncpp:jsoncpp",
+      "ipc:ipc_core",
+      "samgr:samgr_proxy",
     ]
 
     part_name = "faultloggerd"
@@ -199,6 +202,8 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "bundle_framework:appexecfwk_base",
+      "bundle_framework:appexecfwk_core",
       "cJSON:cjson",
       "c_utils:utils",
       "hilog:libhilog",
@@ -207,6 +212,8 @@ if (defined(ohos_lite)) {
       "hitrace:libhitracechain",
       "init:libbegetutil",
       "jsoncpp:jsoncpp",
+      "ipc:ipc_core",
+      "samgr:samgr_proxy",
     ]
     version_script = "processdump.map"
     install_images = [

@@ -33,6 +33,8 @@ if (defined(ohos_lite)) {
         "$faultloggerd_interfaces_path/innerkits/backtrace/include",
         "$faultloggerd_path/interfaces/common",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
+        "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
         "$faultloggerd_path/interfaces/innerkits/procinfo/include",
         "$faultloggerd_path/test/utils",
         "$hilog_lite_include_path",
@@ -43,6 +45,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
         "$faultloggerd_path/test/utils:dfx_test_util",
+        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       ]
 
       external_deps = [ "hilog_lite:hilog_shared" ]
@@ -63,6 +66,8 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "$faultloggerd_path/interfaces/innerkits/dump_catcher/include/",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/test/utils",
     ]
 
@@ -92,6 +97,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/crasher_c:crasher_c",
       "$faultloggerd_path/tools/crasher_cpp:crasher_cpp",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
     ]
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]

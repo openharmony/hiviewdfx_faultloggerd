@@ -3,8 +3,12 @@
     extern "C" {
       Request*;
       ReportDumpStats*;
+      CancelCoredump;
+      StartCoredumpCb;
+      FinishCoredumpCb;
     };
     extern "C++" {
+      SaveCoredumpToFileTimeout*;
       OHOS::HiviewDFX::StartListen*;
       OHOS::HiviewDFX::SendMsgToSocket*;
       OHOS::HiviewDFX::SendFileDescriptorToSocket*;
