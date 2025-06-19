@@ -217,9 +217,9 @@ HWTEST_F(DfxSymbolsTest, DfxDemangleTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxDemangleTest004: start.";
     std::filesystem::path runtimePath("/system/lib64/chipset-sdk/libcangjie-demangle.so");
     if (std::filesystem::exists(runtimePath)) {
-        EXPECT_EQ("initLocalDefault()",
+        EXPECT_EQ("std.time.initLocalDefault()",
             DfxSymbols::Demangle("_CN8std.time16initLocalDefaultHv"));
-        EXPECT_EQ("Error::init()", DfxSymbols::Demangle("_CN8std.core5Error6<init>Hv"));
+        EXPECT_EQ("std.core.Error::init()", DfxSymbols::Demangle("_CN8std.core5Error6<init>Hv"));
     } else {
         EXPECT_EQ("_CN8std.time16initLocalDefaultHv",
             DfxSymbols::Demangle("_CN8std.time16initLocalDefaultHv"));
