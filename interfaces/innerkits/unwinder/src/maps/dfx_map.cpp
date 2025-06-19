@@ -283,6 +283,26 @@ bool DfxMap::IsArkExecutable()
     return true;
 }
 
+bool DfxMap::IsJsvmExecutable()
+{
+    if (name.empty()) {
+        return false;
+    }
+    if (StartsWith(name, "[anon:JSVM_JIT")) {
+        return true;
+    }
+    if (!EndsWith(name, "libv8_shared.so")) {
+        return false;
+    }
+
+    if (!IsMapExec()) {
+        DFXLOGU("Current jsvm map(%{public}s) is not exec", name.c_str());
+        return false;
+    }
+    DFXLOGU("Current jsvm map: %{public}s", name.c_str());
+    return true;
+}
+
 bool DfxMap::IsVdsoMap()
 {
     if ((name == "[shmm]" || name == "[vdso]") && IsMapExec()) {

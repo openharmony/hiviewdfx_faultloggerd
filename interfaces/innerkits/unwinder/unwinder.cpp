@@ -25,6 +25,7 @@
 #include "dfx_frame_formatter.h"
 #include "dfx_hap.h"
 #include "dfx_instructions.h"
+#include "dfx_jsvm.h"
 #include "dfx_log.h"
 #include "dfx_memory.h"
 #include "dfx_param.h"
@@ -134,6 +135,10 @@ public:
     {
         enableParseNativeSymbol_ = enableParseNativeSymbol;
     }
+    inline void EnableJsvmstack(bool enableJsvmstack)
+    {
+        enableJsvmstack_ = enableJsvmstack;
+    }
     inline void IgnoreMixstack(bool ignoreMixstack)
     {
         ignoreMixstack_ = ignoreMixstack;
@@ -216,6 +221,7 @@ private:
         uintptr_t sp = 0;
         uintptr_t fp = 0;
         bool isJsFrame {false};
+        bool isJsvmFrame {false};
     };
     struct StepCache {
         std::shared_ptr<DfxMap> map = nullptr;
@@ -247,6 +253,7 @@ private:
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(StepFrame& frame);
 #endif
+    bool StepJsvmFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map);
     inline void SetLocalStackCheck(void* ctx, bool check) const
     {
         if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
@@ -267,6 +274,7 @@ private:
     bool isFpStep_ = false;
     bool isArkCreateLocal_ = false;
     bool isResetFrames_ = false;
+    bool enableJsvmstack_ = false;
     MAYBE_UNUSED bool enableMixstack_ = true;
     MAYBE_UNUSED bool ignoreMixstack_ = false;
     MAYBE_UNUSED bool stopWhenArkFrame_ = false;
@@ -324,6 +332,11 @@ void Unwinder::EnableFillFrames(bool enableFillFrames)
 void Unwinder::EnableParseNativeSymbol(bool enableParseNativeSymbol)
 {
     impl_->EnableParseNativeSymbol(enableParseNativeSymbol);
+}
+
+void Unwinder::EnableJsvmstack(bool enableJsvmstack)
+{
+    impl_->EnableJsvmstack(enableJsvmstack);
 }
 
 void Unwinder::IgnoreMixstack(bool ignoreMixstack)
@@ -735,6 +748,27 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 }
 #endif
 
+bool Unwinder::Impl::StepJsvmFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map)
+{
+    if (enableJsvmstack_ && ((map != nullptr && map->IsJsvmExecutable()) || frame.isJsvmFrame)) {
+        DFX_TRACE_SCOPED_DLSYM("StepJsvmFrame pc: %p", reinterpret_cast<void *>(frame.pc));
+        std::string timeLimitCheck;
+        timeLimitCheck += "StepJsvmFrame, pc: " + std::to_string(frame.pc) +
+            ", fp:" + std::to_string(frame.fp) + ", sp:" + std::to_string(frame.sp) +
+            ", isJsvmFrame:" + std::to_string(frame.isJsvmFrame);
+        ElapsedTime counter(timeLimitCheck, 20); // 20 : limit cost time 20 ms
+        JsvmStepParam jsvmParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsvmFrame);
+        if (DfxJsvm::Instance().StepJsvmFrame(memory_.get(), &(Unwinder::AccessMem), &jsvmParam) < 0) {
+            DFXLOGE("Failed to step ark frame");
+            return false;
+        }
+        regs_->SetPc(StripPac(frame.pc, pacMask_));
+        regs_->SetSp(frame.sp);
+        regs_->SetFp(frame.fp);
+    }
+    return true;
+}
+
 bool Unwinder::Impl::UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc)
 {
     frame.pc = regs_->GetPc();
@@ -1084,6 +1118,9 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             return true;
         }
         bool stopUnwind = false;
+        if (!StepJsvmFrame(frame, map)) {
+            break;
+        }
         bool processFrameResult = UnwindArkFrame(frame, map, stopUnwind);
         if (stopUnwind) {
             return processFrameResult;

@@ -117,9 +117,7 @@ if (defined(ohos_lite)) {
 
   ohos_unittest("test_smartfd") {
     module_out_path = module_output_path
-    sources = [
-      "smart_fd_test.cpp",
-    ]
+    sources = [ "smart_fd_test.cpp" ]
     configs = [ ":module_private_config" ]
 
     external_deps = [
@@ -133,7 +131,7 @@ if (defined(ohos_lite)) {
     testonly = true
     deps = [
       ":test_common",
-      ":test_smartfd"
+      ":test_smartfd",
     ]
     if (!defined(ohos_lite)) {
       deps += [ ":test_param" ]

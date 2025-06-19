@@ -22,6 +22,7 @@ dfx_unwinder_sources = [
   "src/elf/dfx_symbols.cpp",
   "src/elf/elf_factory.cpp",
   "src/elf/elf_factory_selector.cpp",
+  "src/jsvm/dfx_jsvm.cpp",
   "src/maps/dfx_map.cpp",
   "src/maps/dfx_maps.cpp",
   "src/memory/dfx_accessors.cpp",
