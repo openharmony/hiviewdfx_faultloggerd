@@ -164,7 +164,7 @@ void ProcessDumpConfig::LoadDefaultConfig()
     };
     dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_MEM_LEAK] = {
         KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER, REGISTERS,
-        OTHER_THREAD_DUMP_INFO, MEMORY_NEAR_REGISTER, FAULT_STACK, MAPS,
+        MEMORY_NEAR_REGISTER, FAULT_STACK, MAPS,
     };
     dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_FDSAN] = {
         KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER, REGISTERS,
@@ -177,6 +177,9 @@ void ProcessDumpConfig::LoadDefaultConfig()
     dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_BADFD] = {
         KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER, REGISTERS,
         MEMORY_NEAR_REGISTER, FAULT_STACK, MAPS, OPEN_FILES,
+    };
+    dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_COREDUMP] = {
+        KEY_THREAD_DUMP_INFO, REGISTERS, OTHER_THREAD_DUMP_INFO,
     };
 }
 

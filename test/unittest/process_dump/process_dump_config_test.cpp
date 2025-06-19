@@ -25,7 +25,7 @@
 #include "dfx_util.h"
 #include "decorative_dump_info.h"
 #include "process_dump_config.h"
- 
+
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
@@ -94,7 +94,11 @@ HWTEST_F(ProcessDumpConfigTest, ProcessDumpConfigTest001, TestSize.Level2)
         "MemoryNearRegister", "FaultStack", "Maps", "OpenFiles",
     };
     ASSERT_EQ(dumpInfoBadFd, config.dumpInfo[ProcessDumpType::DUMP_TYPE_BADFD]);
+
+    std::vector<std::string> dumpInfoCoreDump = {
+        "KeyThreadDumpInfo", "Registers", "OtherThreadDumpInfo",
+    };
+    ASSERT_EQ(dumpInfoCoreDump, config.dumpInfo[ProcessDumpType::DUMP_TYPE_COREDUMP]);
     GTEST_LOG_(INFO) << "ProcessDumpConfigTest001: end.";
 }
 }
- 
