@@ -1415,9 +1415,14 @@ HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest051, TestSize.Level2)
 HWTEST_F(DumpCatcherSystemTest,  DumpCatcherSystemTest052, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest052: start.";
-    string getPidCMD = "pidof com.ohos.medialibrary.medialibrarydata";
+#ifdef __aarch64__
+    constexpr auto testBundleName = "com.ohos.sceneboard";
+#else
+    constexpr auto testBundleName = "com.ohos.launcher";
+#endif
+    string getPidCMD = std::string("pidof ")  + testBundleName;
     string pid = ExecuteCommands(getPidCMD);
-    GTEST_LOG_(INFO) << "The pid of com.ohos.medialibrary.medialibrarydata process: " << pid;
+    GTEST_LOG_(INFO) << "The pid of " << testBundleName << " process: " << pid;
     string procCMD = "dumpcatcher -p " + pid;
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;

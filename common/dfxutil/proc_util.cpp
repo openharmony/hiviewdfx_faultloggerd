@@ -243,7 +243,11 @@ bool ParseStat(const std::string& statPath, ProcessInfo& info)
 
 bool ParseProcInfo(pid_t pid, ProcessInfo& info)
 {
-    std::string path = "/proc/" + std::to_string(pid) + "/stat";
+    std::string path = "/proc/self/task/" + std::to_string(pid) + "/stat";
+    if (ParseStat(path, info)) {
+        return true;
+    }
+    path = "/proc/" + std::to_string(pid) + "/stat";
     return ParseStat(path, info);
 }
 

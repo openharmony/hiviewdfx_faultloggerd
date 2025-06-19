@@ -34,7 +34,6 @@
         "hitrace",
         "init",
         "ipc",
-        "jsoncpp",
         "libuv",
         "lzma",
         "samgr",

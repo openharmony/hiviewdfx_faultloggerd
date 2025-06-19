@@ -83,7 +83,8 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest001, TestSize.Level2)
     ProcessDumpRequest request = {
         .type = ProcessDumpType::DUMP_TYPE_CPP_CRASH,
         .tid = tid, .pid = pid, .nsPid = pid,
-        .timeStamp = GetTimeMilliSeconds(), .crashLogConfig = (logFileCutoffSize << 32) + 0x3, // 32 : high 32 bit save cutoff size
+        .timeStamp = GetTimeMilliSeconds(),
+        .crashLogConfig = (logFileCutoffSize << 32) + 0x3, // 32 : high 32 bit save cutoff size
     };
 #ifdef __aarch_64__
     const int moveBit = 56;

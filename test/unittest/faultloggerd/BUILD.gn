@@ -143,7 +143,6 @@ if (defined(ohos_lite)) {
       "hisysevent:libhisysevent",
       "hitrace:hitrace_meter",
       "init:libbegetutil",
-      "jsoncpp:jsoncpp",
     ]
 
     if (build_selinux) {

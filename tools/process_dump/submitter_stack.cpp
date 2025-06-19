@@ -13,13 +13,17 @@
  * limitations under the License.
  */
 #include "decorative_dump_info.h"
+#ifndef is_ohos_lite
 #include "async_stack.h"
+#endif
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #include "dfx_log.h"
 #include "dump_utils.h"
 #include "unwinder.h"
+#ifndef is_ohos_lite
 #include "unique_stack_table.h"
+#endif
 #include "dfx_util.h"
 #include "dfx_buffer_writer.h"
 namespace OHOS {
@@ -45,6 +49,7 @@ void SubmitterStack::Print(DfxProcess& process, const ProcessDumpRequest& reques
 void SubmitterStack::GetSubmitterStack(pid_t tid, uint64_t stackId, Unwinder& unwinder,
     std::vector<DfxFrame>& submitterFrames)
 {
+#ifndef is_ohos_lite
     if (stackId == 0) {
         DFXLOGW("stackId has not been initialized!");
         return;
@@ -75,8 +80,10 @@ void SubmitterStack::GetSubmitterStack(pid_t tid, uint64_t stackId, Unwinder& un
         DFXLOGW("Failed to get pcs by stackId");
         return;
     }
-    unwinder.EnableFillFrames(true);
+    unwinder.EnableParseNativeSymbol(true);
     unwinder.GetFramesByPcs(submitterFrames, pcs);
+    unwinder.EnableParseNativeSymbol(false);
+#endif
 }
 }
 }

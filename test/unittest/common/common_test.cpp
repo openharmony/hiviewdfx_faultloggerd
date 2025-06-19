@@ -42,33 +42,33 @@ public:
 static void getLibPathsBySystemBits(vector<std::string> &filePaths)
 {
     std::vector<std::string> lib64FilePaths = {
-        "/system/lib64/librustc_demangle.z.so",
         "/system/lib64/libstacktrace_rust.dylib.so",
         "/system/lib64/libpanic_handler.dylib.so",
         "/system/lib64/platformsdk/libjson_stack_formatter.z.so",
-        "/system/lib64/chipset-pub-sdk/libdfx_dumpcatcher.z.so",
-        "/system/lib64/chipset-pub-sdk/libfaultloggerd.z.so",
-        "/system/lib64/chipset-pub-sdk/libdfx_signalhandler.z.so",
-        "/system/lib64/chipset-pub-sdk/libasync_stack.z.so",
-        "/system/lib64/chipset-pub-sdk/libbacktrace_local.so",
-        "/system/lib64/chipset-pub-sdk/libunwinder.z.so",
-        "/system/lib64/chipset-pub-sdk/libdfx_procinfo.z.so",
-        "/system/lib64/chipset-pub-sdk/libcrash_exception.z.so",
+        "/system/lib64/chipset-sdk/librustc_demangle.z.so",
+        "/system/lib64/chipset-sdk/libdfx_signalhandler.z.so",
+        "/system/lib64/chipset-sdk/libasync_stack.z.so",
+        "/system/lib64/chipset-sdk/libcrash_exception.z.so",
+        "/system/lib64/chipset-sdk-sp/libdfx_dumpcatcher.z.so",
+        "/system/lib64/chipset-sdk-sp/libfaultloggerd.z.so",
+        "/system/lib64/chipset-sdk-sp/libbacktrace_local.so",
+        "/system/lib64/chipset-sdk-sp/libunwinder.z.so",
+        "/system/lib64/chipset-sdk-sp/libdfx_procinfo.z.so",
         "/system/lib64/module/libfaultlogger_napi.z.so"
     };
     std::vector<std::string> libFilePaths = {
-        "/system/lib/librustc_demangle.z.so",
         "/system/lib/libstacktrace_rust.dylib.so",
         "/system/lib/libpanic_handler.dylib.so",
         "/system/lib/platformsdk/libjson_stack_formatter.z.so",
-        "/system/lib/chipset-pub-sdk/libdfx_dumpcatcher.z.so",
-        "/system/lib/chipset-pub-sdk/libfaultloggerd.z.so",
-        "/system/lib/chipset-pub-sdk/libdfx_signalhandler.z.so",
-        "/system/lib/chipset-pub-sdk/libasync_stack.z.so",
-        "/system/lib/chipset-pub-sdk/libbacktrace_local.so",
-        "/system/lib/chipset-pub-sdk/libunwinder.z.so",
-        "/system/lib/chipset-pub-sdk/libdfx_procinfo.z.so",
-        "/system/lib/chipset-pub-sdk/libcrash_exception.z.so",
+        "/system/lib/chipset-sdk/librustc_demangle.z.so",
+        "/system/lib/chipset-sdk/libdfx_signalhandler.z.so",
+        "/system/lib/chipset-sdk/libasync_stack.z.so",
+        "/system/lib/chipset-sdk/libcrash_exception.z.so",
+        "/system/lib/chipset-sdk-sp/libdfx_dumpcatcher.z.so",
+        "/system/lib/chipset-sdk-sp/libfaultloggerd.z.so",
+        "/system/lib/chipset-sdk-sp/libbacktrace_local.so",
+        "/system/lib/chipset-sdk-sp/libunwinder.z.so",
+        "/system/lib/chipset-sdk-sp/libdfx_procinfo.z.so",
         "/system/lib/module/libfaultlogger_napi.z.so"
     };
 #ifdef __LP64__

@@ -47,7 +47,9 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, J
     if (jsFunction == nullptr || map == nullptr) {
         return false;
     }
-
+    if (!DfxMaps::IsArkHapMapItem(map->name) && !DfxMaps::IsArkCodeMapItem(map->name)) {
+        return false;
+    }
     if (arkSymbolExtractorPtr_ == 0) {
         if (DfxArk::Instance().ArkCreateJsSymbolExtractor(&arkSymbolExtractorPtr_) < 0) {
             DFXLOGU("Failed to create ark js symbol extractor");
@@ -59,7 +61,7 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, J
             DFXLOGW("Failed to parse hap file info");
             return false;
         }
-    } else {
+    } else if (DfxMaps::IsArkCodeMapItem(map->name)) {
         if (!ParseHapMemInfo(pid, pc, map, jsFunction)) {
             DFXLOGW("Failed to parse hap mem info");
             return false;

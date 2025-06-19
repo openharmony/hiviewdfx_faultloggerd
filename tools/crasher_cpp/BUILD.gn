@@ -29,10 +29,7 @@ if (defined(ohos_lite)) {
       "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.cpp" ]
-    deps = [
-      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
-      "$hilog_lite_deps_path",
-    ]
+    deps = [ "$hilog_lite_deps_path" ]
 
     external_deps = [ "bounds_checking_function:libsec_shared" ]
   }
@@ -78,8 +75,10 @@ if (defined(ohos_lite)) {
 
     branch_protector_ret = "pac_ret"
 
-    deps =
-        [ "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack" ]
+    deps = [
+      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    ]
 
     external_deps = [
       "c_utils:utils",

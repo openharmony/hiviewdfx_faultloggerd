@@ -98,6 +98,19 @@ HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorTest002, TestSize.Level2)
 }
 
 /**
+ * @tc.name: RequestFileDescriptorTest003
+ * @tc.desc: test the function for RequestFileDescriptor.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "RequestFileDescriptorTest003: start.";
+    SmartFd sFd(RequestFileDescriptor(FaultLoggerType::CJ_HEAP_SNAPSHOT));
+    ASSERT_EQ(sFd.GetFd(), -1);
+    GTEST_LOG_(INFO) << "RequestFileDescriptorTest003: end.";
+}
+
+/**
  * @tc.name: LogFileDesClientTest01
  * @tc.desc: test the function for RequestFileDescriptorEx.
  * @tc.type: FUNC

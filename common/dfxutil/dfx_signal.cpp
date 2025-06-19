@@ -166,6 +166,8 @@ std::string DfxSignal::FormatSIGILLCodeName(const int32_t signalCode)
             return "ILL_COPROC";
         case ILL_BADSTK:
             return "ILL_BADSTK";
+        case ILL_ILLPACCFI:
+            return "ILL_ILLPACCFI";
         default:
             return FormatCommonSignalCodeName(signalCode);
     }

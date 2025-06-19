@@ -22,7 +22,7 @@
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #ifndef is_ohos_lite
-#include "json/json.h"
+#include "cJSON.h"
 #endif
 
 namespace OHOS {
@@ -35,12 +35,13 @@ public:
 
 private:
 #ifndef is_ohos_lite
-    void GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process, Json::Value& jsonInfo);
-    void GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo);
-    void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo) const;
-    bool FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo) const;
-    void FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
-    void FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
+    bool AddItemToJsonInfo(const ProcessDumpRequest& request, DfxProcess& process, cJSON *jsonInfo);
+    void GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process, cJSON *jsonInfo);
+    void GetDumpJsonFormatInfo(DfxProcess& process, cJSON *jsonInfo);
+    void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, cJSON *jsonInfo) const;
+    bool FillFramesJson(const std::vector<DfxFrame>& frames, cJSON *jsonInfo) const;
+    void FillJsFrameJson(const DfxFrame& frame, cJSON *jsonInfo) const;
+    void FillNativeFrameJson(const DfxFrame& frame, cJSON *jsonInfo) const;
 #endif
 };
 } // namespace HiviewDFX

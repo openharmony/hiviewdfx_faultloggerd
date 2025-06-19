@@ -25,7 +25,6 @@ ohos_unittest("async_stack_test") {
     "$faultloggerd_path/test/utils",
   ]
   sources = [
-    "$faultloggerd_interfaces_path/innerkits/async_stack/fp_unwinder.cpp",
     "$faultloggerd_interfaces_path/innerkits/async_stack/unique_stack_table.cpp",
     "async_stack_test.cpp",
     "stack_table_test.cpp",
@@ -34,12 +33,14 @@ ohos_unittest("async_stack_test") {
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+    "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     "$faultloggerd_path/test/utils:dfx_test_util",
   ]
   external_deps = [
     "c_utils:utils",
     "googletest:gtest_main",
     "hilog:libhilog",
+    "libuv:uv",
   ]
 }
 

@@ -70,7 +70,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
-      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
@@ -92,7 +91,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
-      "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
@@ -211,7 +209,6 @@ if (defined(ohos_lite)) {
       "hitrace:hitrace_meter",
       "hitrace:libhitracechain",
       "init:libbegetutil",
-      "jsoncpp:jsoncpp",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
     ]

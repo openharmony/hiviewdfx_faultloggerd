@@ -1,7 +1,7 @@
 {
     global:
         extern "C++" {
-            OHOS::HiviewDFX::StackPrinter::SetMaps*;
+            OHOS::HiviewDFX::StackPrinter::SetUnwindInfo*;
             OHOS::HiviewDFX::StackPrinter::StackPrinter*;
             OHOS::HiviewDFX::StackPrinter::PutPcsInTable*;
             OHOS::HiviewDFX::StackPrinter::GetFullStack*;

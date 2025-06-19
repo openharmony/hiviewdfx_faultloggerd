@@ -516,7 +516,7 @@ std::string ElfParser::ParseHexBuildId(uint64_t noteAddr, uint64_t noteSize)
         if (nhdr.n_namesz > 0) {
             std::string name(nhdr.n_namesz, '\0');
             ptr = noteAddr + offset;
-            if (memcpy_s(&(name[0]), nhdr.n_namesz, reinterpret_cast<void*>(ptr), nhdr.n_namesz) != 0) {
+            if (memcpy_s(&(name[0]), name.size(), reinterpret_cast<void*>(ptr), nhdr.n_namesz) != 0) {
                 DFXLOGE("memcpy_s note name failed");
                 return "";
             }
@@ -535,7 +535,7 @@ std::string ElfParser::ParseHexBuildId(uint64_t noteAddr, uint64_t noteSize)
             }
             std::string buildIdRaw(nhdr.n_descsz, '\0');
             ptr = noteAddr + offset;
-            if (memcpy_s(&buildIdRaw[0], nhdr.n_descsz, reinterpret_cast<void*>(ptr), nhdr.n_descsz) != 0) {
+            if (memcpy_s(&buildIdRaw[0], buildIdRaw.size(), reinterpret_cast<void*>(ptr), nhdr.n_descsz) != 0) {
                 return "";
             }
             return buildIdRaw;

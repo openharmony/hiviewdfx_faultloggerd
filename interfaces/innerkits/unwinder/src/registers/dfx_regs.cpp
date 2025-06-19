@@ -139,7 +139,7 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
     size_t cpySize = (size > RegsSize()) ? RegsSize() : size;
-    if (memcpy_s(RawData(), cpySize * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t)) != 0) {
+    if (memcpy_s(RawData(), RegsSize() * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t)) != 0) {
         DFXLOGE("Failed to set regs data, errno=%{public}d", errno);
     }
 }
