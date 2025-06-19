@@ -63,6 +63,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/test/utils:dfx_test_util",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
     ]
     external_deps = [
       "c_utils:utils",

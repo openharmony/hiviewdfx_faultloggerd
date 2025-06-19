@@ -18,6 +18,7 @@
 #include <inttypes.h>
 
 #include "dfx_socket_request.h"
+#include <string>
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,7 +73,39 @@ int32_t RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2],
  * @return if succeed return 0 , otherwise return the error code
 */
 int32_t ReportDumpStats(struct FaultLoggerdStatsRequest *request);
+
+/**
+ * @brief cancel coredump request
+ * @param targetPid target id
+ * @return if succeed return 0 , otherwise return the error code
+*/
+int32_t CancelCoredump(int32_t targetPid);
+
+/**
+ * @brief start coredump request
+ * @param targetPid target id
+ * @param workerPid processdump id
+ * @return if succeed return 0 , otherwise return the error code
+*/
+int32_t StartCoredumpCb(int32_t targetPid, int32_t workerPid);
+
+/**
+ * @brief finish coredump request
+ * @param targetPid target id
+ * @param fileName coredump file name
+ * @param ret coredump result
+ * @return if succeed return 0 , otherwise return the error code
+*/
+int32_t FinishCoredumpCb(int32_t targetPid, std::string& fileName, int32_t ret);
+
 #ifdef __cplusplus
 }
 #endif
+/**
+ * @brief do coredump request
+ * @param targetPid target id
+ * @param timeout timeout ms
+ * @return if succeed return fileName, otherwise return ""
+*/
+std::string SaveCoredumpToFileTimeout(int32_t targetPid, int32_t timeout = 10000);
 #endif

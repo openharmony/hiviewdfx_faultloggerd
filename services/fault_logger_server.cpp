@@ -46,6 +46,10 @@ bool SocketServer::Init()
         return false;
     }
 #ifndef is_ohos_lite
+    AddService(DO_COREDUMP_CLIENT, std::make_unique<CoredumpService>());
+    AddService(CANCEL_COREDUMP_CLIENT, std::make_unique<CancelCoredumpService>());
+    AddService(COREDUMP_PROCESS_DUMP_CLIENT, std::make_unique<CoredumpStatusService>());
+
     AddService(PIPE_FD_CLIENT, std::make_unique<PipeService>());
     AddService(SDK_DUMP_CLIENT, std::make_unique<SdkDumpService>());
     if (!AddServerListener(SERVER_SDKDUMP_SOCKET_NAME)) {

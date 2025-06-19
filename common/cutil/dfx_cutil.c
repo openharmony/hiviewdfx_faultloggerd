@@ -108,7 +108,7 @@ bool TrimAndDupStr(const char* src, char* dst)
     return true;
 }
 
-uint64_t GetAbsTimeMilliSeconds(void)
+uint64_t GetAbsTimeMilliSecondsCInterce(void)
 {
     struct timespec ts;
     (void)clock_gettime(CLOCK_MONOTONIC, &ts);

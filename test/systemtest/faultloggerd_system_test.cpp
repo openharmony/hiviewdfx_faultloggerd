@@ -24,6 +24,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include "faultloggerd_client.h"
 #include "dfx_test_util.h"
 #include "directory_ex.h"
 #include "dfx_define.h"
@@ -1661,6 +1662,57 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
 }
 #endif
+
+HWTEST_F(FaultLoggerdSystemTest, CoreDumpCbTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CoreDumpCbTest001: start.";
+
+    int32_t retCode = ResponseCode::REQUEST_SUCCESS;
+    std::string fileName = "com.ohos.sceneboard.dmp";
+    ASSERT_EQ(StartCoredumpCb(getpid(), getpid()), ResponseCode::REQUEST_SUCCESS);
+    ASSERT_EQ(FinishCoredumpCb(getpid(), fileName, retCode), ResponseCode::REQUEST_SUCCESS);
+    GTEST_LOG_(INFO) << "CoreDumpCbTest001: end.";
+}
+
+HWTEST_F(FaultLoggerdSystemTest, CoreDumpCbTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CoreDumpCbTest002: start.";
+
+#if defined(__aarch64__)
+    std::string appName = "com.ohos.sceneboard";
+    pid_t pid = GetProcessPid(appName);
+    if (pid > 0) {
+        auto ret = SaveCoredumpToFileTimeout(pid);
+        ASSERT_NE(ret.compare(""), 0);
+    } else {
+        FAIL() << "CoreDumpCbTest002: " << appName << "not running.";
+    }
+#endif
+    GTEST_LOG_(INFO) << "CoreDumpCbTest002: end.";
+}
+
+HWTEST_F(FaultLoggerdSystemTest, CoreDumpCbTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CoreDumpCbTest003: start.";
+
+#if defined(__aarch64__)
+    std::string appName = "com.ohos.sceneboard";
+    pid_t pid = GetProcessPid(appName);
+    if (pid > 0) {
+        auto threadFunc = [pid]() {
+            sleep(1);
+            CancelCoredump(pid);
+        };
+
+        std::thread t(threadFunc);
+        t.detach();
+        SaveCoredumpToFileTimeout(pid);
+    } else {
+        FAIL() << "CoreDumpCbTest003: " << appName << "not running.";
+    }
+#endif
+    GTEST_LOG_(INFO) << "CoreDumpCbTest003: end.";
+}
 
 /**
 * @tc.name: FaultLoggerdSystemTest125

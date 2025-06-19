@@ -26,7 +26,7 @@
 #include <sys/un.h>
 #include <thread>
 #include <unistd.h>
-
+#include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "faultloggerd_test.h"

@@ -117,11 +117,15 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump:process_info_src",
     ]
     external_deps = [
+      "bundle_framework:appexecfwk_base",
+      "bundle_framework:appexecfwk_core",
       "c_utils:utils",
       "googletest:gmock_main",
       "googletest:gtest_main",
       "hilog:libhilog",
       "hitrace:libhitracechain",
+      "ipc:ipc_core",
+      "samgr:samgr_proxy",
     ]
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
