@@ -189,6 +189,10 @@ bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
     if (EndsWith(name, "[vdso]") || EndsWith(name, "[shmm]")) {
         return true;
     }
+
+    if (StartsWith(name, "[anon:JSVM_JIT") || StartsWith(name, "[anon:ARKWEB_JIT") || StartsWith(name, "[anon:v8")) {
+        return true;
+    }
     if (name.empty() || name.find(':') != std::string::npos || name.front() == '[' ||
         name.back() == ']' || std::strncmp(name.c_str(), "/dev/", sizeof("/dev/")) == 0 ||
         std::strncmp(name.c_str(), "/memfd:", sizeof("/memfd:")) == 0 ||

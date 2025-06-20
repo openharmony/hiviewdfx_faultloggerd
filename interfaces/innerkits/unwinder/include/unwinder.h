@@ -48,6 +48,7 @@ public:
     void EnableFpCheckMapExec(bool enableFpCheckMapExec);
     void EnableFillFrames(bool enableFillFrames);
     void EnableParseNativeSymbol(bool enableParseNativeSymbol);
+    void EnableJsvmstack(bool enableJsvmstack);
     void IgnoreMixstack(bool ignoreMixstack);
 
     void SetRegs(std::shared_ptr<DfxRegs> regs);

@@ -132,6 +132,26 @@ HWTEST_F(MapsTest, IsArkNameTest001, TestSize.Level2)
 }
 
 /**
+ * @tc.name: IsJsvmNameTest001
+ * @tc.desc: test IsJsvmExecutable function
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, IsJsvmNameTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsArkNameTest001: start.";
+    std::shared_ptr<DfxMap> map = nullptr;
+    map = std::make_shared<DfxMap>(0, 0, 0, "1", "");
+    EXPECT_FALSE(map->IsJsvmExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, "1", "[anon:JSVM_JIT]");
+    EXPECT_TRUE(map->IsJsvmExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_EXEC, "libv8_shared.so");
+    EXPECT_TRUE(map->IsJsvmExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_READ, "libv8_shared.so");
+    EXPECT_FALSE(map->IsJsvmExecutable());
+    GTEST_LOG_(INFO) << "IsArkNameTest001: end.";
+}
+
+/**
  * @tc.name: GetRelPcTest
  * @tc.desc: test getRelPc no elf
  * @tc.type: FUNC
@@ -253,6 +273,9 @@ HWTEST_F(MapsTest, IsLegalMapItemTest, TestSize.Level2)
     ASSERT_TRUE(DfxMaps::IsArkHapMapItem(ARK_HAP_MAP_NAME));
     ASSERT_TRUE(DfxMaps::IsArkCodeMapItem(ARK_CODE_MAP_NAME));
     ASSERT_TRUE(DfxMaps::IsLegalMapItem(ARK_CODE_MAP_NAME));
+    ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:JSVM_JIT]"));
+    ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:ARKWEB_JIT]"));
+    ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:v8]"));
     GTEST_LOG_(INFO) << "IsLegalMapItemTest: end.";
 }
 }

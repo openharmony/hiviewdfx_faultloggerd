@@ -955,6 +955,7 @@ HWTEST_F(UnwinderTest, UnwinderTest001, TestSize.Level2)
     auto unwinder = std::make_shared<Unwinder>(getpid());
     unwinder->EnableUnwindCache(false);
     unwinder->EnableFpCheckMapExec(false);
+    unwinder->EnableJsvmstack(false);
     auto regs = unwinder->GetRegs();
     ASSERT_EQ(regs, nullptr);
     DfxFrame frame;

@@ -6,6 +6,7 @@
       OHOS::HiviewDFX::Unwinder::EnableFpCheckMapExec*;
       OHOS::HiviewDFX::Unwinder::EnableFillFrames*;
       OHOS::HiviewDFX::Unwinder::EnableParseNativeSymbol*;
+      OHOS::HiviewDFX::Unwinder::EnableJsvmstack*;
       OHOS::HiviewDFX::Unwinder::IgnoreMixstack*;
       OHOS::HiviewDFX::Unwinder::SetRegs*;
       OHOS::HiviewDFX::Unwinder::GetRegs*;
@@ -117,6 +118,10 @@
       OHOS::HiviewDFX::StackUtils::Instance*;
       OHOS::HiviewDFX::StackUtils::GetMainStackRange*;
       OHOS::HiviewDFX::StackUtils::GetSelfStackRange*;
+      OHOS::HiviewDFX::DfxJsvm::JsvmCreateJsSymbolExtractor*;
+      OHOS::HiviewDFX::DfxJsvm::JsvmDestroyJsSymbolExtractor*;
+      OHOS::HiviewDFX::DfxJsvm::ParseJsvmFrameInfo*;
+      OHOS::HiviewDFX::DfxJsvm::Instance*;
     };
   local:
     *;
