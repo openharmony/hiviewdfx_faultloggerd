@@ -24,6 +24,8 @@
 #include <thread>
 
 #include "reporter.h"
+#include "dfx_coredump_common.h"
+#include "dfx_coredump_service.h"
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #include "dump_info.h"
@@ -70,6 +72,9 @@ private:
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
     bool isJsonDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
+#if defined(__aarch64__)
+    CoreDumpService coreDumpService_;
+#endif
 };
 } // namespace HiviewDFX
 } // namespace OHOS

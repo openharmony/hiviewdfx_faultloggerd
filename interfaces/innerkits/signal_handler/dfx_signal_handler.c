@@ -249,6 +249,8 @@ static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
                 return DUMP_TYPE_FDSAN;
             case SIGLEAK_STACK_JEMALLOC:
                 return DUMP_TYPE_JEMALLOC;
+            case SIGLEAK_STACK_COREDUMP:
+                return DUMP_TYPE_COREDUMP;
             case SIGLEAK_STACK_BADFD:
                 return DUMP_TYPE_BADFD;
             default:

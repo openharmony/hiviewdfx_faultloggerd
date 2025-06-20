@@ -119,6 +119,11 @@ void GetVmProcessRealPid(const ProcessDumpRequest& request, unsigned long vmPid,
     realPid = static_cast<int>(data);
 }
 
+MAYBE_UNUSED bool IsCoredumpSignal(const ProcessDumpRequest& request)
+{
+    return request.siginfo.si_signo == 42 && request.siginfo.si_code == 3; // 42 3
+}
+
 void ReadPids(const ProcessDumpRequest& request, int& realPid, int& vmPid, DfxProcess process)
 {
     unsigned long childPid = 0;
@@ -127,7 +132,7 @@ void ReadPids(const ProcessDumpRequest& request, int& realPid, int& vmPid, DfxPr
     ptrace(PTRACE_CONT, childPid, NULL, NULL);
 
     // freeze detach after fork child to fork vm process
-    if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+    if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH || IsCoredumpSignal(request)) {
         process.Detach();
         DFXLOGI("ptrace detach all tids");
     }
@@ -470,6 +475,32 @@ int ProcessDumper::ParseSymbols(const ProcessDumpRequest& request, std::shared_p
     }
     return dumpRes;
 }
+
+#if defined(__aarch64__)
+static void ProcessdumpDoCoredump(const ProcessDumpRequest& request, pid_t vmPid, CoreDumpService& coreDumpService)
+{
+    if (IsCoredumpSignal(request)) {
+        ElapsedTime counter;
+        DFXLOGI("coredump begin to write segment");
+        int pid = request.pid;
+        coreDumpService.SetVmPid(vmPid);
+        coreDumpService.WriteSegment();
+        coreDumpService.WriteSectionHeader();
+        coreDumpService.StopCoreDump();
+        DFXLOGI("end to coredump");
+
+        std::string bundleName = coreDumpService.GetBundleNameItem();
+        bundleName += ".dmp";
+        int32_t retCode = ResponseCode::REQUEST_SUCCESS;
+        FinishCoredumpCb(pid, bundleName, retCode);
+
+        DFXLOGI("coredump : pid = %{public}d, elapsed time = %{public}" PRId64 "ms, ",
+            pid, counter.Elapsed<std::chrono::milliseconds>());
+        _exit(0);
+    }
+}
+#endif
+
 bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, int &dumpRes)
 {
     DFX_TRACE_SCOPED("InitUnwinder");
@@ -486,6 +517,9 @@ bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, int &dumpRes
         dumpRes = DumpErrorCode::DUMP_EREADPID;
         return false;
     }
+#if defined(__aarch64__)
+    ProcessdumpDoCoredump(request, vmPid, coreDumpService_);
+#endif
     process_->SetVmPid(vmPid);
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
@@ -534,6 +568,16 @@ bool ProcessDumper::InitDfxProcess(ProcessDumpRequest& request)
         process_->InitOtherThreads(request.tid);
     }
     DFXLOGI("Finish create all thread.");
+#if defined(__aarch64__)
+    if (IsCoredumpSignal(request)) {
+        DFXLOGI("Begin to do Coredump.");
+        coreDumpService_ = CoreDumpService(request.pid, request.tid);
+        coreDumpService_.keyRegs_ = DfxRegs::CreateFromUcontext(request.context);
+        coreDumpService_.StartCoreDump();
+        coreDumpService_.WriteSegmentHeader();
+        coreDumpService_.WriteNote();
+    }
+#endif
     return true;
 }
 
@@ -582,7 +626,7 @@ bool ProcessDumper::InitBufferWriter(const ProcessDumpRequest& request)
             bufferFd = SmartFd {CreateFileForCrash(request.pid, request.timeStamp)};
         }
     }
-    
+
     bool rst{bufferFd};
     DfxBufferWriter::GetInstance().SetWriteBufFd(std::move(bufferFd));
     return rst;

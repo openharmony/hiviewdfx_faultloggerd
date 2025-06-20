@@ -34,6 +34,7 @@ enum ProcessDumpType : int32_t {
     DUMP_TYPE_FDSAN,
     DUMP_TYPE_JEMALLOC,
     DUMP_TYPE_BADFD,
+    DUMP_TYPE_COREDUMP,
 };
 
 /**
