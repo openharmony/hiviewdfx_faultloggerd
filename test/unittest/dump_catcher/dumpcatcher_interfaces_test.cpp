@@ -1173,7 +1173,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest043, TestSize.Level
                 int now = static_cast<int>(GetAbsTimeMilliSeconds());
                 int timeWait = hungUpProcessdumpTime - (now - timeStart - waitForkPidStartTime);
                 timeWait = timeWait > 0 ? timeWait : 0;
-                std::this_thread::sleep_for(std::chrono::milliseconds(hungUpProcessdumpTime));
+                std::this_thread::sleep_for(std::chrono::milliseconds(timeWait));
                 kill(processdumpPid, SIGCONT);
             }
             break;
