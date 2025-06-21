@@ -47,6 +47,7 @@ public:
     std::string GetBundleNameItem();
     std::string GetBundleName();
     std::shared_ptr<DfxRegs> keyRegs_;
+    static bool IsHwasanCoredumpEnabled();
 private:
     enum class WriteStatus {
         INIT_STAGE,

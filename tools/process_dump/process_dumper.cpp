@@ -479,7 +479,7 @@ int ProcessDumper::ParseSymbols(const ProcessDumpRequest& request, std::shared_p
 #if defined(__aarch64__)
 static void ProcessdumpDoCoredump(const ProcessDumpRequest& request, pid_t vmPid, CoreDumpService& coreDumpService)
 {
-    if (IsCoredumpSignal(request)) {
+    if (IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
         ElapsedTime counter;
         DFXLOGI("coredump begin to write segment");
         int pid = request.pid;
@@ -496,6 +496,9 @@ static void ProcessdumpDoCoredump(const ProcessDumpRequest& request, pid_t vmPid
 
         DFXLOGI("coredump : pid = %{public}d, elapsed time = %{public}" PRId64 "ms, ",
             pid, counter.Elapsed<std::chrono::milliseconds>());
+        if  (CoreDumpService::IsHwasanCoredumpEnabled()) {
+            InfoCrashUnwindResult(request, true);
+        }
         _exit(0);
     }
 }
@@ -569,7 +572,7 @@ bool ProcessDumper::InitDfxProcess(ProcessDumpRequest& request)
     }
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__)
-    if (IsCoredumpSignal(request)) {
+    if (IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
         DFXLOGI("Begin to do Coredump.");
         coreDumpService_ = CoreDumpService(request.pid, request.tid);
         coreDumpService_.keyRegs_ = DfxRegs::CreateFromUcontext(request.context);
