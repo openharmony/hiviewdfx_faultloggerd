@@ -16,70 +16,65 @@
 #define DFX_COREDUMP_SERVICE_H
 #if defined(__aarch64__)
 
-#ifndef is_ohos_lite
-#include "bundle_mgr_interface.h"
-#include "bundle_mgr_proxy.h"
-#include "if_system_ability_manager.h"
-#include "iservice_registry.h"
-#include "system_ability_definition.h"
-#endif
 #include "dfx_coredump_common.h"
 #include "dfx_coredump_writer.h"
+#include "dfx_dump_request.h"
 #include "dfx_regs.h"
+#include "elapsed_time.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-std::string GetBundleName();
-
 class CoreDumpService {
 public:
     CoreDumpService() = default;
     CoreDumpService(int32_t targetPid, int32_t targetTid);
+    CoreDumpService(int32_t targetPid, int32_t targetTid, std::shared_ptr<DfxRegs> keyRegs);
     CoreDumpService(const CoreDumpService&) = delete;
+    CoreDumpService &operator=(const CoreDumpService&) = delete;
+    ~CoreDumpService();
     bool StartCoreDump();
-    void StopCoreDump();
+    bool FinishCoreDump();
     bool WriteSegmentHeader();
-    bool WriteNote();
-    bool WriteSegment();
+    bool WriteNoteSegment();
+    bool WriteLoadSegment();
     bool WriteSectionHeader();
     void SetVmPid(int32_t vmPid);
+    void StartFirstStageDump();
+    void StartSecondStageDump(int32_t vmPid, const ProcessDumpRequest& request);
     CoreDumpThread GetCoreDumpThread();
     std::string GetBundleNameItem();
-    std::string GetBundleName();
-    std::shared_ptr<DfxRegs> keyRegs_;
     static bool IsHwasanCoredumpEnabled();
+    static bool IsCoredumpSignal(const ProcessDumpRequest& request);
 private:
-    enum class WriteStatus {
-        INIT_STAGE,
-        MMAP_STAGE,
-        WRITE_SEGMENT_HEADER_STAGE,
-        WRITE_NOTE_STAGE,
-        WRITE_SEGMENT_STAGE,
-        WRITE_SECTION_HEADER_STAGE,
-        DEINIT_STAGE,
-        DONE_STAGE,
-    };
-    void Init();
     void DeInit();
+    void ObtainDumpRegion(std::string &line, DumpMemoryRegions &region);
+    void ElfHeaderFill(Elf64_Ehdr &eh, uint16_t ePhnum);
     bool CreateFile();
     bool MmapForFd();
     bool VerifyTrustlist();
     int CreateFileForCoreDump();
     uint64_t GetCoreFileSize(pid_t pid);
-    void ObtainDumpRegion(const char *line, DumpMemoryRegions *region);
-    void ElfHeaderFill(Elf64_Ehdr* eh, uint16_t ePhnum, uint16_t eShnum, uint16_t eShstrndx);
-#ifndef is_ohos_lite
-    sptr<AppExecFwk::IBundleMgr> GetBundleManager();
-#endif
+private:
+    enum class WriteStatus {
+        START_STAGE,
+        WRITE_SEGMENT_HEADER_STAGE,
+        WRITE_NOTE_SEGMENT_STAGE,
+        WRITE_LOAD_SEGMENT_STAGE,
+        WRITE_SECTION_HEADER_STAGE,
+        STOP_STAGE,
+        DONE_STAGE,
+    };
     int fd_ {-1};
     uint64_t coreFileSize_ {0};
-    std::vector<DumpMemoryRegions> maps_;
-    char *mappedMemory_ {nullptr};
-    std::string bundleName_;
-    char *currentPointer_ {nullptr};
     Elf64_Half ePhnum_ {0};
-    WriteStatus status_ = WriteStatus::INIT_STAGE;
+    std::vector<DumpMemoryRegions> maps_;
+    std::string bundleName_;
+    char *mappedMemory_ {nullptr};
+    char *currentPointer_ {nullptr};
+    WriteStatus status_ = WriteStatus::START_STAGE;
     CoreDumpThread coreDumpThread_;
+    ElapsedTime counter_;
+    std::shared_ptr<DfxRegs> keyRegs_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

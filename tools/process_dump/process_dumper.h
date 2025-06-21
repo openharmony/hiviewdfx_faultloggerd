@@ -24,7 +24,6 @@
 #include <thread>
 
 #include "reporter.h"
-#include "dfx_coredump_common.h"
 #include "dfx_coredump_service.h"
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
@@ -73,7 +72,7 @@ private:
     bool isJsonDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
 #if defined(__aarch64__)
-    CoreDumpService coreDumpService_;
+    std::shared_ptr<CoreDumpService> coreDumpService_ = nullptr;
 #endif
 };
 } // namespace HiviewDFX

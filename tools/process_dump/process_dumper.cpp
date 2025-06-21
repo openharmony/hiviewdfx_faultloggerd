@@ -42,6 +42,7 @@
 #include "crash_exception.h"
 #include "process_dump_config.h"
 #include "dump_info_factory.h"
+#include "dump_utils.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_dump_res.h"
@@ -119,11 +120,6 @@ void GetVmProcessRealPid(const ProcessDumpRequest& request, unsigned long vmPid,
     realPid = static_cast<int>(data);
 }
 
-MAYBE_UNUSED bool IsCoredumpSignal(const ProcessDumpRequest& request)
-{
-    return request.siginfo.si_signo == 42 && request.siginfo.si_code == 3; // 42 3
-}
-
 void ReadPids(const ProcessDumpRequest& request, int& realPid, int& vmPid, DfxProcess process)
 {
     unsigned long childPid = 0;
@@ -132,7 +128,13 @@ void ReadPids(const ProcessDumpRequest& request, int& realPid, int& vmPid, DfxPr
     ptrace(PTRACE_CONT, childPid, NULL, NULL);
 
     // freeze detach after fork child to fork vm process
-    if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH || IsCoredumpSignal(request)) {
+    if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH ||
+#if defined(__aarch64__)
+        CoreDumpService::IsCoredumpSignal(request)
+#else
+        false
+#endif
+    ) {
         process.Detach();
         DFXLOGI("ptrace detach all tids");
     }
@@ -155,17 +157,6 @@ void NotifyOperateResult(ProcessDumpRequest& request, int result)
     }
     if (OHOS_TEMP_FAILURE_RETRY(write(request.childPipeFd[1], &result, sizeof(result))) < 0) {
         DFXLOGE("write to child process fail %{public}d", errno);
-    }
-}
-
-void InfoCrashUnwindResult(const ProcessDumpRequest& request, bool isUnwindSucc)
-{
-    if (!isUnwindSucc) {
-        return;
-    }
-    if (ptrace(PTRACE_POKEDATA, request.nsPid, reinterpret_cast<void*>(request.unwindResultAddr),
-        CRASH_UNWIND_SUCCESS_FLAG) < 0) {
-        DFXLOGE("pok unwind success flag to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
     }
 }
 
@@ -211,7 +202,7 @@ void ProcessDumper::Dump()
     }
 
     if (request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        InfoCrashUnwindResult(request, resDump == DumpErrorCode::DUMP_ESUCCESS);
+        DumpUtils::InfoCrashUnwindResult(request, resDump == DumpErrorCode::DUMP_ESUCCESS);
         BlockCrashProcExit(request);
     }
     if (process_ != nullptr) {
@@ -476,34 +467,6 @@ int ProcessDumper::ParseSymbols(const ProcessDumpRequest& request, std::shared_p
     return dumpRes;
 }
 
-#if defined(__aarch64__)
-static void ProcessdumpDoCoredump(const ProcessDumpRequest& request, pid_t vmPid, CoreDumpService& coreDumpService)
-{
-    if (IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
-        ElapsedTime counter;
-        DFXLOGI("coredump begin to write segment");
-        int pid = request.pid;
-        coreDumpService.SetVmPid(vmPid);
-        coreDumpService.WriteSegment();
-        coreDumpService.WriteSectionHeader();
-        coreDumpService.StopCoreDump();
-        DFXLOGI("end to coredump");
-
-        std::string bundleName = coreDumpService.GetBundleNameItem();
-        bundleName += ".dmp";
-        int32_t retCode = ResponseCode::REQUEST_SUCCESS;
-        FinishCoredumpCb(pid, bundleName, retCode);
-
-        DFXLOGI("coredump : pid = %{public}d, elapsed time = %{public}" PRId64 "ms, ",
-            pid, counter.Elapsed<std::chrono::milliseconds>());
-        if  (CoreDumpService::IsHwasanCoredumpEnabled()) {
-            InfoCrashUnwindResult(request, true);
-        }
-        _exit(0);
-    }
-}
-#endif
-
 bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, int &dumpRes)
 {
     DFX_TRACE_SCOPED("InitUnwinder");
@@ -521,7 +484,11 @@ bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, int &dumpRes
         return false;
     }
 #if defined(__aarch64__)
-    ProcessdumpDoCoredump(request, vmPid, coreDumpService_);
+    if (CoreDumpService::IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
+        if (coreDumpService_) {
+            coreDumpService_->StartSecondStageDump(vmPid, request);
+        }
+    }
 #endif
     process_->SetVmPid(vmPid);
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
@@ -572,13 +539,12 @@ bool ProcessDumper::InitDfxProcess(ProcessDumpRequest& request)
     }
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__)
-    if (IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
-        DFXLOGI("Begin to do Coredump.");
-        coreDumpService_ = CoreDumpService(request.pid, request.tid);
-        coreDumpService_.keyRegs_ = DfxRegs::CreateFromUcontext(request.context);
-        coreDumpService_.StartCoreDump();
-        coreDumpService_.WriteSegmentHeader();
-        coreDumpService_.WriteNote();
+    if (CoreDumpService::IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
+        coreDumpService_ = std::make_shared<CoreDumpService>(request.pid, request.tid,
+            DfxRegs::CreateFromUcontext(request.context));
+        if (coreDumpService_) {
+            coreDumpService_->StartFirstStageDump();
+        }
     }
 #endif
     return true;

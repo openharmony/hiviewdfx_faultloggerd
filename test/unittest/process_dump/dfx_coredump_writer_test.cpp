@@ -62,7 +62,7 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest001, TestSize.Level2)
         .memorySizeHex = 0x1000
     };
     std::vector<DumpMemoryRegions> maps = { dummyRegion };
-    ProgramSegmentHeaderWriter writer(mappedMemory, currentPointer, &phNum, maps);
+    ProgramSegmentHeaderWriter writer(mappedMemory, currentPointer, phNum, maps);
 
     currentPointer = writer.Write();
 
@@ -75,7 +75,7 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest001, TestSize.Level2)
 
 /**
  * @tc.name: DfxCoreDumpWriterTest002
- * @tc.desc: test SegmentWriter
+ * @tc.desc: test LoadSegmentWriter
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest002, TestSize.Level2)
@@ -102,7 +102,7 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest002, TestSize.Level2)
     pid_t testPid = getpid();
     Elf64_Half phNum = 2;
 
-    SegmentWriter writer(mappedMemory, currentPointer, testPid, phNum);
+    LoadSegmentWriter writer(mappedMemory, currentPointer, testPid, phNum);
 
     char* result = writer.Write();
 
@@ -136,7 +136,7 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest003, TestSize.Level2)
 
 /**
  * @tc.name: DfxCoreDumpWriterTest004
- * @tc.desc: test NoteWriter
+ * @tc.desc: test NoteSegmentWriter
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest004, TestSize.Level2)
@@ -160,7 +160,7 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest004, TestSize.Level2)
     std::vector<DumpMemoryRegions> maps = { dummyRegion };
     std::shared_ptr<DfxRegs> regs = DfxRegs::Create();
 
-    NoteWriter writer(mappedMemory, currentPointer, coreDumpThread, maps, regs);
+    NoteSegmentWriter writer(mappedMemory, currentPointer, coreDumpThread, maps, regs);
     char* result = writer.Write();
 
     ASSERT_TRUE(static_cast<const void*>(currentPointer) != static_cast<const void*>(result));
