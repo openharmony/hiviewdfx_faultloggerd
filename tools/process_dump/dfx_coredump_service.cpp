@@ -32,6 +32,7 @@ namespace {
 const char *const COREDUMP_DIR_PATH = "/data/storage/el2/base/files";
 const char *const COREDUMP_HAP_WHITE_LIST = "const.dfx.coredump.hap_list";
 const char *const DEFAULT_BUNDLE_NAME = "";
+const char *const HWASAN_COREDUMP_ENABLE = "faultloggerd.priv.hwasan_coredump.enabled";
 char g_coredumpFilePath[256] = {0};
 static const int ARG16 = 16;
 static const int ARG100 = 100;
@@ -47,6 +48,16 @@ static std::string GetCoredumpWhiteList()
 #endif
     return "";
 }
+}
+
+bool CoreDumpService::IsHwasanCoredumpEnabled()
+{
+#ifndef is_ohos_lite
+    static bool isHwasanCoredumpEnabled = OHOS::system::GetParameter(HWASAN_COREDUMP_ENABLE, "false") == "true";
+    return isHwasanCoredumpEnabled;
+#else
+    return false;
+#endif
 }
 
 CoreDumpService::CoreDumpService(int32_t targetPid, int32_t targetTid)
@@ -296,8 +307,8 @@ int CoreDumpService::CreateFileForCoreDump()
         DFXLOGE("query bundleName fail");
         return INVALID_FD;
     }
-    if (!VerifyTrustlist()) {
-        DFXLOGE("The bundleName %{public}s is not in whitelist", bundleName_.c_str());
+    if (!VerifyTrustlist() && !IsHwasanCoredumpEnabled()) {
+        DFXLOGE("The bundleName %{public}s is not in whitelist or hwasan coredump disable", bundleName_.c_str());
         return INVALID_FD;
     }
     std::string logPath = std::string(COREDUMP_DIR_PATH) + "/" + bundleName_ + ".dmp";
