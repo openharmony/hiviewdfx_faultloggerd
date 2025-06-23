@@ -367,7 +367,7 @@ static bool IsSignalBlocked(int pid, int32_t& ret)
         std::string threadStatusPath = StringPrintf("/proc/%d/task/%d/status", pid, targetTid);
         if (!LoadStringFromFile(threadStatusPath, content) || content.empty()) {
             DFXLOGE("the pid(%{public}d)thread(%{public}d) read status fail, errno(%{public}d)", pid, targetTid, errno);
-            ret = DUMPCATCH_UNKNOWN;
+            ret = DUMPCATCH_TIMEOUT_PARSE_FAIL_READ_ESTATUS;
             return true;
         }
 
@@ -386,7 +386,7 @@ static bool IsFrozen(int pid, int32_t& ret)
     std::string cgroupPath = StringPrintf("/proc/%d/cgroup", pid);
     if (!LoadStringFromFile(cgroupPath, content)) {
         DFXLOGE("the pid (%{public}d) read cgroup fail, errno (%{public}d)", pid, errno);
-        ret = DUMPCATCH_UNKNOWN;
+        ret = DUMPCATCH_TIMEOUT_PARSE_FAIL_READ_ECGROUP;
         return true;
     }
 
@@ -475,7 +475,7 @@ void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, s
             } else if (msg.find("mapinfo is not exist") != std::string::npos) {
                 ret = DUMPCATCH_DUMP_EMAP;
             } else {
-                ret = DUMPCATCH_UNKNOWN;
+                ret = DUMPCATCH_DUMP_ERROR;
             }
             break;
         default:
@@ -516,6 +516,12 @@ void DfxDumpCatcher::Impl::DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& 
         }
         msg.append("Result: pid(" + std::to_string(pid) + ") process fail to write to faultloggerd.\n");
         ret = DUMPCATCH_EWRITE;
+    } else {
+        if (uid == HIVIEW_UID || uid == FOUNDATION_UID) {
+            stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
+        }
+        msg.append("Result: pid(" + std::to_string(pid) + ") faultloggerd maybe exception occurred.\n");
+        ret = DUMPCATCH_EFAULTLOGGERD;
     }
     DFXLOGW("%{public}s :: %{public}s", __func__, msg.c_str());
 }
