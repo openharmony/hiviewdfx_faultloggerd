@@ -43,14 +43,18 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-
 static const char NOTE_NAME_CORE[8] = "CORE";
 static const char NOTE_NAME_LINUX[8] = "LINUX";
+const char *const UID = "Uid:";
+const char *const GID = "Gid:";
+const char *const PPID = "PPid:";
+const char *const SIGPND = "SigPnd:";
+const char *const SIGBLK = "SigBlk:";
 
 char* ProgramSegmentHeaderWriter::Write()
 {
     Elf64_Phdr ptNote;
-    PtNoteFill(&ptNote);
+    PtNoteFill(ptNote);
 
     if (!CopyAndAdvance(&ptNote, sizeof(ptNote))) {
         DFXLOGE("Write ptNote fail, errno:%{public}d", errno);
@@ -60,11 +64,11 @@ char* ProgramSegmentHeaderWriter::Write()
     Elf64_Phdr ptLoad;
     Elf64_Half lineNumber = 1;
 
-    for (const auto& region : maps_) {
+    for (const auto &region : maps_) {
         if (!strcmp(region.pathName, "[vvar]") || (region.priority[0] != 'r')) {
             continue;
         }
-        PtLoadFill(&ptLoad, region);
+        PtLoadFill(ptLoad, region);
         if (!CopyAndAdvance(&ptLoad, sizeof(ptLoad))) {
             DFXLOGE("Write ptLoad fail, errno:%{public}d", errno);
             return currentPointer_;
@@ -100,11 +104,11 @@ char* ProgramSegmentHeaderWriter::Write()
 
     *pOffset = pOffsetValueLast + *pFileszLast;
 
-    *ePhnum_ = lineNumber;
+    ePhnum_ = lineNumber;
     return currentPointer_;
 }
 
-void ProgramSegmentHeaderWriter::PtLoadFill(Elf64_Phdr *ph, struct DumpMemoryRegions region)
+void ProgramSegmentHeaderWriter::PtLoadFill(Elf64_Phdr &ph, const DumpMemoryRegions &region)
 {
     Elf64_Word pFlags = 0x00;
     if (region.priority[0] == 'r' || region.priority[0] == '-') {
@@ -119,7 +123,7 @@ void ProgramSegmentHeaderWriter::PtLoadFill(Elf64_Phdr *ph, struct DumpMemoryReg
     ProgramSegmentHeaderFill(ph, PT_LOAD, pFlags, region);
 }
 
-void ProgramSegmentHeaderWriter::PtNoteFill(Elf64_Phdr *ph)
+void ProgramSegmentHeaderWriter::PtNoteFill(Elf64_Phdr &ph)
 {
     struct DumpMemoryRegions region;
     Elf64_Word pFlags = PF_R;
@@ -129,49 +133,52 @@ void ProgramSegmentHeaderWriter::PtNoteFill(Elf64_Phdr *ph)
     ProgramSegmentHeaderFill(ph, PT_NOTE, pFlags, region);
 }
 
-void ProgramSegmentHeaderWriter::ProgramSegmentHeaderFill(Elf64_Phdr *ph, Elf64_Word pType,
-    Elf64_Word pFlags, struct DumpMemoryRegions region)
+void ProgramSegmentHeaderWriter::ProgramSegmentHeaderFill(Elf64_Phdr &ph, Elf64_Word pType,
+    Elf64_Word pFlags, const DumpMemoryRegions &region)
 {
-    ph->p_type = pType;
-    ph->p_flags = pFlags;
-    ph->p_offset = sizeof(Elf64_Ehdr);
-    ph->p_vaddr = region.startHex;
-    ph->p_paddr = 0x00;
-    ph->p_filesz = region.memorySizeHex;
-    ph->p_memsz = ph->p_filesz;
-    ph->p_align = 0x1;
+    ph.p_type = pType;
+    ph.p_flags = pFlags;
+    ph.p_offset = sizeof(Elf64_Ehdr);
+    ph.p_vaddr = region.startHex;
+    ph.p_paddr = 0x00;
+    ph.p_filesz = region.memorySizeHex;
+    ph.p_memsz = ph.p_filesz;
+    ph.p_align = 0x1;
 }
 
-char* SegmentWriter::Write()
+char* LoadSegmentWriter::Write()
 {
     char *ptLoadAddr = mappedMemory_ + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr);
     Elf64_Phdr *ptLoad = reinterpret_cast<Elf64_Phdr *>(ptLoadAddr);
+    if (ptLoad == nullptr) {
+        return currentPointer_;
+    }
     for (Elf64_Half i = 0; i < (ePhnum_ - 1); i++) {
-        ReadProcessVmmem(ptLoad);
+        ReadProcessVmmem(*ptLoad);
         ptLoad += 1;
     }
     return currentPointer_;
 }
 
-void SegmentWriter::ReadProcessVmmem(Elf64_Phdr *ptLoad)
+void LoadSegmentWriter::ReadProcessVmmem(Elf64_Phdr &ptLoad)
 {
     struct iovec local[1];
     struct iovec remote[1];
 
     local[0].iov_base = currentPointer_;
-    local[0].iov_len = ptLoad->p_memsz;
+    local[0].iov_len = ptLoad.p_memsz;
 
-    remote[0].iov_base = reinterpret_cast<void *>(ptLoad->p_vaddr);
-    remote[0].iov_len = ptLoad->p_memsz;
+    remote[0].iov_base = reinterpret_cast<void *>(ptLoad.p_vaddr);
+    remote[0].iov_len = ptLoad.p_memsz;
     ssize_t nread = process_vm_readv(pid_, local, 1, remote, 1, 0);
     if (nread == -1) {
-        (void)memset_s(currentPointer_, ptLoad->p_memsz, -1, ptLoad->p_memsz);
+        (void)memset_s(currentPointer_, ptLoad.p_memsz, -1, ptLoad.p_memsz);
     }
-    ptLoad->p_offset = reinterpret_cast<uintptr_t>(currentPointer_) - reinterpret_cast<uintptr_t>(mappedMemory_);
-    currentPointer_ += ptLoad->p_memsz;
+    ptLoad.p_offset = reinterpret_cast<uintptr_t>(currentPointer_) - reinterpret_cast<uintptr_t>(mappedMemory_);
+    currentPointer_ += ptLoad.p_memsz;
 }
 
-char* NoteWriter::Write()
+char* NoteSegmentWriter::Write()
 {
     char *noteStart = currentPointer_;
     PrpsinfoWrite();
@@ -187,11 +194,11 @@ char* NoteWriter::Write()
     return currentPointer_;
 }
 
-bool NoteWriter::PrpsinfoWrite()
+bool NoteSegmentWriter::PrpsinfoWrite()
 {
-    NoteWrite(NT_PRPSINFO, sizeof(struct elf_prpsinfo), NOTE_NAME_CORE);
-    struct elf_prpsinfo ntPrpsinfo;
-    FillPrpsinfo(&ntPrpsinfo);
+    NoteWrite(NT_PRPSINFO, sizeof(prpsinfo_t), NOTE_NAME_CORE);
+    prpsinfo_t ntPrpsinfo;
+    FillPrpsinfo(ntPrpsinfo);
     if (!CopyAndAdvance(&ntPrpsinfo, sizeof(ntPrpsinfo))) {
         DFXLOGE("Write ntPrpsinfo fail, errno:%{public}d", errno);
         return false;
@@ -199,18 +206,23 @@ bool NoteWriter::PrpsinfoWrite()
     return true;
 }
 
-void NoteWriter::FillPrpsinfo(struct elf_prpsinfo *ntPrpsinfo)
+void NoteSegmentWriter::FillPrpsinfo(prpsinfo_t &ntPrpsinfo)
 {
-    if (ntPrpsinfo == nullptr) {
-        return;
+    if (!ReadProcessStat(ntPrpsinfo)) {
+        DFXLOGE("Read targetPid process stat fail!");
     }
-    ReadProcessStat(ntPrpsinfo);
-    ReadProcessStatus(ntPrpsinfo);
-    ReadProcessComm(ntPrpsinfo);
-    ReadProcessCmdline(ntPrpsinfo);
+    if (!ReadProcessStatus(ntPrpsinfo)) {
+        DFXLOGE("Read targetPid process status fail!");
+    }
+    if (!ReadProcessComm(ntPrpsinfo)) {
+        DFXLOGE("Read targetPid process comm fail!");
+    }
+    if (!ReadProcessCmdline(ntPrpsinfo)) {
+        DFXLOGE("Read targetPid process cmdline fail!");
+    }
 }
 
-bool NoteWriter::NoteWrite(uint32_t noteType, size_t descSize, const char* noteName)
+bool NoteSegmentWriter::NoteWrite(uint32_t noteType, size_t descSize, const char* noteName)
 {
     Elf64_Nhdr note;
     note.n_namesz = strlen(noteName) + 1;
@@ -229,19 +241,19 @@ bool NoteWriter::NoteWrite(uint32_t noteType, size_t descSize, const char* noteN
     return true;
 }
 
-void NoteWriter::ReadProcessStat(struct elf_prpsinfo *ntPrpsinfo)
+bool NoteSegmentWriter::ReadProcessStat(prpsinfo_t &ntPrpsinfo)
 {
     std::string filePath = "/proc/" + std::to_string(pid_) + "/stat";
     std::ifstream statFile(filePath);
     if (!statFile.is_open()) {
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
 
     std::string line;
     if (!std::getline(statFile, line)) {
         DFXLOGE("read %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
 
     std::istringstream iss(line);
@@ -260,16 +272,17 @@ void NoteWriter::ReadProcessStat(struct elf_prpsinfo *ntPrpsinfo)
 
     iss >> prFlag;
 
-    ntPrpsinfo->pr_state = state;
-    ntPrpsinfo->pr_sname = state;
-    ntPrpsinfo->pr_zomb = (state == 'Z') ? 1 : 0;
-    ntPrpsinfo->pr_flag = prFlag;
+    ntPrpsinfo.pr_state = state;
+    ntPrpsinfo.pr_sname = state;
+    ntPrpsinfo.pr_zomb = (state == 'Z') ? 1 : 0;
+    ntPrpsinfo.pr_flag = prFlag;
     statFile.close();
+    return true;
 }
 
-void NoteWriter::ReadProcessStatus(struct elf_prpsinfo *ntPrpsinfo)
+bool NoteSegmentWriter::ReadProcessStatus(prpsinfo_t &ntPrpsinfo)
 {
-    ntPrpsinfo->pr_nice = getpriority(PRIO_PROCESS, pid_);
+    ntPrpsinfo.pr_nice = getpriority(PRIO_PROCESS, pid_);
     unsigned int prUid = 0;
     unsigned int prGid = 0;
     int prPpid = 0;
@@ -279,54 +292,58 @@ void NoteWriter::ReadProcessStatus(struct elf_prpsinfo *ntPrpsinfo)
     FILE *file = fopen(filePath.c_str(), "r");
     if (!file) {
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
 
     while (fgets(buffer, sizeof(buffer), file) != nullptr) {
-        if (strncmp(buffer, "Uid:", 4) == 0) { // 4
-            if (sscanf_s(buffer + 4, "%u", &prUid) != 1) { // 4
+        if (strncmp(buffer, UID, strlen(UID)) == 0) {
+            if (sscanf_s(buffer + strlen(UID), "%u", &prUid) != 1) {
                 continue;
             }
-        } else if (strncmp(buffer, "Gid:", 4) == 0) { // 4
-            if (sscanf_s(buffer + 4, "%u", &prGid) != 1) { // 4
+        } else if (strncmp(buffer, GID, strlen(GID)) == 0) {
+            if (sscanf_s(buffer + strlen(GID), "%u", &prGid) != 1) {
                 continue;
             }
-        } else if (strncmp(buffer, "PPid:", 5) == 0) { // 5
-            if (sscanf_s(buffer + 5, "%d", &prPpid) != 1) { // 5
+        } else if (strncmp(buffer, PPID, strlen(PPID)) == 0) {
+            if (sscanf_s(buffer + strlen(PPID), "%d", &prPpid) != 1) {
                 continue;
             }
         }
     }
     (void)fclose(file);
-    ntPrpsinfo->pr_uid = prUid;
-    ntPrpsinfo->pr_gid = prGid;
-    ntPrpsinfo->pr_pid = pid_;
-    ntPrpsinfo->pr_ppid = prPpid;
-    ntPrpsinfo->pr_pgrp = getpgrp();
-    ntPrpsinfo->pr_sid = getsid(ntPrpsinfo->pr_pid);
+    ntPrpsinfo.pr_uid = prUid;
+    ntPrpsinfo.pr_gid = prGid;
+    ntPrpsinfo.pr_pid = pid_;
+    ntPrpsinfo.pr_ppid = prPpid;
+    ntPrpsinfo.pr_pgrp = getpgrp();
+    ntPrpsinfo.pr_sid = getsid(ntPrpsinfo.pr_pid);
+    return true;
 }
 
-void NoteWriter::ReadProcessComm(struct elf_prpsinfo *ntPrpsinfo)
+bool NoteSegmentWriter::ReadProcessComm(prpsinfo_t &ntPrpsinfo)
 {
     std::string filePath = "/proc/" + std::to_string(pid_) + "/comm";
     FILE *file = fopen(filePath.c_str(), "r");
     if (!file) {
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
-    if (fgets(ntPrpsinfo->pr_fname, sizeof(ntPrpsinfo->pr_fname), file) == nullptr) {
+    if (fgets(ntPrpsinfo.pr_fname, sizeof(ntPrpsinfo.pr_fname), file) == nullptr) {
         DFXLOGE("read comm fail, errno:%{public}d", errno);
+        (void)fclose(file);
+        return false;
     }
     (void)fclose(file);
+    return true;
 }
 
-void NoteWriter::ReadProcessCmdline(struct elf_prpsinfo *ntPrpsinfo)
+bool NoteSegmentWriter::ReadProcessCmdline(prpsinfo_t &ntPrpsinfo)
 {
     std::string filePath = "/proc/" + std::to_string(pid_) + "/cmdline";
     FILE *file = fopen(filePath.c_str(), "r");
     if (!file) {
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
     char cmdline[256];
     size_t len = fread(cmdline, 1, sizeof(cmdline) - 1, file);
@@ -334,25 +351,27 @@ void NoteWriter::ReadProcessCmdline(struct elf_prpsinfo *ntPrpsinfo)
 
     if (len <= 0) {
         DFXLOGE("read %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
     cmdline[len] = '\0';
 
-    (void)memset_s(&ntPrpsinfo->pr_psargs, sizeof(ntPrpsinfo->pr_psargs), 0, sizeof(ntPrpsinfo->pr_psargs));
-    auto ret = strncpy_s(ntPrpsinfo->pr_psargs, sizeof(ntPrpsinfo->pr_psargs),
-        cmdline, sizeof(ntPrpsinfo->pr_psargs) - 1);
+    (void)memset_s(&ntPrpsinfo.pr_psargs, sizeof(ntPrpsinfo.pr_psargs), 0, sizeof(ntPrpsinfo.pr_psargs));
+    auto ret = strncpy_s(ntPrpsinfo.pr_psargs, sizeof(ntPrpsinfo.pr_psargs),
+        cmdline, sizeof(ntPrpsinfo.pr_psargs) - 1);
     if (ret != 0) {
         DFXLOGE("strncpy_s fail, err:%{public}d", ret);
+        return false;
     }
+    return true;
 }
 
-void NoteWriter::MultiThreadNoteWrite()
+bool NoteSegmentWriter::MultiThreadNoteWrite()
 {
     std::string filePath = "/proc/" + std::to_string(pid_) + "/task";
     DIR *dir = opendir(filePath.c_str());
     if (!dir) {
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
 
     struct dirent *entry;
@@ -363,28 +382,40 @@ void NoteWriter::MultiThreadNoteWrite()
         }
     }
     closedir(dir);
+    return true;
 }
 
-void NoteWriter::ThreadNoteWrite(pid_t tid)
+bool NoteSegmentWriter::ThreadNoteWrite(pid_t tid)
 {
     if (tid == targetTid_) {
         ptrace(PTRACE_INTERRUPT, tid, 0, 0);
         if (waitpid(tid, nullptr, 0) < 0) {
             DFXLOGE("Failed to waitpid tid(%{public}d), errno=%{public}d", tid, errno);
-            return;
+            return false;
         }
     }
-    PrstatusWrite(tid);
-    ArmPacMaskWrite(tid);
-    FpregsetWrite(tid);
-    SiginfoWrite(tid);
-    ArmTaggedAddrCtrlWrite();
+    if (!PrstatusWrite(tid)) {
+        DFXLOGE("Failed to write prstatus in (%{public}d)", tid);
+    }
+    if (!ArmPacMaskWrite(tid)) {
+        DFXLOGE("Failed to write arm_pac_mask in (%{public}d)", tid);
+    }
+    if (!FpregsetWrite(tid)) {
+        DFXLOGE("Failed to write fp reg in (%{public}d)", tid);
+    }
+    if (!SiginfoWrite(tid)) {
+        DFXLOGE("Failed to write siginfo in (%{public}d)", tid);
+    }
+    if (!ArmTaggedAddrCtrlWrite()) {
+        DFXLOGE("Failed to write arm tagged");
+    }
     if (tid == targetTid_) {
         ptrace(PTRACE_CONT, tid, 0, 0);
     }
+    return true;
 }
 
-bool NoteWriter::ArmPacMaskWrite(pid_t tid)
+bool NoteSegmentWriter::ArmPacMaskWrite(pid_t tid)
 {
     if (!NoteWrite(NT_ARM_PAC_MASK, sizeof(UserPacMask), NOTE_NAME_LINUX)) {
         return false;
@@ -405,12 +436,16 @@ bool NoteWriter::ArmPacMaskWrite(pid_t tid)
     return true;
 }
 
-bool NoteWriter::PrstatusWrite(pid_t tid)
+bool NoteSegmentWriter::PrstatusWrite(pid_t tid)
 {
-    NoteWrite(NT_PRSTATUS, sizeof(struct elf_prstatus), NOTE_NAME_CORE);
-    struct elf_prstatus ntPrstatus;
-    GetPrStatus(&ntPrstatus, tid);
-    GetPrReg(&ntPrstatus, tid);
+    NoteWrite(NT_PRSTATUS, sizeof(prstatus_t), NOTE_NAME_CORE);
+    prstatus_t ntPrstatus;
+    if (!GetPrStatus(ntPrstatus, tid)) {
+        DFXLOGE("Fail to get pr status in (%{public}d)", tid);
+    }
+    if (!GetPrReg(ntPrstatus, tid)) {
+        DFXLOGE("Fail to get pr reg in (%{public}d)", tid);
+    }
     if (!CopyAndAdvance(&ntPrstatus, sizeof(ntPrstatus))) {
         DFXLOGE("Write ntPrstatus fail, errno:%{public}d", errno);
         return false;
@@ -418,7 +453,7 @@ bool NoteWriter::PrstatusWrite(pid_t tid)
     return true;
 }
 
-bool NoteWriter::FpregsetWrite(pid_t tid)
+bool NoteSegmentWriter::FpregsetWrite(pid_t tid)
 {
     if (!NoteWrite(NT_FPREGSET, sizeof(struct user_fpsimd_struct), NOTE_NAME_CORE)) {
         return false;
@@ -439,7 +474,7 @@ bool NoteWriter::FpregsetWrite(pid_t tid)
     return true;
 }
 
-bool NoteWriter::SiginfoWrite(pid_t tid)
+bool NoteSegmentWriter::SiginfoWrite(pid_t tid)
 {
     if (!NoteWrite(NT_SIGINFO, sizeof(siginfo_t), NOTE_NAME_CORE)) {
         return false;
@@ -457,7 +492,7 @@ bool NoteWriter::SiginfoWrite(pid_t tid)
     return true;
 }
 
-bool NoteWriter::ArmTaggedAddrCtrlWrite()
+bool NoteSegmentWriter::ArmTaggedAddrCtrlWrite()
 {
     if (!NoteWrite(0x409, sizeof(long), NOTE_NAME_LINUX)) {
         return false;
@@ -468,10 +503,10 @@ bool NoteWriter::ArmTaggedAddrCtrlWrite()
     return true;
 }
 
-void NoteWriter::GetPrStatus(struct elf_prstatus *ntPrstatus, pid_t tid)
+bool NoteSegmentWriter::GetPrStatus(prstatus_t &ntPrstatus, pid_t tid)
 {
-    if (ptrace(PTRACE_GETSIGINFO, tid, NULL, &(ntPrstatus->pr_info)) == 0) {
-        ntPrstatus->pr_cursig = ntPrstatus->pr_info.si_signo;
+    if (ptrace(PTRACE_GETSIGINFO, tid, NULL, &(ntPrstatus.pr_info)) == 0) {
+        ntPrstatus.pr_cursig = ntPrstatus.pr_info.si_signo;
     } else {
         DFXLOGE("ptrace failed PTRACE_GETSIGINFO, tid:%{public}d, errno:%{public}d", tid, errno);
     }
@@ -480,61 +515,62 @@ void NoteWriter::GetPrStatus(struct elf_prstatus *ntPrstatus, pid_t tid)
     FILE *file = fopen(filePath.c_str(), "r");
     if (!file) {
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
     while (fgets(buffer, sizeof(buffer), file) != nullptr) {
-        if (strncmp(buffer, "PPid:", 5) == 0) { // 5
-            if (sscanf_s(buffer + 5, "%d", &ntPrstatus->pr_ppid) != 1) { // 5
+        if (strncmp(buffer, PPID, strlen(PPID)) == 0) {
+            if (sscanf_s(buffer + strlen(PPID), "%d", &ntPrstatus.pr_ppid) != 1) {
                 continue;
             }
-        } else if (strncmp(buffer, "SigPnd:", 7) == 0) { // 7
-            if (sscanf_s(buffer + 7, "%lx", &ntPrstatus->pr_sigpend) != 1) { // 7
+        } else if (strncmp(buffer, SIGPND, strlen(SIGPND)) == 0) {
+            if (sscanf_s(buffer + strlen(SIGPND), "%lx", &ntPrstatus.pr_sigpend) != 1) {
                 continue;
             }
-        } else if (strncmp(buffer, "SigBlk:", 7) == 0) { // 7
-            if (sscanf_s(buffer + 7, "%lx", &ntPrstatus->pr_sighold) != 1) { // 7
+        } else if (strncmp(buffer, SIGBLK, strlen(SIGBLK)) == 0) {
+            if (sscanf_s(buffer + strlen(SIGBLK), "%lx", &ntPrstatus.pr_sighold) != 1) {
                 continue;
             }
         }
     }
 
     (void)fclose(file);
-    ntPrstatus->pr_pid = tid;
-    ntPrstatus->pr_pgrp = getpgrp();
-    ntPrstatus->pr_sid = getsid(ntPrstatus->pr_pid);
+    ntPrstatus.pr_pid = tid;
+    ntPrstatus.pr_pgrp = getpgrp();
+    ntPrstatus.pr_sid = getsid(ntPrstatus.pr_pid);
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
-    if (memcpy_s(&ntPrstatus->pr_utime, sizeof(usage.ru_utime), &usage.ru_utime, sizeof(usage.ru_utime)) != 0) {
-        return;
+    if (memcpy_s(&ntPrstatus.pr_utime, sizeof(ntPrstatus.pr_utime), &usage.ru_utime, sizeof(usage.ru_utime)) != 0) {
+        return false;
     }
-    if (memcpy_s(&ntPrstatus->pr_stime, sizeof(usage.ru_stime), &usage.ru_stime, sizeof(usage.ru_stime)) != 0) {
-        return;
+    if (memcpy_s(&ntPrstatus.pr_stime, sizeof(ntPrstatus.pr_stime), &usage.ru_stime, sizeof(usage.ru_stime)) != 0) {
+        return false;
     }
     getrusage(RUSAGE_CHILDREN, &usage);
-    if (memcpy_s(&ntPrstatus->pr_cutime, sizeof(usage.ru_utime), &usage.ru_utime, sizeof(usage.ru_utime)) != 0) {
-        return;
+    if (memcpy_s(&ntPrstatus.pr_cutime, sizeof(ntPrstatus.pr_cutime), &usage.ru_utime, sizeof(usage.ru_utime)) != 0) {
+        return false;
     }
-    if (memcpy_s(&ntPrstatus->pr_cstime, sizeof(usage.ru_stime), &usage.ru_stime, sizeof(usage.ru_stime)) != 0) {
-        return;
+    if (memcpy_s(&ntPrstatus.pr_cstime, sizeof(ntPrstatus.pr_cstime), &usage.ru_stime, sizeof(usage.ru_stime)) != 0) {
+        return false;
     }
+    return true;
 }
 
-void NoteWriter::GetPrReg(struct elf_prstatus *ntPrstatus, pid_t tid)
+bool NoteSegmentWriter::GetPrReg(prstatus_t &ntPrstatus, pid_t tid)
 {
     if (tid == targetTid_) {
-        if (memcpy_s(&(ntPrstatus->pr_reg), sizeof(ntPrstatus->pr_reg), keyRegs_->RawData(),
-            sizeof(ntPrstatus->pr_reg)) != 0) {
+        if (memcpy_s(&(ntPrstatus.pr_reg), sizeof(ntPrstatus.pr_reg), keyRegs_->RawData(),
+            sizeof(ntPrstatus.pr_reg)) != 0) {
             DFXLOGE("Failed to memcpy regs data, errno = %{public}d", errno);
-            return;
+            return false;
         }
     } else {
         struct iovec iov;
         (void)memset_s(&iov, sizeof(iov), 0, sizeof(iov));
-        iov.iov_base = &(ntPrstatus->pr_reg);
-        iov.iov_len = sizeof(ntPrstatus->pr_reg);
+        iov.iov_base = &(ntPrstatus.pr_reg);
+        iov.iov_len = sizeof(ntPrstatus.pr_reg);
         if (ptrace(PTRACE_GETREGSET, tid, NT_PRSTATUS, &iov) == -1) {
             DFXLOGE("ptrace failed NT_PRSTATUS, tid:%{public}d, errno:%{public}d", tid, errno);
-            return;
+            return false;
         }
     }
     struct iovec iovFp;
@@ -544,13 +580,14 @@ void NoteWriter::GetPrReg(struct elf_prstatus *ntPrstatus, pid_t tid)
 
     if (ptrace(PTRACE_GETREGSET, tid, NT_FPREGSET, &iovFp) == -1) {
         DFXLOGE("ptrace failed NT_FPREGSET, tid:%{public}d, errno:%{public}d", tid, errno);
-        ntPrstatus->pr_fpvalid = 0;
+        ntPrstatus.pr_fpvalid = 0;
     } else {
-        ntPrstatus->pr_fpvalid = 1;
+        ntPrstatus.pr_fpvalid = 1;
     }
+    return true;
 }
 
-bool NoteWriter::AuxvWrite()
+bool NoteSegmentWriter::AuxvWrite()
 {
     Elf64_Nhdr *note = reinterpret_cast<Elf64_Nhdr *>(currentPointer_);
     note->n_namesz = 0x05;
@@ -563,18 +600,20 @@ bool NoteWriter::AuxvWrite()
         return false;
     }
 
-    ReadProcessAuxv(note);
+    if (!ReadProcessAuxv(note)) {
+        DFXLOGE("Read targetPid Process Auxv fail");
+    }
     return true;
 }
 
-void NoteWriter::ReadProcessAuxv(Elf64_Nhdr *note)
+bool NoteSegmentWriter::ReadProcessAuxv(Elf64_Nhdr *note)
 {
     std::string filePath = "/proc/" + std::to_string(pid_) + "/auxv";
     FILE *file = fopen(filePath.c_str(), "r");
     if (!file) {
         note->n_descsz = 0;
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
     Elf64_auxv_t ntAuxv;
     note->n_descsz = 0;
@@ -583,16 +622,17 @@ void NoteWriter::ReadProcessAuxv(Elf64_Nhdr *note)
         if (!CopyAndAdvance(&ntAuxv, sizeof(ntAuxv))) {
             DFXLOGE("Wrtie ntAuxv fail, errno:%{public}d", errno);
             (void)fclose(file);
-            return;
+            return false;
         }
         if (ntAuxv.a_type == AT_NULL) {
             break;
         }
     }
     (void)fclose(file);
+    return true;
 }
 
-bool NoteWriter::FileWrite()
+bool NoteSegmentWriter::FileWrite()
 {
     Elf64_Nhdr *note = reinterpret_cast<Elf64_Nhdr *>(currentPointer_);
     note->n_namesz = 0x05;
@@ -612,7 +652,7 @@ bool NoteWriter::FileWrite()
 
     Elf64_Half lineNumber = 1;
     WriteAddrRelated();
-    WriteFilePath(&lineNumber);
+    WriteFilePath(lineNumber);
 
     note->n_descsz = reinterpret_cast<uintptr_t>(currentPointer_) - reinterpret_cast<uintptr_t>(startPointer);
     ntFileHd->count = lineNumber - 1;
@@ -628,7 +668,7 @@ bool NoteWriter::FileWrite()
     return true;
 }
 
-bool NoteWriter::WriteAddrRelated()
+bool NoteSegmentWriter::WriteAddrRelated()
 {
     for (const auto& region : maps_) {
         if (region.pathName[0] != '/' || (region.priority[0] != 'r')) {
@@ -646,7 +686,7 @@ bool NoteWriter::WriteAddrRelated()
     return true;
 }
 
-bool NoteWriter::WriteFilePath(Elf64_Half *lineNumber)
+bool NoteSegmentWriter::WriteFilePath(Elf64_Half &lineNumber)
 {
     for (const auto& region : maps_) {
         if (region.pathName[0] != '/' || (region.priority[0] != 'r')) {
@@ -658,7 +698,7 @@ bool NoteWriter::WriteFilePath(Elf64_Half *lineNumber)
         }
         *currentPointer_ = '\0';
         currentPointer_ += 1;
-        *lineNumber = *lineNumber + 1;
+        lineNumber += 1;
     }
     return true;
 }

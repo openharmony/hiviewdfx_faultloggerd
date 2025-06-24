@@ -14,9 +14,9 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 processdump_sources = [
+  "coredump/dfx_coredump_writer.cpp",
+  "coredump/dfx_coredump_service.cpp",
   "dfx_buffer_writer.cpp",
-  "dfx_coredump_writer.cpp",
-  "dfx_coredump_service.cpp",
   "dfx_process.cpp",
   "dfx_thread.cpp",
   "dump_info_header.cpp",
@@ -50,6 +50,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
+      "coredump",
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
@@ -108,6 +109,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
+      "coredump",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",

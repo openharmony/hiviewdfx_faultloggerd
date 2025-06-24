@@ -22,6 +22,13 @@
 #include "dfx_log.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_frame_formatter.h"
+#ifndef is_ohos_lite
+#include "bundle_mgr_interface.h"
+#include "bundle_mgr_proxy.h"
+#include "if_system_ability_manager.h"
+#include "iservice_registry.h"
+#include "system_ability_definition.h"
+#endif
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -146,6 +153,59 @@ bool DumpUtils::ReadTargetMemory(pid_t tid, uintptr_t addr, uintptr_t &value)
         retAddr += 1;
     }
     return true;
+}
+
+#ifndef is_ohos_lite
+sptr<AppExecFwk::IBundleMgr> GetBundleManager()
+{
+    auto systemManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (!systemManager) {
+        DFXLOGE("Get system ability manager failed");
+        return nullptr;
+    }
+    auto remoteObject = systemManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
+    if (!remoteObject) {
+        DFXLOGE("Get system ability failed");
+        return nullptr;
+    }
+    sptr<AppExecFwk::IBundleMgr> bundleMgrProxy = iface_cast<AppExecFwk::IBundleMgr>(remoteObject);
+    return bundleMgrProxy;
+}
+#endif
+
+std::string DumpUtils::GetSelfBundleName()
+{
+#ifndef is_ohos_lite
+    static std::string bundleName;
+    if (!bundleName.empty()) {
+        return bundleName;
+    }
+    auto bundleInstance = GetBundleManager();
+    if (bundleInstance == nullptr) {
+        DFXLOGE("bundleInstance is nullptr");
+        return "";
+    }
+    AppExecFwk::BundleInfo bundleInfo;
+    auto ret = bundleInstance->GetBundleInfoForSelf(0, bundleInfo);
+    if (ret != ERR_OK) {
+        DFXLOGE("GetBundleInfoForSelf failed! ret = %{public}d", ret);
+        return "";
+    }
+    bundleName = bundleInfo.name;
+    return bundleName;
+#endif
+    return "";
+}
+
+void DumpUtils::InfoCrashUnwindResult(const ProcessDumpRequest& request, bool isUnwindSucc)
+{
+    if (!isUnwindSucc) {
+        return;
+    }
+    if (ptrace(PTRACE_POKEDATA, request.nsPid, reinterpret_cast<void*>(request.unwindResultAddr),
+        CRASH_UNWIND_SUCCESS_FLAG) < 0) {
+        DFXLOGE("pok unwind success flag to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

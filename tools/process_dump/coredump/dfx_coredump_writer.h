@@ -46,31 +46,31 @@ protected:
 
 class ProgramSegmentHeaderWriter : public Writer {
 public:
-    ProgramSegmentHeaderWriter(char* mappedMemory, char* currentPointer, Elf64_Half* ePhnum,
+    ProgramSegmentHeaderWriter(char* mappedMemory, char* currentPointer, Elf64_Half& ePhnum,
         std::vector<DumpMemoryRegions>& maps) : Writer(mappedMemory, currentPointer), ePhnum_(ePhnum), maps_(maps) {}
     char* Write() override;
 private:
-    void ProgramSegmentHeaderFill(Elf64_Phdr *ph, Elf64_Word pType, Elf64_Word pFlags, struct DumpMemoryRegions region);
-    void PtLoadFill(Elf64_Phdr *ph, struct DumpMemoryRegions region);
-    void PtNoteFill(Elf64_Phdr *ph);
-    Elf64_Half* ePhnum_;
+    void ProgramSegmentHeaderFill(Elf64_Phdr &ph, Elf64_Word pType, Elf64_Word pFlags, const DumpMemoryRegions &region);
+    void PtLoadFill(Elf64_Phdr &ph, const DumpMemoryRegions &region);
+    void PtNoteFill(Elf64_Phdr &ph);
+    Elf64_Half& ePhnum_;
     std::vector<DumpMemoryRegions> maps_;
 };
 
-class SegmentWriter : public Writer {
+class LoadSegmentWriter : public Writer {
 public:
-    SegmentWriter(char* mappedMemory, char* currentPointer, pid_t pid, Elf64_Half ePhnum)
+    LoadSegmentWriter(char* mappedMemory, char* currentPointer, pid_t pid, Elf64_Half ePhnum)
         : Writer(mappedMemory, currentPointer), pid_(pid), ePhnum_(ePhnum) {}
     char* Write() override;
 private:
-    void ReadProcessVmmem(Elf64_Phdr *ptLoad);
+    void ReadProcessVmmem(Elf64_Phdr &ptLoad);
     pid_t pid_;
     Elf64_Half ePhnum_;
 };
 
-class NoteWriter : public Writer {
+class NoteSegmentWriter : public Writer {
 public:
-    NoteWriter(char* mappedMemory, char* currentPointer, CoreDumpThread& coreDumpThread,
+    NoteSegmentWriter(char* mappedMemory, char* currentPointer, CoreDumpThread& coreDumpThread,
         std::vector<DumpMemoryRegions>& maps, std::shared_ptr<DfxRegs> regs) : Writer(mappedMemory, currentPointer),
         pid_(coreDumpThread.targetPid), targetTid_(coreDumpThread.targetTid), maps_(maps), keyRegs_(regs) {}
     char* Write() override;
@@ -78,25 +78,25 @@ public:
 private:
     bool PrpsinfoWrite();
     bool NoteWrite(uint32_t noteType, size_t descSize, const char* noteName);
-    void FillPrpsinfo(struct elf_prpsinfo *ntPrpsinfo);
-    void ReadProcessStat(struct elf_prpsinfo *ntPrpsinfo);
-    void ReadProcessStatus(struct elf_prpsinfo *ntPrpsinfo);
-    void ReadProcessComm(struct elf_prpsinfo *ntPrpsinfo);
-    void ReadProcessCmdline(struct elf_prpsinfo *ntPrpsinfo);
-    void MultiThreadNoteWrite();
-    void ThreadNoteWrite(pid_t tid);
+    void FillPrpsinfo(prpsinfo_t &ntPrpsinfo);
+    bool ReadProcessStat(prpsinfo_t &ntPrpsinfo);
+    bool ReadProcessStatus(prpsinfo_t &ntPrpsinfo);
+    bool ReadProcessComm(prpsinfo_t &ntPrpsinfo);
+    bool ReadProcessCmdline(prpsinfo_t &ntPrpsinfo);
+    bool MultiThreadNoteWrite();
+    bool ThreadNoteWrite(pid_t tid);
     bool PrstatusWrite(pid_t tid);
     bool ArmPacMaskWrite(pid_t tid);
     bool FpregsetWrite(pid_t tid);
     bool SiginfoWrite(pid_t tid);
     bool ArmTaggedAddrCtrlWrite();
-    void GetPrStatus(struct elf_prstatus *ntPrstatus, pid_t tid);
-    void GetPrReg(struct elf_prstatus *ntPrstatus, pid_t tid);
+    bool GetPrStatus(prstatus_t &ntPrstatus, pid_t tid);
+    bool GetPrReg(prstatus_t &ntPrstatus, pid_t tid);
     bool AuxvWrite();
-    void ReadProcessAuxv(Elf64_Nhdr *note);
+    bool ReadProcessAuxv(Elf64_Nhdr *note);
     bool FileWrite();
     bool WriteAddrRelated();
-    bool WriteFilePath(Elf64_Half *lineNumber);
+    bool WriteFilePath(Elf64_Half &lineNumber);
     pid_t pid_;
     pid_t targetTid_;
     std::vector<DumpMemoryRegions> maps_;

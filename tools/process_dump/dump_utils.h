@@ -16,6 +16,7 @@
 #ifndef DUMP_UTILS_H
 #define DUMP_UTILS_H
 #include "unwinder.h"
+#include "dfx_dump_request.h"
 #include "dfx_thread.h"
 #include <cinttypes>
 #include <memory>
@@ -29,6 +30,8 @@ public:
     static std::string ReadStringByPtrace(pid_t tid, uintptr_t startAddr, size_t maxLen);
     static std::string GetStackTrace(const std::vector<DfxFrame>& frames);
     static bool ReadTargetMemory(pid_t tid, uintptr_t addr, uintptr_t &value);
+    static std::string GetSelfBundleName();
+    static void InfoCrashUnwindResult(const ProcessDumpRequest& request, bool isUnwindSucc);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

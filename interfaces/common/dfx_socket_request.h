@@ -261,6 +261,8 @@ typedef enum ResponseCode : int32_t {
     CORE_DUMP_NOPROC,
     /** cancel coredump */
     CORE_DUMP_CANCEL,
+    /** coredump generate fail */
+    CORE_DUMP_GENERATE_FAIL,
 } ResponseCode;
 
 #ifdef __cplusplus

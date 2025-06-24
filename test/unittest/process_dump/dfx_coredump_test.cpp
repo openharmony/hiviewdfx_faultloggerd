@@ -92,7 +92,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest003, TestSize.Level2)
     auto pid = getpid();
     auto tid = gettid();
     CoreDumpService coreDumpService = CoreDumpService(pid, tid);
-    auto bundleName = coreDumpService.GetBundleName();
+    auto bundleName = coreDumpService.GetBundleNameItem();
     ASSERT_TRUE(bundleName.empty());
     GTEST_LOG_(INFO) << "DfxCoreDumpTest003: end.";
 #endif
@@ -147,8 +147,8 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest006, TestSize.Level2)
     auto tid = gettid();
     CoreDumpService coreDumpService = CoreDumpService(pid, tid);
     std::string line = "5a0eb08000-5a0eb09000 r-xp 00007000 00:00 0            /system/lib/test.z.so";
-    struct DumpMemoryRegions region;
-    coreDumpService.ObtainDumpRegion(line.c_str(), &region);
+    DumpMemoryRegions region;
+    coreDumpService.ObtainDumpRegion(line, region);
     ASSERT_EQ(region.memorySizeHex, 0x1000);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest006: end.";
 #endif
