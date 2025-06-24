@@ -42,10 +42,10 @@ if (defined(ohos_lite)) {
 
       deps = [
         "$faultloggerd_common_path/dfxutil:dfx_util",
+        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
         "$faultloggerd_path/test/utils:dfx_test_util",
-        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       ]
 
       external_deps = [ "hilog_lite:hilog_shared" ]
@@ -91,13 +91,13 @@ if (defined(ohos_lite)) {
     ]
 
     deps = [
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/crasher_c:crasher_c",
       "$faultloggerd_path/tools/crasher_cpp:crasher_cpp",
-      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
     ]
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]

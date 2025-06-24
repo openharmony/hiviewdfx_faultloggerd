@@ -13,38 +13,6 @@
 
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
-declare_args() {
-  dfxsignalhandler_use_flto = false
-}
-
-template("lib_dfxsignalhandler_template") {
-  __use_flto = invoker.dfxsignalhandler_use_flto
-  __inherited_configs = invoker.dfxsignalhandler_inherited_config
-  if (defined(invoker.configs)) {
-    __static_sighandler_config = invoker.configs
-  } else {
-    __static_sighandler_config = []
-  }
-  if (!defined(ohos_lite)) {
-    static_library(target_name) {
-      cflags = [ "-DDFX_SIGNAL_LIBC" ]
-      if (!__use_flto) {
-        cflags_c = [ "-fno-lto" ]
-      }
-
-      sources = [
-        "$faultloggerd_path/common/cutil/dfx_cutil.c",
-        "dfx_signal_handler.c",
-        "dfx_signalhandler_exception.c",
-        "musl_log.c",
-      ]
-      configs -= __inherited_configs
-      configs += __static_sighandler_config
-      configs += [ "//build/config/compiler:compiler" ]
-    }
-  }
-}
-
 if (defined(ohos_lite)) {
   shared_library("dfx_signalhandler") {
     defines = [
@@ -76,63 +44,12 @@ if (defined(ohos_lite)) {
     ]
   }
 } else {
-  inherited_configs = [
-    "//build/config/compiler:afdo",
-    "//build/config/compiler:afdo_optimize_size",
-    "//build/config/compiler:compiler",
-    "//build/config/compiler:compiler_arm_fpu",
-    "//build/config/compiler:compiler_arm_thumb",
-    "//build/config/compiler:chromium_code",
-    "//build/config/compiler:default_include_dirs",
-    "//build/config/compiler:default_optimization",
-    "//build/config/compiler:default_stack_frames",
-    "//build/config/compiler:default_symbols",
-    "//build/config/compiler:export_dynamic",
-    "//build/config/compiler:no_exceptions",
-    "//build/config/compiler:no_rtti",
-    "//build/config/compiler:runtime_library",
-    "//build/config/compiler:thin_archive",
-    "//build/config/sanitizers:default_sanitizer_flags",
-  ]
-
   config("dfx_signal_handler_config") {
     visibility = [ "*:*" ]
     include_dirs = [
       "include",
       "$faultloggerd_interfaces_path/common",
     ]
-  }
-
-  config("static_sighandler_config") {
-    include_dirs = [
-      "include",
-      "$faultloggerd_common_path/cutil",
-      "$faultloggerd_common_path/dfxlog",
-      "$faultloggerd_interfaces_path/common",
-    ]
-
-    defines = []
-    configs = []
-    if (is_posix) {
-      configs += [ "//build/config/posix:runtime_library" ]
-    }
-
-    cflags_cc = []
-    libs = []
-
-    defines = [
-      "__GNU_SOURCE=1",  # Necessary for clone().
-      "CHROMIUM_CXX_TWEAK_INLINES",  # Saves binary size.
-    ]
-
-    defines += [
-      "__MUSL__",
-      "_LIBCPP_HAS_MUSL_LIBC",
-      "__BUILD_LINUX_WITH_CLANG",
-      "ENABLE_SIGHAND_MUSL_LOG",
-    ]
-
-    ldflags = [ "-nostdlib" ]
   }
 
   ohos_shared_library("dfx_signalhandler") {
@@ -142,13 +59,16 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/build:coverage_flags",
     ]
     include_dirs = [
+      "include",
       "$faultloggerd_common_path/cutil",
       "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_interfaces_path/common",
     ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
     version_script = "libdfx_signalhandler.map"
     sources = [
       "dfx_dumprequest.c",
+      "dfx_signal_handler.c",
       "dfx_signalhandler_exception.c",
     ]
 
@@ -175,16 +95,5 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
     kernel_permission_path = "./encaps.json"
-  }
-
-  lib_dfxsignalhandler_template("dfxsignalhandler") {
-    dfxsignalhandler_use_flto = true
-    dfxsignalhandler_inherited_config = inherited_configs
-    configs = [ ":static_sighandler_config" ]
-  }
-  lib_dfxsignalhandler_template("dfxsignalhandler_noflto") {
-    dfxsignalhandler_use_flto = false
-    dfxsignalhandler_inherited_config = inherited_configs
-    configs = [ ":static_sighandler_config" ]
   }
 }
