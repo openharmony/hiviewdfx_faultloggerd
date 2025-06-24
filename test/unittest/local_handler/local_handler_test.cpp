@@ -15,6 +15,7 @@
 
 #include <gtest/gtest.h>
 #include <csignal>
+#include <ctime>
 #include <map>
 #include <securec.h>
 #include <string>
@@ -22,17 +23,21 @@
 #include <unistd.h>
 #include <vector>
 #include <sys/prctl.h>
+#include <sys/time.h>
 
 #include "dfx_define.h"
 #include "dfx_signal_local_handler.h"
 #include "dfx_socket_request.h"
 #include "dfx_test_util.h"
 #include "dfx_allocator.h"
+#include "dfx_crash_local_handler.h"
 #include "faultloggerd_client.h"
 
 #define MALLOC_TEST_TIMES  1000
 #define MALLOC_TEST_SMALL_SIZE 16
 #define MALLOC_TEST_BIG_SIZE 2000
+#define MILLISEC_PER_SECOND  1000
+#define FAULTLOGGERD_UID 1202
 
 using namespace testing;
 using namespace testing::ext;
@@ -249,7 +254,7 @@ HWTEST_F(LocalHandlerTest, LocalHandlerTest006, TestSize.Level2)
  */
 HWTEST_F(LocalHandlerTest, LocalHandlerTest007, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "LocalHandlerTest005: start.";
+    GTEST_LOG_(INFO) << "LocalHandlerTest007: start.";
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
@@ -267,6 +272,30 @@ HWTEST_F(LocalHandlerTest, LocalHandlerTest007, TestSize.Level2)
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "LocalHandlerTest007: end.";
+}
+
+/**
+ * @tc.name: LocalHandlerTest008
+ * @tc.desc: test crashlocalhandler signo(SIGSEGV) by execl
+ * @tc.type: FUNC
+ */
+HWTEST_F(LocalHandlerTest, LocalHandlerTest008, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LocalHandlerTest008: start.";
+    struct ProcessDumpRequest request;
+    (void)memset_s(&request, sizeof(request), 0, sizeof(request));
+    request.type = DUMP_TYPE_CPP_CRASH;
+    request.tid = gettid();
+    request.pid = getpid();
+    request.uid = FAULTLOGGERD_UID;
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_REALTIME, &ts);
+    request.timeStamp = ((uint64_t)ts.tv_sec * MILLISEC_PER_SECOND) +
+        (((uint64_t)ts.tv_nsec) / (MILLISEC_PER_SECOND * MILLISEC_PER_SECOND));
+    CrashLocalHandler(&request);
+    std::string filename = GetCppCrashFileName(request.pid);
+    ASSERT_FALSE(filename.empty());
+    GTEST_LOG_(INFO) << "LocalHandlerTest008: end.";
 }
 
 /**
