@@ -38,6 +38,7 @@ enum DumpCatchErrorCode : int32_t {
     DUMPCATCH_EWRITE,                                 /* failed to write data to faultloggerd */
     DUMPCATCH_EFD,                                    /* buf or res fd error */
     DUMPCATCH_EPOLL,                                  /* poll error */
+    DUMPCATCH_EFAULTLOGGERD,                          /* faultloggerd maybe exception occurred */
 
     DUMPCATCH_DUMP_EPTRACE = 201,                     /* failed to ptrace thread */
     DUMPCATCH_DUMP_EUNWIND,                           /* failed to unwind */
@@ -45,12 +46,15 @@ enum DumpCatchErrorCode : int32_t {
     DUMPCATCH_DUMP_ESYMBOL_NO_PARSE,                  /* no enough time to parse symbol */
     DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT,             /* parse symbol timeout */
     DUMPCATCH_DUMP_SELF_FAIL,                         /* dump self fail */
+    DUMPCATCH_DUMP_ERROR,                             /* exception occurred in processdump */
 
     DUMPCATCH_TIMEOUT_SIGNAL_BLOCK = 301,             /* signal has been block by target process */
     DUMPCATCH_TIMEOUT_KERNEL_FROZEN,                  /* target process has been frozen in kernel */
     DUMPCATCH_TIMEOUT_PROCESS_KILLED,                 /* target process has been killed during dumping */
     DUMPCATCH_TIMEOUT_DUMP_SLOW,                      /* failed to fully dump due to timeout */
     DUMPCATCH_TIMEOUT_DUMP_IN_SLOWPERIOD,             /* check in dumpcatch slow period and return kernel stack*/
+    DUMPCATCH_TIMEOUT_PARSE_FAIL_READ_ESTATUS,        /* dump timeout, parse reason fail for read status fail*/
+    DUMPCATCH_TIMEOUT_PARSE_FAIL_READ_ECGROUP,        /* dump timeout, parse reason fail for read cgroup fail*/
 
     DUMPCATCH_UNKNOWN = 400,                          /* unknown reason */
 
