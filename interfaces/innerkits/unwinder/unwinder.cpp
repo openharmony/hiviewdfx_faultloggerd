@@ -1382,10 +1382,7 @@ bool Unwinder::Impl::GetLockInfo(int32_t tid, char* buf, size_t sz)
 
     uintptr_t lockPtrAddr = firstFrameSp_ + 64; // 64 : sp + 0x40
     uintptr_t lockAddr;
-    UnwindContext context;
-    context.pid = tid;
-    memory_->SetCtx(&context);
-    if (!memory_->ReadMem(lockPtrAddr, &lockAddr)) {
+    if (ReadProcMemByPid(tid, lockPtrAddr, &lockAddr, sizeof(uintptr_t)) != sizeof(uintptr_t)) {
         DFXLOGW("Failed to find lock addr.");
         return false;
     }
