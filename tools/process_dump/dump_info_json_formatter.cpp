@@ -35,126 +35,79 @@ bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request,
     std::string& jsonStringInfo)
 {
 #ifndef is_ohos_lite
-    cJSON *jsonInfo = nullptr;
+    Json::Value jsonInfo;
     switch (request.type) {
         case ProcessDumpType::DUMP_TYPE_CPP_CRASH:
-            jsonInfo = cJSON_CreateObject();
-            if (!jsonInfo) {
-                DFXLOGE("Create cJson jsonInfo object failed.");
-                return false;
-            }
             GetCrashJsonFormatInfo(request, process, jsonInfo);
             break;
         case ProcessDumpType::DUMP_TYPE_DUMP_CATCH:
-            jsonInfo = cJSON_CreateArray();
-            if (!jsonInfo) {
-                DFXLOGE("Create cJson jsonInfo array failed.");
-                return false;
-            }
             GetDumpJsonFormatInfo(process, jsonInfo);
             break;
         default:
-            return false;
+            break;
     }
-    auto itemStr = cJSON_PrintUnformatted(jsonInfo);
-    jsonStringInfo = itemStr;
-    cJSON_free(itemStr);
-    cJSON_Delete(jsonInfo);
+    jsonStringInfo.append(Json::FastWriter().write(jsonInfo));
     return true;
 #endif
     return false;
 }
 
 #ifndef is_ohos_lite
-bool DumpInfoJsonFormatter::AddItemToJsonInfo(const ProcessDumpRequest& request, DfxProcess& process,
-    cJSON *jsonInfo)
+void DumpInfoJsonFormatter::GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
+    Json::Value& jsonInfo)
 {
-    DfxSignal dfxSignal(request.siginfo.si_signo);
-    cJSON *signal = cJSON_CreateObject();
-    if (!signal) {
-        DFXLOGE("Create cJson signal object failed.");
-        return false;
-    }
-    cJSON_AddNumberToObject(signal, "signo", request.siginfo.si_signo);
-    cJSON_AddNumberToObject(signal, "code", request.siginfo.si_code);
-    std::string address = dfxSignal.IsAddrAvailable() ?
-        StringPrintf("%" PRIX64_ADDR, reinterpret_cast<uint64_t>(request.siginfo.si_addr)) : "";
-    cJSON_AddStringToObject(signal, "address", address.c_str());
-    cJSON *exception = cJSON_CreateObject();
-    if (!exception) {
-        DFXLOGE("Create cJson exception object failed.");
-        cJSON_Delete(signal);
-        return false;
-    }
-    cJSON_AddItemToObject(exception, "signal", signal);
-    cJSON_AddStringToObject(exception, "message", process.GetFatalMessage().c_str());
+    jsonInfo["time"] = request.timeStamp;
+    jsonInfo["uuid"] = "";
+    jsonInfo["crash_type"] = "NativeCrash";
+    jsonInfo["pid"] = process.GetProcessInfo().pid;
+    jsonInfo["uid"] = process.GetProcessInfo().uid;
+    jsonInfo["app_running_unique_id"] = request.appRunningId;
 
-    cJSON *frames = cJSON_CreateArray();
-    if (!frames) {
-        DFXLOGE("Create cJson exception array failed.");
-        cJSON_Delete(exception);
-        return false;
-    }
+    DfxSignal dfxSignal(request.siginfo.si_signo);
+    Json::Value signal;
+    signal["signo"] = request.siginfo.si_signo;
+    signal["code"] = request.siginfo.si_code;
+    signal["address"] = dfxSignal.IsAddrAvailable() ?
+        StringPrintf("%" PRIX64_ADDR, reinterpret_cast<uint64_t>(request.siginfo.si_addr)) : "";
+    Json::Value exception;
+    exception["signal"] = signal;
+    exception["message"] = process.GetFatalMessage();
+
+    Json::Value frames(Json::arrayValue);
     if (process.GetKeyThread() == nullptr) {
-        cJSON_AddStringToObject(exception, "thread_name", "");
-        cJSON_AddNumberToObject(exception, "tid", 0);
+        exception["thread_name"] = "";
+        exception["tid"] = 0;
     } else {
-        cJSON_AddStringToObject(exception, "thread_name", process.GetKeyThread()->GetThreadInfo().threadName.c_str());
-        cJSON_AddNumberToObject(exception, "tid", process.GetKeyThread()->GetThreadInfo().tid);
+        exception["thread_name"] = process.GetKeyThread()->GetThreadInfo().threadName;
+        exception["tid"] = process.GetKeyThread()->GetThreadInfo().tid;
         FillFramesJson(process.GetKeyThread()->GetFrames(), frames);
     }
-    cJSON_AddItemToObject(exception, "frames", frames);
-    cJSON_AddItemToObject(jsonInfo, "exception", exception);
-    return true;
-}
-
-void DumpInfoJsonFormatter::GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
-    cJSON *jsonInfo)
-{
-    cJSON_AddNumberToObject(jsonInfo, "time", request.timeStamp);
-    cJSON_AddStringToObject(jsonInfo, "uuid", "");
-    cJSON_AddStringToObject(jsonInfo, "crash_type", "NativeCrash");
-    cJSON_AddNumberToObject(jsonInfo, "pid", process.GetProcessInfo().pid);
-    cJSON_AddNumberToObject(jsonInfo, "uid", process.GetProcessInfo().uid);
-    cJSON_AddStringToObject(jsonInfo, "app_running_unique_id", request.appRunningId);
-
-    if (!AddItemToJsonInfo(request, process, jsonInfo)) {
-        return;
-    }
+    exception["frames"] = frames;
+    jsonInfo["exception"] = exception;
 
     // fill other thread info
     const auto& otherThreads = process.GetOtherThreads();
     if (otherThreads.size() > 0) {
-        cJSON *threadsJsonArray = cJSON_CreateArray();
-        if (!threadsJsonArray) {
-            DFXLOGE("Create cJson threadsJsonArray array failed.");
-            return;
-        }
+        Json::Value threadsJsonArray(Json::arrayValue);
         AppendThreads(otherThreads, threadsJsonArray);
-        cJSON_AddItemToObject(jsonInfo, "threads", threadsJsonArray);
+        jsonInfo["threads"] = threadsJsonArray;
     }
 }
 
-void DumpInfoJsonFormatter::GetDumpJsonFormatInfo(DfxProcess& process, cJSON *jsonInfo)
+void DumpInfoJsonFormatter::GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo)
 {
-    cJSON *thread = cJSON_CreateObject();
-    cJSON *frames = cJSON_CreateArray();
-    if (!thread || !frames) {
-        DFXLOGE("Create cJson thread or frames failed.");
-        cJSON_Delete(thread);
-        cJSON_Delete(frames);
-        return;
-    }
+    Json::Value thread;
+    Json::Value frames(Json::arrayValue);
     if (process.GetKeyThread() == nullptr) {
-        cJSON_AddStringToObject(thread, "thread_name", "");
-        cJSON_AddNumberToObject(thread, "tid", 0);
+        thread["thread_name"] = "";
+        thread["tid"] = 0;
     } else {
-        cJSON_AddStringToObject(thread, "thread_name", process.GetKeyThread()->GetThreadInfo().threadName.c_str());
-        cJSON_AddNumberToObject(thread, "tid", process.GetKeyThread()->GetThreadInfo().tid);
+        thread["thread_name"] = process.GetKeyThread()->GetThreadInfo().threadName;
+        thread["tid"] = process.GetKeyThread()->GetThreadInfo().tid;
         FillFramesJson(process.GetKeyThread()->GetFrames(), frames);
     }
-    cJSON_AddItemToObject(thread, "frames", frames);
-    cJSON_AddItemToArray(jsonInfo, thread);
+    thread["frames"] = frames;
+    jsonInfo.append(thread);
 
     // fill other thread info
     const auto& otherThreads = process.GetOtherThreads();
@@ -164,31 +117,22 @@ void DumpInfoJsonFormatter::GetDumpJsonFormatInfo(DfxProcess& process, cJSON *js
 }
 
 void DumpInfoJsonFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
-                                          cJSON *jsonInfo) const
+                                          Json::Value& jsonInfo) const
 {
     for (auto const& oneThread : threads) {
         if (oneThread != nullptr) {
-            cJSON *threadJson = cJSON_CreateObject();
-            if (!threadJson) {
-                DFXLOGE("Create cJson threadJson object failed, continue.");
-                continue;
-            }
-            cJSON_AddStringToObject(threadJson, "thread_name", oneThread->GetThreadInfo().threadName.c_str());
-            cJSON_AddNumberToObject(threadJson, "tid", oneThread->GetThreadInfo().tid);
-            cJSON *framesJson = cJSON_CreateArray();
-            if (!framesJson) {
-                DFXLOGE("Create cJson framesJson array failed, continue.");
-                cJSON_Delete(threadJson);
-                continue;
-            }
+            Json::Value threadJson;
+            threadJson["thread_name"] = oneThread->GetThreadInfo().threadName;
+            threadJson["tid"] = oneThread->GetThreadInfo().tid;
+            Json::Value framesJson(Json::arrayValue);
             FillFramesJson(oneThread->GetFrames(), framesJson);
-            cJSON_AddItemToObject(threadJson, "frames", framesJson);
-            cJSON_AddItemToArray(jsonInfo, threadJson);
+            threadJson["frames"] = framesJson;
+            jsonInfo.append(threadJson);
         }
     }
 }
 
-bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, cJSON *jsonInfo) const
+bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo) const
 {
     for (const auto& frame : frames) {
         if (frame.isJsFrame) {
@@ -205,45 +149,36 @@ bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, 
     return true;
 }
 
-void DumpInfoJsonFormatter::FillJsFrameJson(const DfxFrame& frame, cJSON *jsonInfo) const
+void DumpInfoJsonFormatter::FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const
 {
-    cJSON *frameJson = cJSON_CreateObject();
-    if (!frameJson) {
-        DFXLOGE("Create cJson frameJson object failed.");
-        return;
-    }
-    cJSON_AddStringToObject(frameJson, "file", frame.mapName.c_str());
-    cJSON_AddStringToObject(frameJson, "packageName", frame.packageName.c_str());
-    cJSON_AddStringToObject(frameJson, "symbol", frame.funcName.c_str());
-    cJSON_AddNumberToObject(frameJson, "line", frame.line);
-    cJSON_AddNumberToObject(frameJson, "column", frame.column);
-    cJSON_AddItemToArray(jsonInfo, frameJson);
+    Json::Value frameJson;
+    frameJson["file"] = frame.mapName;
+    frameJson["packageName"] = frame.packageName;
+    frameJson["symbol"] = frame.funcName;
+    frameJson["line"] = frame.line;
+    frameJson["column"] = frame.column;
+    jsonInfo.append(frameJson);
 }
 
-void DumpInfoJsonFormatter::FillNativeFrameJson(const DfxFrame& frame, cJSON *jsonInfo) const
+void DumpInfoJsonFormatter::FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const
 {
-    cJSON *frameJson = cJSON_CreateObject();
-    if (!frameJson) {
-        DFXLOGE("Create cJson frameJson object failed.");
-        return;
-    }
+    Json::Value frameJson;
 #ifdef __LP64__
-    std::string pc = StringPrintf("%016lx", frame.relPc);
+    frameJson["pc"] = StringPrintf("%016lx", frame.relPc);
 #else
-    std::string pc = StringPrintf("%08llx", frame.relPc);
+    frameJson["pc"] = StringPrintf("%08llx", frame.relPc);
 #endif
-    cJSON_AddStringToObject(frameJson, "pc", pc.c_str());
     if (frame.funcName.length() > MAX_FUNC_NAME_LEN) {
         DFXLOGD("length of funcName greater than 256 byte, do not report it");
-        cJSON_AddStringToObject(frameJson, "symbol", "");
+        frameJson["symbol"] = "";
     } else {
-        cJSON_AddStringToObject(frameJson, "symbol", frame.funcName.c_str());
+        frameJson["symbol"] = frame.funcName;
     }
-    cJSON_AddNumberToObject(frameJson, "offset", frame.funcOffset);
+    frameJson["offset"] = frame.funcOffset;
     std::string strippedMapName = DfxMap::UnFormatMapName(frame.mapName);
-    cJSON_AddStringToObject(frameJson, "file", strippedMapName.c_str());
-    cJSON_AddStringToObject(frameJson, "buildId", frame.buildId.c_str());
-    cJSON_AddItemToArray(jsonInfo, frameJson);
+    frameJson["file"] = strippedMapName;
+    frameJson["buildId"] = frame.buildId;
+    jsonInfo.append(frameJson);
 }
 #endif
 } // namespace HiviewDFX

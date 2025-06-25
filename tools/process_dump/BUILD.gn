@@ -164,6 +164,7 @@ if (defined(ohos_lite)) {
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
+      "jsoncpp:jsoncpp",
     ]
 
     part_name = "faultloggerd"
@@ -215,6 +216,7 @@ if (defined(ohos_lite)) {
       "init:libbegetutil",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
+      "jsoncpp:jsoncpp",
     ]
     version_script = "processdump.map"
     install_images = [
