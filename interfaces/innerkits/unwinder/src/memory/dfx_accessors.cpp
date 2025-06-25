@@ -100,13 +100,19 @@ NO_SANITIZE int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, voi
         *val = *reinterpret_cast<uintptr_t *>(addr);
         return UNW_ERROR_NONE;
     }
-    if (CreatePipe() &&
-        OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) != -1 &&
-        OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], val, sizeof(uintptr_t))) != -1) {
-        return UNW_ERROR_NONE;
+    if (!CreatePipe()) {
+        DFXLOGU("Failed to access addr, the pipe create fail, errno:%{public}d", errno);
+        return UNW_ERROR_INVALID_MEMORY;
     }
-    DFXLOGU("Failed to access addr");
-    return UNW_ERROR_INVALID_MEMORY;
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, pfd_[PIPE_WRITE], addr, sizeof(uintptr_t))) == -1) {
+        DFXLOGU("Failed to access addr, the pipe write fail, errno:%{public}d", errno);
+        return UNW_ERROR_INVALID_MEMORY;
+    }
+    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, pfd_[PIPE_READ], val, sizeof(uintptr_t))) == -1) {
+        DFXLOGU("Failed to access addr, the pipe read fail, errno:%{public}d", errno);
+        return UNW_ERROR_INVALID_MEMORY;
+    }
+    return UNW_ERROR_NONE;
 }
 
 int DfxAccessorsLocal::AccessReg(int reg, uintptr_t *val, void *arg)
