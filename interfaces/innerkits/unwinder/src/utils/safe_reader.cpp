@@ -78,6 +78,6 @@ NO_SANITIZE size_t SafeReader::CopyReadbaleBufSafe(uintptr_t destPtr, size_t des
 
 uintptr_t SafeReader::GetCurrentPageEndAddr(uintptr_t addr)
 {
-    int pageSize = getpagesize();
+    uintptr_t pageSize = static_cast<uintptr_t>(getpagesize());
     return (addr + pageSize) & (~(pageSize - 1));
 }
