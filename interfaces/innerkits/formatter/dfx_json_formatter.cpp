@@ -139,7 +139,7 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
         for (int j = 0; j < frameSize; ++j) {
             std::string frameStr = "";
             bool formatStatus = false;
-            std::string line = GetStringValue(cJSON_GetArrayItem(frames, j), "line");
+            std::string line = GetStringValue(item, "line");
             if (line.empty()) {
                 formatStatus = FormatNativeFrame(frames, j, frameStr);
             } else {
@@ -150,7 +150,6 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
             } else {
                 // Shall we try to print more information?
                 outStackStr.append("Frame info is illegal.");
-                cJSON_Delete(root);
                 return false;
             }
         }
@@ -186,7 +185,7 @@ static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack
 
 static void AddItemToKernelStack(const DfxThreadStack& threadStack, cJSON *jsonInfo)
 {
-    cJSON *threadInfo = cJSON_CreateObject();
+    cJSON *threadInfo = cJSON_CreateArray();
     if (threadInfo == nullptr) {
         return;
     }
@@ -225,7 +224,7 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
     if (processStack.empty()) {
         return false;
     }
-    cJSON *jsonInfo = cJSON_CreateArray();
+    cJSON *jsonInfo = cJSON_CreateObject();
     if (jsonInfo == nullptr) {
         return false;
     }
