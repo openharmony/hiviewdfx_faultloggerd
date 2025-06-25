@@ -130,6 +130,7 @@ if (defined(ohos_lite)) {
       "hitrace:libhitracechain",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
+      "jsoncpp:jsoncpp",
     ]
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]
