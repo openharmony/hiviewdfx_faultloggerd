@@ -253,7 +253,7 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
     memcpy(g_request.appRunningId, g_appRunningId, sizeof(g_request.appRunningId));
     if (!IsDumpSignal(signo) && g_GetStackIdFunc!= NULL) {
         g_request.stackId = g_GetStackIdFunc();
-        DFXLOGI("g_GetStackIdFunc %{public}p.", (void*)g_request.stackId);
+        DFXLOGI("g_GetStackIdFunc %{private}p.", (void*)g_request.stackId);
     }
 
     GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
