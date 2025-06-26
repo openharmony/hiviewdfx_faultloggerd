@@ -342,6 +342,15 @@ void CoreDumpService::ElfHeaderFill(Elf64_Ehdr &eh, uint16_t ePhnum)
     eh.e_shstrndx = ePhnum + 1;
 }
 
+bool CoreDumpService::IsDoCoredump()
+{
+    if (VerifyTrustlist() || (IsHwasanCoredumpEnabled() && isHwasanHap_)) {
+        return true;
+    }
+    DFXLOGE("The bundleName %{public}s is not in whitelist or hwasan coredump disable", bundleName_.c_str());
+    return false;
+}
+
 int CoreDumpService::CreateFileForCoreDump()
 {
     bundleName_ = DumpUtils::GetSelfBundleName();
@@ -349,8 +358,7 @@ int CoreDumpService::CreateFileForCoreDump()
         DFXLOGE("query bundleName fail");
         return INVALID_FD;
     }
-    if (!VerifyTrustlist() && !IsHwasanCoredumpEnabled()) {
-        DFXLOGE("The bundleName %{public}s is not in whitelist or hwasan coredump disable", bundleName_.c_str());
+    if (!IsDoCoredump()) {
         return INVALID_FD;
     }
     std::string logPath = std::string(COREDUMP_DIR_PATH) + "/" + bundleName_ + ".dmp";
@@ -399,6 +407,9 @@ uint64_t CoreDumpService::GetCoreFileSize(pid_t pid)
     uint16_t lineNumber = 0;
     DumpMemoryRegions region;
     while (getline(file, line)) {
+        if (!isHwasanHap_ && line.find("libclang_rt.hwasan.so") != std::string::npos) {
+            isHwasanHap_ = true;
+        }
         lineNumber += 1;
         ObtainDumpRegion(line, region);
         maps_.push_back(region);
@@ -411,7 +422,7 @@ uint64_t CoreDumpService::GetCoreFileSize(pid_t pid)
     file.close();
     coreFileSize = coreFileSize + sizeof(Elf64_Ehdr) + (lineNumber + 1) * sizeof(Elf64_Phdr) +
         (lineNumber + 2) * sizeof(Elf64_Shdr) + lineNumber * (sizeof(Elf64_Nhdr) + ARG100) + ARG1000; // 2
-    DFXLOGI("The estimated corefile size is: %{public}ld", coreFileSize);
+    DFXLOGI("The estimated corefile size is: %{public}ld, is hwasan hap %{public}d", coreFileSize, isHwasanHap_);
     return coreFileSize;
 }
 

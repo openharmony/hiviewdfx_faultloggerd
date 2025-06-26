@@ -45,6 +45,7 @@ public:
     std::string GetBundleNameItem();
     static bool IsHwasanCoredumpEnabled();
     static bool IsCoredumpSignal(const ProcessDumpRequest& request);
+    bool IsDoCoredump();
 private:
     void DeInit();
     void ObtainDumpRegion(std::string &line, DumpMemoryRegions &region);
@@ -75,6 +76,7 @@ private:
     CoreDumpThread coreDumpThread_;
     ElapsedTime counter_;
     std::shared_ptr<DfxRegs> keyRegs_;
+    bool isHwasanHap_ {false};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

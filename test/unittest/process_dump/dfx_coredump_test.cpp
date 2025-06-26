@@ -153,4 +153,20 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest006: end.";
 #endif
 }
+
+/**
+ * @tc.name: DfxCoreDumpTest007
+ * @tc.desc: test coredump when isHwasanHap_ is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest007, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest007: start.";
+    CoreDumpService coreDumpService = CoreDumpService(getpid(), gettid());
+    coreDumpService.isHwasanHap_ = true;
+    ASSERT_FALSE(coreDumpService.IsDoCoredump());
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest007: end.";
+#endif
+}
 }
