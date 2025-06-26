@@ -19,6 +19,7 @@ backtrace_local_sources = [
   "backtrace_local_thread.cpp",
   "dfx_kernel_stack.cpp",
   "fp_backtrace.cpp",
+  "memory_reader.cpp",
 ]
 
 if (defined(ohos_lite)) {
