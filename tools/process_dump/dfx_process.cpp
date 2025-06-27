@@ -224,12 +224,10 @@ bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
 
 std::string DfxProcess::GetProcessLifeCycle()
 {
-    struct sysinfo si;
-    constexpr uint64_t invalidTimeLimit = 2 * 365 * 24 * 3600; // 2 year
-    if (sysinfo(&si) != 0) {
-        DFXLOGE("sysinfo fail. errno %{public}d", errno);
-        return "";
-    }
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_BOOTTIME, &ts);
+    uint64_t sysUpTime = static_cast<uint64_t>(ts.tv_sec + static_cast<time_t>(ts.tv_nsec != 0 ? 1L : 0L));
+
     unsigned long long startTime = 0;
     if (GetProcessStartTime(processInfo_.pid, startTime)) {
         auto clkTck = sysconf(_SC_CLK_TCK);
@@ -237,13 +235,14 @@ std::string DfxProcess::GetProcessLifeCycle()
             DFXLOGE("Get _SC_CLK_TCK fail. errno %{public}d", errno);
             return "";
         }
-        uint64_t upTime = si.uptime - startTime / static_cast<uint32_t>(clkTck);
-        if (upTime > invalidTimeLimit) {
-            DFXLOGE("invalid system upTime %{public}ld, upTime: %{public}" PRIu64 ", startTime: %{public}llu.",
-                si.uptime, upTime, startTime);
+        uint64_t procUpTime = sysUpTime - startTime / static_cast<uint32_t>(clkTck);
+        constexpr uint64_t invalidTimeLimit = 10 * 365 * 24 * 3600; // 10 year
+        if (procUpTime > invalidTimeLimit) {
+            DFXLOGE("invalid system upTime %{public}" PRIu64"  proc upTime: %{public}" PRIu64 ",  "
+                "startTime: %{public}llu.", sysUpTime, procUpTime, startTime);
             return "";
         }
-        return std::to_string(upTime) + "s";
+        return std::to_string(procUpTime) + "s";
     }
     return "";
 }
