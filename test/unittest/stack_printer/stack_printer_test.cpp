@@ -617,7 +617,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_002, TestSize.Level2)
         flag = stackPrinter->PutPcsInTable(pcsVec[i], timestamps[i]);
         ASSERT_TRUE(flag);
     }
-    GTEST_LOG_(INFO) << "StackPrinterTest_001: end.";
+    GTEST_LOG_(INFO) << "StackPrinterTest_002: end.";
 }
 
 /**
@@ -644,7 +644,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_003, TestSize.Level2)
     std::string stack = stackPrinter->GetFullStack(timeStampedPcsVec);
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
-    GTEST_LOG_(INFO) << "StackPrinterTest_001: end.\n";
+    GTEST_LOG_(INFO) << "StackPrinterTest_003: end.\n";
 }
 
 /**
@@ -678,7 +678,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_004, TestSize.Level2)
     stack = stackPrinter->GetTreeStack(true, timestamps[2], timestamps[6]);
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
-    GTEST_LOG_(INFO) << "StackPrinterTest_001: end.";
+    GTEST_LOG_(INFO) << "StackPrinterTest_004: end.";
 }
 
 /**
@@ -707,7 +707,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_005, TestSize.Level2)
     stack = stackPrinter->GetHeaviestStack(timestamps[2], timestamps[6]);
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
-    GTEST_LOG_(INFO) << "StackPrinterTest_001: end.";
+    GTEST_LOG_(INFO) << "StackPrinterTest_005: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
