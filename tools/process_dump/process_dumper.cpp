@@ -484,8 +484,9 @@ bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, int &dumpRes
         return false;
     }
 #if defined(__aarch64__)
-    if (CoreDumpService::IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
-        if (coreDumpService_) {
+    if (coreDumpService_) {
+        if (CoreDumpService::IsCoredumpSignal(request) ||
+           (request.siginfo.si_signo == SIGABRT && coreDumpService_->IsDoCoredump())) {
             coreDumpService_->StartSecondStageDump(vmPid, request);
         }
     }
@@ -539,7 +540,8 @@ bool ProcessDumper::InitDfxProcess(ProcessDumpRequest& request)
     }
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__)
-    if (CoreDumpService::IsCoredumpSignal(request) || CoreDumpService::IsHwasanCoredumpEnabled()) {
+    if (CoreDumpService::IsCoredumpSignal(request) ||
+        (request.siginfo.si_signo == SIGABRT && CoreDumpService::IsHwasanCoredumpEnabled())) {
         coreDumpService_ = std::make_shared<CoreDumpService>(request.pid, request.tid,
             DfxRegs::CreateFromUcontext(request.context));
         if (coreDumpService_) {
