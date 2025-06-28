@@ -162,9 +162,9 @@ if (defined(ohos_lite)) {
       "hisysevent:libhisysevent",
       "hitrace:libhitracechain",
       "init:libbegetutil",
+      "jsoncpp:jsoncpp",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
-      "jsoncpp:jsoncpp",
     ]
 
     part_name = "faultloggerd"
@@ -214,9 +214,9 @@ if (defined(ohos_lite)) {
       "hitrace:hitrace_meter",
       "hitrace:libhitracechain",
       "init:libbegetutil",
+      "jsoncpp:jsoncpp",
       "ipc:ipc_core",
       "samgr:samgr_proxy",
-      "jsoncpp:jsoncpp",
     ]
     version_script = "processdump.map"
     install_images = [
