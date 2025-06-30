@@ -27,7 +27,6 @@ namespace HiviewDFX {
 class CoreDumpService {
 public:
     CoreDumpService() = default;
-    CoreDumpService(int32_t targetPid, int32_t targetTid);
     CoreDumpService(int32_t targetPid, int32_t targetTid, std::shared_ptr<DfxRegs> keyRegs);
     CoreDumpService(const CoreDumpService&) = delete;
     CoreDumpService &operator=(const CoreDumpService&) = delete;

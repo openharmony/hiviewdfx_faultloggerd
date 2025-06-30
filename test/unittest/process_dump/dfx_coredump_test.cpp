@@ -29,6 +29,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
+MAYBE_UNUSED constexpr const char* const TEST_TEMP_FILE = "/data/test/testfile";
 class DfxCoreDumpTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {};
@@ -52,7 +53,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest001, TestSize.Level2)
     pid_t vmPid = 666; // 666
     auto pid = getpid();
     auto tid = gettid();
-    CoreDumpService coreDumpService = CoreDumpService(pid, tid);
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
     coreDumpService.SetVmPid(vmPid);
     auto coreDumpThread = coreDumpService.GetCoreDumpThread();
     ASSERT_EQ(coreDumpThread.targetPid, pid);
@@ -64,7 +65,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest001, TestSize.Level2)
 
 /**
  * @tc.name: DfxCoreDumpTest002
- * @tc.desc: test coredump
+ * @tc.desc: test coredump StartCoreDump function
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest002, TestSize.Level2)
@@ -73,16 +74,19 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest002: start.";
     auto pid = getpid();
     auto tid = gettid();
-    CoreDumpService coreDumpService = CoreDumpService(pid, tid);
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
     bool ret = coreDumpService.StartCoreDump();
-    ASSERT_EQ(ret, false);
+    ASSERT_TRUE(!ret);
+    coreDumpService.status_ = OHOS::HiviewDFX::CoreDumpService::WriteStatus::WRITE_SEGMENT_HEADER_STAGE;
+    ret = coreDumpService.StartCoreDump();
+    ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest002: end.";
 #endif
 }
 
 /**
  * @tc.name: DfxCoreDumpTest003
- * @tc.desc: test coredump
+ * @tc.desc: test coredump GetBundleNameItem function
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest003, TestSize.Level2)
@@ -91,7 +95,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest003: start.";
     auto pid = getpid();
     auto tid = gettid();
-    CoreDumpService coreDumpService = CoreDumpService(pid, tid);
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
     auto bundleName = coreDumpService.GetBundleNameItem();
     ASSERT_TRUE(bundleName.empty());
     GTEST_LOG_(INFO) << "DfxCoreDumpTest003: end.";
@@ -100,7 +104,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest003, TestSize.Level2)
 
 /**
  * @tc.name: DfxCoreDumpTest004
- * @tc.desc: test coredump
+ * @tc.desc: test coredump CreateFileForCoreDump function
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest004, TestSize.Level2)
@@ -109,7 +113,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest004: start.";
     auto pid = getpid();
     auto tid = gettid();
-    CoreDumpService coreDumpService = CoreDumpService(pid, tid);
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
     auto fd = coreDumpService.CreateFileForCoreDump();
     ASSERT_EQ(fd, -1);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest004: end.";
@@ -118,7 +122,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest004, TestSize.Level2)
 
 /**
  * @tc.name: DfxCoreDumpTest005
- * @tc.desc: test coredump
+ * @tc.desc: test coredump CreateFile function
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest005, TestSize.Level2)
@@ -127,7 +131,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest005: start.";
     auto pid = getpid();
     auto tid = gettid();
-    CoreDumpService coreDumpService = CoreDumpService(pid, tid);
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
     bool ret = coreDumpService.CreateFile();
     ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest005: end.";
@@ -136,7 +140,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest005, TestSize.Level2)
 
 /**
  * @tc.name: DfxCoreDumpTest006
- * @tc.desc: test coredump
+ * @tc.desc: test coredump ObtainDumpRegion function
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest006, TestSize.Level2)
@@ -145,7 +149,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest006: start.";
     auto pid = getpid();
     auto tid = gettid();
-    CoreDumpService coreDumpService = CoreDumpService(pid, tid);
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
     std::string line = "5a0eb08000-5a0eb09000 r-xp 00007000 00:00 0            /system/lib/test.z.so";
     DumpMemoryRegions region;
     coreDumpService.ObtainDumpRegion(line, region);
@@ -163,10 +167,313 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest007, TestSize.Level2)
 {
 #if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest007: start.";
-    CoreDumpService coreDumpService = CoreDumpService(getpid(), gettid());
+    CoreDumpService coreDumpService = CoreDumpService(getpid(), gettid(), DfxRegs::Create());
     coreDumpService.isHwasanHap_ = true;
     ASSERT_FALSE(coreDumpService.IsDoCoredump());
     GTEST_LOG_(INFO) << "DfxCoreDumpTest007: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest008
+ * @tc.desc: test coredump get corefilesize when pid is 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest008, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest008: start.";
+    CoreDumpService coreDumpService = CoreDumpService(0, 0, DfxRegs::Create());
+    uint64_t coreFileSize = coreDumpService.GetCoreFileSize(0);
+    ASSERT_EQ(coreFileSize, 0);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest008: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest009
+ * @tc.desc: test coredump createfile when pid is valid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest009, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest009: start.";
+    CoreDumpService coreDumpService = CoreDumpService(0, 0, DfxRegs::Create());
+    bool ret = coreDumpService.CreateFile();
+    ASSERT_TRUE(!ret);
+    coreDumpService.coreDumpThread_.targetPid = 99999; // 99999 invalid pid
+    ret = coreDumpService.CreateFile();
+    ASSERT_TRUE(!ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest009: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest010
+ * @tc.desc: test coredump MmapForFd function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest010, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest010: start.";
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+    bool ret = coreDumpService.MmapForFd();
+    ASSERT_TRUE(!ret);
+    coreDumpService.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_TRUE(coreDumpService.fd_ > 0);
+    ret = coreDumpService.MmapForFd();
+    ASSERT_TRUE(!ret);
+    coreDumpService.coreFileSize_ = 1024 * 1024;
+    ret = coreDumpService.MmapForFd();
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest010: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest011
+ * @tc.desc: test coredump WriteSegmentHeader function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest011, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest011: start.";
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+    bool ret = coreDumpService.WriteSegmentHeader();
+    ASSERT_TRUE(!ret);
+
+    coreDumpService.status_ = OHOS::HiviewDFX::CoreDumpService::WriteStatus::WRITE_SEGMENT_HEADER_STAGE;
+    coreDumpService.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    coreDumpService.coreFileSize_ = 1024 * 1024;
+    ret = coreDumpService.MmapForFd();
+    ASSERT_TRUE(ret);
+    DumpMemoryRegions dummyRegion {
+        .startHex = 0x1000,
+        .endHex = 0x2000,
+        .offsetHex = 5,
+        .memorySizeHex = 0x1000
+    };
+    coreDumpService.maps_ = { dummyRegion };
+
+    ret = coreDumpService.WriteSegmentHeader();
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest011: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest012
+ * @tc.desc: test coredump WriteNoteSegment function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest012, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest012: start.";
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(0, 0, DfxRegs::Create());
+    bool ret = coreDumpService.WriteNoteSegment();
+    ASSERT_TRUE(!ret);
+    coreDumpService.status_ = OHOS::HiviewDFX::CoreDumpService::WriteStatus::WRITE_NOTE_SEGMENT_STAGE;
+    ret = coreDumpService.WriteNoteSegment();
+    ASSERT_TRUE(!ret);
+
+    coreDumpService.coreDumpThread_.targetPid = pid;
+    coreDumpService.coreDumpThread_.targetTid = tid;
+    coreDumpService.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    coreDumpService.coreFileSize_ = 1024 * 1024;
+    ret = coreDumpService.MmapForFd();
+    ASSERT_TRUE(ret);
+    DumpMemoryRegions dummyRegion {
+        .startHex = 0x1000,
+        .endHex = 0x2000,
+        .offsetHex = 5,
+        .memorySizeHex = 0x1000
+    };
+    coreDumpService.maps_ = { dummyRegion };
+    coreDumpService.currentPointer_ = coreDumpService.mappedMemory_;
+
+    ret = coreDumpService.WriteNoteSegment();
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest012: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest013
+ * @tc.desc: test coredump WriteLoadSegment function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest013, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest013: start.";
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+    bool ret = coreDumpService.WriteLoadSegment();
+    ASSERT_TRUE(!ret);
+
+    coreDumpService.status_ = OHOS::HiviewDFX::CoreDumpService::WriteStatus::WRITE_LOAD_SEGMENT_STAGE;
+    ret = coreDumpService.WriteNoteSegment();
+    ASSERT_TRUE(!ret);
+
+    coreDumpService.SetVmPid(getpid());
+    coreDumpService.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    coreDumpService.coreFileSize_ = 1024 * 1024;
+    ret = coreDumpService.MmapForFd();
+    ASSERT_TRUE(ret);
+
+    constexpr size_t kRegionSize = 64;
+    auto* sourceBuffer = static_cast<char*>(malloc(kRegionSize));
+    (void)memset_s(sourceBuffer, kRegionSize, 0xA5, kRegionSize);
+    uintptr_t fakeVaddr = reinterpret_cast<uintptr_t>(sourceBuffer);
+
+    coreDumpService.currentPointer_ = coreDumpService.mappedMemory_ + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr);
+    Elf64_Phdr* ptLoad = reinterpret_cast<Elf64_Phdr*>(coreDumpService.mappedMemory_ +
+        sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr));
+
+    ptLoad->p_vaddr = fakeVaddr;
+    ptLoad->p_memsz = kRegionSize;
+
+    coreDumpService.ePhnum_ = 2;
+
+    ret = coreDumpService.WriteLoadSegment();
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest013: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest014
+ * @tc.desc: test coredump WriteSectionHeader function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest014, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest014: start.";
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+    bool ret = coreDumpService.WriteSectionHeader();
+    ASSERT_TRUE(!ret);
+
+    coreDumpService.status_ = OHOS::HiviewDFX::CoreDumpService::WriteStatus::WRITE_SECTION_HEADER_STAGE;
+
+    ret = coreDumpService.WriteSectionHeader();
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest014: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest015
+ * @tc.desc: test coredump FinishCoreDump function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest015, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest015: start.";
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+    bool ret = coreDumpService.FinishCoreDump();
+    ASSERT_TRUE(!ret);
+    coreDumpService.status_ = OHOS::HiviewDFX::CoreDumpService::WriteStatus::STOP_STAGE;
+    ret = coreDumpService.FinishCoreDump();
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest015: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest016
+ * @tc.desc: test coredump StartFirstStageDump and StartSecondStageDump function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest016, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest016: start.";
+    pid_t forkPid = fork();
+    if (forkPid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new process";
+    } else if (forkPid == 0) {
+        GTEST_LOG_(INFO) << "fork success";
+        auto pid = getpid();
+        auto tid = gettid();
+        CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+        coreDumpService.StartFirstStageDump();
+        ProcessDumpRequest request;
+        coreDumpService.StartSecondStageDump(pid, request);
+    }
+    int status;
+    waitpid(forkPid, &status, 0);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest016: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest017
+ * @tc.desc: test coredump IsCoredumpSignal and IsHwasanCoredumpEnabled function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest017, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest017: start.";
+    ProcessDumpRequest request;
+    bool ret = CoreDumpService::IsCoredumpSignal(request);
+    ASSERT_TRUE(!ret);
+
+    request.siginfo.si_signo = 42;
+    ret = CoreDumpService::IsCoredumpSignal(request);
+    ASSERT_TRUE(!ret);
+
+    request.siginfo.si_signo = 0;
+    request.siginfo.si_code = 3;
+    ret = CoreDumpService::IsCoredumpSignal(request);
+    ASSERT_TRUE(!ret);
+
+    request.siginfo.si_signo = 42;
+    request.siginfo.si_code = 3;
+    ret = CoreDumpService::IsCoredumpSignal(request);
+    ASSERT_TRUE(ret);
+
+    ret = CoreDumpService::IsHwasanCoredumpEnabled();
+    ASSERT_TRUE(!ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest017: end.";
+#endif
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest018
+ * @tc.desc: test coredump VerifyTrustlist function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest018, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest018: start.";
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+    bool ret = coreDumpService.VerifyTrustlist();
+    ASSERT_TRUE(!ret);
+    coreDumpService.bundleName_ = "test.hap";
+    ret = coreDumpService.VerifyTrustlist();
+    ASSERT_TRUE(!ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest018: end.";
 #endif
 }
 }
