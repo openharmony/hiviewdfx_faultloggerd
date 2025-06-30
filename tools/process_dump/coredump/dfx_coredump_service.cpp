@@ -96,12 +96,6 @@ bool CoreDumpService::IsCoredumpSignal(const ProcessDumpRequest& request)
     return request.siginfo.si_signo == 42 && request.siginfo.si_code == 3; // 42 3
 }
 
-CoreDumpService::CoreDumpService(int32_t targetPid, int32_t targetTid)
-{
-    coreDumpThread_.targetPid = targetPid;
-    coreDumpThread_.targetTid = targetTid;
-}
-
 CoreDumpService::CoreDumpService(int32_t targetPid, int32_t targetTid, std::shared_ptr<DfxRegs> keyRegs)
 {
     coreDumpThread_.targetPid = targetPid;

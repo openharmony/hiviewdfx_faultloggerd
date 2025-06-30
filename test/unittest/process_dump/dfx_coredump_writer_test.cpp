@@ -55,13 +55,23 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest001, TestSize.Level2)
     char* mappedMemory = buffer.data();
     char* currentPointer = mappedMemory;
     Elf64_Half phNum = 0;
-    DumpMemoryRegions dummyRegion {
+    DumpMemoryRegions dummyRegion1 {
         .startHex = 0x1000,
         .endHex = 0x2000,
         .offsetHex = 5,
         .memorySizeHex = 0x1000
     };
-    std::vector<DumpMemoryRegions> maps = { dummyRegion };
+    (void)strcpy_s(dummyRegion1.priority, 5, "r-xp");
+
+    DumpMemoryRegions dummyRegion2 {
+        .startHex = 0x3000,
+        .endHex = 0x4000,
+        .offsetHex = 5,
+        .memorySizeHex = 0x1000
+    };
+    (void)strcpy_s(dummyRegion2.priority, 5, "rw-p");
+
+    std::vector<DumpMemoryRegions> maps = { dummyRegion1, dummyRegion2 };
     ProgramSegmentHeaderWriter writer(mappedMemory, currentPointer, phNum, maps);
 
     currentPointer = writer.Write();
