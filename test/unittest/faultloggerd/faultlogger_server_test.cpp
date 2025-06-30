@@ -32,6 +32,7 @@
 #include "faultloggerd_client.h"
 #include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
+#include "fault_common_util.h"
 #include "smart_fd.h"
 
 using namespace OHOS::HiviewDFX;
@@ -226,13 +227,13 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpServiceTest001, TestSize.Level2)
     pid_t pid;
     pid = getpid();
     siginfo_t si;
-    auto ret = SdkDumpService::SendSigDumpToHapWatchdog(pid, si);
+    auto ret = FaultCommonUtil::SendSignalToHapWatchdogThread(pid, si);
     EXPECT_EQ(ret, ResponseCode::DEFAULT_ERROR_CODE);
 #if defined(__aarch64__)
     std::string appName = "com.ohos.sceneboard";
     pid = GetProcessPid(appName);
     if (pid > 0) {
-        ret = SdkDumpService::SendSigDumpToHapWatchdog(pid, si); // sceneboard is mask
+        ret = FaultCommonUtil::SendSignalToHapWatchdogThread(pid, si); // sceneboard is mask
         EXPECT_EQ(ret, ResponseCode::DEFAULT_ERROR_CODE);
     } else {
         FAIL() << "SdkDumpServiceTest001: " << appName << " not running.";
@@ -248,7 +249,7 @@ HWTEST_F(FaultLoggerdServiceTest, SdkDumpServiceTest002, TestSize.Level2)
 {
     pid_t pid = getpid();
     siginfo_t si;
-    auto ret = SdkDumpService::SendSigDumpToProcess(pid, si);
+    auto ret = FaultCommonUtil::SendSignalToProcess(pid, si);
     EXPECT_EQ(ret, ResponseCode::REQUEST_SUCCESS);
 }
 /**

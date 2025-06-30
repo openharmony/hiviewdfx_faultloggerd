@@ -194,9 +194,10 @@ std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeout)
     }
 
     struct CoreDumpRequestData request{};
-    FillRequestHeadData(request.head, FaultLoggerClientType::DO_COREDUMP_CLIENT);
+    FillRequestHeadData(request.head, FaultLoggerClientType::COREDUMP_CLIENT);
     request.pid = targetPid;
     request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
+    request.coredumpAction = CoreDumpAction::DO_CORE_DUMP;
 
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     FaultLoggerdSocket faultLoggerdSocket;
@@ -215,12 +216,12 @@ std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeout)
         return "";
     }
     DFXLOGI("%{public}s connect request retCode : %{public}d", __func__, retCode);
-    SocketReceiveData socketReceiveData;
-    faultLoggerdSocket.GetMsgFromSocket(&socketReceiveData, sizeof(socketReceiveData));
+    CoreDumpResult coredumpResult = {"", ResponseCode::RECEIVE_DATA_FAILED};
+    faultLoggerdSocket.GetMsgFromSocket(&coredumpResult, sizeof(coredumpResult));
 
     DFXLOGI("%{public}s has received retCode : %{public}d and filename: %{public}s", __func__,
-            socketReceiveData.retCode, socketReceiveData.fileName);
-    return socketReceiveData.fileName;
+            coredumpResult.retCode, coredumpResult.fileName);
+    return coredumpResult.fileName;
 #else
     return "";
 #endif
@@ -235,8 +236,9 @@ int32_t CancelCoredump(int32_t targetPid)
     }
 
     struct CoreDumpRequestData request{};
-    FillRequestHeadData(request.head, FaultLoggerClientType::CANCEL_COREDUMP_CLIENT);
+    FillRequestHeadData(request.head, FaultLoggerClientType::COREDUMP_CLIENT);
     request.pid = targetPid;
+    request.coredumpAction = CoreDumpAction::CANCEL_CORE_DUMP;
 
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     int32_t retCode =
@@ -249,19 +251,19 @@ int32_t CancelCoredump(int32_t targetPid)
 #endif
 }
 
-int32_t StartCoredumpCb(int32_t targetPid, int32_t workerPid)
+int32_t StartCoredumpCb(int32_t targetPid, int32_t processDumpPid)
 {
 #ifndef is_ohos_lite
-    DFXLOGI("%{public}s.%{public}s :: targetpid: %{public}d, workerpid: %{public}d.",
-        FAULTLOGGERD_CLIENT_TAG, __func__, targetPid, workerPid);
-    if (targetPid <= 0 || workerPid <= 0) {
+    DFXLOGI("%{public}s.%{public}s :: targetpid: %{public}d, processDumpPid: %{public}d.",
+        FAULTLOGGERD_CLIENT_TAG, __func__, targetPid, processDumpPid);
+    if (targetPid <= 0 || processDumpPid <= 0) {
         return ResponseCode::DEFAULT_ERROR_CODE;
     }
 
     struct CoreDumpStatusData request{};
     FillRequestHeadData(request.head, FaultLoggerClientType::COREDUMP_PROCESS_DUMP_CLIENT);
     request.pid = targetPid;
-    request.processDumpPid = workerPid;
+    request.processDumpPid = processDumpPid;
     request.coredumpStatus = CoreDumpStatus::CORE_DUMP_START;
 
     SocketRequestData socketRequestData = {&request, sizeof(request)};

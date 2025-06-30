@@ -17,7 +17,6 @@
 #define FAULT_LOGGER_SERVER_H_
 
 #include <map>
-
 #include "epoll_manager.h"
 #include "fault_logger_service.h"
 

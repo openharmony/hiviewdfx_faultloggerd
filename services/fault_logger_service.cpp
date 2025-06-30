@@ -20,13 +20,13 @@
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
-#include <unordered_map>
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
 #include "fault_logger_daemon.h"
 #include "faultloggerd_socket.h"
+#include "fault_common_util.h"
 #include "procinfo.h"
 #include "proc_util.h"
 
@@ -46,16 +46,6 @@ namespace HiviewDFX {
 
 namespace {
 constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULT_LOGGER_SERVICE";
-bool GetUcredByPeerCred(struct ucred& rcred, int32_t connectionFd)
-{
-    socklen_t credSize = sizeof(rcred);
-    if (getsockopt(connectionFd, SOL_SOCKET, SO_PEERCRED, &rcred, &credSize) != 0) {
-        DFXLOGE("%{public}s :: Failed to GetCredential, errno: %{public}d", FAULTLOGGERD_SERVICE_TAG, errno);
-        return false;
-    }
-    return true;
-}
-
 bool CheckCallerUID(uint32_t callerUid)
 {
     const uint32_t whitelist[] = {
@@ -63,7 +53,7 @@ bool CheckCallerUID(uint32_t callerUid)
         1000, // bmsUid
         1201, // hiviewUid
         1212, // hidumperServiceUid
-        5523 // foundationUid
+        5523, // foundationUid
     };
     if (std::find(std::begin(whitelist), std::end(whitelist), callerUid) == std::end(whitelist)) {
         DFXLOGW("%{public}s :: CheckCallerUID :: Caller Uid(%{public}d) is unexpectly.",
@@ -76,7 +66,7 @@ bool CheckCallerUID(uint32_t callerUid)
 bool CheckRequestCredential(int32_t connectionFd, int32_t requestPid)
 {
     struct ucred creds{};
-    if (!GetUcredByPeerCred(creds, connectionFd)) {
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
         return false;
     }
     if (CheckCallerUID(creds.uid)) {
@@ -98,7 +88,8 @@ bool ExceptionReportService::Filter(int32_t connectionFd, const CrashDumpExcepti
         return false;
     }
     struct ucred creds{};
-    if (!GetUcredByPeerCred(creds, connectionFd) || creds.uid != static_cast<uint32_t>(requestData.uid)) {
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd) ||
+            creds.uid != static_cast<uint32_t>(requestData.uid)) {
         DFXLOGW("Failed to check request credential request uid:%{public}d: cred uid:%{public}d fd:%{public}d",
                 requestData.uid, creds.uid, connectionFd);
         return false;
@@ -262,293 +253,6 @@ bool FileDesService::Filter(const std::string& socketName, int32_t connectionFd,
 }
 
 #ifndef is_ohos_lite
-namespace {
-
-std::unordered_map<int32_t, CoredumpProcessInfo> g_processMap;
-int32_t SendCancelSignal(int32_t workerPid)
-{
-    siginfo_t si{0};
-    si.si_signo = DUMPCATCHER_TIMEOUT;
-    si.si_errno = 0;
-    si.si_code = SIGLEAK_STACK_COREDUMP;
-    if (syscall(SYS_rt_sigqueueinfo, workerPid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
-        return ResponseCode::CORE_DUMP_NOPROC;
-    }
-    return ResponseCode::REQUEST_SUCCESS;
-}
-
-bool SendMsgToCoredumpClient(int32_t targetPid, const int32_t& responseCode, std::string& fileName)
-{
-    int32_t retCode = responseCode;
-    int32_t savedConnectionFd = -1;
-
-    auto it = g_processMap.find(targetPid);
-    if (it != g_processMap.end()) {
-        savedConnectionFd = it->second.coredumpSocketId;
-        if (savedConnectionFd < 0) {
-            DFXLOGE("Saved sockFd has been crashed, break.");
-            return false;
-        }
-    }
-    SocketReceiveData socketReceiveData;
-    auto fileNameLen = sizeof(socketReceiveData.fileName);
-    if (strncpy_s(socketReceiveData.fileName, fileNameLen, fileName.c_str(), fileNameLen - 1) != 0) {
-        DFXLOGE("%{public}s :: strncpy failed.", __func__);
-        return false;
-    }
-    socketReceiveData.retCode = retCode;
-
-    if (SendMsgToSocket(savedConnectionFd, &socketReceiveData, sizeof(socketReceiveData))) {
-        return true;
-    }
-    return false;
-}
-
-bool CheckWorkerPid(int32_t targetPid, int32_t workerPid)
-{
-    if (workerPid <= 0 || targetPid <= 0) {
-        return false;
-    }
-    auto it = g_processMap.find(targetPid);
-    if (it != g_processMap.end()) {
-        if (it->second.deleteFlag) {
-            if (SendCancelSignal(workerPid) != ResponseCode::REQUEST_SUCCESS) {
-                return false;
-            }
-
-            int32_t retCode = ResponseCode::CORE_DUMP_CANCEL;
-            std::string fileName = "Dump processing has been canceled!";
-            SendMsgToCoredumpClient(targetPid, retCode, fileName);
-
-            close(it->second.coredumpSocketId);
-            g_processMap.erase(it);
-        } else {
-            it->second.workerPid = workerPid;
-        }
-        return true;
-    }
-    return false;
-}
-
-bool RemoveTargetPid(int32_t targetPid)
-{
-    if (targetPid <= 0) {
-        return false;
-    }
-    auto it = g_processMap.find(targetPid);
-    if (it != g_processMap.end()) {
-        close(it->second.coredumpSocketId);
-        g_processMap.erase(it);
-        return true;
-    }
-    return false;
-}
-
-bool HandleBPAndCleanup(int32_t targetPid, int32_t retCode, std::string& fileName)
-{
-    if (!SendMsgToCoredumpClient(targetPid, retCode, fileName)) {
-        DFXLOGE("Send message to blocking interface failed, %{public}s %{public}d", __func__, __LINE__);
-    }
-
-    if (!RemoveTargetPid(targetPid)) {
-        DFXLOGE("Remove targetpid %{public}d failed, %{public}s %{public}d", targetPid, __func__, __LINE__);
-        return false;
-    }
-    return true;
-}
-} // namespace
-
-int32_t CoredumpStatusService::OnRequest(const std::string& socketName, int32_t connectionFd,
-    const CoreDumpStatusData& requestData)
-{
-    DFX_TRACE_SCOPED("CoredumpStatusServiceOnRequest");
-    DFXLOGI("Receive signal request for pid:%{public}d, status:%{public}d", requestData.pid,
-            requestData.coredumpStatus);
-
-    int32_t res = ResponseCode::REQUEST_SUCCESS;
-    if (requestData.coredumpStatus == CoreDumpStatus::CORE_DUMP_START) {
-        DFXLOGI("Processdump start %{public}s %{public}d", __func__, __LINE__);
-        int32_t workerPid = requestData.processDumpPid;
-
-        if (!CheckWorkerPid(requestData.pid, workerPid)) {
-            DFXLOGE("Check workerpid %{public}d failed", workerPid);
-            res = ResponseCode::ABNORMAL_SERVICE;
-            return res;
-        }
-    } else if (requestData.coredumpStatus == CoreDumpStatus::CORE_DUMP_END) {
-        DFXLOGI("Processdump finish %{public}s %{public}d", __func__, __LINE__);
-
-        int32_t targetPid = requestData.pid;
-        char cfileName[256];
-        if (strncpy_s(cfileName, sizeof(cfileName), requestData.fileName, sizeof(cfileName) - 1) != 0) {
-            DFXLOGE("%{public}s :: strncpy failed.", __func__);
-            return ResponseCode::DEFAULT_ERROR_CODE;
-        }
-        int32_t retCode = requestData.retCode;
-        std::string fileName = cfileName;
-        HandleBPAndCleanup(targetPid, retCode, fileName);
-
-        if (g_processMap.empty()) {
-            DFXLOGE("clean pid success, %{public}s %{public}d", __func__, __LINE__);
-        } else {
-            for (const auto& pair : g_processMap) {
-                DFXLOGE("%{public}d is still dumping!", pair.first);
-            }
-        }
-    }
-
-    SendMsgToSocket(connectionFd, &res, sizeof(res));
-    return res;
-}
-
-int32_t CoredumpService::Filter(const std::string& socketName, const CoreDumpRequestData& requestData, uint32_t uid)
-{
-    if (requestData.pid <= 0 || socketName != SERVER_SOCKET_NAME) {
-        DFXLOGE("%{public}s :: HandleCoreDumpRequest :: pid(%{public}d) or socketName(%{public}s) fail.",
-            FAULTLOGGERD_SERVICE_TAG, requestData.pid, socketName.c_str());
-        return ResponseCode::REQUEST_REJECT;
-    }
-    if (TempFileManager::CheckCrashFileRecord(requestData.pid)) {
-        DFXLOGW("%{public}s :: pid(%{public}d) has been crashed, break.",
-                FAULTLOGGERD_SERVICE_TAG, requestData.pid);
-        return ResponseCode::CORE_PROCESS_CRASHED;
-    }
-    return ResponseCode::REQUEST_SUCCESS;
-}
-
-int32_t CoredumpService::OnRequest(const std::string& socketName, int32_t connectionFd,
-    const CoreDumpRequestData& requestData)
-{
-    DFX_TRACE_SCOPED("CoredumpServiceOnRequest");
-    DFXLOGI("Receive save coredump request for pid:%{public}d.", requestData.pid);
-    struct ucred creds;
-    if (!GetUcredByPeerCred(creds, connectionFd)) {
-        DFXLOGE("Core dump pid(%{public}d) request failed to get cred.", requestData.pid);
-        return ResponseCode::REQUEST_REJECT;
-    }
-    int32_t responseCode = Filter(socketName, requestData, creds.uid);
-    if (responseCode != ResponseCode::REQUEST_SUCCESS) {
-        return responseCode;
-    }
-
-    siginfo_t si{0};
-    si.si_signo = SIGLEAK_STACK;  //42
-    si.si_errno = 0;
-    si.si_code = SIGLEAK_STACK_COREDUMP;
-    si.si_pid = static_cast<int32_t>(creds.pid);
-    if (syscall(SYS_rt_sigqueueinfo, requestData.pid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
-        return ResponseCode::CORE_DUMP_NOPROC;
-    }
-    uint64_t endTime = requestData.endTime;
-    int32_t targetPid = requestData.pid;
-    int32_t workerPid = -1;
-    int32_t coredumpSocketId = dup(connectionFd);
-
-    int32_t res = ResponseCode::REQUEST_SUCCESS;
-    if (g_processMap.find(targetPid) != g_processMap.end()) {
-        DFXLOGE("%{public}d is generating coredump, please do not repeat dump!", targetPid);
-        res = ResponseCode::CORE_DUMP_REPEAT;
-        SendMsgToSocket(coredumpSocketId, &res, sizeof(res));
-        return res;
-    } else {
-        g_processMap.emplace(targetPid, CoredumpProcessInfo(targetPid, workerPid, coredumpSocketId, endTime, false));
-    }
-    SendMsgToSocket(coredumpSocketId, &res, sizeof(res));
-
-    auto removeTask = [targetPid]() {
-        auto it = g_processMap.find(targetPid);
-        if (it != g_processMap.end()) {
-            close(it->second.coredumpSocketId);
-            g_processMap.erase(it);
-            DFXLOGI("Removed targetPid: %{public}d", targetPid);
-        } else {
-            DFXLOGW("targetPid : %{public}d has been removed", targetPid);
-        }
-    };
-
-    int32_t delayMs = endTime - GetAbsTimeMilliSeconds();
-    StartDelayTask(removeTask, delayMs);
-    return res;
-}
-
-void CoredumpService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
-{
-    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime);
-    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
-    if (g_processMap.empty()) {
-        DFXLOGE("clean pid success, %{public}s %{public}d", __func__, __LINE__);
-    }
-}
-
-int32_t CancelCoredumpService::Filter(const std::string& socketName, const CoreDumpRequestData& requestData,
-    uint32_t uid)
-{
-    if (requestData.pid <= 0 || socketName != SERVER_SOCKET_NAME) {
-        DFXLOGE("%{public}s :: HandleCoreDumpRequest :: pid(%{public}d) or socketName(%{public}s) fail.",
-            FAULTLOGGERD_SERVICE_TAG, requestData.pid, socketName.c_str());
-        return ResponseCode::REQUEST_REJECT;
-    }
-    return ResponseCode::REQUEST_SUCCESS;
-}
-
-int32_t CancelCoredumpService::OnRequest(const std::string& socketName, int32_t connectionFd,
-    const CoreDumpRequestData& requestData)
-{
-    DFX_TRACE_SCOPED("CancelCoredumpServiceOnRequest");
-    DFXLOGI("Receive cancel coredump request for pid:%{public}d.", requestData.pid);
-    struct ucred creds;
-    if (!GetUcredByPeerCred(creds, connectionFd)) {
-        DFXLOGE("Cancel Core dump pid(%{public}d) request failed to get cred.", requestData.pid);
-        return ResponseCode::REQUEST_REJECT;
-    }
-    int32_t responseCode = Filter(socketName, requestData, creds.uid);
-    if (responseCode != ResponseCode::REQUEST_SUCCESS) {
-        return responseCode;
-    }
-
-    int32_t workerPid = -1;
-    auto it = g_processMap.find(requestData.pid);
-    if (it == g_processMap.end()) {
-        DFXLOGE("No need to cancel!");
-        int32_t res = ResponseCode::DEFAULT_ERROR_CODE;
-        SendMsgToSocket(connectionFd, &res, sizeof(res));
-        return res;
-    }
-
-    if (it->second.workerPid != -1) {
-        workerPid = it->second.workerPid;
-        DFXLOGI("workerpid get %{public}d %{public}d", workerPid, __LINE__);
-
-        int32_t res = SendCancelSignal(workerPid);
-        if (res != ResponseCode::REQUEST_SUCCESS) {
-            return res;
-        }
-        int32_t retCode = ResponseCode::CORE_DUMP_CANCEL;
-        std::string fileName = "Dumping has been canceled!";
-        HandleBPAndCleanup(requestData.pid, retCode, fileName);
-
-        if (g_processMap.empty()) {
-            DFXLOGE("clean pid success, %{public}s %{public}d", __func__, __LINE__);
-        } else {
-            for (const auto& pair : g_processMap) {
-                DFXLOGE("%{public}d is still dumping!", pair.first);
-            }
-        }
-    } else {
-        DFXLOGE("Can not get processdump pid!");
-        it->second.deleteFlag = true;
-    }
-
-    int32_t res = ResponseCode::REQUEST_SUCCESS;
-    SendMsgToSocket(connectionFd, &res, sizeof(res));
-
-    return res;
-}
-
 int32_t SdkDumpService::Filter(const std::string& socketName, const SdkDumpRequestData& requestData, uint32_t uid)
 {
     if (requestData.pid <= 0 || socketName != SERVER_SDKDUMP_SOCKET_NAME || !CheckCallerUID(uid)) {
@@ -568,55 +272,13 @@ int32_t SdkDumpService::Filter(const std::string& socketName, const SdkDumpReque
     return ResponseCode::REQUEST_SUCCESS;
 }
 
-int32_t SdkDumpService::SendSigDumpToHapWatchdog(pid_t pid, siginfo_t& si)
-{
-    long uid = 0;
-    uint64_t sigBlk = 0;
-    if (!GetUidAndSigBlk(pid, uid, sigBlk)) {
-        return ResponseCode::DEFAULT_ERROR_CODE;
-    };
-    constexpr long minUid = 10000; // 10000 : minimum uid for hap
-    if (uid < minUid || IsSigDumpMask(sigBlk)) {
-        return ResponseCode::DEFAULT_ERROR_CODE;
-    }
-
-    pid_t tid = GetTidByThreadName(pid, "OS_DfxWatchdog");
-    if (tid <= 0) {
-        return ResponseCode::DEFAULT_ERROR_CODE;
-    }
-#ifndef FAULTLOGGERD_TEST
-    if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_tgsigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
-        return ResponseCode::SDK_DUMP_NOPROC;
-    }
-#endif
-    return ResponseCode::REQUEST_SUCCESS;
-}
-
-int32_t SdkDumpService::SendSigDumpToProcess(pid_t pid, siginfo_t& si)
-{
-    auto ret = SendSigDumpToHapWatchdog(pid, si);
-    if (ret == ResponseCode::SDK_DUMP_NOPROC || ret == ResponseCode::REQUEST_SUCCESS) {
-        return ret;
-    }
-#ifndef FAULTLOGGERD_TEST
-    if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
-        return ResponseCode::SDK_DUMP_NOPROC;
-    }
-#endif
-    return ResponseCode::REQUEST_SUCCESS;
-}
-
 int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connectionFd,
     const SdkDumpRequestData& requestData)
 {
     DFX_TRACE_SCOPED("SdkDumpServiceOnRequest");
     DFXLOGI("Receive dump request for pid:%{public}d tid:%{public}d.", requestData.pid, requestData.tid);
     struct ucred creds;
-    if (!GetUcredByPeerCred(creds, connectionFd)) {
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
         return ResponseCode::REQUEST_REJECT;
     }
     int32_t responseCode = Filter(socketName, requestData, creds.uid);
@@ -672,7 +334,7 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
      */
     auto& faultLoggerPipe = FaultLoggerPipePair::CreateSdkDumpPipePair(requestData.pid, requestData.time);
 
-    if (auto ret = SendSigDumpToProcess(requestData.pid, si); ret != ResponseCode::REQUEST_SUCCESS) {
+    if (auto ret = FaultCommonUtil::SendSignalToProcess(requestData.pid, si); ret != ResponseCode::REQUEST_SUCCESS) {
         FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
         return ret;
     }
