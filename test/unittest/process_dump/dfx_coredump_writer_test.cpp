@@ -48,7 +48,6 @@ namespace {
  */
 HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest001, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest001: start.";
     constexpr size_t bufferSize = 4096;
     std::vector<char> buffer(bufferSize, 0);
@@ -80,7 +79,6 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest001, TestSize.Level2)
     ASSERT_TRUE(phNum > 0);
 
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest001: end.";
-#endif
 }
 
 /**
@@ -90,7 +88,6 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest001, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest002, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest002: start.";
 
     constexpr size_t kRegionSize = 64;
@@ -119,7 +116,6 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest002, TestSize.Level2)
     ASSERT_TRUE(static_cast<const void*>(currentPointer) != static_cast<const void*>(result));
 
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest002: end.";
-#endif
 }
 
 /**
@@ -129,7 +125,6 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest002, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest003, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest003: start.";
     constexpr size_t bufferSize = 4096;
     std::vector<char> buffer(bufferSize, 0);
@@ -141,7 +136,6 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest003, TestSize.Level2)
 
     ASSERT_TRUE(static_cast<const void*>(currentPointer) != static_cast<const void*>(result));
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest003: end.";
-#endif
 }
 
 /**
@@ -151,7 +145,6 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest003, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest004, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest004: start.";
     constexpr size_t bufferSize = 4096;
     std::vector<char> buffer(bufferSize, 0);
@@ -175,6 +168,5 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest004, TestSize.Level2)
 
     ASSERT_TRUE(static_cast<const void*>(currentPointer) != static_cast<const void*>(result));
     GTEST_LOG_(INFO) << "DfxCoreDumpWriterTest004: end.";
-#endif
 }
 }

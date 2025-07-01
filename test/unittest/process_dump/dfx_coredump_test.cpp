@@ -48,7 +48,6 @@ namespace {
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest001, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest001: start.";
     pid_t vmPid = 666; // 666
     auto pid = getpid();
@@ -60,7 +59,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest001, TestSize.Level2)
     ASSERT_EQ(coreDumpThread.targetTid, tid);
     ASSERT_EQ(coreDumpThread.vmPid, vmPid);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest001: end.";
-#endif
 }
 
 /**
@@ -70,7 +68,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest001, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest002, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest002: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -81,7 +78,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest002, TestSize.Level2)
     ret = coreDumpService.StartCoreDump();
     ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest002: end.";
-#endif
 }
 
 /**
@@ -91,7 +87,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest002, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest003, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest003: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -99,7 +94,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest003, TestSize.Level2)
     auto bundleName = coreDumpService.GetBundleNameItem();
     ASSERT_TRUE(bundleName.empty());
     GTEST_LOG_(INFO) << "DfxCoreDumpTest003: end.";
-#endif
 }
 
 /**
@@ -109,7 +103,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest003, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest004, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest004: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -117,7 +110,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest004, TestSize.Level2)
     auto fd = coreDumpService.CreateFileForCoreDump();
     ASSERT_EQ(fd, -1);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest004: end.";
-#endif
 }
 
 /**
@@ -127,7 +119,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest004, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest005, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest005: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -135,7 +126,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest005, TestSize.Level2)
     bool ret = coreDumpService.CreateFile();
     ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest005: end.";
-#endif
 }
 
 /**
@@ -145,7 +135,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest005, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest006, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest006: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -155,7 +144,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest006, TestSize.Level2)
     coreDumpService.ObtainDumpRegion(line, region);
     ASSERT_EQ(region.memorySizeHex, 0x1000);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest006: end.";
-#endif
 }
 
 /**
@@ -165,13 +153,11 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest006, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest007, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest007: start.";
     CoreDumpService coreDumpService = CoreDumpService(getpid(), gettid(), DfxRegs::Create());
     coreDumpService.isHwasanHap_ = true;
     ASSERT_FALSE(coreDumpService.IsDoCoredump());
     GTEST_LOG_(INFO) << "DfxCoreDumpTest007: end.";
-#endif
 }
 
 /**
@@ -181,13 +167,11 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest007, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest008, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest008: start.";
     CoreDumpService coreDumpService = CoreDumpService(0, 0, DfxRegs::Create());
     uint64_t coreFileSize = coreDumpService.GetCoreFileSize(0);
     ASSERT_EQ(coreFileSize, 0);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest008: end.";
-#endif
 }
 
 /**
@@ -197,7 +181,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest008, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest009, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest009: start.";
     CoreDumpService coreDumpService = CoreDumpService(0, 0, DfxRegs::Create());
     bool ret = coreDumpService.CreateFile();
@@ -206,7 +189,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest009, TestSize.Level2)
     ret = coreDumpService.CreateFile();
     ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest009: end.";
-#endif
 }
 
 /**
@@ -216,7 +198,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest009, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest010, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest010: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -231,7 +212,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest010, TestSize.Level2)
     ret = coreDumpService.MmapForFd();
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest010: end.";
-#endif
 }
 
 /**
@@ -241,7 +221,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest010, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest011, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest011: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -265,7 +244,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest011, TestSize.Level2)
     ret = coreDumpService.WriteSegmentHeader();
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest011: end.";
-#endif
 }
 
 /**
@@ -275,7 +253,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest011, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest012, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest012: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -304,7 +281,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest012, TestSize.Level2)
     ret = coreDumpService.WriteNoteSegment();
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest012: end.";
-#endif
 }
 
 /**
@@ -314,7 +290,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest012, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest013, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest013: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -349,7 +324,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest013, TestSize.Level2)
     ret = coreDumpService.WriteLoadSegment();
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest013: end.";
-#endif
 }
 
 /**
@@ -359,7 +333,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest013, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest014, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest014: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -372,7 +345,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest014, TestSize.Level2)
     ret = coreDumpService.WriteSectionHeader();
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest014: end.";
-#endif
 }
 
 /**
@@ -382,7 +354,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest014, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest015, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest015: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -393,7 +364,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest015, TestSize.Level2)
     ret = coreDumpService.FinishCoreDump();
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest015: end.";
-#endif
 }
 
 /**
@@ -403,7 +373,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest015, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest016, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest016: start.";
     pid_t forkPid = fork();
     if (forkPid < 0) {
@@ -418,9 +387,9 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest016, TestSize.Level2)
         coreDumpService.StartSecondStageDump(pid, request);
     }
     int status;
-    waitpid(forkPid, &status, 0);
+    bool isSuccess = waitpid(forkPid, &status, 0) != -1;
+    ASSERT_TRUE(isSuccess);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest016: end.";
-#endif
 }
 
 /**
@@ -430,7 +399,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest016, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest017, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest017: start.";
     ProcessDumpRequest request;
     bool ret = CoreDumpService::IsCoredumpSignal(request);
@@ -453,7 +421,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest017, TestSize.Level2)
     ret = CoreDumpService::IsHwasanCoredumpEnabled();
     ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest017: end.";
-#endif
 }
 
 /**
@@ -463,7 +430,6 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest017, TestSize.Level2)
  */
 HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest018, TestSize.Level2)
 {
-#if defined(__aarch64__)
     GTEST_LOG_(INFO) << "DfxCoreDumpTest018: start.";
     auto pid = getpid();
     auto tid = gettid();
@@ -474,6 +440,5 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest018, TestSize.Level2)
     ret = coreDumpService.VerifyTrustlist();
     ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest018: end.";
-#endif
 }
 }
