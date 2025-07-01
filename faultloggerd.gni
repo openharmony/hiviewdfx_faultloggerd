@@ -22,6 +22,7 @@ declare_args() {
   has_libunwindstack = false
   processdump_minidebuginfo_enable = true
   faultloggerd_hisysevent_enable = false
+  faultloggerd_liteperf_enable = false
   processdump_parse_lock_owner_enable = true
   faultloggerd_enable_build_targets = true
   if (defined(global_parts_info)) {

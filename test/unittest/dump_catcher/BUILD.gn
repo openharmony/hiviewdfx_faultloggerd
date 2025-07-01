@@ -105,8 +105,37 @@ if (defined(ohos_lite)) {
     ]
   }
 
+  ohos_unittest("test_liteperf") {
+    module_out_path = module_output_path
+
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher/include",
+      "$faultloggerd_path/test/utils",
+    ]
+
+    sources = [ "lite_perf_test.cpp" ]
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_path/test/utils:dfx_test_util",
+    ]
+    external_deps = [
+      "c_utils:utils",
+      "googletest:gtest_main",
+      "hilog:libhilog",
+    ]
+  }
+
   group("unittest") {
     testonly = true
-    deps = [ ":test_dumpcatcher" ]
+    deps = [
+      ":test_dumpcatcher",
+      ":test_liteperf",
+    ]
   }
 }

@@ -70,6 +70,7 @@ int FaultLoggerPipe::GetWriteFd()
 }
 
 std::list<FaultLoggerPipePair> FaultLoggerPipePair::sdkDumpPipes_{};
+std::list<LitePerfPipePair> LitePerfPipePair::pipes_{};
 
 FaultLoggerPipePair::FaultLoggerPipePair(int32_t pid, uint64_t requestTime) : pid_(pid), requestTime_(requestTime) {}
 
@@ -128,6 +129,54 @@ void FaultLoggerPipePair::DelSdkDumpPipePair(int pid)
 {
     sdkDumpPipes_.remove_if([pid](const FaultLoggerPipePair& faultLoggerPipePair) {
         return faultLoggerPipePair.pid_ == pid;
+    });
+}
+
+LitePerfPipePair::LitePerfPipePair(int32_t uid) : uid_(uid) {}
+
+int32_t LitePerfPipePair::GetPipeFd(PipeFdUsage usage, FaultLoggerPipeType pipeType)
+{
+    FaultLoggerPipe& targetPipe = (usage == PipeFdUsage::BUFFER_FD) ? faultLoggerPipeBuf_ : faultLoggerPipeRes_;
+    if (pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
+        return targetPipe.GetReadFd();
+    }
+    if (pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
+        return targetPipe.GetWriteFd();
+    }
+    return -1;
+}
+
+LitePerfPipePair& LitePerfPipePair::CreatePipePair(int uid)
+{
+    auto pipePair = GetPipePair(uid);
+    if (pipePair != nullptr) {
+        return *pipePair;
+    }
+    return pipes_.emplace_back(uid);
+}
+
+bool LitePerfPipePair::CheckDumpRecord(int uid)
+{
+    auto iter = std::find_if(pipes_.begin(), pipes_.end(),
+        [uid](const LitePerfPipePair& pipePair) {
+            return pipePair.uid_ == uid;
+        });
+    return iter != pipes_.end();
+}
+
+LitePerfPipePair* LitePerfPipePair::GetPipePair(int uid)
+{
+    auto iter = std::find_if(pipes_.begin(), pipes_.end(),
+        [uid](const LitePerfPipePair& pipePair) {
+            return pipePair.uid_ == uid;
+        });
+    return iter == pipes_.end() ? nullptr : &(*iter);
+}
+
+void LitePerfPipePair::DelPipePair(int uid)
+{
+    pipes_.remove_if([uid](const LitePerfPipePair& pipePair) {
+        return pipePair.uid_ == uid;
     });
 }
 } // namespace HiviewDfx

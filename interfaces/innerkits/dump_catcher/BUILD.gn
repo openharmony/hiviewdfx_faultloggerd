@@ -70,6 +70,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/build:coverage_flags",
     ]
     sources = dumpcatcher_sources
+    sources += [ "lite_perf.cpp" ]
     cflags = [ "-fstack-protector-strong" ]
     include_dirs = [ "$faultloggerd_interfaces_path/common" ]
     version_script = "libdfx_dumpcatcher.map"

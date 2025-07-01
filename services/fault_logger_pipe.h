@@ -51,6 +51,7 @@ public:
     FaultLoggerPipePair(int32_t pid, uint64_t requestTime);
     FaultLoggerPipePair(FaultLoggerPipePair&&) noexcept = default;
     FaultLoggerPipePair& operator=(FaultLoggerPipePair&&) noexcept = default;
+
     static FaultLoggerPipePair& CreateSdkDumpPipePair(int pid, uint64_t requestTime);
     static bool CheckSdkDumpRecord(int pid, uint64_t checkTime);
     static FaultLoggerPipePair* GetSdkDumpPipePair(int pid);
@@ -64,6 +65,26 @@ private:
     FaultLoggerPipe faultLoggerPipeBuf_;
     FaultLoggerPipe faultLoggerPipeRes_;
     static std::list<FaultLoggerPipePair> sdkDumpPipes_;
+};
+
+class LitePerfPipePair {
+public:
+    int32_t GetPipeFd(PipeFdUsage usage, FaultLoggerPipeType pipeType);
+    explicit LitePerfPipePair(int32_t uid);
+    LitePerfPipePair(LitePerfPipePair&&) noexcept = default;
+    LitePerfPipePair& operator=(LitePerfPipePair&&) noexcept = default;
+
+    static LitePerfPipePair& CreatePipePair(int uid);
+    static bool CheckDumpRecord(int uid);
+    static LitePerfPipePair* GetPipePair(int uid);
+    static void DelPipePair(int uid);
+private:
+    LitePerfPipePair(const LitePerfPipePair&) = delete;
+    LitePerfPipePair& operator=(const LitePerfPipePair&) = delete;
+    int32_t uid_;
+    FaultLoggerPipe faultLoggerPipeBuf_;
+    FaultLoggerPipe faultLoggerPipeRes_;
+    static std::list<LitePerfPipePair> pipes_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

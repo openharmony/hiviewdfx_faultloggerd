@@ -119,6 +119,15 @@ private:
     static int32_t SendSigDumpToHapWatchdog(pid_t pid, siginfo_t& si);
 };
 
+class LitePerfPipeService : public FaultLoggerService<PipFdRequestData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const PipFdRequestData& requestData) override;
+private:
+    static bool Filter(const std::string& socketName, int32_t connectionFd,
+        const PipFdRequestData& requestData, int& uid);
+};
+
 class PipeService : public FaultLoggerService<PipFdRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,

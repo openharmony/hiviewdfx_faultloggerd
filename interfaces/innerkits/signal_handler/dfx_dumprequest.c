@@ -260,11 +260,7 @@ static int DFX_ExecDump(void)
         return INHERIT_CAP_FAIL;
     }
     DFXLOGI("execl processdump.");
-#ifdef DFX_LOG_HILOG_BASE
-    execl("/system/bin/processdump", "processdump", "-signalhandler", NULL);
-#else
-    execl("/bin/processdump", "processdump", "-signalhandler", NULL);
-#endif
+    execl(PROCESSDUMP_PATH, "processdump", "-signalhandler", NULL);
     DFXLOGE("Failed to execl processdump, errno(%{public}d)", errno);
     FillCrashExceptionAndReport(CRASH_SIGNAL_EEXECL);
     return errno;

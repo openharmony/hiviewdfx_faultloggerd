@@ -56,6 +56,22 @@ int32_t RequestDelPipeFd(int32_t pid);
 int32_t RequestFileDescriptorEx(struct FaultLoggerdRequest* request);
 
 /**
+ * @brief request lipeperf pipe file descriptor
+ * @param pipeType type of request about pipe
+ * @param pipeFd pipeFd[0] to transfer call stack message and
+ *               pipeFd[1] to transfer backtrace result
+ * @return if succeed return 0, otherwise return -1
+*/
+int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2]);
+
+/**
+ * @brief request delete lite perf file descriptor
+ * @param pid process id of request pipe
+ * @return if succeed return 0, otherwise return the error code
+*/
+int32_t RequestLitePerfDelPipeFd();
+
+/**
  * @brief request dump stack about process
  * @param pid process id
  * @param tid thread id, if equal 0 means dump all the threads in a process.

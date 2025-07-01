@@ -21,6 +21,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "lite_perf_dumper.h"
 #include "process_dumper.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
@@ -36,7 +37,7 @@ static void PrintCommandHelp()
     printf("%s\nplease use dumpcatcher\n", DUMP_STACK_TAG_USAGE.c_str());
 }
 
-static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
+static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &isLitePerf)
 {
     if (argc <= DUMP_ARG_ONE) {
         return false;
@@ -45,6 +46,9 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr)
 
     if (!strcmp("-signalhandler", argv[DUMP_ARG_ONE])) {
         isSignalHdlr = true;
+        return true;
+    } else if (!strcmp("-liteperf", argv[DUMP_ARG_ONE])) {
+        isLitePerf = true;
         return true;
     }
     return false;
@@ -61,17 +65,22 @@ int main(int argc, char *argv[])
     }
 
     bool isSignalHdlr = false;
+    bool isLitePerf = false;
 
-    alarm(PROCESSDUMP_TIMEOUT);
     setsid();
 
-    if (!ParseParameters(argc, argv, isSignalHdlr)) {
+    if (!ParseParameters(argc, argv, isSignalHdlr, isLitePerf)) {
         PrintCommandHelp();
         return 0;
     }
 
     if (isSignalHdlr) {
+        alarm(PROCESSDUMP_TIMEOUT);
         OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
+    } else if (isLitePerf) {
+#ifdef DFX_ENABLE_LPERF
+        OHOS::HiviewDFX::LitePerfDumper::GetInstance().Perf();
+#endif
     }
 #ifndef CLANG_COVERAGE
     _exit(0);

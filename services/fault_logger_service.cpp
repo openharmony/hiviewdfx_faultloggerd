@@ -732,6 +732,71 @@ int32_t PipeService::OnRequest(const std::string& socketName, int32_t connection
     SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
     return responseData;
 }
+
+bool LitePerfPipeService::Filter(const std::string &socketName, int32_t connectionFd,
+    const PipFdRequestData &requestData, int& uid)
+{
+    if (requestData.pipeType > FaultLoggerPipeType::PIPE_FD_DELETE ||
+        requestData.pipeType < FaultLoggerPipeType::PIPE_FD_READ) {
+        return false;
+    }
+
+    struct ucred creds{};
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return false;
+    }
+    if (creds.pid != requestData.pid) {
+        DFXLOGW("Failed to check request credential request:%{public}d, cred:%{public}d, fd:%{public}d",
+            requestData.pid, creds.pid, connectionFd);
+        return false;
+    }
+    uid = creds.uid;
+    return true;
+}
+
+int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const PipFdRequestData& requestData)
+{
+    DFX_TRACE_SCOPED("LitePerfPipeServiceOnRequest");
+    int uid;
+    if (!Filter(socketName, connectionFd, requestData, uid)) {
+        return ResponseCode::REQUEST_REJECT;
+    }
+    int32_t responseData = ResponseCode::REQUEST_SUCCESS;
+    if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_DELETE) {
+        LitePerfPipePair::DelPipePair(uid);
+        SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+        return responseData;
+    }
+
+    int32_t fds[PIPE_NUM_SZ] = {0};
+    if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
+        if (LitePerfPipePair::CheckDumpRecord(uid)) {
+            DFXLOGE("%{public}s :: uid(%{public}d) is dumping.", FAULTLOGGERD_SERVICE_TAG, uid);
+            return ResponseCode::SDK_DUMP_REPEAT;
+        }
+        auto& pipePair = LitePerfPipePair::CreatePipePair(uid);
+        fds[PIPE_BUF_INDEX] = pipePair.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ);
+        fds[PIPE_RES_INDEX] = pipePair.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ);
+    } else if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
+        LitePerfPipePair* pipePair = LitePerfPipePair::GetPipePair(uid);
+        if (pipePair == nullptr) {
+            DFXLOGE("%{public}s :: cannot find pipe fd for pid(%{public}d).",
+                FAULTLOGGERD_SERVICE_TAG, requestData.pid);
+            return ResponseCode::ABNORMAL_SERVICE;
+        }
+        fds[PIPE_BUF_INDEX] = pipePair->GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_WRITE);
+        fds[PIPE_RES_INDEX] = pipePair->GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_WRITE);
+    }
+    if (fds[PIPE_BUF_INDEX] < 0 || fds[PIPE_RES_INDEX] < 0) {
+        DFXLOGE("%{public}s :: failed to get fds for pipeType(%{public}d).", FAULTLOGGERD_SERVICE_TAG,
+            requestData.pipeType);
+        return ResponseCode::ABNORMAL_SERVICE;
+    }
+    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+    SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
+    return responseData;
+}
 #endif
 }
 }

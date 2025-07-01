@@ -337,6 +337,89 @@ HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest03, TestSize.Level2)
     int32_t retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
     ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
 }
+
+/**
+ * @tc.name: LitePerfPipeFdClientTest01
+ * @tc.desc: request a pip fd.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest01, TestSize.Level2)
+{
+    PipFdRequestData requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
+
+    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_READ;
+    requestData.pid = requestData.head.clientPid;
+    int32_t readFds[FD_PAIR_NUM] = {-1, -1};
+    RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData), readFds, FD_PAIR_NUM);
+    SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+
+    SmartFd buffReadFd{readFds[0]};
+    SmartFd resReadFd{readFds[FD_PAIR_NUM - 1]};
+    ASSERT_GE(buffReadFd.GetFd(), 0);
+    ASSERT_GE(resReadFd.GetFd(), 0);
+
+    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_WRITE;
+    int32_t writeFds[FD_PAIR_NUM] = {-1, -1};
+    RequestFileDescriptorFromServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData), writeFds, FD_PAIR_NUM);
+    int retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::ABNORMAL_SERVICE);
+
+    SmartFd buffWriteFd{writeFds[0]};
+    SmartFd resWriteFd{writeFds[FD_PAIR_NUM - 1]};
+    ASSERT_GE(buffWriteFd.GetFd(), 0);
+    ASSERT_GE(resWriteFd.GetFd(), 0);
+
+    int sendMsg = 10;
+    int recvMsg = 0;
+    ASSERT_TRUE(SendMsgToSocket(buffWriteFd.GetFd(), &sendMsg, sizeof (sendMsg)));
+    ASSERT_TRUE(GetMsgFromSocket(buffReadFd.GetFd(), &recvMsg, sizeof (recvMsg)));
+    ASSERT_EQ(sendMsg, recvMsg);
+
+    ASSERT_TRUE(SendMsgToSocket(resWriteFd.GetFd(), &sendMsg, sizeof (sendMsg)));
+    ASSERT_TRUE(GetMsgFromSocket(resReadFd.GetFd(), &recvMsg, sizeof (recvMsg)));
+    ASSERT_EQ(sendMsg, recvMsg);
+    RequestLitePerfDelPipeFd();
+}
+
+/**
+ * @tc.name: LitePerfPipeFdClientTest02
+ * @tc.desc: request a pip fd with invalid request data.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest02, TestSize.Level2)
+{
+    PipFdRequestData requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
+
+    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_READ;
+    requestData.pid = requestData.head.clientPid;
+    SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+
+    requestData.pipeType = -1;
+    int32_t retCode = SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
+
+    requestData.pipeType = 3;
+    retCode = SendRequestToServer(SERVER_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_REJECT);
+}
+
+/**
+ * @tc.name: LitePerfPipeFdClientTest03
+ * @tc.desc: request to delete a pip fd.
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest03, TestSize.Level2)
+{
+    PipFdRequestData requestData;
+    FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
+    requestData.pid = requestData.head.clientPid;
+
+    requestData.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
+    int32_t retCode = SendRequestToServer(SERVER_CRASH_SOCKET_NAME, &requestData, sizeof(requestData));
+    ASSERT_EQ(retCode, ResponseCode::REQUEST_SUCCESS);
+}
 #endif
 
 #ifndef HISYSEVENT_DISABLE
