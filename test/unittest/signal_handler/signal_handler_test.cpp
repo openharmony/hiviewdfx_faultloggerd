@@ -62,11 +62,10 @@ void SignalHandlerTest::SetUp()
 void SignalHandlerTest::TearDown()
 {}
 
-extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func) __attribute__((weak));
-extern "C" __attribute__((weak)) void DFX_InstallSignalHandler(void) {}
-extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
-extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len) __attribute__((weak));
-extern "C" int DFX_SetCrashLogConfig(uint8_t type, uint32_t value) __attribute__((weak));
+extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func);
+extern "C" void SetAsyncStackCallbackFunc(void* func);
+extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len);
+extern "C" int DFX_SetCrashLogConfig(uint8_t type, uint32_t value);
 static bool CheckCallbackCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -157,9 +156,7 @@ int TestThread(int threadId, int sig)
 {
     std::string subThreadName = "SubTestThread" + to_string(threadId);
     prctl(PR_SET_NAME, subThreadName.c_str());
-    if (SetThreadInfoCallback != nullptr) {
-        SetThreadInfoCallback(ThreadInfo);
-    }
+    SetThreadInfoCallback(ThreadInfo);
     int cashThreadId = 2;
     if (threadId == cashThreadId) {
         GTEST_LOG_(INFO) << subThreadName << " is ready to raise signo(" << sig <<")";
@@ -212,9 +209,6 @@ static bool SendSigTestDebugSignal(int siCode)
     }
 
     if (pid == 0) {
-        if (DFX_InstallSignalHandler != nullptr) {
-            DFX_InstallSignalHandler();
-        }
         SaveDebugMessage(siCode, 0, "test123");
         sleep(5); // 5: wait for stacktrace generating
         _exit(0);
@@ -258,9 +252,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest001, TestSize.Level0)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        if (SetThreadInfoCallback != nullptr) {
-            SetThreadInfoCallback(ThreadInfo);
-        }
+        SetThreadInfoCallback(ThreadInfo);
         sleep(1);
     } else {
         usleep(10000); // 10000 : sleep 10ms
@@ -285,9 +277,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest002, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        if (SetThreadInfoCallback != nullptr) {
-            SetThreadInfoCallback(ThreadInfo);
-        }
+        SetThreadInfoCallback(ThreadInfo);
         sleep(1);
     } else {
         usleep(10000); // 10000 : sleep 10ms
@@ -312,9 +302,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest003, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        if (SetThreadInfoCallback != nullptr) {
-            SetThreadInfoCallback(ThreadInfo);
-        }
+        SetThreadInfoCallback(ThreadInfo);
         sleep(1);
     } else {
         usleep(10000); // 10000 : sleep 10ms
@@ -413,9 +401,6 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest007, TestSize.Level2)
         if (pid < 0) {
             GTEST_LOG_(ERROR) << "Failed to fork new test process.";
         } else if (pid == 0) {
-            if (DFX_InstallSignalHandler != nullptr) {
-                DFX_InstallSignalHandler();
-            }
             sleep(1);
         } else {
             usleep(10000); // 10000 : sleep 10ms
@@ -434,9 +419,8 @@ int TestThread2(int threadId, int sig, int total, bool exitEarly)
 {
     std::string subThreadName = "SubTestThread" + to_string(threadId);
     prctl(PR_SET_NAME, subThreadName.c_str());
-    if (SetThreadInfoCallback != nullptr) {
-        SetThreadInfoCallback(ThreadInfo);
-    }
+    SetThreadInfoCallback(ThreadInfo);
+
     if (threadId == total - 1) {
         GTEST_LOG_(INFO) << subThreadName << " is ready to raise signo(" << sig <<")";
         raise(sig);
@@ -445,9 +429,8 @@ int TestThread2(int threadId, int sig, int total, bool exitEarly)
     if (!exitEarly) {
         sleep(total - threadId);
     }
-    if (SetThreadInfoCallback != nullptr) {
-        SetThreadInfoCallback(ThreadInfo);
-    }
+    SetThreadInfoCallback(ThreadInfo);
+
     return 0;
 }
 
@@ -525,9 +508,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest010, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        if (SetThreadInfoCallback != nullptr) {
-            SetThreadInfoCallback(ThreadInfo);
-        }
+        SetThreadInfoCallback(ThreadInfo);
         int32_t freeAddr = 0x111;
         // trigger crash
         free(reinterpret_cast<void*>(freeAddr));
@@ -554,9 +535,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest011, TestSize.Level2)
     } else if (pid == 0) {
         int32_t initAllocSz = 10;
         int32_t reallocSz = 20;
-        if (SetThreadInfoCallback != nullptr) {
-            SetThreadInfoCallback(ThreadInfo);
-        }
+        SetThreadInfoCallback(ThreadInfo);
         // alloc a buffer
         int8_t* addr = reinterpret_cast<int8_t*>(malloc(initAllocSz));
         // overwrite the control block
@@ -637,7 +616,7 @@ void TestCallbackFunc()
  */
 HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 {
-    bool isSuccess = DFX_SetAppRunningUniqueId != nullptr;
+    bool isSuccess = true;
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
     } else {
@@ -702,9 +681,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 HWTEST_F(SignalHandlerTest, SignalHandlerTest016, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "SignalHandlerTest016: start.";
-    if (SetAsyncStackCallbackFunc != nullptr) {
-        SetAsyncStackCallbackFunc(reinterpret_cast<void*>(TestCallbackFunc));
-    }
+    SetAsyncStackCallbackFunc(reinterpret_cast<void*>(TestCallbackFunc));
 
     struct CrashDumpException exception;
     exception.pid = 1;
@@ -786,7 +763,6 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest020, TestSize.Level2)
             if (pid < 0) {
                 GTEST_LOG_(ERROR) << "Failed to fork new test process.";
             } else if (pid == 0) {
-                DFX_InstallSignalHandler();
                 constexpr int diffMs = -10000; // 10s
                 SaveDebugMessage(siCode, diffMs, "test123");
                 sleep(5); // 5: wait for stacktrace generating
@@ -815,9 +791,6 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest021, TestSize.Level2)
         if (pid < 0) {
             GTEST_LOG_(ERROR) << "Failed to fork new test process.";
         } else if (pid == 0) {
-            if (DFX_InstallSignalHandler != nullptr) {
-                DFX_InstallSignalHandler();
-            }
             TestFdsan();
             sleep(5); // 5: wait for stacktrace generating
             _exit(0);
@@ -846,9 +819,6 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
         if (pid < 0) {
             GTEST_LOG_(ERROR) << "Failed to fork new test process.";
         } else if (pid == 0) {
-            if (DFX_InstallSignalHandler != nullptr) {
-                DFX_InstallSignalHandler();
-            }
             SaveDebugMessage(SIGLEAK_STACK_BADFD, 0, nullptr);
             sleep(5); // 5: wait for stacktrace generating
             _exit(0);
@@ -873,10 +843,6 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest023, TestSize.Level2)
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
     } else {
-        if (DFX_InstallSignalHandler != nullptr) {
-            DFX_InstallSignalHandler();
-        }
-    
         constexpr int maxCnt = 3; // Run the test 3 times
         std::thread testBadfdThread(TestBadfdThread, maxCnt);
         for (int i = 0; i < maxCnt; i++) {
@@ -977,10 +943,6 @@ HWTEST_F(SignalHandlerTest, FdTableTest001, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, SetCrashLogConfig001, TestSize.Level2)
 {
-    if (DFX_SetCrashLogConfig == nullptr) {
-        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
-        return;
-    }
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new process.";
@@ -1013,10 +975,6 @@ HWTEST_F(SignalHandlerTest, SetCrashLogConfig001, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, SetCrashLogConfig002, TestSize.Level2)
 {
-    if (DFX_SetCrashLogConfig == nullptr) {
-        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
-        return;
-    }
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new process.";
@@ -1053,10 +1011,6 @@ HWTEST_F(SignalHandlerTest, SetCrashLogConfig002, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, SetCrashLogConfig003, TestSize.Level2)
 {
-    if (DFX_SetCrashLogConfig == nullptr) {
-        GTEST_LOG_(ERROR) << "Failed to set crash log config.";
-        return;
-    }
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new process.";

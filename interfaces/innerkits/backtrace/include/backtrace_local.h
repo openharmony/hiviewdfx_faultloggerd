@@ -20,10 +20,9 @@
 #include <string>
 #include <vector>
 
-#include "dfx_define.h"
-
 namespace OHOS {
 namespace HiviewDFX {
+static const int DEFAULT_MAX_FRAME_NUM = 256;
 /**
  * @brief Get a thread of backtrace string  by specify tid
  *

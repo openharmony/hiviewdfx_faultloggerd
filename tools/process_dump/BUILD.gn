@@ -14,8 +14,8 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 processdump_sources = [
-  "coredump/dfx_coredump_writer.cpp",
   "coredump/dfx_coredump_service.cpp",
+  "coredump/dfx_coredump_writer.cpp",
   "dfx_buffer_writer.cpp",
   "dfx_process.cpp",
   "dfx_thread.cpp",

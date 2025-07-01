@@ -46,16 +46,9 @@
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_signalhandler_exception.h"
-#ifndef DFX_SIGNAL_LIBC
 #include <securec.h>
 #include "dfx_log.h"
-#else
-#include "musl_log.h"
-#endif
-#ifdef is_ohos_lite
 #include "dfx_dumprequest.h"
-#endif
-
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -88,12 +81,10 @@
 #define NUMBER_SIXTYFOUR 64
 #define INHERITABLE_OFFSET 32
 
-#ifndef __MUSL__
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
 }
-#endif
 
 static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
@@ -101,8 +92,6 @@ static pthread_key_t g_crashObjKey;
 static uint64_t g_crashLogConfig = 0;
 static bool g_crashObjInit = false;
 static BOOL g_hasInit = FALSE;
-static const int SIGNALHANDLER_TIMEOUT = 10000; // 10000 us
-static const int ALARM_TIME_S = 10;
 static int g_prevHandledSignal = SIGDUMP;
 static struct sigaction g_oldSigactionList[NSIG] = {};
 static char g_appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
@@ -223,18 +212,6 @@ static bool FillDebugMessageLocked(int32_t signo, siginfo_t *si)
     return true;
 }
 
-static void FillCrashExceptionAndReport(const int err)
-{
-    struct CrashDumpException exception;
-    memset(&exception, 0, sizeof(struct CrashDumpException));
-    exception.pid = g_request.pid;
-    exception.uid = (int32_t)(g_request.uid);
-    exception.error = err;
-    exception.time = (int64_t)(GetTimeMilliseconds());
-    (void)strncpy(exception.message, GetCrashDescription(err), sizeof(exception.message) - 1);
-    ReportException(&exception);
-}
-
 static bool IsDumpSignal(int signo)
 {
     return signo == SIGDUMP || signo == SIGLEAK_STACK;
@@ -317,20 +294,6 @@ static const int SIGCHAIN_CRASH_SIGNAL_LIST[] = {
     SIGSEGV, SIGSTKFLT, SIGSYS, SIGTRAP
 };
 
-static bool IsMainThread(void)
-{
-    if (syscall(SYS_getpid) == 1) {
-        if (syscall(SYS_gettid) == 1) {
-            return true;
-        }
-    } else {
-        if (syscall(SYS_getpid) == syscall(SYS_gettid)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 static void ResetAndRethrowSignalIfNeed(int signo, siginfo_t *si)
 {
     if (IsDumpSignal(signo)) {
@@ -351,16 +314,8 @@ static void ResetAndRethrowSignalIfNeed(int signo, siginfo_t *si)
     }
 }
 
-#ifndef is_ohos_lite
-void DfxDumpRequest(int signo, struct ProcessDumpRequest *request) __attribute__((weak));
-#endif
 static void DumpRequest(int signo)
 {
-    if (DfxDumpRequest == NULL) {
-        DFXLOGE("DumpRequest fail, the DfxDumpRequest is NULL");
-        FillCrashExceptionAndReport(CRASH_SIGNAL_EDUMPREQUEST);
-        return;
-    }
     DfxDumpRequest(signo, &g_request);
 }
 
