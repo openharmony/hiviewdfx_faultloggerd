@@ -72,7 +72,7 @@ private:
     bool isJsonDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
 #if defined(__aarch64__)
-    std::shared_ptr<CoreDumpService> coreDumpService_ = nullptr;
+    std::unique_ptr<CoreDumpService> coreDumpService_ = nullptr;
 #endif
 };
 } // namespace HiviewDFX

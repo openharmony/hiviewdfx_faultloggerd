@@ -381,10 +381,11 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest016, TestSize.Level2)
         GTEST_LOG_(INFO) << "fork success";
         auto pid = getpid();
         auto tid = gettid();
-        CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
-        coreDumpService.StartFirstStageDump();
         ProcessDumpRequest request;
+        CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+        coreDumpService.StartFirstStageDump(request);
         coreDumpService.StartSecondStageDump(pid, request);
+        exit(0);
     }
     int status;
     bool isSuccess = waitpid(forkPid, &status, 0) != -1;
@@ -440,5 +441,44 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest018, TestSize.Level2)
     ret = coreDumpService.VerifyTrustlist();
     ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest018: end.";
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest019
+ * @tc.desc: test coredump IsCoredumpAllowed function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest019, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest019: start.";
+    ProcessDumpRequest request;
+    bool ret = CoreDumpService::IsCoredumpAllowed(request);
+    ASSERT_TRUE(!ret);
+
+    request.siginfo.si_signo = 42;
+    request.siginfo.si_code = 3;
+    ret = CoreDumpService::IsCoredumpAllowed(request);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest019: end.";
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest020
+ * @tc.desc: test coredump GetKeyThreadData function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest020, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest020: start.";
+    ProcessDumpRequest request;
+    auto pid = getpid();
+    auto tid = gettid();
+    CoreDumpService coreDumpService = CoreDumpService(pid, tid, DfxRegs::Create());
+    bool ret = coreDumpService.GetKeyThreadData(request);
+    ASSERT_TRUE(!ret);
+    request.tid = tid;
+    ret = coreDumpService.GetKeyThreadData(request);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest020: end.";
 }
 }
