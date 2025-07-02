@@ -47,6 +47,8 @@ void DFX_InstallSignalHandler(void);
 typedef uint64_t(*GetStackIdFunc)(void);
 void SetAsyncStackCallbackFunc(void* func);
 
+const char* DFX_GetAppRunningUniqueId(void);
+
 int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len);
 
 enum CrashObjType : uint8_t {

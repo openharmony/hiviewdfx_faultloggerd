@@ -3,6 +3,7 @@
     extern "C" {
         SetThreadInfoCallback;
         SetAsyncStackCallbackFunc;
+        DFX_GetAppRunningUniqueId;
         DFX_SetAppRunningUniqueId;
         DFX_SetCrashObj;
         DFX_ResetCrashObj;

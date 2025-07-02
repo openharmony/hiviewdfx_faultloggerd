@@ -52,6 +52,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_frameworks_path/allocator:dfx_allocator_src",
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/test/utils:dfx_test_util",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
     ]
 
     external_deps = [
