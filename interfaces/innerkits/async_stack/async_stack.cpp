@@ -29,7 +29,7 @@ using namespace OHOS::HiviewDFX;
 #if defined(__aarch64__)
 static pthread_key_t g_stackidKey;
 static bool g_init = false;
-OHOS::HiviewDFX::FpBacktrace* fpBacktrace = nullptr;
+static OHOS::HiviewDFX::FpBacktrace* g_fpBacktrace = nullptr;
 
 extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 static void InitAsyncStackInner(void)
@@ -54,7 +54,7 @@ static void InitAsyncStackInner(void)
 
     // set callback for DfxSignalHandler to read stackId
     SetAsyncStackCallbackFunc((void*)(&GetStackId));
-    fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
+    g_fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
 }
 
 static bool InitAsyncStack(void)
@@ -73,10 +73,10 @@ extern "C" uint64_t CollectAsyncStack(void)
     }
     const uint32_t maxSize = 16;
     void* pcArray[maxSize] = {0};
-    if (fpBacktrace == nullptr) {
+    if (g_fpBacktrace == nullptr) {
         return 0;
     }
-    size_t size = fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, maxSize);
+    size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, maxSize);
     uint64_t stackId = 0;
     auto stackIdPtr = reinterpret_cast<OHOS::HiviewDFX::StackId*>(&stackId);
     uintptr_t* pcs = reinterpret_cast<uintptr_t*>(pcArray);
@@ -129,7 +129,7 @@ extern "C" int DfxGetSubmitterStackLocal(char* stackTraceBuf, size_t bufferSize)
     for (const auto& frame : submitterFrames) {
         stackTrace += DfxFrameFormatter::GetFrameStr(frame);
     }
-    auto result = strncpy_s(stackTraceBuf, bufferSize - 1, stackTrace.c_str(), stackTrace.size());
+    auto result = strncpy_s(stackTraceBuf, bufferSize, stackTrace.c_str(), stackTrace.size());
     if (result != EOK) {
         DFXLOGE("strncpy failed, err = %{public}d.", result);
         return -1;
