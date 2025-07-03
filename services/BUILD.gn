@@ -20,6 +20,8 @@ faultloggerd_sources = [
   "fault_logger_server.cpp",
   "fault_logger_service.cpp",
   "temp_file_manager.cpp",
+  "fault_coredump_service.cpp",
+  "fault_common_util.cpp"
 ]
 
 if (defined(ohos_lite)) {

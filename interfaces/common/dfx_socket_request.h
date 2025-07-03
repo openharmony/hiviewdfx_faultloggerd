@@ -72,9 +72,7 @@ typedef enum FaultLoggerClientType : int8_t {
     /** For report dump stats */
     DUMP_STATS_CLIENT,
     /** For request to coredump */
-    DO_COREDUMP_CLIENT,
-    /** For request to cancel coredump */
-    CANCEL_COREDUMP_CLIENT,
+    COREDUMP_CLIENT,
     /** For request to report coredump status */
     COREDUMP_PROCESS_DUMP_CLIENT,
 } FaultLoggerClientType;
@@ -93,7 +91,20 @@ typedef struct CoreDumpRequestData {
     int32_t pid;
     /** endtime ms */
     uint64_t endTime;
+    /** do or cancel coredump */
+    int32_t coredumpAction;
 } __attribute__((packed)) CoreDumpRequestData;
+
+/**
+ * @brief  type of coredump Action
+ *
+*/
+typedef enum CoreDumpAction : int32_t {
+    /** do coredump */
+    DO_CORE_DUMP,
+    /** cancel coredump */
+    CANCEL_CORE_DUMP,
+} CoreDumpAction;
 
 /**
  * @brief  type of coredump Status
@@ -124,12 +135,12 @@ typedef struct CoreDumpStatusData {
     int32_t retCode;
 } __attribute__((packed)) CoreDumpStatusData;
 
-typedef struct SocketReceiveData {
+typedef struct CoreDumpResult {
     /** coredump file name **/
     char fileName[256];
     /** coredump result */
     int32_t retCode;
-} __attribute__((packed)) SocketReceiveData;
+} __attribute__((packed)) CoreDumpResult;
 
 typedef struct SdkDumpRequestData {
     /** request data head **/

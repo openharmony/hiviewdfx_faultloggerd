@@ -84,10 +84,10 @@ int32_t CancelCoredump(int32_t targetPid);
 /**
  * @brief start coredump request
  * @param targetPid target id
- * @param workerPid processdump id
+ * @param processDumpPid processdump id
  * @return if succeed return 0 , otherwise return the error code
 */
-int32_t StartCoredumpCb(int32_t targetPid, int32_t workerPid);
+int32_t StartCoredumpCb(int32_t targetPid, int32_t processDumpPid);
 
 /**
  * @brief finish coredump request

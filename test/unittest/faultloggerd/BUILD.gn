@@ -63,6 +63,8 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/services/fault_logger_server.cpp",
         "$faultloggerd_path/services/fault_logger_service.cpp",
         "$faultloggerd_path/services/temp_file_manager.cpp",
+        "$faultloggerd_path/services/fault_common_util.cpp",
+        "$faultloggerd_path/services/fault_coredump_service.cpp",
         "faultlogger_server_test.cpp",
         "faultloggerd_test.cpp",
         "temp_file_manager_test.cpp",
