@@ -393,6 +393,10 @@ void DFX_InstallSignalHandler(void)
 
     for (size_t i = 0; i < sizeof(SIGCHAIN_DUMP_SIGNAL_LIST) / sizeof(SIGCHAIN_DUMP_SIGNAL_LIST[0]); i++) {
         int32_t signo = SIGCHAIN_DUMP_SIGNAL_LIST[i];
+        if (signo == SIGLEAK_STACK) {
+            InstallSigActionHandler(signo);
+            continue;
+        }
         sigfillset(&sigchain.sca_mask);
         // dump signal not mask crash signal
         for (size_t j = 0; j < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); j++) {
