@@ -18,9 +18,11 @@
 
 #include <elf.h>
 #include <sys/procfs.h>
+#include <sys/uio.h>
 
 #include "dfx_coredump_common.h"
 #include "dfx_regs.h"
+#include "dfx_log.h"
 #include "securec.h"
 
 namespace OHOS {
@@ -74,6 +76,29 @@ public:
         std::vector<DumpMemoryRegions>& maps, std::shared_ptr<DfxRegs> regs) : Writer(mappedMemory, currentPointer),
         pid_(coreDumpThread.targetPid), targetTid_(coreDumpThread.targetTid), maps_(maps), keyRegs_(regs) {}
     char* Write() override;
+    void SetKeyThreadData(CoreDumpKeyThreadData coreDumpKeyThreadData);
+    template<typename T>
+    static bool GetRegset(pid_t tid, int regsetType, T &regset)
+    {
+        struct iovec iov;
+        iov.iov_base = &regset;
+        iov.iov_len = sizeof(T);
+
+        if (ptrace(PTRACE_GETREGSET, tid, regsetType, &iov) == -1) {
+            DFXLOGE("ptrace failed regsetType:%{public}d, tid:%{public}d, errno:%{public}d", regsetType, tid, errno);
+            return false;
+        }
+        return true;
+    }
+    template<typename T>
+    static bool GetSiginfoCommon(T &targetInfo, pid_t tid)
+    {
+        if (ptrace(PTRACE_GETSIGINFO, tid, nullptr, &targetInfo) == -1) {
+            DFXLOGE("ptrace failed PTRACE_GETSIGINFO, tid:%{public}d, errno:%{public}d", tid, errno);
+            return false;
+        }
+        return true;
+    }
 
 private:
     bool PrpsinfoWrite();
@@ -84,13 +109,14 @@ private:
     bool ReadProcessComm(prpsinfo_t &ntPrpsinfo);
     bool ReadProcessCmdline(prpsinfo_t &ntPrpsinfo);
     bool MultiThreadNoteWrite();
-    bool ThreadNoteWrite(pid_t tid);
+    void ThreadNoteWrite(pid_t tid);
     bool PrstatusWrite(pid_t tid);
     bool ArmPacMaskWrite(pid_t tid);
     bool FpregsetWrite(pid_t tid);
     bool SiginfoWrite(pid_t tid);
     bool ArmTaggedAddrCtrlWrite();
     bool GetPrStatus(prstatus_t &ntPrstatus, pid_t tid);
+    bool GetRusage(prstatus_t &ntPrstatus);
     bool GetPrReg(prstatus_t &ntPrstatus, pid_t tid);
     bool AuxvWrite();
     bool ReadProcessAuxv(Elf64_Nhdr *note);
@@ -101,6 +127,7 @@ private:
     pid_t targetTid_;
     std::vector<DumpMemoryRegions> maps_;
     std::shared_ptr<DfxRegs> keyRegs_;
+    CoreDumpKeyThreadData coreDumpKeyThreadData_;
 };
 
 class SectionHeaderTableWriter : public Writer {

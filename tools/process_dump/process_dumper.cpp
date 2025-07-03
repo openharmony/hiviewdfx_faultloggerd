@@ -485,10 +485,7 @@ bool ProcessDumper::InitUnwinder(const ProcessDumpRequest& request, int &dumpRes
     }
 #if defined(__aarch64__)
     if (coreDumpService_) {
-        if (CoreDumpService::IsCoredumpSignal(request) ||
-           (request.siginfo.si_signo == SIGABRT && coreDumpService_->IsDoCoredump())) {
-            coreDumpService_->StartSecondStageDump(vmPid, request);
-        }
+        coreDumpService_->StartSecondStageDump(vmPid, request);
     }
 #endif
     process_->SetVmPid(vmPid);
@@ -529,6 +526,14 @@ bool ProcessDumper::InitDfxProcess(ProcessDumpRequest& request)
         NotifyOperateResult(request, OPE_FAIL);
         return false;
     }
+#if defined(__aarch64__)
+    if (CoreDumpService::IsCoredumpAllowed(request)) {
+        coreDumpService_ = std::unique_ptr<CoreDumpService>(new CoreDumpService());
+    }
+    if (coreDumpService_) {
+        coreDumpService_->GetKeyThreadData(request);
+    }
+#endif
     DFXLOGI("Init key thread successfully.");
     NotifyOperateResult(request, OPE_SUCCESS);
     ptrace(PTRACE_SETOPTIONS, request.tid, NULL, PTRACE_O_TRACEFORK);
@@ -540,13 +545,8 @@ bool ProcessDumper::InitDfxProcess(ProcessDumpRequest& request)
     }
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__)
-    if (CoreDumpService::IsCoredumpSignal(request) ||
-        (request.siginfo.si_signo == SIGABRT && CoreDumpService::IsHwasanCoredumpEnabled())) {
-        coreDumpService_ = std::make_shared<CoreDumpService>(request.pid, request.tid,
-            DfxRegs::CreateFromUcontext(request.context));
-        if (coreDumpService_) {
-            coreDumpService_->StartFirstStageDump();
-        }
+    if (coreDumpService_) {
+        coreDumpService_->StartFirstStageDump(request);
     }
 #endif
     return true;

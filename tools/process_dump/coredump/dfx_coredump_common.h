@@ -16,8 +16,12 @@
 #define DFX_COREDUMP_COMMON_H
 #if defined(__aarch64__)
 
+#include <csignal>
 #include <cstdint>
 #include <sys/types.h>
+#include <sys/ptrace.h>
+#include <sys/procfs.h>
+#include <sys/user.h>
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -56,6 +60,24 @@ struct CoreDumpThread {
     pid_t targetPid = 0;
     pid_t targetTid = 0;
     pid_t vmPid = 0;
+};
+
+struct CoreDumpKeyThreadData {
+    UserPacMask ntUserPacMask;
+    struct user_fpsimd_struct ntFpregset;
+    int fpRegValid;
+    siginfo_t ntSiginfo;
+    prstatus_t ntPrstatus;
+    int prStatusValid;
+
+    CoreDumpKeyThreadData()
+        : ntUserPacMask {},
+          ntFpregset {},
+          fpRegValid(0),
+          ntSiginfo {},
+          ntPrstatus {},
+          prStatusValid(0)
+    {}
 };
 
 } // namespace HiviewDFX

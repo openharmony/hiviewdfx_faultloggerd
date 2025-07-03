@@ -98,6 +98,11 @@ bool CoreDumpService::IsCoredumpSignal(const ProcessDumpRequest& request)
 
 CoreDumpService::CoreDumpService(int32_t targetPid, int32_t targetTid, std::shared_ptr<DfxRegs> keyRegs)
 {
+    SetCoreDumpServiceData(targetPid, targetTid, keyRegs);
+}
+
+void CoreDumpService::SetCoreDumpServiceData(int32_t targetPid, int32_t targetTid, std::shared_ptr<DfxRegs> keyRegs)
+{
     coreDumpThread_.targetPid = targetPid;
     coreDumpThread_.targetTid = targetTid;
     keyRegs_ = keyRegs;
@@ -113,8 +118,9 @@ void CoreDumpService::SetVmPid(int32_t vmPid)
     coreDumpThread_.vmPid = vmPid;
 }
 
-void CoreDumpService::StartFirstStageDump()
+void CoreDumpService::StartFirstStageDump(const ProcessDumpRequest& request)
 {
+    SetCoreDumpServiceData(request.pid, request.tid, DfxRegs::CreateFromUcontext(request.context));
     StartCoreDump();
     WriteSegmentHeader();
     WriteNoteSegment();
@@ -122,6 +128,9 @@ void CoreDumpService::StartFirstStageDump()
 
 void CoreDumpService::StartSecondStageDump(int32_t vmPid, const ProcessDumpRequest& request)
 {
+    if (!IsDoCoredump()) {
+        return;
+    }
     coreDumpThread_.vmPid = vmPid;
     int pid = coreDumpThread_.targetPid;
     WriteLoadSegment();
@@ -268,6 +277,7 @@ bool CoreDumpService::WriteNoteSegment()
     }
 
     NoteSegmentWriter note(mappedMemory_, currentPointer_, coreDumpThread_, maps_, keyRegs_);
+    note.SetKeyThreadData(coreDumpKeyThreadData_);
     currentPointer_ = note.Write();
     status_ = WriteStatus::WRITE_LOAD_SEGMENT_STAGE;
     return true;
@@ -343,6 +353,48 @@ bool CoreDumpService::IsDoCoredump()
     }
     DFXLOGE("The bundleName %{public}s is not in whitelist or hwasan coredump disable", bundleName_.c_str());
     return false;
+}
+
+bool CoreDumpService::IsCoredumpAllowed(const ProcessDumpRequest& request)
+{
+    if (IsCoredumpSignal(request) || (request.siginfo.si_signo == SIGABRT && IsHwasanCoredumpEnabled())) {
+        return true;
+    }
+    return false;
+}
+
+bool CoreDumpService::GetKeyThreadData(const ProcessDumpRequest& request)
+{
+    pid_t tid = request.tid;
+    if (tid == 0) {
+        DFXLOGE("The keythread tid is 0, not to get keythread data");
+        return false;
+    }
+
+    UserPacMask ntUserPacMask;
+    NoteSegmentWriter::GetRegset(tid, NT_ARM_PAC_MASK, ntUserPacMask);
+    coreDumpKeyThreadData_.ntUserPacMask = ntUserPacMask;
+
+    struct user_fpsimd_struct ntFpregset;
+    if (NoteSegmentWriter::GetRegset(tid, NT_FPREGSET, ntFpregset)) {
+        coreDumpKeyThreadData_.fpRegValid = 1;
+    } else {
+        coreDumpKeyThreadData_.fpRegValid = 0;
+    }
+    coreDumpKeyThreadData_.ntFpregset = ntFpregset;
+
+    siginfo_t ntSiginfo;
+    NoteSegmentWriter::GetSiginfoCommon(ntSiginfo, tid);
+    coreDumpKeyThreadData_.ntSiginfo = ntSiginfo;
+
+    prstatus_t ntPrstatus;
+    if (NoteSegmentWriter::GetSiginfoCommon(ntPrstatus.pr_info, tid)) {
+        coreDumpKeyThreadData_.prStatusValid = 1;
+    } else {
+        coreDumpKeyThreadData_.prStatusValid = 0;
+    }
+    coreDumpKeyThreadData_.ntPrstatus = ntPrstatus;
+    return true;
 }
 
 int CoreDumpService::CreateFileForCoreDump()

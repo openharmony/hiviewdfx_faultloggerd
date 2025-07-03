@@ -33,13 +33,11 @@
 #include <sys/ptrace.h>
 #include <sys/resource.h>
 #include <sys/types.h>
-#include <sys/uio.h>
 #include <sys/user.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "dfx_define.h"
-#include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -194,6 +192,11 @@ char* NoteSegmentWriter::Write()
     return currentPointer_;
 }
 
+void NoteSegmentWriter::SetKeyThreadData(CoreDumpKeyThreadData coreDumpKeyThreadData)
+{
+    coreDumpKeyThreadData_ = coreDumpKeyThreadData;
+}
+
 bool NoteSegmentWriter::PrpsinfoWrite()
 {
     NoteWrite(NT_PRPSINFO, sizeof(prpsinfo_t), NOTE_NAME_CORE);
@@ -208,18 +211,10 @@ bool NoteSegmentWriter::PrpsinfoWrite()
 
 void NoteSegmentWriter::FillPrpsinfo(prpsinfo_t &ntPrpsinfo)
 {
-    if (!ReadProcessStat(ntPrpsinfo)) {
-        DFXLOGE("Read targetPid process stat fail!");
-    }
-    if (!ReadProcessStatus(ntPrpsinfo)) {
-        DFXLOGE("Read targetPid process status fail!");
-    }
-    if (!ReadProcessComm(ntPrpsinfo)) {
-        DFXLOGE("Read targetPid process comm fail!");
-    }
-    if (!ReadProcessCmdline(ntPrpsinfo)) {
-        DFXLOGE("Read targetPid process cmdline fail!");
-    }
+    ReadProcessStat(ntPrpsinfo);
+    ReadProcessStatus(ntPrpsinfo);
+    ReadProcessComm(ntPrpsinfo);
+    ReadProcessCmdline(ntPrpsinfo);
 }
 
 bool NoteSegmentWriter::NoteWrite(uint32_t noteType, size_t descSize, const char* noteName)
@@ -385,34 +380,13 @@ bool NoteSegmentWriter::MultiThreadNoteWrite()
     return true;
 }
 
-bool NoteSegmentWriter::ThreadNoteWrite(pid_t tid)
+void NoteSegmentWriter::ThreadNoteWrite(pid_t tid)
 {
-    if (tid == targetTid_) {
-        ptrace(PTRACE_INTERRUPT, tid, 0, 0);
-        if (waitpid(tid, nullptr, 0) < 0) {
-            DFXLOGE("Failed to waitpid tid(%{public}d), errno=%{public}d", tid, errno);
-            return false;
-        }
-    }
-    if (!PrstatusWrite(tid)) {
-        DFXLOGE("Failed to write prstatus in (%{public}d)", tid);
-    }
-    if (!ArmPacMaskWrite(tid)) {
-        DFXLOGE("Failed to write arm_pac_mask in (%{public}d)", tid);
-    }
-    if (!FpregsetWrite(tid)) {
-        DFXLOGE("Failed to write fp reg in (%{public}d)", tid);
-    }
-    if (!SiginfoWrite(tid)) {
-        DFXLOGE("Failed to write siginfo in (%{public}d)", tid);
-    }
-    if (!ArmTaggedAddrCtrlWrite()) {
-        DFXLOGE("Failed to write arm tagged");
-    }
-    if (tid == targetTid_) {
-        ptrace(PTRACE_CONT, tid, 0, 0);
-    }
-    return true;
+    PrstatusWrite(tid);
+    ArmPacMaskWrite(tid);
+    FpregsetWrite(tid);
+    SiginfoWrite(tid);
+    ArmTaggedAddrCtrlWrite();
 }
 
 bool NoteSegmentWriter::ArmPacMaskWrite(pid_t tid)
@@ -421,13 +395,11 @@ bool NoteSegmentWriter::ArmPacMaskWrite(pid_t tid)
         return false;
     }
 
-    struct iovec iov;
     UserPacMask ntUserPacMask;
-    iov.iov_base = &ntUserPacMask;
-    iov.iov_len = sizeof(ntUserPacMask);
-    if (ptrace(PTRACE_GETREGSET, tid, NT_ARM_PAC_MASK, &iov) == -1) {
-        DFXLOGE("ptrace failed NT_ARM_PAC_MASK, tid:%{public}d,, errno:%{public}d", tid, errno);
-        return false;
+    if (tid == targetTid_) {
+        ntUserPacMask = coreDumpKeyThreadData_.ntUserPacMask;
+    } else {
+        GetRegset(tid, NT_ARM_PAC_MASK, ntUserPacMask);
     }
     if (!CopyAndAdvance(&ntUserPacMask, sizeof(ntUserPacMask))) {
         DFXLOGE("Write ntUserPacMask fail, errno:%{public}d", errno);
@@ -440,12 +412,8 @@ bool NoteSegmentWriter::PrstatusWrite(pid_t tid)
 {
     NoteWrite(NT_PRSTATUS, sizeof(prstatus_t), NOTE_NAME_CORE);
     prstatus_t ntPrstatus;
-    if (!GetPrStatus(ntPrstatus, tid)) {
-        DFXLOGE("Fail to get pr status in (%{public}d)", tid);
-    }
-    if (!GetPrReg(ntPrstatus, tid)) {
-        DFXLOGE("Fail to get pr reg in (%{public}d)", tid);
-    }
+    GetPrStatus(ntPrstatus, tid);
+    GetPrReg(ntPrstatus, tid);
     if (!CopyAndAdvance(&ntPrstatus, sizeof(ntPrstatus))) {
         DFXLOGE("Write ntPrstatus fail, errno:%{public}d", errno);
         return false;
@@ -458,15 +426,14 @@ bool NoteSegmentWriter::FpregsetWrite(pid_t tid)
     if (!NoteWrite(NT_FPREGSET, sizeof(struct user_fpsimd_struct), NOTE_NAME_CORE)) {
         return false;
     }
-    struct iovec iov;
-    struct user_fpsimd_struct ntFpregset;
-    iov.iov_base = &ntFpregset;
-    iov.iov_len = sizeof(ntFpregset);
 
-    if (ptrace(PTRACE_GETREGSET, tid, NT_FPREGSET, &iov) == -1) {
-        DFXLOGE("ptrace failed NT_FPREGSET, tid:%{public}d,, errno:%{public}d", tid, errno);
-        return false;
+    struct user_fpsimd_struct ntFpregset;
+    if (tid == targetTid_) {
+        ntFpregset = coreDumpKeyThreadData_.ntFpregset;
+    } else {
+        GetRegset(tid, NT_FPREGSET, ntFpregset);
     }
+
     if (!CopyAndAdvance(&ntFpregset, sizeof(ntFpregset))) {
         DFXLOGE("Write ntFpregset fail, errno:%{public}d", errno);
         return false;
@@ -482,9 +449,12 @@ bool NoteSegmentWriter::SiginfoWrite(pid_t tid)
 
     siginfo_t ntSiginfo;
 
-    if (ptrace(PTRACE_GETSIGINFO, tid, nullptr, &ntSiginfo) == -1) {
-        DFXLOGE("ptrace failed PTRACE_GETSIGINFO, tid:%{public}d,, errno:%{public}d", tid, errno);
+    if (tid == targetTid_) {
+        ntSiginfo = coreDumpKeyThreadData_.ntSiginfo;
+    } else {
+        GetSiginfoCommon(ntSiginfo, tid);
     }
+
     if (!CopyAndAdvance(&ntSiginfo, sizeof(ntSiginfo))) {
         DFXLOGE("Write ntSiginfo fail, errno:%{public}d", errno);
         return false;
@@ -505,11 +475,14 @@ bool NoteSegmentWriter::ArmTaggedAddrCtrlWrite()
 
 bool NoteSegmentWriter::GetPrStatus(prstatus_t &ntPrstatus, pid_t tid)
 {
-    if (ptrace(PTRACE_GETSIGINFO, tid, NULL, &(ntPrstatus.pr_info)) == 0) {
-        ntPrstatus.pr_cursig = ntPrstatus.pr_info.si_signo;
+    if (tid == targetTid_ && coreDumpKeyThreadData_.prStatusValid) {
+        ntPrstatus.pr_cursig = coreDumpKeyThreadData_.ntPrstatus.pr_info.si_signo;
     } else {
-        DFXLOGE("ptrace failed PTRACE_GETSIGINFO, tid:%{public}d, errno:%{public}d", tid, errno);
+        if (GetSiginfoCommon(ntPrstatus.pr_info, tid)) {
+            ntPrstatus.pr_cursig = ntPrstatus.pr_info.si_signo;
+        }
     }
+
     char buffer[1024];
     std::string filePath = "/proc/" + std::to_string(tid) + "/status";
     FILE *file = fopen(filePath.c_str(), "r");
@@ -537,6 +510,15 @@ bool NoteSegmentWriter::GetPrStatus(prstatus_t &ntPrstatus, pid_t tid)
     ntPrstatus.pr_pid = tid;
     ntPrstatus.pr_pgrp = getpgrp();
     ntPrstatus.pr_sid = getsid(ntPrstatus.pr_pid);
+    if (!GetRusage(ntPrstatus)) {
+        DFXLOGE("failed to get rusage, tid:%{public}d, errno:%{public}d", tid, errno);
+        return false;
+    }
+    return true;
+}
+
+bool NoteSegmentWriter::GetRusage(prstatus_t &ntPrstatus)
+{
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
     if (memcpy_s(&ntPrstatus.pr_utime, sizeof(ntPrstatus.pr_utime), &usage.ru_utime, sizeof(usage.ru_utime)) != 0) {
@@ -563,6 +545,7 @@ bool NoteSegmentWriter::GetPrReg(prstatus_t &ntPrstatus, pid_t tid)
             DFXLOGE("Failed to memcpy regs data, errno = %{public}d", errno);
             return false;
         }
+        ntPrstatus.pr_fpvalid = coreDumpKeyThreadData_.fpRegValid;
     } else {
         struct iovec iov;
         (void)memset_s(&iov, sizeof(iov), 0, sizeof(iov));
@@ -572,17 +555,12 @@ bool NoteSegmentWriter::GetPrReg(prstatus_t &ntPrstatus, pid_t tid)
             DFXLOGE("ptrace failed NT_PRSTATUS, tid:%{public}d, errno:%{public}d", tid, errno);
             return false;
         }
-    }
-    struct iovec iovFp;
-    struct user_fpsimd_struct ntFpregset;
-    iovFp.iov_base = &ntFpregset;
-    iovFp.iov_len = sizeof(ntFpregset);
-
-    if (ptrace(PTRACE_GETREGSET, tid, NT_FPREGSET, &iovFp) == -1) {
-        DFXLOGE("ptrace failed NT_FPREGSET, tid:%{public}d, errno:%{public}d", tid, errno);
-        ntPrstatus.pr_fpvalid = 0;
-    } else {
-        ntPrstatus.pr_fpvalid = 1;
+        struct user_fpsimd_struct ntFpregset;
+        if (GetRegset(tid, NT_FPREGSET, ntFpregset)) {
+            ntPrstatus.pr_fpvalid = 1;
+        } else {
+            ntPrstatus.pr_fpvalid = 0;
+        }
     }
     return true;
 }
@@ -758,6 +736,9 @@ char* SectionHeaderTableWriter::Write()
 
 void SectionHeaderTableWriter::AdjustOffset(uint8_t remain)
 {
+    if (remain > 8) { // 8
+        return;
+    }
     for (uint8_t i = 0; i < (8 - remain); i++) { // 8
         if (remain == 0) {
             break;

@@ -38,13 +38,16 @@ public:
     bool WriteLoadSegment();
     bool WriteSectionHeader();
     void SetVmPid(int32_t vmPid);
-    void StartFirstStageDump();
+    void StartFirstStageDump(const ProcessDumpRequest& request);
     void StartSecondStageDump(int32_t vmPid, const ProcessDumpRequest& request);
     CoreDumpThread GetCoreDumpThread();
     std::string GetBundleNameItem();
     static bool IsHwasanCoredumpEnabled();
     static bool IsCoredumpSignal(const ProcessDumpRequest& request);
+    static bool IsCoredumpAllowed(const ProcessDumpRequest& request);
     bool IsDoCoredump();
+    bool GetKeyThreadData(const ProcessDumpRequest& request);
+    void SetCoreDumpServiceData(int32_t targetPid, int32_t targetTid, std::shared_ptr<DfxRegs> keyRegs);
 private:
     void DeInit();
     void ObtainDumpRegion(std::string &line, DumpMemoryRegions &region);
@@ -76,6 +79,7 @@ private:
     ElapsedTime counter_;
     std::shared_ptr<DfxRegs> keyRegs_;
     bool isHwasanHap_ {false};
+    CoreDumpKeyThreadData coreDumpKeyThreadData_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
