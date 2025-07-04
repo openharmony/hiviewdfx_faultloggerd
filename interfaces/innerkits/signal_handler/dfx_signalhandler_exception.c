@@ -20,18 +20,14 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/un.h>
+#include <securec.h>
 #include <unistd.h>
 
 #include "dfx_define.h"
 #include "dfx_exception.h"
 #include "errno.h"
 #include "string.h"
-
-#ifndef DFX_SIGNAL_LIBC
 #include "dfx_log.h"
-#else
-#include "musl_log.h"
-#endif
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -70,9 +66,11 @@ static int ConnectSocket(const char* path, const int timeout)
             }
         }
         struct sockaddr_un server;
-        (void)memset(&server, 0, sizeof(server));
+        (void)memset_s(&server, sizeof(server), 0, sizeof(server));
         server.sun_family = AF_LOCAL;
-        (void)strncpy(server.sun_path, path, sizeof(server.sun_path) - 1);
+        if (strcpy_s(server.sun_path, sizeof(server.sun_path), path) != EOK) {
+            DFXLOGE("server sun_path strcpy fail.");
+        }
         int len = sizeof(server.sun_family) + strlen(server.sun_path);
         int connected = OHOS_TEMP_FAILURE_RETRY(connect(fd, (struct sockaddr*)(&server), len));
         if (connected < 0) {
