@@ -854,6 +854,20 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest023, TestSize.Level2)
 }
 
 /**
+ * @tc.name: SignalHandlerTest024
+ * @tc.desc: test DFX_GetAppRunningUniqueId
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest024, TestSize.Level2)
+{
+    constexpr char testId[] = "App running unique id";
+    int ret = DFX_SetAppRunningUniqueId(testId, strlen(testId));
+    ASSERT_EQ(ret, 0);
+    const char* runningId = DFX_GetAppRunningUniqueId();
+    ASSERT_STREQ(runningId, testId);
+}
+
+/**
  * @tc.name: FdTableTest001
  * @tc.desc: Verify the fdtable structure
  * @tc.type: FUNC

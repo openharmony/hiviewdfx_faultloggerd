@@ -420,6 +420,11 @@ void DFX_InstallSignalHandler(void)
     }
 }
 
+const char* DFX_GetAppRunningUniqueId(void)
+{
+    return g_appRunningId;
+}
+
 int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len)
 {
     size_t appRunningIdMaxLen = sizeof(g_appRunningId);
