@@ -292,6 +292,7 @@ private:
     UnwindErrorData lastErrorData_ {};
     std::shared_ptr<UnwindEntryParser> unwindEntryParser_ = nullptr;
     uintptr_t firstFrameSp_ {0};
+    UnwindContext context_;
 };
 
 // for local
@@ -600,14 +601,13 @@ bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, siz
     }
     DFXLOGU("[%{public}d]: stackBottom: %{public}" PRIx64 ", stackTop: %{public}" PRIx64 "", __LINE__,
         (uint64_t)stackBottom, (uint64_t)stackTop);
-    UnwindContext context;
-    context.pid = UNWIND_TYPE_LOCAL;
-    context.regs = regs_;
-    context.maps = maps_;
-    context.stackCheck = false;
-    context.stackBottom = stackBottom;
-    context.stackTop = stackTop;
-    auto ret = Unwind(&context, maxFrameNum, skipFrameNum);
+    context_.pid = UNWIND_TYPE_LOCAL;
+    context_.regs = regs_;
+    context_.maps = maps_;
+    context_.stackCheck = false;
+    context_.stackBottom = stackBottom;
+    context_.stackTop = stackTop;
+    auto ret = Unwind(&context_, maxFrameNum, skipFrameNum);
     LocalThreadContext::GetInstance().ReleaseThread(tid);
     return ret;
 #endif
@@ -653,20 +653,18 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
             GetLocalRegs(regsData);
         }
     }
-
-    UnwindContext context;
-    context.pid = UNWIND_TYPE_LOCAL;
-    context.regs = regs_;
-    context.maps = maps_;
-    context.stackCheck = false;
-    context.stackBottom = stackBottom;
-    context.stackTop = stackTop;
+    context_.pid = UNWIND_TYPE_LOCAL;
+    context_.regs = regs_;
+    context_.maps = maps_;
+    context_.stackCheck = false;
+    context_.stackBottom = stackBottom;
+    context_.stackTop = stackTop;
 #ifdef __aarch64__
     if (fpUnwind) {
-        return UnwindByFp(&context, maxFrameNum, skipFrameNum, enableArk);
+        return UnwindByFp(&context_, maxFrameNum, skipFrameNum, enableArk);
     }
 #endif
-    return Unwind(&context, maxFrameNum, skipFrameNum);
+    return Unwind(&context_, maxFrameNum, skipFrameNum);
 }
 
 bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, size_t skipFrameNum)
@@ -690,11 +688,10 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
     }
 
     firstFrameSp_ = regs_->GetSp();
-    UnwindContext context;
-    context.pid = tid;
-    context.regs = regs_;
-    context.maps = maps_;
-    return Unwind(&context, maxFrameNum, skipFrameNum);
+    context_.pid = tid;
+    context_.regs = regs_;
+    context_.maps = maps_;
+    return Unwind(&context_, maxFrameNum, skipFrameNum);
 }
 
 int Unwinder::Impl::ArkWriteJitCodeToFile(int fd)
