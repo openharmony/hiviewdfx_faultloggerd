@@ -23,6 +23,9 @@ extern "C" {
 
 void DfxDumpRequest(int signo, struct ProcessDumpRequest *request);
 
+bool DFX_SetDumpableState(void);
+void DFX_RestoreDumpableState(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -37,7 +37,7 @@ private:
     int PerfProcess(LitePerfParam& lperf);
     int32_t ReadLperfAndCheck(LitePerfParam& lperf);
     int PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf);
-    void WriteSampleStackByTid(int tid, int bufFd);
+    void WriteSampleData(int bufFd, const std::string& data);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

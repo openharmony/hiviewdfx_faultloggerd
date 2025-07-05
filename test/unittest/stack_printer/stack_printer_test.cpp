@@ -608,13 +608,13 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "StackPrinterTest_002: start.";
     std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
-    bool flag = stackPrinter->PutPcsInTable(pcsVec[0], timestamps[0]);
+    bool flag = stackPrinter->PutPcsInTable(pcsVec[0], gettid(), timestamps[0]);
     ASSERT_FALSE(flag);
 
     uint32_t uniqueStableSize = 128 * 1024;
     stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
     for (size_t i = 0; i < pcsVec.size(); i++) {
-        flag = stackPrinter->PutPcsInTable(pcsVec[i], timestamps[i]);
+        flag = stackPrinter->PutPcsInTable(pcsVec[i], gettid(), timestamps[i]);
         ASSERT_TRUE(flag);
     }
     GTEST_LOG_(INFO) << "StackPrinterTest_002: end.";
@@ -659,23 +659,23 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_004, TestSize.Level2)
     uint32_t uniqueStableSize = 128 * 1024;
     stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
     for (size_t i = 0; i < pcsVec.size(); i++) {
-        stackPrinter->PutPcsInTable(pcsVec[i], timestamps[i]);
+        stackPrinter->PutPcsInTable(pcsVec[i], gettid(), timestamps[i]);
     }
 
     std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
     std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
     stackPrinter->SetUnwindInfo(unwinder, maps);
-    std::string stack = stackPrinter->GetTreeStack();
+    std::string stack = stackPrinter->GetTreeStack(gettid());
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
     GTEST_LOG_(INFO) << "\n================================================\n";
 
-    stack = stackPrinter->GetTreeStack(true);
+    stack = stackPrinter->GetTreeStack(gettid(), true);
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
     GTEST_LOG_(INFO) << "\n================================================\n";
 
-    stack = stackPrinter->GetTreeStack(true, timestamps[2], timestamps[6]);
+    stack = stackPrinter->GetTreeStack(gettid(), true, timestamps[2], timestamps[6]);
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
     GTEST_LOG_(INFO) << "StackPrinterTest_004: end.";
@@ -693,21 +693,128 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_005, TestSize.Level2)
     uint32_t uniqueStableSize = 128 * 1024;
     stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
     for (size_t i = 0; i < pcsVec.size(); i++) {
-        stackPrinter->PutPcsInTable(pcsVec[i], timestamps[i]);
+        stackPrinter->PutPcsInTable(pcsVec[i], gettid(), timestamps[i]);
     }
 
     std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
     std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
     stackPrinter->SetUnwindInfo(unwinder, maps);
-    std::string stack = stackPrinter->GetHeaviestStack();
+    std::string stack = stackPrinter->GetHeaviestStack(gettid());
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
     GTEST_LOG_(INFO) << "\n================================================\n";
 
-    stack = stackPrinter->GetHeaviestStack(timestamps[2], timestamps[6]);
+    stack = stackPrinter->GetHeaviestStack(gettid(), timestamps[2], timestamps[6]);
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
     GTEST_LOG_(INFO) << "StackPrinterTest_005: end.";
 }
-} // namespace HiviewDFX
-} // namespace OHOS
+
+/**
+ * @tc.name: StackPrinterTest006
+ * @tc.desc: test StackPrinter functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, StackPrinterTest_006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackPrinterTest_006: start.";
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
+    uint32_t uniqueStableSize = 128 * 1024;
+    stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
+    for (size_t i = 0; i < pcsVec.size(); i++) {
+        stackPrinter->PutPcsInTable(pcsVec[i], gettid(), timestamps[i]);
+    }
+
+    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
+    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
+    stackPrinter->SetUnwindInfo(unwinder, maps);
+    std::map<int, std::vector<SampledFrame>> threadSampledFrames = stackPrinter->GetThreadSampledFrames();
+    ASSERT_FALSE(threadSampledFrames.empty());
+    std::vector<SampledFrame> frames = threadSampledFrames[getpid()];
+    ASSERT_FALSE(frames.empty());
+
+    const int indent = 2;
+    for (const auto& frame : frames) {
+        ASSERT_EQ(frame.indent, indent * frame.level);
+    }
+    GTEST_LOG_(INFO) << "StackPrinterTest_006: end.";
+}
+
+/**
+ * @tc.name: StackPrinterTest007
+ * @tc.desc: test StackPrinter functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, StackPrinterTest_007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackPrinterTest_007: start.";
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
+    uint32_t uniqueStableSize = 128 * 1024;
+    stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
+    for (size_t i = 0; i < pcsVec.size(); i++) {
+        stackPrinter->PutPcsInTable(pcsVec[i], gettid(), timestamps[i]);
+    }
+
+    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
+    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
+    stackPrinter->SetUnwindInfo(unwinder, maps);
+    std::map<int, std::vector<SampledFrame>> threadSampledFrames = stackPrinter->GetThreadSampledFrames();
+    ASSERT_FALSE(threadSampledFrames.empty());
+
+    std::stringstream ss;
+    StackPrinter::SerializeSampledFrameMap(threadSampledFrames, ss);
+    GTEST_LOG_(INFO) << "serialized map: " << ss.str().c_str();
+
+    std::map<int, std::vector<SampledFrame>> deserializeMap = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_EQ(threadSampledFrames.size(), deserializeMap.size());
+    auto it1 = threadSampledFrames.cbegin();
+    auto it2 = deserializeMap.cbegin();
+    while (it1 != threadSampledFrames.cend() && it2 != deserializeMap.cend()) {
+        ASSERT_EQ(it1->first, it2->first);
+        ASSERT_EQ(it1->second.size(), it2->second.size());
+        for (size_t i = 0; i < it1->second.size(); i++) {
+            ASSERT_EQ(it1->second[i].indent, it2->second[i].indent);
+            ASSERT_EQ(it1->second[i].count, it2->second[i].count);
+            ASSERT_EQ(it1->second[i].level, it2->second[i].level);
+            ASSERT_EQ(it1->second[i].pc, it2->second[i].pc);
+            ASSERT_EQ(it1->second[i].isLeaf, it2->second[i].isLeaf);
+            ASSERT_EQ(it1->second[i].timestamps, it2->second[i].timestamps);
+        }
+        it1++;
+        it2++;
+    }
+    GTEST_LOG_(INFO) << "StackPrinterTest_007: end.";
+}
+
+/**
+ * @tc.name: StackPrinterTest008
+ * @tc.desc: test StackPrinter functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, StackPrinterTest_008, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackPrinterTest_008: start.";
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
+    uint32_t uniqueStableSize = 128 * 1024;
+    stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
+    for (size_t i = 0; i < pcsVec.size(); i++) {
+        stackPrinter->PutPcsInTable(pcsVec[i], gettid(), timestamps[i]);
+    }
+
+    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
+    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
+    stackPrinter->SetUnwindInfo(unwinder, maps);
+    std::map<int, std::vector<SampledFrame>> threadSampledFrames = stackPrinter->GetThreadSampledFrames();
+    ASSERT_FALSE(threadSampledFrames.empty());
+
+    std::vector<SampledFrame> sampledFrameVec = threadSampledFrames[gettid()];
+    ASSERT_FALSE(sampledFrameVec.empty());
+
+    std::string stack = StackPrinter::PrintTreeStackBySampledStack(sampledFrameVec, true, unwinder, maps);
+    ASSERT_NE(stack, "");
+    GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
+
+    GTEST_LOG_(INFO) << "StackPrinterTest_008: end.";
+}
+}  // namespace HiviewDFX
+}  // namespace OHOS

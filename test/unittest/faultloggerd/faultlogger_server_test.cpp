@@ -346,7 +346,7 @@ HWTEST_F(FaultLoggerdServiceTest, PipeFdClientTest03, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest01, TestSize.Level2)
 {
-    PipFdRequestData requestData;
+    LitePerfFdRequestData requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
 
     requestData.pipeType = FaultLoggerPipeType::PIPE_FD_READ;
@@ -390,7 +390,7 @@ HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest01, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest02, TestSize.Level2)
 {
-    PipFdRequestData requestData;
+    LitePerfFdRequestData requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
 
     requestData.pipeType = FaultLoggerPipeType::PIPE_FD_READ;
@@ -413,7 +413,7 @@ HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest02, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdServiceTest, LitePerfPipeFdClientTest03, TestSize.Level2)
 {
-    PipFdRequestData requestData;
+    LitePerfFdRequestData requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
     requestData.pid = requestData.head.clientPid;
 

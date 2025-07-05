@@ -104,13 +104,13 @@ private:
     static int32_t Filter(const std::string& socketName, const SdkDumpRequestData& requestData, uint32_t uid);
 };
 
-class LitePerfPipeService : public FaultLoggerService<PipFdRequestData> {
+class LitePerfPipeService : public FaultLoggerService<LitePerfFdRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
-                      const PipFdRequestData& requestData) override;
+                      const LitePerfFdRequestData& requestData) override;
 private:
-    static bool Filter(const std::string& socketName, int32_t connectionFd,
-        const PipFdRequestData& requestData, int& uid);
+    static bool Filter(const std::string& socketName, int32_t connectionFd, const LitePerfFdRequestData& requestData);
+    void StartDelayTask(std::function<void()> workFunc, int32_t delayTime);
 };
 
 class PipeService : public FaultLoggerService<PipFdRequestData> {

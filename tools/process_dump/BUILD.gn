@@ -180,6 +180,7 @@ if (defined(ohos_lite)) {
     include_dirs = [ "lperf" ]
     sources = processdump_sources
     sources += [
+      "lite_perf_dumper.cpp",
       "lperf/lperf_event_record.cpp",
       "lperf/lperf_events.cpp",
       "lperf/lperf_record.cpp",

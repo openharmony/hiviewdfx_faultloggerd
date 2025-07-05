@@ -76,6 +76,7 @@ public:
 
     static LitePerfPipePair& CreatePipePair(int uid);
     static bool CheckDumpRecord(int uid);
+    static bool CheckDumpMax();
     static LitePerfPipePair* GetPipePair(int uid);
     static void DelPipePair(int uid);
 private:
