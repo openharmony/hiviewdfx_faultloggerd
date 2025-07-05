@@ -68,7 +68,8 @@
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
           "header": {
             "header_files": [
-              "dfx_dump_catcher.h"
+              "dfx_dump_catcher.h",
+              "lite_perf.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/dump_catcher/include"
           }
