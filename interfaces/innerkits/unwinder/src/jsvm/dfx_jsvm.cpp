@@ -106,14 +106,14 @@ int DfxJsvm::JsvmDestroyJsSymbolExtractor(uintptr_t extractorPtr)
 
 int DfxJsvm::ParseJsvmFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFunction *jsvmFunction)
 {
-    if (parseJsvmFrameInfoFn_ != nullptr) {
+    if (parseJsvmFrameInfoFn_ != nullptr && jsvmFunction != nullptr) {
         return parseJsvmFrameInfoFn_(pc, extractorPtr, jsvmFunction);
     }
 
     const char* jsvmFuncName = "jsvm_parse_js_frame_info";
     DlsymJsvmFunc(jsvmFuncName, parseJsvmFrameInfoFn_);
 
-    if (parseJsvmFrameInfoFn_ != nullptr) {
+    if (parseJsvmFrameInfoFn_ != nullptr && jsvmFunction != nullptr) {
         return parseJsvmFrameInfoFn_(pc, extractorPtr, jsvmFunction);
     }
     return -1;
@@ -121,6 +121,10 @@ int DfxJsvm::ParseJsvmFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFuncti
 
 int DfxJsvm::StepJsvmFrame(void *obj, ReadMemFunc readMemFn, JsvmStepParam* jsvmParam)
 {
+    if (obj == nullptr || readMemFn == nullptr || jsvmParam == nullptr) {
+        DFXLOGE("param is nullptr.");
+        return -1;
+    }
     if (stepJsvmFn_ != nullptr) {
         return stepJsvmFn_(obj, readMemFn, jsvmParam);
     }

@@ -37,6 +37,7 @@ ohos_unittest("test_unwind") {
     "elf_test.cpp",
     "fp_unwinder_test.cpp",
     "instr_statistic_test.cpp",
+    "jsvm_test.cpp",
     "maps_test.cpp",
     "memory_test.cpp",
     "regs_test.cpp",
