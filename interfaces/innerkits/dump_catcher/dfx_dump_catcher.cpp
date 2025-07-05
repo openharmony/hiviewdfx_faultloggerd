@@ -63,17 +63,6 @@ static constexpr int WAIT_GET_KERNEL_STACK_TIMEOUT = 1000; // 1000 : time out 10
 static constexpr uint32_t HIVIEW_UID = 1201;
 static constexpr uint32_t FOUNDATION_UID = 5523;
 
-enum DfxDumpPollRes : int32_t {
-    DUMP_POLL_INIT = -1,
-    DUMP_POLL_OK,
-    DUMP_POLL_FD,
-    DUMP_POLL_FAILED,
-    DUMP_POLL_TIMEOUT,
-    DUMP_POLL_RETURN,
-    DUMP_POLL_NO_PARSE_SYMBOL,
-    DUMP_POLL_PARSE_SYMBOL_TIMEOUT,
-};
-
 enum DfxDumpStatRes : int32_t {
     DUMP_RES_NO_KERNELSTACK = -2,
     DUMP_RES_WITH_KERNELSTACK = -1,

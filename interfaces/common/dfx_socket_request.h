@@ -75,6 +75,8 @@ typedef enum FaultLoggerClientType : int8_t {
     COREDUMP_CLIENT,
     /** For request to report coredump status */
     COREDUMP_PROCESS_DUMP_CLIENT,
+    /** For request liteperf file descriptor of pipe */
+    PIPE_FD_LITEPERF_CLIENT,
 } FaultLoggerClientType;
 
 typedef struct RequestDataHead {

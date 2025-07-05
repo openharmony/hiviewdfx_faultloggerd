@@ -52,6 +52,7 @@ bool SocketServer::Init()
 
     AddService(PIPE_FD_CLIENT, std::make_unique<PipeService>());
     AddService(SDK_DUMP_CLIENT, std::make_unique<SdkDumpService>());
+    AddService(PIPE_FD_LITEPERF_CLIENT, std::make_unique<LitePerfPipeService>());
     if (!AddServerListener(SERVER_SDKDUMP_SOCKET_NAME)) {
         return false;
     }

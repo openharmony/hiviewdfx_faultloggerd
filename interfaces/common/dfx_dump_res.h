@@ -20,6 +20,20 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+/**
+ * @brief dump poll error code
+ * It describes the status of dump poll.
+ */
+enum DfxDumpPollRes : int32_t {
+    DUMP_POLL_INIT = -1,
+    DUMP_POLL_OK,
+    DUMP_POLL_FD,
+    DUMP_POLL_FAILED,
+    DUMP_POLL_TIMEOUT,
+    DUMP_POLL_RETURN,
+    DUMP_POLL_NO_PARSE_SYMBOL,
+    DUMP_POLL_PARSE_SYMBOL_TIMEOUT,
+};
 
 /**
  * @brief Processdump error code

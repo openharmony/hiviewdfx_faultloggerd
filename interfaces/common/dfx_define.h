@@ -67,6 +67,11 @@ static const char* const PROC_SELF_CMDLINE_PATH = "/proc/self/cmdline";
 static const char* const PROC_SELF_COMM_PATH = "/proc/self/comm";
 static const char* const PROC_SELF_MAPS_PATH = "/proc/self/maps";
 static const char* const PROC_SELF_EXE_PATH = "/proc/self/exe";
+#ifdef DFX_LOG_HILOG_BASE
+static const char* const PROCESSDUMP_PATH = "/system/bin/processdump";
+#else
+static const char* const PROCESSDUMP_PATH = "/bin/processdump";
+#endif
 
 #ifndef LIKELY
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))

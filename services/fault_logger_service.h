@@ -104,6 +104,15 @@ private:
     static int32_t Filter(const std::string& socketName, const SdkDumpRequestData& requestData, uint32_t uid);
 };
 
+class LitePerfPipeService : public FaultLoggerService<PipFdRequestData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const PipFdRequestData& requestData) override;
+private:
+    static bool Filter(const std::string& socketName, int32_t connectionFd,
+        const PipFdRequestData& requestData, int& uid);
+};
+
 class PipeService : public FaultLoggerService<PipFdRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
