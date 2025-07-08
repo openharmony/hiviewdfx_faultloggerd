@@ -23,7 +23,7 @@ ohos_rust_shared_ffi("rustc_demangle") {
     "system",
     "updater",
   ]
-  innerapi_tags = [ "chipsetsdk_indirect" ]
+  innerapi_tags = [ "chipsetsdk_sp_indirect" ]
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }
