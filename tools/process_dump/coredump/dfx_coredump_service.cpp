@@ -136,13 +136,16 @@ void CoreDumpService::StartSecondStageDump(int32_t vmPid, const ProcessDumpReque
     WriteLoadSegment();
     WriteSectionHeader();
     auto ret = FinishCoreDump();
-    std::string bundleName = ret ? GetBundleNameItem() + ".dmp" : "";
+    if (!ret) {
+        UnlinkFile(GetCoredumpFilePath());
+    }
+    std::string bundleName = ret ? GetCoredumpFileName() : "";
     int32_t retCode = ret ? ResponseCode::REQUEST_SUCCESS : ResponseCode::CORE_DUMP_GENERATE_FAIL;
     FinishCoredumpCb(pid, bundleName, retCode);
     if (IsHwasanCoredumpEnabled()) {
         DumpUtils::InfoCrashUnwindResult(request, true);
     }
-    _exit(0);
+    exit(0);
 }
 
 std::string CoreDumpService::GetBundleNameItem()
@@ -178,6 +181,10 @@ bool CoreDumpService::FinishCoreDump()
         coreDumpThread_.targetPid, counter_.Elapsed<std::chrono::milliseconds>());
     if (status_ != WriteStatus::STOP_STAGE) {
         DFXLOGE("The status is not STOP_STAGE!");
+        return false;
+    }
+    realCoreFileSize_ = static_cast<uint64_t>(currentPointer_ - mappedMemory_);
+    if (!AdjustFileSize(fd_, realCoreFileSize_)) {
         return false;
     }
     status_ = WriteStatus::DONE_STAGE;
@@ -225,17 +232,12 @@ bool CoreDumpService::MmapForFd()
         DFXLOGE("The coreFileSize is 0, not to mmap");
         return false;
     }
-    if (ftruncate(fd_, coreFileSize_) == -1) {
-        DFXLOGE("ftruncate fail");
-        close(fd_);
-        fd_ = -1;
+    if (!AdjustFileSize(fd_, coreFileSize_)) {
         return false;
     }
     mappedMemory_ = static_cast<char *>(mmap(nullptr, coreFileSize_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
     if (mappedMemory_ == MAP_FAILED) {
         DFXLOGE("mmap fail");
-        close(fd_);
-        fd_ = -1;
         mappedMemory_ = nullptr;
         return false;
     }
@@ -407,7 +409,7 @@ int CoreDumpService::CreateFileForCoreDump()
     if (!IsDoCoredump()) {
         return INVALID_FD;
     }
-    std::string logPath = std::string(COREDUMP_DIR_PATH) + "/" + bundleName_ + ".dmp";
+    std::string logPath = GetCoredumpFilePath();
     RegisterCancelCoredump(logPath);
     StartCoredumpCb(coreDumpThread_.targetPid, getpid());
     if (access(COREDUMP_DIR_PATH, F_OK) != 0) {
@@ -434,6 +436,23 @@ bool CoreDumpService::VerifyTrustlist()
         return true;
     }
     return false;
+}
+
+bool CoreDumpService::AdjustFileSize(int fd, uint64_t fileSize)
+{
+    if (fd == -1) {
+        DFXLOGE("fd is invalid, not to adjust file size");
+        return false;
+    }
+    if (fileSize == 0) {
+        DFXLOGE("filesize is 0, not to adjust file size");
+        return false;
+    }
+    if (ftruncate(fd, fileSize) == -1) {
+        DFXLOGE("ftruncate fail, errno:%{public}d", errno);
+        return false;
+    }
+    return true;
 }
 
 uint64_t CoreDumpService::GetCoreFileSize(pid_t pid)
@@ -470,6 +489,35 @@ uint64_t CoreDumpService::GetCoreFileSize(pid_t pid)
         (lineNumber + 2) * sizeof(Elf64_Shdr) + lineNumber * (sizeof(Elf64_Nhdr) + ARG100) + ARG1000; // 2
     DFXLOGI("The estimated corefile size is: %{public}ld, is hwasan hap %{public}d", coreFileSize, isHwasanHap_);
     return coreFileSize;
+}
+
+bool CoreDumpService::UnlinkFile(const std::string &logPath)
+{
+    if (logPath.empty()) {
+        return false;
+    }
+    if (unlink(logPath.c_str()) != 0) {
+        DFXLOGI("unlink file(%{public}s) fail, errno:%{public}d", logPath.c_str(), errno);
+        return false;
+    }
+    DFXLOGI("unlink file(%{public}s) success", logPath.c_str());
+    return true;
+}
+
+std::string CoreDumpService::GetCoredumpFileName()
+{
+    if (bundleName_.empty()) {
+        return "";
+    }
+    return bundleName_ + ".dmp";
+}
+
+std::string CoreDumpService::GetCoredumpFilePath()
+{
+    if (bundleName_.empty()) {
+        return "";
+    }
+    return std::string(COREDUMP_DIR_PATH) + "/" + GetCoredumpFileName();
 }
 
 void CoreDumpService::ObtainDumpRegion(std::string &line, DumpMemoryRegions &region)

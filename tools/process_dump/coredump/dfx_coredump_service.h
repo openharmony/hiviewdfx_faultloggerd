@@ -56,7 +56,11 @@ private:
     bool MmapForFd();
     bool VerifyTrustlist();
     int CreateFileForCoreDump();
+    static bool AdjustFileSize(int fd, uint64_t fileSize);
+    static bool UnlinkFile(const std::string &logPath);
     uint64_t GetCoreFileSize(pid_t pid);
+    std::string GetCoredumpFileName();
+    std::string GetCoredumpFilePath();
 private:
     enum class WriteStatus {
         START_STAGE,
@@ -69,6 +73,7 @@ private:
     };
     int fd_ {-1};
     uint64_t coreFileSize_ {0};
+    uint64_t realCoreFileSize_ {0};
     Elf64_Half ePhnum_ {0};
     std::vector<DumpMemoryRegions> maps_;
     std::string bundleName_;
