@@ -18,6 +18,7 @@
 
 #include <cinttypes>
 #include <condition_variable>
+#include <future>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -71,6 +72,7 @@ private:
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
     bool isJsonDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
+    std::future<void> parseSymbolTask_;
 #if defined(__aarch64__)
     std::unique_ptr<CoreDumpService> coreDumpService_ = nullptr;
 #endif

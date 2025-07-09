@@ -25,7 +25,6 @@
 #include <cstring>
 #include <dirent.h>
 #include <fcntl.h>
-#include <future>
 #include <memory>
 #include <pthread.h>
 #include <securec.h>
@@ -451,12 +450,12 @@ int ProcessDumper::ParseSymbols(const ProcessDumpRequest& request, std::shared_p
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH || expectedDumpFinishTime_ == 0) {
         threadDumpInfo->Symbolize(*process_, *unwinder_);
     } else if (expectedDumpFinishTime_ > curTime && expectedDumpFinishTime_ - curTime >= reservedSymbolParseTime) {
-        std::future<void> parseSymbolTask = std::async(std::launch::async, [threadDumpInfo, this]() {
+        parseSymbolTask_ = std::async(std::launch::async, [threadDumpInfo, this]() {
             DFX_TRACE_SCOPED("parse symbol task");
             threadDumpInfo->Symbolize(*process_, *unwinder_);
         });
         uint64_t waitTime = expectedDumpFinishTime_ - curTime - lessRemainTimeMs;
-        if (parseSymbolTask.wait_for(std::chrono::milliseconds(waitTime)) != std::future_status::ready) {
+        if (parseSymbolTask_.wait_for(std::chrono::milliseconds(waitTime)) != std::future_status::ready) {
             DFXLOGW("Parse symbol timeout");
             dumpRes = DumpErrorCode::DUMP_ESYMBOL_PARSE_TIMEOUT;
         }
