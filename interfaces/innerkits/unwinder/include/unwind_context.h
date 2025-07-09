@@ -65,7 +65,7 @@ struct UnwindContext {
     bool stackCheck = false;
     uintptr_t stackBottom = 0;
     uintptr_t stackTop = 0;
-    int pid;
+    int pid = 0;
     std::shared_ptr<DfxRegs> regs = nullptr;
     std::shared_ptr<DfxMaps> maps = nullptr;
     std::shared_ptr<DfxMap> map = nullptr;
