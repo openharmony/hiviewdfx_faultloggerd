@@ -240,7 +240,7 @@ static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
 
 static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
 {
-    memset(&g_request, 0, sizeof(g_request));
+    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = GetDumpType(signo, si);
     g_request.pid = GetRealPid();
     g_request.nsPid = syscall(SYS_getpid);
@@ -249,17 +249,18 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
     g_request.fdTableAddr = (uint64_t)fdsan_get_fd_table();
-    memcpy(g_request.appRunningId, g_appRunningId, sizeof(g_request.appRunningId));
+    if (memcpy_s(g_request.appRunningId, sizeof(g_request.appRunningId),
+                 g_appRunningId, sizeof(g_appRunningId)) != EOK) {
+        DFXLOGE("FillDumpRequest appRunningId memcpy fail!");
+    }
     if (!IsDumpSignal(signo) && g_GetStackIdFunc!= NULL) {
         g_request.stackId = g_GetStackIdFunc();
         DFXLOGI("g_GetStackIdFunc %{private}p.", (void*)g_request.stackId);
     }
-
     GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
-
-    memcpy(&(g_request.siginfo), si, sizeof(siginfo_t));
-    memcpy(&(g_request.context), context, sizeof(ucontext_t));
+    (void)memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
+    (void)memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
 
     bool ret = true;
     switch (signo) {
@@ -368,8 +369,8 @@ static void DFX_SignalHandler(int signo, siginfo_t *si, void *context)
 static void InstallSigActionHandler(int signo)
 {
     struct sigaction action;
-    memset(&action, 0, sizeof(action));
-    memset(&g_oldSigactionList, 0, sizeof(g_oldSigactionList));
+    (void)memset_s(&action, sizeof(action), 0, sizeof(action));
+    (void)memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));
     sigfillset(&action.sa_mask);
     action.sa_sigaction = DFX_SignalHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
@@ -427,13 +428,11 @@ const char* DFX_GetAppRunningUniqueId(void)
 
 int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len)
 {
-    size_t appRunningIdMaxLen = sizeof(g_appRunningId);
-    if (appRunningId == NULL || appRunningIdMaxLen <= len) {
+    (void)memset_s(g_appRunningId, sizeof(g_appRunningId), 0, sizeof(g_appRunningId));
+    if (memcpy_s(g_appRunningId, sizeof(g_appRunningId) - 1, appRunningId, len) != EOK) {
         DFXLOGE("param error. appRunningId is NULL or length overflow");
         return -1;
     }
-    memset(g_appRunningId, 0, appRunningIdMaxLen);
-    memcpy(g_appRunningId, appRunningId, len);
     return 0;
 }
 

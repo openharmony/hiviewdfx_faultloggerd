@@ -22,9 +22,7 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <time.h>
-#ifndef DFX_SIGNAL_LIBC
 #include <securec.h>
-#endif
 #include <stdio.h>
 #include <string.h>
 #include "dfx_define.h"
@@ -64,11 +62,7 @@ bool GetThreadName(char* buffer, size_t bufferSz)
 bool GetThreadNameByTid(int32_t tid, char* buffer, size_t bufferSz)
 {
     char threadNamePath[NAME_BUF_LEN] = { 0 };
-#ifdef DFX_SIGNAL_LIBC
-    if (snprintf(threadNamePath, sizeof(threadNamePath), "/proc/%d/comm", tid) <= 0) {
-#else
     if (snprintf_s(threadNamePath, sizeof(threadNamePath), sizeof(threadNamePath) - 1, "/proc/%d/comm", tid) <= 0) {
-#endif
         return false;
     }
     return ReadStringFromFile(threadNamePath, buffer, bufferSz);
