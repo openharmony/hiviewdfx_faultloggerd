@@ -124,6 +124,23 @@ HWTEST_F(DfxHapTest, DfxHapTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxHapTest004: end.";
 }
 
-
+/**
+ * @tc.name: DfxHapTest005
+ * @tc.desc: test DfxHap ParseHapFileInfo exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxHapTest, DfxHapTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxHapTest005: start.";
+    DfxHap dfxHap;
+    std::shared_ptr<DfxMap> map = nullptr;
+    dfxHap.ParseHapFileInfo(0, map, nullptr);
+    JsFunction jsFunction;
+    dfxHap.ParseHapFileInfo(0, map, &jsFunction);
+    auto map1 = std::make_shared<DfxMap>();
+    bool ret = dfxHap.ParseHapFileInfo(0, map1, &jsFunction);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "DfxHapTest005: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

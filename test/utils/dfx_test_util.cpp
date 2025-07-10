@@ -472,6 +472,14 @@ void WaitProcStart(int (&fd)[2])
     close(fd[0]);
 }
 
+void CheckAndExit(bool hasFailure)
+{
+    if (hasFailure) {
+        _exit(1);
+    }
+    _exit(0);
+}
+
 bool IsLinuxKernel()
 {
     static bool isLinux = [] {

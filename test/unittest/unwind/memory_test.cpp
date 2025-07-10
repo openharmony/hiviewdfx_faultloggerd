@@ -278,11 +278,11 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest008, TestSize.Level2)
         memory->Read(addr, &tmp, sizeof(uint64_t), false);
         EXPECT_EQ(tmp, 0x0807060504030201);
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
     int status;
-    int ret = wait(&status);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest008: end.";
 }
 
@@ -306,31 +306,31 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest009, TestSize.Level2)
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uintptr_t value;
-        ASSERT_TRUE(memory->Read<uintptr_t>(addr, &value, false));
+        EXPECT_TRUE(memory->Read<uintptr_t>(addr, &value, false));
 #if defined(__arm__)
-        ASSERT_EQ(value, 0x04030201);
+        EXPECT_EQ(value, 0x04030201);
 #elif defined(__aarch64__)
-        ASSERT_EQ(value, 0x0807060504030201);
+        EXPECT_EQ(value, 0x0807060504030201);
 #endif
 
         uint64_t tmp;
-        ASSERT_TRUE(memory->Read(addr, &tmp, sizeof(uint8_t), false));
-        ASSERT_EQ(tmp, 0x01);
+        EXPECT_TRUE(memory->Read(addr, &tmp, sizeof(uint8_t), false));
+        EXPECT_EQ(tmp, 0x01);
 
-        ASSERT_TRUE(memory->Read(addr, &tmp, sizeof(uint16_t), false));
-        ASSERT_EQ(tmp, 0x0201);
+        EXPECT_TRUE(memory->Read(addr, &tmp, sizeof(uint16_t), false));
+        EXPECT_EQ(tmp, 0x0201);
 
-        ASSERT_TRUE(memory->Read(addr, &tmp, sizeof(uint32_t), false));
-        ASSERT_EQ(tmp, 0x04030201);
+        EXPECT_TRUE(memory->Read(addr, &tmp, sizeof(uint32_t), false));
+        EXPECT_EQ(tmp, 0x04030201);
 
-        ASSERT_TRUE(memory->Read(addr, &tmp, sizeof(uint64_t), false));
-        ASSERT_EQ(tmp, 0x0807060504030201);
+        EXPECT_TRUE(memory->Read(addr, &tmp, sizeof(uint64_t), false));
+        EXPECT_EQ(tmp, 0x0807060504030201);
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
     int status;
-    int ret = wait(&status);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest009: end.";
 }
 
@@ -355,23 +355,23 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest010, TestSize.Level2)
         memory->SetCtx(&ctx);
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         uint8_t tmp8;
-        ASSERT_TRUE(memory->Read<uint8_t>(addr, &tmp8, false));
-        ASSERT_EQ(tmp8, 0x01);
+        EXPECT_TRUE(memory->Read<uint8_t>(addr, &tmp8, false));
+        EXPECT_EQ(tmp8, 0x01);
         uint16_t tmp16;
-        ASSERT_TRUE(memory->Read<uint16_t>(addr, &tmp16, false));
-        ASSERT_EQ(tmp16, 0x0201);
+        EXPECT_TRUE(memory->Read<uint16_t>(addr, &tmp16, false));
+        EXPECT_EQ(tmp16, 0x0201);
         uint32_t tmp32;
-        ASSERT_TRUE(memory->Read<uint32_t>(addr, &tmp32, false));
-        ASSERT_EQ(tmp32, 0x04030201);
+        EXPECT_TRUE(memory->Read<uint32_t>(addr, &tmp32, false));
+        EXPECT_EQ(tmp32, 0x04030201);
         uint64_t tmp64;
-        ASSERT_TRUE(memory->Read<uint64_t>(addr, &tmp64, false));
-        ASSERT_EQ(tmp64, 0x0807060504030201);
+        EXPECT_TRUE(memory->Read<uint64_t>(addr, &tmp64, false));
+        EXPECT_EQ(tmp64, 0x0807060504030201);
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
     int status;
-    int ret = wait(&status);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest010: end.";
 }
 
@@ -384,7 +384,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxMemoryTest011: start.";
     static pid_t pid = getpid();
-    uintptr_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10};
+    uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10};
     char testStr[] = "Test ReadString Func Test ReadString Func Test ReadString Func \
         Test ReadString Func Test ReadString Func Test ReadString Func Test ReadString Func";
     pid_t child = fork();
@@ -398,15 +398,15 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
         uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
         std::string resultStr;
         uintptr_t addrStr = reinterpret_cast<uintptr_t>(&testStr[0]);
-        ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), false));
-        ASSERT_EQ(testStr, resultStr);
-        ASSERT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), true));
-        ASSERT_EQ(testStr, resultStr);
-        ASSERT_FALSE(memory->ReadString(addrStr, nullptr, sizeof(testStr)/sizeof(char), true));
+        EXPECT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), false));
+        EXPECT_EQ(testStr, resultStr);
+        EXPECT_TRUE(memory->ReadString(addrStr, &resultStr, sizeof(testStr)/sizeof(char), true));
+        EXPECT_EQ(testStr, resultStr);
+        EXPECT_FALSE(memory->ReadString(addrStr, nullptr, sizeof(testStr)/sizeof(char), true));
 
         uintptr_t val;
-        ASSERT_EQ(memory->ReadUleb128(addr), 1U);
-        ASSERT_EQ(memory->ReadSleb128(addr), 2);
+        EXPECT_EQ(memory->ReadUleb128(addr), 1U);
+        EXPECT_EQ(memory->ReadSleb128(addr), 2);
         memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_uleb128);
         memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sleb128);
         memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata1);
@@ -419,11 +419,11 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest011, TestSize.Level2)
         memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata8);
         memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_omit);
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
     int status;
-    int ret = wait(&status);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest011: end.";
 }
 
@@ -444,17 +444,17 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest012, TestSize.Level2)
         ctx.pid = pid;
         auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
         memory->SetCtx(&ctx);
-        ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_absptr), sizeof(uintptr_t));
-        ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata1), 1);
-        ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata2), 2);
-        ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata4), 4);
-        ASSERT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata8), 8);
+        EXPECT_EQ(memory->GetEncodedSize(DW_EH_PE_absptr), sizeof(uintptr_t));
+        EXPECT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata1), 1);
+        EXPECT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata2), 2);
+        EXPECT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata4), 4);
+        EXPECT_EQ(memory->GetEncodedSize(DW_EH_PE_sdata8), 8);
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
     int status;
-    int ret = wait(&status);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
+    wait(&status);
+    ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest012: end.";
 }
 

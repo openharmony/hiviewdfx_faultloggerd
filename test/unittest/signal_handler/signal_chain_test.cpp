@@ -240,7 +240,7 @@ HWTEST_F(SignalChainTest, SignalChainTest001, TestSize.Level0)
         signal(SIGSEGV, SignalSegvHandler);
         usleep(SLEEP_1000_MS);
         usleep(SLEEP_1000_MS);
-        ASSERT_EQ(g_signalSegvFlag, true) << "SignalChainTest001: g_signalSegvFlag.";
+        EXPECT_EQ(g_signalSegvFlag, true) << "SignalChainTest001: g_signalSegvFlag.";
         _exit(0);
     } else {
         KillAndWaitPid(pid);

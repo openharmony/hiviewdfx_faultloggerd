@@ -979,6 +979,37 @@ HWTEST_F(UnwinderTest, UnwinderTest002, TestSize.Level2)
     std::string str = DfxFrameFormatter::GetFrameStr(frame);
     ASSERT_EQ(str, "") << "UnwinderTest002: end.";
 }
+
+/**
+ * @tc.name: UnwinderTest003
+ * @tc.desc: test DfxFrameFormatter GetFrameStr
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderTest003: start.";
+    DfxFrame frame;
+    frame.isJsFrame = true;
+    std::string str = DfxFrameFormatter::GetFrameStr(frame);
+    ASSERT_NE(str, "") << "UnwinderTest003: end.";
+}
+
+/**
+ * @tc.name: UnwinderTest004
+ * @tc.desc: test DfxFrameFormatter GetFrameStr
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderTest004: start.";
+    DfxFrame frame;
+    frame.isJsFrame = true;
+    frame.funcName = "test";
+    frame.packageName = "test";
+    frame.mapName = "test";
+    std::string str = DfxFrameFormatter::GetFrameStr(frame);
+    ASSERT_NE(str, "") << "UnwinderTest004: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
 

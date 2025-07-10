@@ -111,6 +111,7 @@ std::string WaitCreateFile(const std::string& folder, std::regex& reg, time_t ti
 bool CreatePipeFd(int (&fd)[2]);
 void NotifyProcStart(int (&fd)[2]);
 void WaitProcStart(int (&fd)[2]);
+void CheckAndExit(bool hasFailure);
 bool IsLinuxKernel();
 bool CheckLineMatch(const std::string& filePath, std::list<LineRule>& rules);
 

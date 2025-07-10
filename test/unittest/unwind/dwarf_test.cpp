@@ -1210,6 +1210,36 @@ HWTEST_F(DwarfTest, DfxInstructionsTest001, TestSize.Level2)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DfxInstructionsTest001: end.\n";
 }
+
+static bool DwarfDecode(uint8_t opCode)
+{
+    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_LOCAL);
+    DwarfCfaInstructions instructions(memory);
+    CommonInfoEntry cie;
+    cie.pointerEncoding = DW_EH_PE_omit;
+    uintptr_t pcOffset = 0;
+    uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8};
+    uintptr_t instPtr = reinterpret_cast<uintptr_t>(&values[0]);
+    RegLocState rsState;
+    bool ret = instructions.DecodeDwCfa(opCode, cie, pcOffset, instPtr, rsState);
+    return ret;
+}
+
+/**
+ * @tc.name: DwarfCfaInstructionsTest001
+ * @tc.desc: test DecodeDwCfa functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(DwarfTest, DwarfCfaInstructionsTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DwarfCfaInstructionsTest001: start.";
+    uint8_t values[] = {DW_CFA_set_loc, DW_CFA_undefined, DW_CFA_register,
+        DW_CFA_def_cfa_register, DW_CFA_offset_extended_sf};
+    for (size_t i = 0; i < sizeof(values) / sizeof(uint8_t); i++) {
+        ASSERT_EQ(DwarfDecode(values[i]), true);
+    }
+    GTEST_LOG_(INFO) << "DwarfCfaInstructionsTest001: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS
