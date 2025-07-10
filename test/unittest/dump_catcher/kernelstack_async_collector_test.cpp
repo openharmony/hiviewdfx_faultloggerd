@@ -56,12 +56,12 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest001, TestSi
         pid_t tid = gettid();
         ASSERT_TRUE(stackCollector.NotifyStartCollect(tid));
         KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
-        ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-        ASSERT_TRUE(stack.second.empty());
+        ASSERT_NE(stack.errorCode, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.msg.empty());
         sleep(1);
         stack = stackCollector.GetCollectedStackResult();
-        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+        ASSERT_EQ(stack.errorCode, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.msg.find(std::to_string(tid)) != std::string::npos);
         GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest001: end.";
     }
 }
@@ -83,13 +83,13 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest002, TestSi
         pid_t tid = gettid();
         int waitTime = 0;
         KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
-        ASSERT_NE(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-        ASSERT_TRUE(stack.second.empty());
+        ASSERT_NE(stack.errorCode, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.msg.empty());
     
         waitTime = 1000; // 1000 : 1000ms
         stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
-        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+        ASSERT_EQ(stack.errorCode, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.msg.find(std::to_string(tid)) != std::string::npos);
         GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest002: end.";
     }
 }
@@ -101,8 +101,8 @@ static void NotifyCollectStackTest()
     if (stackCollector.NotifyStartCollect(tid)) {
         sleep(1);
         KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
-        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_SUCCESS);
-        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+        ASSERT_EQ(stack.errorCode, KernelStackAsyncCollector::STACK_SUCCESS);
+        ASSERT_TRUE(stack.msg.find(std::to_string(tid)) != std::string::npos);
         g_count++;
     }
 }
@@ -113,8 +113,8 @@ static void CollectStackWithTimeoutTest()
     pid_t tid = gettid();
     KernelStackAsyncCollector stackCollector;
     KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
-    if (stack.first == KernelStackAsyncCollector::STACK_SUCCESS) {
-        ASSERT_TRUE(stack.second.find(std::to_string(tid)) != std::string::npos);
+    if (stack.errorCode == KernelStackAsyncCollector::STACK_SUCCESS) {
+        ASSERT_TRUE(stack.msg.find(std::to_string(tid)) != std::string::npos);
         g_count++;
     }
 }
@@ -192,8 +192,8 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest005, TestSi
         ASSERT_TRUE(stackCollector.NotifyStartCollect(tid));
         sleep(1); // 1 : 1s
         KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
-        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_NO_PROCESS);
-        ASSERT_TRUE(stack.second.empty());
+        ASSERT_EQ(stack.errorCode, KernelStackAsyncCollector::STACK_NO_PROCESS);
+        ASSERT_TRUE(stack.msg.empty());
         GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest005: end.";
     }
 }
@@ -214,8 +214,8 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest006, TestSi
         KernelStackAsyncCollector stackCollector;
         int waitTime = 1000; // 1000 : 1000ms
         KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(0, waitTime);
-        ASSERT_EQ(stack.first, KernelStackAsyncCollector::STACK_NO_PROCESS);
-        ASSERT_TRUE(stack.second.empty());
+        ASSERT_EQ(stack.errorCode, KernelStackAsyncCollector::STACK_NO_PROCESS);
+        ASSERT_TRUE(stack.msg.empty());
         GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest006: end.";
     }
 }

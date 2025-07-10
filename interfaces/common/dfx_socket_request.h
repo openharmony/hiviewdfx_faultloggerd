@@ -230,6 +230,8 @@ typedef struct FaultLoggerdStatsRequest {
     uint64_t dumpCatcherFinishTime;
     /** dumpcatcher result */
     int32_t result;
+    /** count of thread in target process */
+    uint32_t targetProcessThreadCount;
     /** caller elf offset */
     uintptr_t offset;
     char summary[128]; // 128 : max summary size

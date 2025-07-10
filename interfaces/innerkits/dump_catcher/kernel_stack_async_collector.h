@@ -38,7 +38,16 @@ public:
         STACK_NO_PROCESS,
         STACK_UNKNOWN,
     };
-    using KernelResult = std::pair<ErrorCode, std::string>;
+    struct KernelResult {
+        ErrorCode errorCode = STACK_UNKNOWN;
+        std::string msg = "";
+        uint32_t threadCount = 0;
+        KernelResult() = default;
+        explicit KernelResult(ErrorCode errorCode) : errorCode(errorCode) {}
+        KernelResult(ErrorCode errorCode, uint32_t threadCount) : errorCode(errorCode), threadCount(threadCount) {}
+        KernelResult(ErrorCode errorCode, std::string msg, uint32_t threadCount)
+            : errorCode(errorCode), msg(msg), threadCount(threadCount) {}
+    };
 
     KernelResult GetProcessStackWithTimeout(int pid, uint32_t timeoutMs) const;
 

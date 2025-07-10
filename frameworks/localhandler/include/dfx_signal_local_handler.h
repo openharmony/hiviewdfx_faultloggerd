@@ -51,6 +51,11 @@ void DFX_GetCrashFdFunc(CrashFdFunc fn);
 */
 void DFX_InstallLocalSignalHandler(void);
 
+
+typedef void (*SigAlarmFunc)(void);
+
+void DFX_SetSigAlarmCallBack(SigAlarmFunc func);
+
 #ifdef __cplusplus
 }
 #endif

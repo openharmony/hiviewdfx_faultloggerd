@@ -46,6 +46,7 @@
 constexpr uint32_t FAULTLOGGERD_UID = 1202;
 
 static CrashFdFunc g_crashFdFn = nullptr;
+static SigAlarmFunc g_sigAlarmCallbackFn = nullptr;
 #if !defined(__aarch64__) && !defined(__loongarch_lp64)
 constexpr uint32_t LOCAL_HANDLER_STACK_SIZE = 128 * 1024; // 128K
 static void *g_reservedChildStack = nullptr;
@@ -54,7 +55,7 @@ static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static constexpr int CATCHER_STACK_SIGNALS[] = {
-    SIGABRT, SIGBUS, SIGILL, SIGSEGV,
+    SIGABRT, SIGBUS, SIGILL, SIGSEGV, SIGALRM,
 };
 
 #if !defined(__aarch64__) && !defined(__loongarch_lp64)
@@ -79,17 +80,25 @@ AT_UNUSED static void FutexWait(volatile void* ftx, int value)
 
 static int DoCrashHandler(void* arg)
 {
-    (void)arg;
+    int sig = *(static_cast<int *>(arg));
     RegisterAllocator();
-    if (g_crashFdFn == nullptr) {
-        CrashLocalHandler(&g_request);
+    DFXLOGI("DoCrashHandler::start handle sig(%d)", sig);
+    if (sig == SIGALRM) {
+        if (g_sigAlarmCallbackFn != nullptr) {
+            g_sigAlarmCallbackFn();
+        }
     } else {
-        int fd = g_crashFdFn(&g_request);
-        CrashLocalHandlerFd(fd, &g_request);
-        if (fd >= 0) {
-            close(fd);
+        if (g_crashFdFn == nullptr) {
+            CrashLocalHandler(&g_request);
+        } else {
+            int fd = g_crashFdFn(&g_request);
+            CrashLocalHandlerFd(fd, &g_request);
+            if (fd >= 0) {
+                close(fd);
+            }
         }
     }
+    DFXLOGI("DoCrashHandler::finish handle sig(%d)", sig);
     UnregisterAllocator();
     pthread_mutex_unlock(&g_signalHandlerMutex);
     _exit(0);
@@ -99,33 +108,35 @@ static int DoCrashHandler(void* arg)
 void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
 {
     pthread_mutex_lock(&g_signalHandlerMutex);
-    (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
-    g_request.type = static_cast<ProcessDumpType>(sig);
-    g_request.tid = gettid();
-    g_request.pid = getpid();
-    g_request.uid = FAULTLOGGERD_UID;
-    g_request.timeStamp = GetTimeMilliseconds();
-    DFXLOGI("DFX_SignalLocalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
-        sig, g_request.pid, g_request.tid);
+    if (sig != SIGALRM) {
+        (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
+        g_request.type = static_cast<ProcessDumpType>(sig);
+        g_request.tid = gettid();
+        g_request.pid = getpid();
+        g_request.uid = FAULTLOGGERD_UID;
+        g_request.timeStamp = GetTimeMilliseconds();
+        DFXLOGI("DFX_SignalLocalHandler :: sig(%{public}d), pid(%{public}d), tid(%{public}d).",
+            sig, g_request.pid, g_request.tid);
 
-    GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
-    GetProcessName(g_request.processName, sizeof(g_request.processName));
+        GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
+        GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-    int ret = memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
-    if (ret < 0) {
-        DFXLOGE("memcpy_s siginfo fail, ret=%{public}d", ret);
-    }
-    ret = memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
-    if (ret < 0) {
-        DFXLOGE("memcpy_s context fail, ret=%{public}d", ret);
+        int ret = memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
+        if (ret < 0) {
+            DFXLOGE("memcpy_s siginfo fail, ret=%{public}d", ret);
+        }
+        ret = memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
+        if (ret < 0) {
+            DFXLOGE("memcpy_s context fail, ret=%{public}d", ret);
+        }
     }
 #if defined(__aarch64__) || defined(__loongarch_lp64)
-    DoCrashHandler(NULL);
+    DoCrashHandler(&sig);
 #else
     int pseudothreadTid = -1;
     pid_t childTid = clone(DoCrashHandler, g_reservedChildStack, \
         CLONE_THREAD | CLONE_SIGHAND | CLONE_VM | CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID, \
-        &pseudothreadTid, NULL, NULL, &pseudothreadTid);
+        &sig, &pseudothreadTid, NULL, NULL, &pseudothreadTid);
     if (childTid == -1) {
         DFXLOGE("Failed to create thread for crash local handler");
         pthread_mutex_unlock(&g_signalHandlerMutex);
@@ -167,4 +178,9 @@ void DFX_InstallLocalSignalHandler(void)
         }
     }
     sigprocmask(SIG_UNBLOCK, &set, nullptr);
+}
+
+void DFX_SetSigAlarmCallBack(SigAlarmFunc func)
+{
+    g_sigAlarmCallbackFn = func;
 }

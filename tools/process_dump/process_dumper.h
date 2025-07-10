@@ -43,23 +43,23 @@ class ProcessDumper final {
 public:
     static ProcessDumper &GetInstance();
     void Dump();
+    void ReportSigDumpStats();
 
 private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
-    int DumpProcess(ProcessDumpRequest& request);
-    int32_t ReadRequestAndCheck(ProcessDumpRequest& request);
-    bool InitBufferWriter(const ProcessDumpRequest& request);
-    bool InitDfxProcess(ProcessDumpRequest& request);
-    bool InitUnwinder(const ProcessDumpRequest& request, int &dumpRes);
-    int GeFaultloggerdRequestType(const ProcessDumpRequest &request);
-    void ReportSigDumpStats(const ProcessDumpRequest& request, uint64_t startTime, uint64_t finishTime) const;
-    void UnwindWriteJit(const ProcessDumpRequest &request);
-    void FormatJsonInfoIfNeed(const ProcessDumpRequest& request);
-    void UpdateConfigByRequest(const ProcessDumpRequest &request);
-    void WriteDumpResIfNeed(const ProcessDumpRequest& request, int32_t resDump);
-    void PrintDumpInfo(const ProcessDumpRequest& request, int& dumpRes);
-    int ParseSymbols(const ProcessDumpRequest& request, std::shared_ptr<DumpInfo> threadDumpInfo);
+    int DumpProcess();
+    int32_t ReadRequestAndCheck();
+    bool InitBufferWriter();
+    bool InitDfxProcess();
+    bool InitUnwinder(int &dumpRes);
+    int GeFaultloggerdRequestType();
+    void UnwindWriteJit();
+    void FormatJsonInfoIfNeed();
+    void UpdateConfigByRequest();
+    void WriteDumpResIfNeed(int32_t resDump);
+    void PrintDumpInfo(int& dumpRes);
+    int ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo);
     std::vector<std::string> FindDumpInfoByType(const ProcessDumpType& dumpType);
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
     void RemoveFileIfNeed(const std::string& dirPath) const;
@@ -68,6 +68,9 @@ private:
     void SetProcessdumpTimeout(siginfo_t &si);
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<Unwinder> unwinder_ = nullptr;
+    ProcessDumpRequest request_{};
+    uint64_t startTime_ = 0;
+    uint64_t finishTime_ = 0;
 
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
     bool isJsonDump_ = false;
