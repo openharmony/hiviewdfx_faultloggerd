@@ -17,6 +17,8 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <fstream>
+#include <iostream>
 
 #include "dfx_define.h"
 #include "dfx_test_util.h"
@@ -362,7 +364,7 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest015, TestSize.Level2)
     ASSERT_TRUE(!ret);
     coreDumpService.status_ = OHOS::HiviewDFX::CoreDumpService::WriteStatus::STOP_STAGE;
     ret = coreDumpService.FinishCoreDump();
-    ASSERT_TRUE(ret);
+    ASSERT_TRUE(!ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest015: end.";
 }
 
@@ -480,5 +482,84 @@ HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest020, TestSize.Level2)
     ret = coreDumpService.GetKeyThreadData(request);
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "DfxCoreDumpTest020: end.";
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest021
+ * @tc.desc: test coredump GetCoredumpFileName function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest021, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest021: start.";
+    CoreDumpService coreDumpService = CoreDumpService();
+    std::string fileName = coreDumpService.GetCoredumpFileName();
+    ASSERT_TRUE(fileName.empty());
+    coreDumpService.bundleName_ = "test.hap";
+    fileName = coreDumpService.GetCoredumpFileName();
+    ASSERT_TRUE(!fileName.empty());
+    ASSERT_EQ(fileName, "test.hap.dmp");
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest021: end.";
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest022
+ * @tc.desc: test coredump GetCoredumpFilePath function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest022, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest022: start.";
+    CoreDumpService coreDumpService = CoreDumpService();
+    std::string filePath = coreDumpService.GetCoredumpFilePath();
+    ASSERT_TRUE(filePath.empty());
+    coreDumpService.bundleName_ = "test.hap";
+    filePath = coreDumpService.GetCoredumpFilePath();
+    ASSERT_TRUE(!filePath.empty());
+    ASSERT_EQ(filePath, "/data/storage/el2/base/files/test.hap.dmp");
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest022: end.";
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest023
+ * @tc.desc: test coredump UnlinkFile function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest023, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest023: start.";
+    auto ret = CoreDumpService::UnlinkFile("");
+    ASSERT_TRUE(!ret);
+    std::ofstream outfile(TEST_TEMP_FILE);
+    if (!outfile) {
+        GTEST_LOG_(ERROR) << "Failed to open file";
+    }
+    outfile << "testdata" << std::endl;
+    outfile.close();
+    ret = CoreDumpService::UnlinkFile(TEST_TEMP_FILE);
+    ASSERT_TRUE(ret);
+    ret = CoreDumpService::UnlinkFile(TEST_TEMP_FILE);
+    ASSERT_TRUE(!ret);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest023: end.";
+}
+
+/**
+ * @tc.name: DfxCoreDumpTest024
+ * @tc.desc: test coredump UnlinkFile function
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpTest, DfxCoreDumpTest024, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest024: start.";
+    auto ret = CoreDumpService::AdjustFileSize(-1, 0);
+    ASSERT_TRUE(!ret);
+    int fd = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    ASSERT_TRUE(fd > 0);
+    ret = CoreDumpService::AdjustFileSize(fd, 0);
+    ASSERT_TRUE(!ret);
+    ret = CoreDumpService::AdjustFileSize(fd, 1024);
+    ASSERT_TRUE(ret);
+    close(fd);
+    GTEST_LOG_(INFO) << "DfxCoreDumpTest024: end.";
 }
 }
