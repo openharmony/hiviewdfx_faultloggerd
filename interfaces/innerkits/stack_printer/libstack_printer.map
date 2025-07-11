@@ -1,13 +1,17 @@
 {
     global:
         extern "C++" {
-            OHOS::HiviewDFX::StackPrinter::SetUnwindInfo*;
             OHOS::HiviewDFX::StackPrinter::StackPrinter*;
+            OHOS::HiviewDFX::StackPrinter::InitUniqueTable*;
             OHOS::HiviewDFX::StackPrinter::PutPcsInTable*;
+            OHOS::HiviewDFX::StackPrinter::SetUnwindInfo*;
             OHOS::HiviewDFX::StackPrinter::GetFullStack*;
+            OHOS::HiviewDFX::StackPrinter::GetThreadSampledFrames*;
             OHOS::HiviewDFX::StackPrinter::GetTreeStack*;
             OHOS::HiviewDFX::StackPrinter::GetHeaviestStack*;
-            OHOS::HiviewDFX::StackPrinter::InitUniqueTable*;
+            OHOS::HiviewDFX::StackPrinter::PrintTreeStackBySampledStack*;
+            OHOS::HiviewDFX::StackPrinter::SerializeSampledFrameMap*;
+            OHOS::HiviewDFX::StackPrinter::DeserializeSampledFrameMap*;
         };
     local:
         *;

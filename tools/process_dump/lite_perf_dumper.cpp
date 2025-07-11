@@ -24,6 +24,7 @@
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_dump_res.h"
+#include "dfx_trace.h"
 #include "faultloggerd_client.h"
 #include "lperf_event_record.h"
 #include "lperf_events.h"
@@ -59,7 +60,7 @@ int LitePerfDumper::PerfProcess(LitePerfParam& lperf)
     }
 
     int pipeWriteFd[PIPE_NUM_SZ] = { -1, -1};
-    if (RequestLitePerfPipeFd(FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == -1) {
+    if (RequestLitePerfPipeFd(FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd, 0) == -1) {
         DFXLOGE("%{public}s request pipe failed, err:%{public}d", __func__, errno);
         return -1;
     }
@@ -73,29 +74,20 @@ int LitePerfDumper::PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf)
     SmartFd resFd(pipeWriteFd[PIPE_RES_INDEX]);
 
     std::vector<int> lperfTids;
-    for (auto i = 0; i < MAX_PERF_TIDS_SIZE; ++i) {
-        if (lperf.tids[i] <= 0 || !IsThreadInPid(lperf.pid, lperf.tids[i])) {
-            DFXLOGW("tid(%{public}d) is not in curr pid(%{public}d).", lperf.tids[i], lperf.pid);
+    for (auto i = 0; i < MAX_SAMPLE_TIDS; ++i) {
+        if (lperf.tids[i] <= 0) {
             continue;
         }
+        DFXLOGI("perf tid(%{public}d).", lperf.tids[i]);
         lperfTids.emplace_back(lperf.tids[i]);
     }
 
     LperfRecord record;
-    auto accessor = std::make_shared<OHOS::HiviewDFX::UnwindAccessors>();
-    auto unwinder = std::make_shared<Unwinder>(accessor, false);
-    auto maps = DfxMaps::Create(lperf.pid);
-    record.SetUnwindInfo(unwinder, maps);
-    int res = record.StartProcessSampling(lperf.pid, lperfTids, lperf.freq, lperf.durationMs, lperf.parseMiniDebugInfo);
+    int res = record.StartProcessSampling(lperf.pid, lperfTids, lperf.freq, lperf.durationMs);
     if (res == 0) {
-        for (const auto& tid : lperfTids) {
-            std::string stack;
-            if (record.CollectSampleStack(tid, stack) == 0) {
-                WriteSampleStackByTid(tid, bufFd.GetFd());
-            } else {
-                DFXLOGW("%{public}s CollectSampleStack tid(%{public}d) fail", __func__, tid);
-                continue;
-            }
+        std::string data;
+        if (record.CollectSampleStack(data) == 0) {
+            WriteSampleData(bufFd.GetFd(), data);
         }
     }
     ssize_t nresWrite = OHOS_TEMP_FAILURE_RETRY(write(resFd.GetFd(), &res, sizeof(res)));
@@ -107,21 +99,23 @@ int LitePerfDumper::PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf)
     return 0;
 }
 
-void LitePerfDumper::WriteSampleStackByTid(int tid, int bufFd)
+void LitePerfDumper::WriteSampleData(int bufFd, const std::string& data)
 {
-    std::string writeStr = LITE_PERF_SPLIT + std::to_string(tid) + "\n";
     constexpr size_t step = MAX_PIPE_SIZE;
-    writeStr += stack;
-    for (size_t i = 0; i < writeStr.size(); i += step) {
-        size_t length = (i + step) < writeStr.size() ? step : writeStr.size() - i;
-        OHOS_TEMP_FAILURE_RETRY(write(bufFd, writeStr.substr(i, length).c_str(), length));
+    for (size_t i = 0; i < data.size(); i += step) {
+        size_t length = (i + step) < data.size() ? step : data.size() - i;
+        DFXLOGI("%{public}s write length: %{public}zu", __func__, length);
+        ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(bufFd, data.substr(i, length).c_str(), length));
+        if (nwrite != static_cast<ssize_t>(length)) {
+            DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
+            return;
+        }
     }
 }
 
 int32_t LitePerfDumper::ReadLperfAndCheck(LitePerfParam& lperf)
 {
     DFX_TRACE_SCOPED("ReadRequestAndCheck");
-    ElapsedTime counter("ReadRequestAndCheck", 20); // 20 : limit cost time 20 ms
     ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(STDOUT_FILENO, &lperf, sizeof(LitePerfParam)));
     if (readCount != static_cast<long>(sizeof(LitePerfParam))) {
         DFXLOGE("Failed to read LitePerfParam(%{public}d), readCount(%{public}zd).", errno, readCount);

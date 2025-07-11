@@ -35,6 +35,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+constexpr size_t MAX_LITE_PERF_PIPE_SIZE = 100;
+}
 
 FaultLoggerPipe::FaultLoggerPipe()
 {
@@ -153,6 +156,14 @@ LitePerfPipePair& LitePerfPipePair::CreatePipePair(int uid)
         return *pipePair;
     }
     return pipes_.emplace_back(uid);
+}
+
+bool LitePerfPipePair::CheckDumpMax()
+{
+    if (pipes_.size() > MAX_LITE_PERF_PIPE_SIZE) {
+        return true;
+    }
+    return false;
 }
 
 bool LitePerfPipePair::CheckDumpRecord(int uid)

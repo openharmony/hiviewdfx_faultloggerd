@@ -20,8 +20,13 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-constexpr int MAX_PERF_TIDS_SIZE = 5;
-const char* const LITE_PERF_SPLIT = "tid: ";
+constexpr int MIN_SAMPLE_TIDS = 1;
+constexpr int MAX_SAMPLE_TIDS = 10;
+constexpr int MIN_SAMPLE_FREQUENCY = 1;
+constexpr int MAX_SAMPLE_FREQUENCY = 100;
+constexpr int MIN_STOP_SECONDS = 1;
+constexpr int MAX_STOP_SECONDS = 10000;
+constexpr int DUMP_LITEPERF_TIMEOUT = 5000;
 }
 
 /**
@@ -30,10 +35,9 @@ const char* const LITE_PERF_SPLIT = "tid: ";
  */
 struct LitePerfParam {
     int pid;
-    int tids[MAX_PERF_TIDS_SIZE];
+    int tids[MAX_SAMPLE_TIDS];
     int freq = 0;
     int durationMs = 0;
-    bool parseMiniDebugInfo = false;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

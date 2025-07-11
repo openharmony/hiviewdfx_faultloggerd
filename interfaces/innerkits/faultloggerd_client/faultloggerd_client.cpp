@@ -131,7 +131,7 @@ int32_t RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2], bool isJs
 #endif
 }
 
-int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2])
+int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2], int timeout)
 {
 #ifndef is_ohos_lite
     if (pipeType < FaultLoggerPipeType::PIPE_FD_READ || pipeType > FaultLoggerPipeType::PIPE_FD_DELETE) {
@@ -139,10 +139,12 @@ int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2])
         return ResponseCode::DEFAULT_ERROR_CODE;
     }
     DFXLOGI("%{public}s.%{public}s :: pipeType: %{public}d.", FAULTLOGGERD_CLIENT_TAG, __func__, pipeType);
-    PipFdRequestData request{};
-    request.pipeType = static_cast<int8_t>(pipeType);
+    LitePerfFdRequestData request{};
     FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
+    request.pipeType = static_cast<int8_t>(pipeType);
     request.pid = getpid();
+    request.uid = getuid();
+    request.timeout = timeout;
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     SocketFdData socketFdData = {pipeFd, PIPE_NUM_SZ};
     return SendRequestToServer(GetSocketName().c_str(), socketRequestData, CRASHDUMP_SOCKET_TIMEOUT, &socketFdData);
@@ -154,10 +156,11 @@ int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2])
 int32_t RequestLitePerfDelPipeFd()
 {
 #ifndef is_ohos_lite
-    PipFdRequestData request{};
+    LitePerfFdRequestData request{};
     FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_LITEPERF_CLIENT);
     request.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
     request.pid = getpid();
+    request.uid = getuid();
     return SendRequestToServer(GetSocketName().c_str(), {&request, sizeof(request)}, SDKDUMP_SOCKET_TIMEOUT);
 #else
     return ResponseCode::DEFAULT_ERROR_CODE;

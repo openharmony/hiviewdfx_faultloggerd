@@ -15,21 +15,18 @@
 #ifndef LPERF_RECORD_H
 #define LPERF_RECORD_H
 
-#include <map>
 #include <string>
+#include <vector>
 
 #include "lperf_events.h"
 #include "stack_printer.h"
-#include "unwinder.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 class LperfRecord {
 public:
-    void SetUnwindInfo(const std::shared_ptr<Unwinder>& unwinder, const std::shared_ptr<DfxMaps>& maps);
-
-    int StartProcessSampling(int pid, const std::vector<int>& tids, int freq, int duration, bool parseMiniDebugInfo);
-    int CollectSampleStack(int tid, std::string& stack);
+    int StartProcessSampling(int pid, const std::vector<int>& tids, int freq, int duration);
+    int CollectSampleStack(std::string& datas);
     void FinishProcessSampling();
 
 private:
@@ -38,16 +35,12 @@ private:
     void SymbolicRecord(LperfRecordSample& record);
 
     LperfEvents lperfEvents_;
-    std::shared_ptr<Unwinder> unwinder_;
-    std::shared_ptr<DfxMaps> maps_;
-    std::map<unsigned int, std::unique_ptr<StackPrinter>> tidStackMaps_;
+    std::unique_ptr<StackPrinter> stackPrinter_ = nullptr;
 
-    unsigned int timeStopSec_ = 5;
+    unsigned int timeStopSec_ = 0;
     unsigned int frequency_ = 0;
     int pid_ = 0;
     std::vector<int> tids_ = {};
-    bool defaultEnableDebugInfo_ = false;
-    bool enableDebugInfoSymbolic_ = false;
 };
 
 template<typename T>

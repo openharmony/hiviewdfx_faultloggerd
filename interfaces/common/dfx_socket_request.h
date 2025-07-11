@@ -18,6 +18,7 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <sys/types.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -181,6 +182,19 @@ typedef struct PipFdRequestData {
     /** type of pipe */
     int8_t pipeType;
 } __attribute__((packed)) PipFdRequestData;
+
+typedef struct LitePerfFdRequestData {
+    /** request data head **/
+    RequestDataHead head;
+    /** process id */
+    int32_t pid;
+    /** user id */
+    uid_t uid;
+    /** type of pipe */
+    int8_t pipeType;
+    /** timeout of request */
+    int32_t timeout;
+} __attribute__((packed)) LitePerfFdRequestData;
 
 /**
  * @brief  request information

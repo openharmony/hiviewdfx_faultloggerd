@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include "dfx_lperf.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -35,7 +36,6 @@ constexpr unsigned long LPERF_IOCTL_INIT = 1075866625;
 constexpr unsigned long LPERF_IOCTL_PROFILE = 2148035586;
 constexpr unsigned long LPERF_IOCTL_ADD_THREADS = 1074031620;
 constexpr unsigned int DEFAULT_WATER_MARK = 5000;
-constexpr int MAX_PERF_TIDS_COUNT = 10;
 
 #define HIPERF_BUF_ALIGN alignas(64)
 
@@ -50,7 +50,7 @@ struct LperfInitArg {
 
 struct LperfThreadInputArg {
     unsigned int tidCount;
-    unsigned int tids[MAX_PERF_TIDS_COUNT];
+    unsigned int tids[MAX_SAMPLE_TIDS];
 };
 }
 
@@ -176,7 +176,7 @@ void LperfEvents::GetRecordFieldFromMmap(MmapFd& mmap, void* dest, size_t destSi
     size_t tailSize = mmap.bufSize - pos;
     size_t copySize = std::min(size, tailSize);
     if (memcpy_s(dest, destSize, mmap.buf + pos, copySize) != 0) {
-        DFXLOGE("memcpy_s %{public}p to %{public}p failed. size %{public}zd", mmap.buf + pos, dest, copySize);
+        DFXLOGE("memcpy_s failed. size %{public}zd", copySize);
     }
     if (copySize < size) {
         size -= copySize;

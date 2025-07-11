@@ -22,6 +22,7 @@
 #include <sys/syscall.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_lperf.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
 #include "fault_logger_daemon.h"
@@ -396,7 +397,7 @@ int32_t PipeService::OnRequest(const std::string& socketName, int32_t connection
 }
 
 bool LitePerfPipeService::Filter(const std::string &socketName, int32_t connectionFd,
-    const PipFdRequestData &requestData, int& uid)
+    const LitePerfFdRequestData &requestData)
 {
     if (requestData.pipeType > FaultLoggerPipeType::PIPE_FD_DELETE ||
         requestData.pipeType < FaultLoggerPipeType::PIPE_FD_READ) {
@@ -407,23 +408,22 @@ bool LitePerfPipeService::Filter(const std::string &socketName, int32_t connecti
     if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
         return false;
     }
-    if (creds.pid != requestData.pid) {
+    if (creds.uid != requestData.uid) {
         DFXLOGW("Failed to check request credential request:%{public}d, cred:%{public}d, fd:%{public}d",
-            requestData.pid, creds.pid, connectionFd);
+            requestData.uid, creds.uid, connectionFd);
         return false;
     }
-    uid = creds.uid;
     return true;
 }
 
 int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t connectionFd,
-    const PipFdRequestData& requestData)
+    const LitePerfFdRequestData& requestData)
 {
     DFX_TRACE_SCOPED("LitePerfPipeServiceOnRequest");
-    int uid;
-    if (!Filter(socketName, connectionFd, requestData, uid)) {
+    if (!Filter(socketName, connectionFd, requestData)) {
         return ResponseCode::REQUEST_REJECT;
     }
+    int uid = static_cast<int>(requestData.uid);
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_DELETE) {
         LitePerfPipePair::DelPipePair(uid);
@@ -433,13 +433,20 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
 
     int32_t fds[PIPE_NUM_SZ] = {0};
     if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
-        if (LitePerfPipePair::CheckDumpRecord(uid)) {
+        if (LitePerfPipePair::CheckDumpMax() || LitePerfPipePair::CheckDumpRecord(uid)) {
             DFXLOGE("%{public}s :: uid(%{public}d) is dumping.", FAULTLOGGERD_SERVICE_TAG, uid);
             return ResponseCode::SDK_DUMP_REPEAT;
         }
         auto& pipePair = LitePerfPipePair::CreatePipePair(uid);
         fds[PIPE_BUF_INDEX] = pipePair.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ);
         fds[PIPE_RES_INDEX] = pipePair.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ);
+
+        constexpr int maxPerfTimeout = (MAX_STOP_SECONDS + DUMP_LITEPERF_TIMEOUT) / 1000;
+        int32_t delayTime = std::min(requestData.timeout, maxPerfTimeout);
+        auto task = [uid, this] {
+            LitePerfPipePair::DelPipePair(uid);
+        };
+        StartDelayTask(task, delayTime);
     } else if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
         LitePerfPipePair* pipePair = LitePerfPipePair::GetPipePair(uid);
         if (pipePair == nullptr) {
@@ -458,6 +465,12 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
     return responseData;
+}
+
+void LitePerfPipeService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
+{
+    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime);
+    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
 }
 #endif
 }

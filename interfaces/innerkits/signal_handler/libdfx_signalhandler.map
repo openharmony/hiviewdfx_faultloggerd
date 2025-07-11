@@ -8,6 +8,8 @@
         DFX_SetCrashObj;
         DFX_ResetCrashObj;
         DFX_SetCrashLogConfig;
+        DFX_SetDumpableState;
+        DFX_RestoreDumpableState;
     };
   local:
     *;

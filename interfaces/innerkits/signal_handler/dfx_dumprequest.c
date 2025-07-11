@@ -72,6 +72,10 @@ static struct ProcessDumpRequest *g_request = NULL;
 static long g_blockExit = 0;
 static long g_vmRealPid = 0;
 static long g_unwindResult = 0;
+static int g_dumpCount = 0;
+static int g_dumpState = 0;
+static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutexattr_t g_dumpAttr;
 
 enum PIPE_FD_TYPE {
     WRITE_TO_DUMP,
@@ -104,6 +108,19 @@ static bool ReadProcessDumpGetRegsMsg(void);
 #ifndef is_ohos_lite
 DumpHiTraceIdStruct HiTraceChainGetId() __attribute__((weak));
 #endif
+
+void __attribute__((constructor)) InitMutex(void)
+{
+    pthread_mutexattr_init(&g_dumpAttr);
+    pthread_mutexattr_settype(&g_dumpAttr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&g_dumpMutex, &g_dumpAttr);
+}
+
+void __attribute__((destructor)) DeinitMutex(void)
+{
+    pthread_mutexattr_destroy(&g_dumpAttr);
+    pthread_mutex_destroy(&g_dumpMutex);
+}
 
 static void ResetFlags(void)
 {
@@ -275,13 +292,39 @@ static pid_t ForkBySyscall(void)
 #endif
 }
 
+bool DFX_SetDumpableState(void)
+{
+    pthread_mutex_lock(&g_dumpMutex);
+    if (g_dumpCount == 0) {
+        g_dumpState = prctl(PR_GET_DUMPABLE);
+        if (prctl(PR_SET_DUMPABLE, 1) != 0) {
+            DFXLOGE("Failed to set dumpable, errno(%{public}d).", errno);
+            pthread_mutex_unlock(&g_dumpMutex);
+            return false;
+        }
+    }
+    ++g_dumpCount;
+    pthread_mutex_unlock(&g_dumpMutex);
+    return true;
+}
+
+void DFX_RestoreDumpableState(void)
+{
+    pthread_mutex_lock(&g_dumpMutex);
+    if (g_dumpCount > 0) {
+        --g_dumpCount;
+        if (g_dumpCount == 0) {
+            prctl(PR_SET_DUMPABLE, g_dumpState);
+        }
+    }
+    pthread_mutex_unlock(&g_dumpMutex);
+}
+
 static bool SetDumpState(void)
 {
-    if (prctl(PR_SET_DUMPABLE, 1) != 0) {
-        DFXLOGE("Failed to set dumpable, errno(%{public}d).", errno);
+    if (DFX_SetDumpableState() == false) {
         return false;
     }
-
     if (prctl(PR_SET_PTRACER, PR_SET_PTRACER_ANY) != 0) {
         if (errno != EINVAL) {
             DFXLOGE("Failed to set ptracer, errno(%{public}d).", errno);
@@ -291,9 +334,9 @@ static bool SetDumpState(void)
     return true;
 }
 
-static void RestoreDumpState(int prevState, bool isTracerStatusModified)
+static void RestoreDumpState(bool isTracerStatusModified)
 {
-    prctl(PR_SET_DUMPABLE, prevState);
+    DFX_RestoreDumpableState();
     if (isTracerStatusModified == true) {
         prctl(PR_SET_PTRACER, 0);
     }
@@ -563,7 +606,6 @@ static void ReadUnwindFinishMsg(int signo)
 
 static int ProcessDump(int signo)
 {
-    int prevDumpableStatus = prctl(PR_GET_DUMPABLE);
     bool isTracerStatusModified = SetDumpState();
     if (!IsDumpSignal(signo)) {
         ResetFlags();
@@ -600,7 +642,7 @@ static int ProcessDump(int signo)
         ReadUnwindFinishMsg(signo);
     } while (false);
 
-    RestoreDumpState(prevDumpableStatus, isTracerStatusModified);
+    RestoreDumpState(isTracerStatusModified);
     return 0;
 }
 
