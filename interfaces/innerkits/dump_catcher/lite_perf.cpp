@@ -215,8 +215,7 @@ bool LitePerf::Impl::HandlePollEvents(const struct pollfd (&readFds)[2], const i
             bPipeConnect = true;
         }
 
-        if (bPipeConnect &&
-            ((static_cast<uint32_t>(readFd.revents) & POLLERR) || (static_cast<uint32_t>(readFd.revents) & POLLHUP))) {
+        if (bPipeConnect && ((static_cast<uint32_t>(readFd.revents) & POLLERR))) {
             resMsg_.append("Result: poll events error.\n");
             eventRet = false;
             break;
@@ -267,21 +266,29 @@ bool LitePerf::Impl::DoReadRes(int fd, int& pollRet)
 
 bool LitePerf::Impl::InitDumpParam(const std::vector<int>& tids, int freq, int durationMs, LitePerfParam& lperf)
 {
-    if (DFX_SetDumpableState() == false) {
-        DFXLOGE("%{public}s :: Failed to set dumpable.", __func__);
-        return false;
-    }
-
+    (void)memset_s(&lperf, sizeof(LitePerfParam), 0, sizeof(LitePerfParam));
     lperf.pid = getpid();
+    int tidSize = 0;
     for (size_t i = 0; i < tids.size() && i < MAX_SAMPLE_TIDS; ++i) {
         if (tids[i] <= 0 || !IsThreadInPid(lperf.pid, tids[i])) {
             DFXLOGW("%{public}s :: tid(%{public}d) error", __func__, tids[i]);
             continue;
         }
         lperf.tids[i] = tids[i];
+        tidSize++;
+    }
+
+    if (tidSize <= 0) {
+        DFXLOGE("%{public}s :: all tids error", __func__);
+        return false;
     }
     lperf.freq = freq;
     lperf.durationMs = durationMs;
+
+    if (DFX_SetDumpableState() == false) {
+        DFXLOGE("%{public}s :: Failed to set dumpable.", __func__);
+        return false;
+    }
     return true;
 }
 

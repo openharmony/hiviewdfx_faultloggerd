@@ -26,6 +26,7 @@
 #include <securec.h>
 #include <signal.h>
 #include <sigchain.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -72,7 +73,7 @@ static struct ProcessDumpRequest *g_request = NULL;
 static long g_blockExit = 0;
 static long g_vmRealPid = 0;
 static long g_unwindResult = 0;
-static int g_dumpCount = 0;
+static atomic_int g_dumpCount = 0;
 static int g_dumpState = 0;
 static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutexattr_t g_dumpAttr;
@@ -295,15 +296,18 @@ static pid_t ForkBySyscall(void)
 bool DFX_SetDumpableState(void)
 {
     pthread_mutex_lock(&g_dumpMutex);
-    if (g_dumpCount == 0) {
+    int expected = 0;
+    if (atomic_compare_exchange_strong(&g_dumpCount, &expected, 1)) {
         g_dumpState = prctl(PR_GET_DUMPABLE);
         if (prctl(PR_SET_DUMPABLE, 1) != 0) {
             DFXLOGE("Failed to set dumpable, errno(%{public}d).", errno);
+            atomic_fetch_sub(&g_dumpCount, 1);
             pthread_mutex_unlock(&g_dumpMutex);
             return false;
         }
+    } else {
+        atomic_fetch_add(&g_dumpCount, 1);
     }
-    ++g_dumpCount;
     pthread_mutex_unlock(&g_dumpMutex);
     return true;
 }
@@ -311,9 +315,9 @@ bool DFX_SetDumpableState(void)
 void DFX_RestoreDumpableState(void)
 {
     pthread_mutex_lock(&g_dumpMutex);
-    if (g_dumpCount > 0) {
-        --g_dumpCount;
-        if (g_dumpCount == 0) {
+    if (atomic_load(&g_dumpCount) > 0) {
+        atomic_fetch_sub(&g_dumpCount, 1);
+        if (atomic_load(&g_dumpCount) == 0) {
             prctl(PR_SET_DUMPABLE, g_dumpState);
         }
     }
