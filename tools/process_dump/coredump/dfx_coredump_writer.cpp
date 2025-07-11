@@ -63,7 +63,7 @@ char* ProgramSegmentHeaderWriter::Write()
     Elf64_Half lineNumber = 1;
 
     for (const auto &region : maps_) {
-        if (!strcmp(region.pathName, "[vvar]") || (region.priority[0] != 'r')) {
+        if (!strcmp(region.pathName, "[vvar]") || (region.priority[0] != 'r') || strstr(region.pathName, "CMCGC")) {
             continue;
         }
         PtLoadFill(ptLoad, region);

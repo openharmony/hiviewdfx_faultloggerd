@@ -478,7 +478,7 @@ uint64_t CoreDumpService::GetCoreFileSize(pid_t pid)
         lineNumber += 1;
         ObtainDumpRegion(line, region);
         maps_.push_back(region);
-        if (!strcmp(region.pathName, "[vvar]") || region.priority[0] != 'r') {
+        if (!strcmp(region.pathName, "[vvar]") || region.priority[0] != 'r' || strstr(region.pathName, "CMCGC")) {
             continue;
         }
         coreFileSize += region.memorySizeHex;
