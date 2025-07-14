@@ -358,6 +358,11 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
     }
     close(pipefd[PIPE_WRITE]);
 
+    if (DFX_InheritCapabilities() != 0) {
+        DFXLOGE("Failed to inherit Capabilities from parent.");
+        return false;
+    }
+
     DFXLOGI("execl processdump -liteperf.");
     execl(PROCESSDUMP_PATH, "processdump", "-liteperf", nullptr);
     DFXLOGE("Failed to execl processdump -liteperf, errno(%{public}d)", errno);

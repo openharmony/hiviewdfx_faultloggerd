@@ -150,7 +150,7 @@ static void FillCrashExceptionAndReport(const int err)
     ReportException(&exception);
 }
 
-static int32_t InheritCapabilities(void)
+int32_t DFX_InheritCapabilities(void)
 {
     struct __user_cap_header_struct capHeader;
     (void)memset_s(&capHeader, sizeof(capHeader), 0, sizeof(capHeader));
@@ -272,7 +272,7 @@ static int DFX_ExecDump(void)
     }
     syscall(SYS_close, pipefd[1]);
 
-    if (InheritCapabilities() != 0) {
+    if (DFX_InheritCapabilities() != 0) {
         DFXLOGE("Failed to inherit Capabilities from parent.");
         FillCrashExceptionAndReport(CRASH_SIGNAL_EINHERITCAP);
         return INHERIT_CAP_FAIL;
