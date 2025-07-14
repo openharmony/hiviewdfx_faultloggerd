@@ -240,11 +240,10 @@ void LperfEvents::Clear()
     LperfRecordFactory::ClearData();
     const unsigned int size = 4096;
     if (lperfMmap_.mmapPage != nullptr) {
-        if (munmap(lperfMmap_.mmapPage, static_cast<size_t>((mmapPages_ + 1) * size)) == 0) {
-            lperfMmap_.mmapPage = nullptr;
-        } else {
+        if (munmap(lperfMmap_.mmapPage, static_cast<size_t>((mmapPages_ + 1) * size)) < 0) {
             DFXLOGE("munmap lperfMmap failed");
         }
+        lperfMmap_.mmapPage = nullptr;
     }
     if (pollFds_.size() > 0) {
         pollFds_.clear();
