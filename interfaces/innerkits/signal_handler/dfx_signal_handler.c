@@ -74,13 +74,6 @@
 #define NSIG 64
 #endif
 
-#ifndef F_SETPIPE_SZ
-#define F_SETPIPE_SZ 1031
-#endif
-
-#define NUMBER_SIXTYFOUR 64
-#define INHERITABLE_OFFSET 32
-
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
@@ -95,13 +88,6 @@ static BOOL g_hasInit = FALSE;
 static int g_prevHandledSignal = SIGDUMP;
 static struct sigaction g_oldSigactionList[NSIG] = {};
 static char g_appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
-enum DumpPreparationStage {
-    CREATE_PIPE_FAIL = 1,
-    SET_PIPE_LEN_FAIL,
-    WRITE_PIPE_FAIL,
-    INHERIT_CAP_FAIL,
-    EXEC_FAIL,
-};
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
 fatal_msg_t *get_fatal_message(void) __attribute__((weak));

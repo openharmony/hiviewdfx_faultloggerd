@@ -10,6 +10,7 @@
         DFX_SetCrashLogConfig;
         DFX_SetDumpableState;
         DFX_RestoreDumpableState;
+        DFX_InheritCapabilities;
     };
   local:
     *;
