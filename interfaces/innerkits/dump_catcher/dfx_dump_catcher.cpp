@@ -281,9 +281,10 @@ void DfxDumpCatcher::Impl::ReportDumpCatcherStats(int32_t pid,
     stat->requestTime = requestTime;
     stat->dumpCatcherFinishTime = GetTimeMilliSeconds();
     stat->result = ConvertDumpResultToDumpStats(ret);
-    if ((stat->result == DUMP_RES_WITH_KERNELSTACK) && stack_.second.empty()) {
+    if ((stat->result == DUMP_RES_WITH_KERNELSTACK) && stack_.msg.empty()) {
         stat->result = DUMP_RES_NO_KERNELSTACK;
     }
+    stat->targetProcessThreadCount = stack_.threadCount;
     size_t copyLen;
     std::string processName;
     ReadProcessName(pid, processName);
@@ -526,11 +527,11 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DealWithDumpCatchRet(int pid, 
         result = 0;
     } else {
         reason = "Reason:\nnormal stack:" + DfxDumpCatchError::ToString(ret) + "\n";
-        if (stack_.first != KernelStackAsyncCollector::STACK_SUCCESS) {
-            ret = KernelRet2DumpcatchRet(stack_.first);
+        if (stack_.errorCode != KernelStackAsyncCollector::STACK_SUCCESS) {
+            ret = KernelRet2DumpcatchRet(stack_.errorCode);
             reason += "kernel stack:" + DfxDumpCatchError::ToString(ret) + "\n";
-        } else if (!stack_.second.empty()) {
-            msg.append(stack_.second);
+        } else if (!stack_.msg.empty()) {
+            msg.append(stack_.msg);
             result = 1;
         } else {
             reason += "kernel stack:" + DfxDumpCatchError::ToString(DUMPCATCH_KERNELSTACK_NONEED) + "\n";
@@ -627,8 +628,8 @@ bool DfxDumpCatcher::Impl::DumpCatch(int pid, int tid, std::string& msg, size_t 
             res == DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT) {
             ret = true;
         }
-        if (!ret && stack_.first != KernelStackAsyncCollector::STACK_SUCCESS) {
-            res = KernelRet2DumpcatchRet(stack_.first);
+        if (!ret && stack_.errorCode != KernelStackAsyncCollector::STACK_SUCCESS) {
+            res = KernelRet2DumpcatchRet(stack_.errorCode);
         }
         void* retAddr = __builtin_return_address(0);
         ReportDumpCatcherStats(pid, requestTime, res, retAddr);

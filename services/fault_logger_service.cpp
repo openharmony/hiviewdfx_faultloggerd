@@ -146,7 +146,8 @@ void StatsService::ReportDumpStats(const DumpStats& stat)
         "OVERALL_TIME", stat.dumpCatcherFinishTime - stat.requestTime,
         "SIGNAL_TIME", stat.signalTime - stat.requestTime,
         "DUMPER_START_TIME", stat.processdumpStartTime - stat.signalTime,
-        "UNWIND_TIME", stat.processdumpFinishTime - stat.processdumpStartTime);
+        "UNWIND_TIME", stat.processdumpFinishTime - stat.processdumpStartTime,
+        "TARGET_PROCESS_THREAD_COUNT", stat.targetProcessThreadCount);
 }
 
 std::string StatsService::GetElfName(const FaultLoggerdStatsRequest& request)
@@ -172,32 +173,26 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
         stats.processdumpStartTime = requestData.processdumpStartTime;
         stats.processdumpFinishTime = requestData.processdumpFinishTime;
         stats.targetProcessName = requestData.targetProcess;
-    } else {
+    } else if (requestData.type == DUMP_CATCHER) {
         auto task = [requestData, this] {
             auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
                 return dumpStats.pid == requestData.pid;
             });
-            if (requestData.type == DUMP_CATCHER && iter != stats_.end()) {
-                iter->requestTime = requestData.requestTime;
-                iter->dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
-                iter->callerElfName = GetElfName(requestData);
-                iter->callerProcessName = requestData.callerProcess;
-                iter->result = requestData.result;
-                iter->summary = requestData.summary;
-                ReportDumpStats(*iter);
+            DumpStats stats;
+            if (iter != stats_.end()) {
+                stats = *iter;
                 stats_.erase(iter);
-            } else if (requestData.type == DUMP_CATCHER) {
-                DumpStats stats;
-                stats.pid = requestData.pid;
-                stats.requestTime = requestData.requestTime;
-                stats.dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
-                stats.callerElfName = GetElfName(requestData);
-                stats.result = requestData.result;
-                stats.callerProcessName = requestData.callerProcess;
-                stats.summary = requestData.summary;
-                stats.targetProcessName = requestData.targetProcess;
-                ReportDumpStats(stats);
             }
+            stats.pid = requestData.pid;
+            stats.requestTime = requestData.requestTime;
+            stats.dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
+            stats.callerElfName = GetElfName(requestData);
+            stats.result = requestData.result;
+            stats.callerProcessName = requestData.callerProcess;
+            stats.summary = requestData.summary;
+            stats.targetProcessName = requestData.targetProcess;
+            stats.targetProcessThreadCount = requestData.targetProcessThreadCount;
+            ReportDumpStats(stats);
             RemoveTimeoutDumpStats();
         };
         StartDelayTask(task, delayTime);

@@ -56,7 +56,7 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessSta
     if (asyncCount_ > maxAsyncTaskNum_) {
         DFXLOGE("GetProcessStackWithTimeout fail, overlimit pid:%{public}d count:%{public}d",
             pid, static_cast<int>(asyncCount_));
-        return {STACK_OVER_LIMIT, ""};
+        return KernelResult {STACK_OVER_LIMIT};
     }
     std::promise<KernelResult> result;
     auto f = result.get_future();
@@ -65,10 +65,10 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessSta
     auto st = f.wait_for(std::chrono::milliseconds(timeoutMs));
     if (st == std::future_status::timeout) {
         DFXLOGE("GetStackWithTimeout task timeout pid:%{public}d", pid);
-        return {STACK_TIMEOUT, ""};
+        return KernelResult {STACK_TIMEOUT};
     } else if (st == std::future_status::deferred) {
         DFXLOGE("GetStackWithTimeout task deferred pid:%{public}d", pid);
-        return {STACK_DEFERRED, ""};
+        return KernelResult {STACK_DEFERRED};
     }
     return f.get();
 }
@@ -91,15 +91,15 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetCollectedS
 {
     if (!stackFuture_.valid()) {
         DFXLOGE("GetCollectStackResult fail, overlimit count:%{public}d", static_cast<int>(asyncCount_));
-        return {STACK_OVER_LIMIT, ""};
+        return KernelResult {STACK_OVER_LIMIT};
     }
     auto st = stackFuture_.wait_for(std::chrono::milliseconds(0));
     if (st == std::future_status::timeout) {
         DFXLOGE("GetCollectStackResult task timeout");
-        return {STACK_TIMEOUT, ""};
+        return KernelResult {STACK_TIMEOUT};
     } else if (st == std::future_status::deferred) {
         DFXLOGE("GetCollectStackResult task deferred");
-        return {STACK_DEFERRED, ""};
+        return KernelResult {STACK_DEFERRED};
     }
     return stackFuture_.get();
 }
@@ -127,7 +127,7 @@ void KernelStackAsyncCollector::CollectKernelStackTask(int pid, std::promise<Ker
     ElapsedTime timer;
     if (!CheckProcessValid(pid)) {
         DFXLOGW("No process(%{public}d) status file exist!", pid);
-        result.set_value({STACK_NO_PROCESS, ""});
+        result.set_value(KernelResult {STACK_NO_PROCESS});
         return;
     }
     std::string kernelStackInfo;
@@ -147,12 +147,13 @@ void KernelStackAsyncCollector::CollectKernelStackTask(int pid, std::promise<Ker
     };
     std::vector<int> tids;
     (void)GetTidsByPidWithFunc(pid, tids, stackTask);
+    uint32_t threadCount = tids.size();
     if (kernelStackInfo.empty()) {
         DFXLOGE("Process(%{public}d) collect kernel stack fail!", pid);
-        result.set_value({ToErrCode(kernelRet), ""});
+        result.set_value({ToErrCode(kernelRet), threadCount});
         return;
     }
-    result.set_value({STACK_SUCCESS, std::move(kernelStackInfo)});
+    result.set_value({STACK_SUCCESS, std::move(kernelStackInfo), threadCount});
 
     DFXLOGI("finish collect all tid info for pid(%{public}d) time(%{public}" PRId64 ")ms", pid,
         timer.Elapsed<std::chrono::milliseconds>());

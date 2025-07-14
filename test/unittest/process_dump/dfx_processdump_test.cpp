@@ -391,12 +391,11 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
-    struct ProcessDumpRequest request{};
-    ASSERT_FALSE(ins.InitDfxProcess(request));
+    ASSERT_FALSE(ins.InitDfxProcess());
 
-    request.pid = -1;
-    request.nsPid = -1;
-    ASSERT_FALSE(ins.InitDfxProcess(request));
+    ins.request_.pid = -1;
+    ins.request_.nsPid = -1;
+    ASSERT_FALSE(ins.InitDfxProcess());
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: end.";
 }
 
@@ -409,19 +408,17 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest018: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
-    ProcessDumpRequest request{
-        .type = ProcessDumpType::DUMP_TYPE_MEM_LEAK,
-    };
-    ASSERT_TRUE(ins.InitBufferWriter(request));
+    ins.request_.type = ProcessDumpType::DUMP_TYPE_MEM_LEAK;
+    ASSERT_TRUE(ins.InitBufferWriter());
 
-    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
-    ASSERT_TRUE(ins.InitBufferWriter(request));
+    ins.request_.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    ASSERT_TRUE(ins.InitBufferWriter());
 
-    request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
-    ASSERT_FALSE(ins.InitBufferWriter(request));
+    ins.request_.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    ASSERT_FALSE(ins.InitBufferWriter());
 
-    request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
-    ins.WriteDumpResIfNeed(request, 1);
+    ins.request_.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    ins.WriteDumpResIfNeed(1);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest018: end.";
 }
 
