@@ -290,9 +290,7 @@ HWTEST_F(LitePerfTest, LitePerfTest008, TestSize.Level2)
     pid = fork();
     if (pid < 0) {
         GTEST_LOG_(INFO) << "LitePerfTest008: Failed to vfork.";
-        return;
-    }
-    if (pid == 0) {
+    } else if (pid == 0) {
         NotifyProcStart(fd);
         std::this_thread::sleep_for(std::chrono::seconds(1));
         pid_t parentPid = getppid();
