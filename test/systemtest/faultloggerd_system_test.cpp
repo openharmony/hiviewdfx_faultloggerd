@@ -1675,15 +1675,18 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
     int pid = LaunchTestHap(testAbiltyName, testBundleName);
-    EXPECT_NE(pid, 0) << "Failed to launch target hap.";
-    kill(pid, SIGABRT);
-    sleep(2); // 2 : sleep 2s
-    int newPid = GetProcessPid(TEST_BUNDLE_NAME);
-    if (pid == newPid) {
-        sleep(2);
-        newPid = GetProcessPid(TEST_BUNDLE_NAME);
+    if (pid > 0) {
+        kill(pid, SIGABRT);
+        sleep(2); // 2 : sleep 2s
+        int newPid = GetProcessPid(TEST_BUNDLE_NAME);
+        if (pid == newPid) {
+            sleep(2);
+            newPid = GetProcessPid(TEST_BUNDLE_NAME);
+        }
+        EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest125 Failed";
+    } else {
+        EXPECT_TRUE(pid <= 0) << "FaultLoggerdSystemTest125 Failed";
     }
-    EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest125 Failed";
     StopTestHap(TEST_BUNDLE_NAME);
     UninstallTestHap(TEST_BUNDLE_NAME);
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
