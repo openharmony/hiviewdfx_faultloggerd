@@ -23,6 +23,7 @@
 #include "dfx_ptrace.h"
 #include "dfx_regs_get.h"
 #include "unwinder.h"
+#include "dfx_test_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -67,16 +68,14 @@ HWTEST_F(UnwinderPacTest, UnwinderPacTest001, TestSize.Level0)
         unwRet = unwinder->Unwind(&context);
         EXPECT_EQ(true, unwRet) << "UnwinderPacTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
-        ASSERT_GT(frames.size(), 1);
+        EXPECT_GT(frames.size(), 1);
         GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
-
     int status;
-    int ret = wait(&status);
+    wait(&status);
     ASSERT_EQ(status, 0);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "UnwinderPacTest001: end.";
 }
 
@@ -102,15 +101,13 @@ HWTEST_F(UnwinderPacTest, UnwinderPacTest002, TestSize.Level2)
         context.pid = pid;
         context.regs = regs;
         unwRet = unwinder->UnwindByFp(&context);
-        ASSERT_TRUE(unwRet) << "UnwinderPacTest002: unwRet:" << unwRet;
+        EXPECT_TRUE(unwRet) << "UnwinderPacTest002: unwRet:" << unwRet;
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
-
     int status;
-    int ret = wait(&status);
+    wait(&status);
     ASSERT_EQ(status, 0);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
 #endif
     GTEST_LOG_(INFO) << "UnwinderPacTest002: end.";
 }

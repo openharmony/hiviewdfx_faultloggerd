@@ -25,6 +25,7 @@
 #include "dfx_regs_get.h"
 #include "procinfo.h"
 #include "unwinder.h"
+#include "dfx_test_util.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -75,21 +76,19 @@ HWTEST_F(InstrStatisticTest, InstrStatisticTest001, TestSize.Level2)
         unwRet = unwinder->Unwind(&context);
         EXPECT_EQ(true, unwRet) << "InstrStatisticTest001: Unwind:" << unwRet;
         auto frames = unwinder->GetFrames();
-        ASSERT_GT(frames.size(), 1);
+        EXPECT_GT(frames.size(), 1);
         GTEST_LOG_(INFO) << "frames:\n" << Unwinder::GetFramesStr(frames);
         DfxPtrace::Detach(pid);
         DfxInstrStatistic::GetInstance().DumpInstrStatResult(result);
-        ASSERT_GT(result.size(), 0);
+        EXPECT_GT(result.size(), 0);
         for (size_t i = 0; i < result.size(); ++i) {
             GTEST_LOG_(INFO) << result[i].first << result[i].second;
         }
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
-
     int status;
-    int ret = wait(&status);
+    wait(&status);
     ASSERT_EQ(status, 0);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "InstrStatisticTest001: end.";
 }
 } // namespace HiviewDFX

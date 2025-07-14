@@ -228,6 +228,30 @@ HWTEST_F(DfxSymbolsTest, DfxDemangleTest004, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "DfxDemangleTest004: end.";
 }
+
+/**
+ * @tc.name: DfxDemangleTest005
+ * @tc.desc: test DfxSymbols demangle functions with cangjie
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxSymbolsTest, DfxDemangleTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxDemangleTest005: start.";
+    CompressHapElfFactory compress1("", nullptr);
+    std::shared_ptr<DfxElf> res = compress1.Create();
+    EXPECT_EQ(res, nullptr);
+    auto prevMap = std::shared_ptr<DfxMap>();
+    CompressHapElfFactory compress2("", prevMap);
+    res = compress2.Create();
+    EXPECT_EQ(res, nullptr);
+    CompressHapElfFactory compress3("/proc/", prevMap);
+    res = compress3.Create();
+    EXPECT_EQ(res, nullptr);
+    CompressHapElfFactory compress4("/proc/123/test.hap", prevMap);
+    res = compress4.Create();
+    EXPECT_EQ(res, nullptr);
+    GTEST_LOG_(INFO) << "DfxDemangleTest005: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS
 

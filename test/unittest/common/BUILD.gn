@@ -28,6 +28,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_interfaces_path/common",
         "$faultloggerd_path/common/dfxlog",
         "$faultloggerd_path/common/dfxutil",
+        "$faultloggerd_path/test/utils",
       ]
 
       sources = [ "common_test.cpp" ]
@@ -36,6 +37,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
         "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
+        "$faultloggerd_path/test/utils:dfx_test_util",
         "$hilog_lite_deps_path",
       ]
     }
@@ -59,6 +61,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",
       "$faultloggerd_path/common/trace/include",
+      "$faultloggerd_path/test/utils",
     ]
     defines = [
       "is_ohos=${is_ohos}",
@@ -83,6 +86,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$faultloggerd_path/common/cutil:dfx_cutil",
       "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/test/utils:dfx_test_util",
     ]
     external_deps = [
       "c_utils:utils",

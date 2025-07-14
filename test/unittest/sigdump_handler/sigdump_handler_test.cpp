@@ -86,6 +86,7 @@ HWTEST_F(DfxSigDumpHandlerTest, DfxSigDumpHandlerTest001, TestSize.Level0)
         int count = GetKeywordsNum(msg, log, len);
         GTEST_LOG_(INFO) << msg;
         EXPECT_EQ(count, len) << "DfxSigDumpHandlerTest001 Failed";
+        CheckAndExit(HasFailure());
     } else {
         ASSERT_TRUE(InitSigDumpHandler());
         std::thread testThread[TEST_THREAD_NUM];
@@ -96,6 +97,9 @@ HWTEST_F(DfxSigDumpHandlerTest, DfxSigDumpHandlerTest001, TestSize.Level0)
             testThread[i].join();
         }
         ASSERT_TRUE(InitSigDumpHandler()); // Initialize again return true
+        int status;
+        wait(&status);
+        ASSERT_EQ(status, 0);
         DeinitSigDumpHandler();
     }
     GTEST_LOG_(INFO) << "DfxSigDumpHandlerTest001: end.";

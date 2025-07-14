@@ -20,6 +20,7 @@
 #include <vector>
 #include "dfx_ptrace.h"
 #include "dfx_regs.h"
+#include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -310,22 +311,21 @@ HWTEST_F(DfxRegsTest, DfxRegsTest006, TestSize.Level2)
         DfxPtrace::Attach(pid);
         auto dfxRegs = DfxRegs::CreateRemoteRegs(pid);
         constexpr size_t maxIdx = 100;
-        ASSERT_NE(dfxRegs->GetReg(0), nullptr);
-        ASSERT_EQ(dfxRegs->GetReg(maxIdx), nullptr);
+        EXPECT_NE(dfxRegs->GetReg(0), nullptr);
+        EXPECT_EQ(dfxRegs->GetReg(maxIdx), nullptr);
         uintptr_t value = 0;
         dfxRegs->SetReg(maxIdx, &value);
 #if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
         uintptr_t fp = 0x80;
         dfxRegs->SetFp(fp);
-        ASSERT_EQ(dfxRegs->GetFp(), fp);
+        EXPECT_EQ(dfxRegs->GetFp(), fp);
 #endif
         DfxPtrace::Detach(pid);
-        _exit(0);
+        CheckAndExit(HasFailure());
     }
     int status;
-    int ret = wait(&status);
+    wait(&status);
     ASSERT_EQ(status, 0);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "DfxRegsTest006: end.";
 }
 }

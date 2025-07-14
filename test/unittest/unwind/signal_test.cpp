@@ -21,6 +21,7 @@
 #include <string>
 
 #include "dfx_signal.h"
+#include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -110,17 +111,16 @@ HWTEST_F(DfxSignalTest, DfxSignalTest003, TestSize.Level2)
         action.sa_sigaction = TestSignalHandler;
         action.sa_flags = SA_SIGINFO;
         int rc = sigaction(input, &action, nullptr);
-        ASSERT_EQ(rc, 0) << "DfxSignalTest003 Failed, sigaction signal failed";
+        EXPECT_EQ(rc, 0) << "DfxSignalTest003 Failed, sigaction signal failed";
 
         std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
         bool ret = signal->IsAvailable();
-        ASSERT_EQ(true, ret) << "DfxSignalTest003 Failed";
-        _exit(0);
+        EXPECT_EQ(true, ret) << "DfxSignalTest003 Failed";
+        CheckAndExit(HasFailure());
     }
     int status;
-    int ret = wait(&status);
+    wait(&status);
     ASSERT_EQ(status, 0);
-    GTEST_LOG_(INFO) << "Status:" << status << " Result:" << ret;
     GTEST_LOG_(INFO) << "DfxSignalTest003: end.";
 }
 

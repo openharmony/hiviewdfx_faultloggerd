@@ -809,11 +809,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest033, TestSize.Level
         sleep(validTime);
         msg = "";
         EXPECT_TRUE(dumplog.DumpCatch(getppid(), 0, msg));
-        _exit(0);
+        CheckAndExit(HasFailure());
     } else if (pid < 0) {
         GTEST_LOG_(INFO) << "Fail in fork.";
     } else {
-        waitpid(pid, nullptr, 0);
+        int status;
+        wait(&status);
+        ASSERT_EQ(status, 0);
     }
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest033: end.";
 }

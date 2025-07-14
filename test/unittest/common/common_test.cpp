@@ -24,6 +24,7 @@
 #include "dfx_dump_res.h"
 #include "dfx_log.h"
 #include "string_util.h"
+#include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -146,6 +147,50 @@ HWTEST_F(CommonTest, DfxUtilTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxUtilTest003: end.";
 }
 #endif
+
+/**
+ * @tc.name: DfxUtilTest004
+ * @tc.desc: test DfxUtil CheckAndExit
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, DfxUtilTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUtilTest004: start.";
+    int pid = fork();
+    if (pid == 0) {
+        EXPECT_EQ(pid, 0);
+        CheckAndExit(HasFailure());
+    } else if (pid < 0) {
+        GTEST_LOG_(INFO) << "DfxUtilTest004 fail. ";
+    } else {
+        int status;
+        wait(&status);
+        ASSERT_EQ(status, 0);
+    }
+    GTEST_LOG_(INFO) << "DfxUtilTest004: end.";
+}
+
+/**
+ * @tc.name: DfxUtilTest005
+ * @tc.desc: test DfxUtil CheckAndExit
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, DfxUtilTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxUtilTest005: start.";
+    int pid = fork();
+    if (pid == 0) {
+        EXPECT_NE(pid, 0);
+        CheckAndExit(HasFailure());
+    } else if (pid < 0) {
+        GTEST_LOG_(INFO) << "DfxUtilTest005 fail. ";
+    } else {
+        int status;
+        wait(&status);
+        ASSERT_NE(status, 0);
+    }
+    GTEST_LOG_(INFO) << "DfxUtilTest005: end.";
+}
 
 /**
  * @tc.name: DfxDumpResTest001
