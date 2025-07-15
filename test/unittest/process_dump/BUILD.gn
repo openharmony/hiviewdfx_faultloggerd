@@ -72,6 +72,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/test/utils",
       "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/tools/process_dump/coredump",
+      "$faultloggerd_path/tools/process_dump/lperf",
     ]
   }
 
@@ -80,10 +81,14 @@ if (defined(ohos_lite)) {
   ohos_unittest("test_processdump") {
     module_out_path = module_output_path
     sources = [
+      "$faultloggerd_path/tools/process_dump/lperf/lperf_event_record.cpp",
+      "$faultloggerd_path/tools/process_dump/lperf/lperf_events.cpp",
       "dfx_processdump_test.cpp",
       "dump_info_header_test.cpp",
       "dump_utils_test.cpp",
       "fault_stack_test.cpp",
+      "lperf_event_record_test.cpp",
+      "lperf_events_test.cpp",
       "maps_test.cpp",
       "memory_near_register_test.cpp",
       "multithread_constructor.c",
@@ -128,8 +133,8 @@ if (defined(ohos_lite)) {
       "googletest:gtest_main",
       "hilog:libhilog",
       "hitrace:libhitracechain",
-      "jsoncpp:jsoncpp",
       "ipc:ipc_core",
+      "jsoncpp:jsoncpp",
       "samgr:samgr_proxy",
     ]
     if (support_jsapi) {

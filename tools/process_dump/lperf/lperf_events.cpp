@@ -119,9 +119,9 @@ void LperfEvents::SetRecordCallBack(ProcessRecordCB recordCallBack)
 
 bool LperfEvents::PrepareFdEvents()
 {
-    unsigned int times = 4;
+    constexpr unsigned int sizekiB = 1024;
     struct LperfInitArg initArg = {
-        .rbSizeIntKb = (mmapPages_ + 1) * times,
+        .rbSizeIntKb = (mmapPages_ + 1) * pageSize_ / sizekiB,
         .samplePeriod = sampleFreq_,
         .sampleInterval = timeOut_,
         .watermark = DEFAULT_WATER_MARK,
@@ -238,16 +238,13 @@ bool LperfEvents::RecordLoop()
 void LperfEvents::Clear()
 {
     LperfRecordFactory::ClearData();
-    const unsigned int size = 4096;
     if (lperfMmap_.mmapPage != nullptr) {
-        if (munmap(lperfMmap_.mmapPage, static_cast<size_t>((mmapPages_ + 1) * size)) < 0) {
+        if (munmap(lperfMmap_.mmapPage, static_cast<size_t>((mmapPages_ + 1) * pageSize_)) < 0) {
             DFXLOGE("munmap lperfMmap failed");
         }
         lperfMmap_.mmapPage = nullptr;
     }
-    if (pollFds_.size() > 0) {
-        pollFds_.clear();
-    }
+    pollFds_.clear();
     if (lperfFd_ != -1) {
         close(lperfFd_);
         lperfFd_ = -1;
