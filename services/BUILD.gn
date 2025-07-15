@@ -84,6 +84,7 @@ if (defined(ohos_lite)) {
     "./snapshot/kernel_snapshot_printer.cpp",
     "./snapshot/kernel_snapshot_processor_impl.cpp",
     "./snapshot/kernel_snapshot_reporter.cpp",
+    "./snapshot/kernel_snapshot_trie.cpp",
     "./snapshot/kernel_snapshot_util.cpp",
     "fault_logger_pipe.cpp",
   ]
