@@ -22,7 +22,7 @@
 #include "hisysevent.h"
 #endif
 
-#include "kernel_snapshot_util.h"
+#include "kernel_snapshot_content_builder.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -54,7 +54,7 @@ bool KernelSnapshotReporter::ReportCrashNoLogEvent(CrashMap& output)
         "PID", pid,
         "PROCESS_NAME", output[CrashSection::PROCESS_NAME],
         "HAPPEN_TIME", timeStamp,
-        "SUMMARY", KernelSnapshotUtil::FillSummary(output));
+        "SUMMARY", KernelSnapshotContentBuilder(output).GenerateSummary());
     DFXLOGI("Report kernel snapshot event done, ret %{public}d", ret);
     return ret == 0;
 #else

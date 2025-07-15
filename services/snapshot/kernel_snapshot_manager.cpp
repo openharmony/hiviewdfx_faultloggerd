@@ -26,8 +26,8 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 
+#include "kernel_snapshot_content_builder.h"
 #include "kernel_snapshot_processor_impl.h"
-#include "kernel_snapshot_util.h"
 #include "smart_fd.h"
 
 namespace OHOS {

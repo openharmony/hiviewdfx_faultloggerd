@@ -78,6 +78,7 @@ if (defined(ohos_lite)) {
   }
 } else {
   faultloggerd_sources += [
+    "./snapshot/kernel_snapshot_content_builder.cpp",
     "./snapshot/kernel_snapshot_kernel_frame.cpp",
     "./snapshot/kernel_snapshot_manager.cpp",
     "./snapshot/kernel_snapshot_parser.cpp",
@@ -85,7 +86,6 @@ if (defined(ohos_lite)) {
     "./snapshot/kernel_snapshot_processor_impl.cpp",
     "./snapshot/kernel_snapshot_reporter.cpp",
     "./snapshot/kernel_snapshot_trie.cpp",
-    "./snapshot/kernel_snapshot_util.cpp",
     "fault_logger_pipe.cpp",
   ]
 
