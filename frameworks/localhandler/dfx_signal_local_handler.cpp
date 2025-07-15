@@ -110,7 +110,6 @@ void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
     pthread_mutex_lock(&g_signalHandlerMutex);
     if (sig != SIGALRM) {
         (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
-        g_request.type = static_cast<ProcessDumpType>(sig);
         g_request.tid = gettid();
         g_request.pid = getpid();
         g_request.uid = FAULTLOGGERD_UID;
@@ -121,14 +120,8 @@ void DFX_SignalLocalHandler(int sig, siginfo_t *si, void *context)
         GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
         GetProcessName(g_request.processName, sizeof(g_request.processName));
 
-        int ret = memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
-        if (ret < 0) {
-            DFXLOGE("memcpy_s siginfo fail, ret=%{public}d", ret);
-        }
-        ret = memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
-        if (ret < 0) {
-            DFXLOGE("memcpy_s context fail, ret=%{public}d", ret);
-        }
+        (void)memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
+        (void)memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
     }
 #if defined(__aarch64__) || defined(__loongarch_lp64)
     DoCrashHandler(&sig);
