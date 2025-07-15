@@ -47,6 +47,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/services/snapshot/kernel_snapshot_printer.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_processor_impl.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_reporter.cpp",
+      "$faultloggerd_path/services/snapshot/kernel_snapshot_trie.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_util.cpp",
       "kernel_snapshot_test.cpp",
     ]

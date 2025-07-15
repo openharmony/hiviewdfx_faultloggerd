@@ -53,7 +53,8 @@ enum class SnapshotSection {
     CONTENT_OF_USER_STACK,
     BASE_ACTV_DUMPED,
     PROCESS_STATISTICS,
-    TRANSACTION_END
+    TRANSACTION_END,
+    INVALID_SECTION
 };
 
 struct SnapshotSectionKeyword {

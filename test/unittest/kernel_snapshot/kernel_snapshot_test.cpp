@@ -25,6 +25,7 @@
 #include "kernel_snapshot_printer.h"
 #include "kernel_snapshot_processor_impl.h"
 #include "kernel_snapshot_reporter.h"
+#include "kernel_snapshot_trie.h"
 #include "kernel_snapshot_util.h"
 
 using namespace testing::ext;
@@ -485,12 +486,8 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest024, TestSize.Level2)
     };
 
     CrashMap output;
-    std::list<std::pair<SnapshotSection, std::string>> keywordList;
-    for (const auto& item : SNAPSHOT_SECTION_KEYWORDS) {
-        keywordList.emplace_back(item.type, item.key);
-    }
     size_t index = 0;
-    parser.ProcessTransStart(lines, index, keywordList, output);
+    parser.ProcessTransStart(lines, index, SNAPSHOT_SECTION_KEYWORDS[0].key, output);
     ASSERT_EQ(output[CrashSection::TIME_STAMP], "1733329272590");
     GTEST_LOG_(INFO) << "KernelSnapshotTest024: end.";
 }
@@ -610,6 +607,53 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest051, TestSize.Level2)
     ret = reporter.ReportCrashNoLogEvent(output);
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "KernelSnapshotTest051: end.";
+}
+
+/**
+ * @tc.name: KernelSnapshotTest052
+ * @tc.desc: test kernel snapshot trie insert
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotTest052, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotTest052: start.";
+    KernelSnapshotTrie trie;
+
+    bool ret = trie.Insert("", SnapshotSection::TRANSACTION_START);
+    EXPECT_EQ(ret, false);
+
+    ret = trie.Insert("start", SnapshotSection::TRANSACTION_START);
+    EXPECT_EQ(ret, true);
+
+    GTEST_LOG_(INFO) << "KernelSnapshotTest052: end.";
+}
+/**
+ * @tc.name: KernelSnapshotTest053
+ * @tc.desc: test kernel snapshot trie match prefix
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotTest053, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotTest053: start.";
+    KernelSnapshotTrie trie;
+
+    for (const auto& item : SNAPSHOT_SECTION_KEYWORDS) {
+        trie.Insert(item.key, item.type);
+    }
+
+    SnapshotSection type;
+    bool ret = trie.MatchPrefix(std::string(SNAPSHOT_SECTION_KEYWORDS[0].key), type);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(type, SNAPSHOT_SECTION_KEYWORDS[0].type);
+
+    trie.MatchPrefix(std::string(SNAPSHOT_SECTION_KEYWORDS[1].key) + "abc", type);
+    EXPECT_EQ(ret, true);
+    EXPECT_EQ(type, SNAPSHOT_SECTION_KEYWORDS[1].type);
+
+    ret = trie.MatchPrefix(std::string("abc"), type);
+    EXPECT_EQ(ret, false);
+
+    GTEST_LOG_(INFO) << "KernelSnapshotTest053: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -19,6 +19,7 @@
 #include <list>
 
 #include "i_kernel_snapshot_parser.h"
+#include "kernel_snapshot_trie.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -44,7 +45,7 @@ private:
     std::unordered_map<std::string, std::string> ConvertThreadInfoToPairs(const std::string &line);
 
     bool ProcessTransStart(const std::vector<std::string>& lines, size_t& index,
-        std::list<std::pair<SnapshotSection, std::string>>& keywordList, CrashMap& output);
+        std::string keyword, CrashMap& output);
 
     void ParseTransStart(const SnapshotCell& cell, CrashMap &output);
     void ParseThreadInfo(const SnapshotCell& cell, CrashMap &output);
@@ -55,8 +56,10 @@ private:
     void ProcessSnapshotSection(const SnapshotCell& cell, CrashMap &output);
 
     void InitializeParseTable();
+    void InitializeKeywordTrie();
     using ParseFunction = void (KernelSnapshotParser::*)(const SnapshotCell&, CrashMap&);
     std::unordered_map<SnapshotSection, ParseFunction> parseTable_;
+    KernelSnapshotTrie snapshotTrie_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

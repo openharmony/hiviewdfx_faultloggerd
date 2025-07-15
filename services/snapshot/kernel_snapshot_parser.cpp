@@ -47,6 +47,7 @@ CrashSection GetSnapshotMapCrashItem(SnapshotSection item)
 KernelSnapshotParser::KernelSnapshotParser()
 {
     InitializeParseTable();
+    InitializeKeywordTrie();
 }
 
 bool KernelSnapshotParser::PreProcessLine(std::string& line) const
@@ -205,6 +206,13 @@ void KernelSnapshotParser::InitializeParseTable()
     };
 }
 
+void KernelSnapshotParser::InitializeKeywordTrie()
+{
+    for (const auto& item : SNAPSHOT_SECTION_KEYWORDS) {
+        snapshotTrie_.Insert(item.key, item.type);
+    }
+}
+
 void KernelSnapshotParser::ProcessSnapshotSection(const SnapshotCell& cell, CrashMap& output)
 {
     auto it = parseTable_.find(cell.sectionKey);
@@ -217,9 +225,8 @@ void KernelSnapshotParser::ProcessSnapshotSection(const SnapshotCell& cell, Cras
 }
 
 bool KernelSnapshotParser::ProcessTransStart(const std::vector<std::string>& lines, size_t& index,
-    std::list<std::pair<SnapshotSection, std::string>>& keywordList, CrashMap& output)
+    std::string keyword, CrashMap& output)
 {
-    const auto& keyword = keywordList.front().second;
     for (; index < lines.size(); index++) {
         if (StartsWith(lines[index], keyword)) {
             break;
@@ -232,45 +239,34 @@ bool KernelSnapshotParser::ProcessTransStart(const std::vector<std::string>& lin
     SnapshotCell cell {SnapshotSection::TRANSACTION_START, lines, index, index};
     ProcessSnapshotSection(cell, output);
     index++;
-    keywordList.pop_front();
     return true;
 }
 
 CrashMap KernelSnapshotParser::ParseSnapshotUnit(const std::vector<std::string>& lines, size_t& index)
 {
     CrashMap output;
-    std::list<std::pair<SnapshotSection, std::string>> keywordList;
-    for (const auto& item : SNAPSHOT_SECTION_KEYWORDS) {
-        keywordList.emplace_back(item.type, item.key);
-    }
-
-    if (!ProcessTransStart(lines, index, keywordList, output)) {
+    if (!ProcessTransStart(lines, index, SNAPSHOT_SECTION_KEYWORDS[0].key, output)) {
         return output;
     }
 
     // process other snapshot sections
-    size_t snapshotSecIndex = 0;
-    SnapshotSection snapshotSecKey;
-    bool isTransEnd = false;
+    size_t curSectionLineNum = 0;
+    SnapshotSection lastSectionKey = SnapshotSection::INVALID_SECTION;
+    for (; index < lines.size(); index++) {
+        SnapshotSection curSectionKey;
+        if (!snapshotTrie_.MatchPrefix(lines[index], curSectionKey)) {
+            continue;
+        }
+        if (curSectionLineNum == 0) {
+            lastSectionKey = curSectionKey;
+            curSectionLineNum = index;
+            continue;
+        }
 
-    for (; index < lines.size() && !isTransEnd; index++) {
-        for (auto it = keywordList.begin(); it != keywordList.end(); it++) {
-            if (!StartsWith(lines[index], it->second)) {
-                continue;
-            }
-            if (snapshotSecIndex == 0) {
-                snapshotSecIndex = index;
-                snapshotSecKey = it->first;
-                break;
-            }
-            SnapshotCell cell {snapshotSecKey, lines, snapshotSecIndex, index - 1};
-            ProcessSnapshotSection(cell, output);
-            snapshotSecIndex = index;
-            snapshotSecKey = it->first;
-            if (it->first == SnapshotSection::TRANSACTION_END) {
-                isTransEnd = true;
-            }
-            keywordList.erase(it);
+        ProcessSnapshotSection({lastSectionKey, lines, curSectionLineNum, index - 1}, output);
+        lastSectionKey = curSectionKey;
+        curSectionLineNum = index;
+        if (lastSectionKey == SnapshotSection::TRANSACTION_END) {
             break;
         }
     }
