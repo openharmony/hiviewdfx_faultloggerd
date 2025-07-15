@@ -44,6 +44,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_interfaces_path/innerkits/signal_handler:dfx_signalhandler",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
     external_deps = [

@@ -87,6 +87,7 @@ static const char* const PROCESSDUMP_PATH = "/bin/processdump";
 #define AT_OPT_NONE             __attribute__((optnone))
 #define AT_WARN_UNUSED          __attribute__((warn_unused_result))
 #define AT_UNUSED               __attribute__((unused))
+#define AT_FALLTHROUGH          __attribute__((fallthrough))
 #define MAYBE_UNUSED            [[maybe_unused]]
 #define NO_SANITIZE __attribute__((no_sanitize("address"), no_sanitize("hwaddress")))
 

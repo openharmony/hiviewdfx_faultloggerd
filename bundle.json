@@ -112,7 +112,8 @@
           "name": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler:dfx_signalhandler",
           "header": {
             "header_files": [
-              "dfx_signal_handler.h"
+              "dfx_signal_handler.h",
+              "dfx_unique_crash_obj.h"
             ],
             "header_base": "//base/hiviewdfx/faultloggerd/interfaces/innerkits/signal_handler/include"
           }

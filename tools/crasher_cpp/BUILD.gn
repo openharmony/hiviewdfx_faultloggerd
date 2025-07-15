@@ -25,11 +25,15 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/async_stack/include",
+      "$faultloggerd_interfaces_path/innerkits/signal_handler/include",
       "$faultloggerd_path/example",
       "$hilog_lite_include_path",
     ]
     sources = [ "dfx_crasher.cpp" ]
-    deps = [ "$hilog_lite_deps_path" ]
+    deps = [
+      "$hilog_lite_deps_path",
+      "$faultloggerd_interfaces_path/innerkits/signal_handler:dfx_signalhandler",
+    ]
 
     external_deps = [ "bounds_checking_function:libsec_shared" ]
   }
@@ -77,6 +81,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
+      "$faultloggerd_interfaces_path/innerkits/signal_handler:dfx_signalhandler",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
 

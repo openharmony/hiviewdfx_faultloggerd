@@ -62,10 +62,6 @@ void SignalHandlerTest::SetUp()
 void SignalHandlerTest::TearDown()
 {}
 
-extern "C" void SetThreadInfoCallback(ThreadInfoCallBack func);
-extern "C" void SetAsyncStackCallbackFunc(void* func);
-extern "C" int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len);
-extern "C" int DFX_SetCrashLogConfig(uint8_t type, uint32_t value);
 static bool CheckCallbackCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
     if (filePath.empty() || pid <= 0) {
@@ -606,8 +602,10 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest013, TestSize.Level2)
     GTEST_LOG_(INFO) << "SignalHandlerTest013: end.";
 }
 
-void TestCallbackFunc()
-{}
+uint64_t TestCallbackFunc()
+{
+    return 0;
+}
 
 /**
  * @tc.name: SignalHandlerTest015
@@ -681,7 +679,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 HWTEST_F(SignalHandlerTest, SignalHandlerTest016, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "SignalHandlerTest016: start.";
-    SetAsyncStackCallbackFunc(reinterpret_cast<void*>(TestCallbackFunc));
+    DFX_SetAsyncStackCallback(TestCallbackFunc);
 
     struct CrashDumpException exception;
     exception.pid = 1;

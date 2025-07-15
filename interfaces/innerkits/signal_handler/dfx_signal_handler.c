@@ -74,6 +74,8 @@
 #define NSIG 64
 #endif
 
+static void DFX_InstallSignalHandler(void);
+// preload by libc
 void __attribute__((constructor)) InitHandler(void)
 {
     DFX_InstallSignalHandler();
@@ -107,10 +109,10 @@ static void InitCallbackItems(void)
     }
 }
 
-static GetStackIdFunc g_GetStackIdFunc = NULL;
-void SetAsyncStackCallbackFunc(void* func)
+static GetStackIdFunc g_getStackIdCallback = NULL;
+void DFX_SetAsyncStackCallback(GetStackIdFunc func)
 {
-    g_GetStackIdFunc = (GetStackIdFunc)func;
+    g_getStackIdCallback = func;
 }
 
 // caller should set to NULL before exit thread
@@ -239,8 +241,8 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
                  g_appRunningId, sizeof(g_appRunningId)) != EOK) {
         DFXLOGE("FillDumpRequest appRunningId memcpy fail!");
     }
-    if (!IsDumpSignal(signo) && g_GetStackIdFunc!= NULL) {
-        g_request.stackId = g_GetStackIdFunc();
+    if (!IsDumpSignal(signo) && g_getStackIdCallback != NULL) {
+        g_request.stackId = g_getStackIdCallback();
         DFXLOGI("g_GetStackIdFunc %{private}p.", (void*)g_request.stackId);
     }
     GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
@@ -255,7 +257,7 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
             break;
         case SIGLEAK_STACK:
             ret = FillDebugMessageLocked(signo, si);
-            /* fall-through */
+            AT_FALLTHROUGH;
         default: {
             ThreadInfoCallBack callback = GetCallbackLocked();
             if (callback != NULL) {
@@ -365,7 +367,7 @@ static void InstallSigActionHandler(int signo)
     }
 }
 
-void DFX_InstallSignalHandler(void)
+static void DFX_InstallSignalHandler(void)
 {
     if (g_hasInit) {
         return;
