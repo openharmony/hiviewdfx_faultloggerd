@@ -61,9 +61,9 @@ uint64_t GetCurrentTime()
 
 uint64_t GetFileSize(const std::string& filePath)
 {
-    struct stat statBuf{};
-    if (stat(filePath.c_str(), &statBuf) == 0) {
-        return statBuf.st_size;
+    struct stat64 statBuf{};
+    if (stat64(filePath.c_str(), &statBuf) == 0) {
+        return static_cast<uint64_t>(statBuf.st_size);
     }
     return 0;
 }
@@ -144,39 +144,81 @@ void ForceRemoveFileIfNeed(const SingleFileConfig& fileConfig, std::list<std::st
         }), tempFiles.end());
 }
 
-uint64_t GetTempFiles(const SingleFileConfig& tempFileConfig, std::list<std::string>& tempFiles)
+/**
+ * Check and handle the size of a temporary file with large file support.
+ *
+ * @param fileConfig Configuration parameters for the file:
+ *        - maxSingleFileSize: Maximum allowed file size (0 indicates unlimited).
+ *        - overFileSizeAction: Action to take when file size exceeds the limit.
+ * @param filePath Path to the file to be checked.
+ * @return The final size of the file after processing (in bytes):
+ *         - Normal file: Original size.
+ *         - Deleted file: 0.
+ *         - Truncated file: the maxSingleFileSize of fileConfig.
+ */
+uint64_t CheckTempFileSize(const SingleFileConfig& fileConfig, const std::string& filePath)
 {
-    std::vector<std::string> files;
-    const auto& tempFilePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
-    OHOS::GetDirFiles(tempFilePath, files);
+    uint64_t originFileSize = GetFileSize(filePath);
+    if (originFileSize > 0 &&
+        (originFileSize <= fileConfig.maxSingleFileSize || fileConfig.maxSingleFileSize == 0)) {
+        return originFileSize;
+    }
+    DFXLOGW("%{public}s :: invalid file size %{public}" PRIu64 " of: %{public}s.",
+        TEMP_FILE_MANAGER_TAG, originFileSize, filePath.c_str());
+    if (fileConfig.overFileSizeAction == OverFileSizeAction::DELETE || originFileSize == 0) {
+        RemoveTempFile(filePath);
+        return 0;
+    }
+    truncate64(filePath.c_str(), static_cast<off64_t>(fileConfig.maxSingleFileSize));
+    return fileConfig.maxSingleFileSize;
+}
+
+uint64_t CheckTempFileSize(const SingleFileConfig& tempFileConfig, std::list<std::string>& tempFiles)
+{
     uint64_t fileSize = 0;
-    for (const auto& file : files) {
-        if (file.find(tempFileConfig.fileNamePrefix, tempFilePath.size()) != std::string::npos) {
-            fileSize += GetFileSize(file);
-            tempFiles.emplace_back(file);
+    for (auto& tempFile : tempFiles) {
+        fileSize += CheckTempFileSize(tempFileConfig, tempFile);
+    }
+    return fileSize;
+}
+
+uint64_t CheckTempFileSize(std::map<const SingleFileConfig*, std::list<std::string>>& tempFilesMap)
+{
+    uint64_t fileSize = 0;
+    for (auto& pair : tempFilesMap) {
+        if (pair.first == nullptr) {
+            std::for_each(pair.second.begin(), pair.second.end(), RemoveTempFile);
+            tempFilesMap.erase(pair.first);
+        } else {
+            fileSize += CheckTempFileSize(*pair.first, pair.second);
         }
     }
     return fileSize;
 }
 
-uint64_t GetTempFiles(std::map<const SingleFileConfig*, std::list<std::string>>& tempFilesMap)
+void GetTempFiles(const SingleFileConfig& tempFileConfig, std::list<std::string>& tempFiles)
 {
     std::vector<std::string> files;
     const auto& tempFilePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
     OHOS::GetDirFiles(tempFilePath, files);
-    uint64_t fileSize = 0;
+    for (const auto& file : files) {
+        if (file.find(tempFileConfig.fileNamePrefix, tempFilePath.size()) != std::string::npos) {
+            tempFiles.emplace_back(file);
+        }
+    }
+}
+
+void GetTempFiles(std::map<const SingleFileConfig*, std::list<std::string>>& tempFilesMap)
+{
+    std::vector<std::string> files;
+    const auto& tempFilePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
+    OHOS::GetDirFiles(tempFilePath, files);
     for (const auto& file : files) {
         auto fileConfig = GetTargetFileConfig([&file, &tempFilePath](const SingleFileConfig& fileConfig) {
             return file.find(fileConfig.fileNamePrefix, tempFilePath.size()) != std::string::npos;
         });
-        if (fileConfig == nullptr) {
-            RemoveTempFile(file);
-            continue;
-        }
-        fileSize += GetFileSize(file);
         tempFilesMap[fileConfig].emplace_back(file);
     }
-    return fileSize;
 }
 }
 
@@ -226,14 +268,17 @@ void TempFileManager::ClearBigFilesOnStart(bool isSizeOverLimit, std::list<std::
 void TempFileManager::ScanTempFilesOnStart()
 {
     std::map<const SingleFileConfig*, std::list<std::string>> tempFilesMap;
-    uint64_t filesSize = GetTempFiles(tempFilesMap);
+    GetTempFiles(tempFilesMap);
+    uint64_t filesSize = CheckTempFileSize(tempFilesMap);
     bool isOverLimit = filesSize > FaultLoggerConfig::GetInstance().GetTempFileConfig().maxTempFilesSize;
     for (auto& pair : tempFilesMap) {
         int32_t fileType = pair.first->type;
         if (fileType <= FaultLoggerType::JS_HEAP_LEAK_LIST && fileType >= FaultLoggerType::JS_HEAP_SNAPSHOT) {
             ClearBigFilesOnStart(isOverLimit, pair.second);
         }
-        ForceRemoveFileIfNeed(*pair.first, pair.second);
+        if (pair.first) {
+            ForceRemoveFileIfNeed(*pair.first, pair.second);
+        }
         GetTargetFileCount(fileType) = static_cast<int32_t>(pair.second.size());
     }
 }
@@ -442,18 +487,8 @@ void TempFileManager::TempFileWatcher::HandleFileDeleteOrMove(const std::string&
 
 void TempFileManager::TempFileWatcher::HandleFileWrite(const std::string& filePath, const SingleFileConfig& fileConfig)
 {
-    if (fileConfig.maxSingleFileSize == 0 || access(filePath.c_str(), F_OK) != 0) {
-        return;
-    }
-    if (GetFileSize(filePath) <= fileConfig.maxSingleFileSize) {
-        return;
-    }
-    DFXLOGW("%{public}s :: filesize of: %{public}s is over limit %{public}" PRIu64,
-            TEMP_FILE_MANAGER_TAG, filePath.c_str(), fileConfig.maxSingleFileSize);
-    if (fileConfig.overFileSizeAction == OverFileSizeAction::DELETE) {
-        RemoveTempFile(filePath);
-    } else {
-        truncate64(filePath.c_str(), static_cast<off64_t>(fileConfig.maxSingleFileSize));
+    if (access(filePath.c_str(), F_OK) == 0) {
+        CheckTempFileSize(fileConfig, filePath);
     }
 }
 
