@@ -816,5 +816,54 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_008, TestSize.Level2)
 
     GTEST_LOG_(INFO) << "StackPrinterTest_008: end.";
 }
+
+/**
+ * @tc.name: StackPrinterTest009
+ * @tc.desc: test StackPrinter functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, StackPrinterTest_009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackPrinterTest_009: start.";
+    std::unique_ptr<StackPrinter> stackPrinter = std::make_unique<StackPrinter>();
+    uint32_t uniqueStableSize = 128 * 1024;
+    stackPrinter->InitUniqueTable(getpid(), uniqueStableSize);
+    for (size_t i = 0; i < pcsVec.size(); i++) {
+        stackPrinter->PutPcsInTable(pcsVec[i], gettid(), timestamps[i]);
+    }
+
+    std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
+    std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
+    stackPrinter->SetUnwindInfo(unwinder, maps);
+    std::map<int, std::vector<SampledFrame>> threadSampledFrames = stackPrinter->GetThreadSampledFrames();
+    ASSERT_FALSE(threadSampledFrames.empty());
+
+    std::vector<SampledFrame> sampledFrameVec = threadSampledFrames[gettid()];
+    ASSERT_FALSE(sampledFrameVec.empty());
+
+    for (const auto& originFrame : sampledFrameVec) {
+        std::stringstream ss;
+        ss << originFrame;
+        std::string frameStr = std::to_string(originFrame.indent) + " " + std::to_string(originFrame.count) + " " +
+                               std::to_string(originFrame.level) + " " + std::to_string(originFrame.pc) + " " +
+                               std::to_string(originFrame.isLeaf) + " " + std::to_string(originFrame.timestamps.size());
+        for (const auto& timestamp : originFrame.timestamps) {
+            frameStr = frameStr + " " + std::to_string(timestamp);
+        }
+        ASSERT_EQ(ss.str(), frameStr);
+
+        SampledFrame sampledFrame;
+        ss >> sampledFrame;
+
+        ASSERT_EQ(originFrame.indent, sampledFrame.indent);
+        ASSERT_EQ(originFrame.count, sampledFrame.count);
+        ASSERT_EQ(originFrame.level, sampledFrame.level);
+        ASSERT_EQ(originFrame.pc, sampledFrame.pc);
+        ASSERT_EQ(originFrame.isLeaf, sampledFrame.isLeaf);
+        ASSERT_EQ(originFrame.timestamps, sampledFrame.timestamps);
+    }
+
+    GTEST_LOG_(INFO) << "StackPrinterTest_009: end.";
+}
 }  // namespace HiviewDFX
 }  // namespace OHOS

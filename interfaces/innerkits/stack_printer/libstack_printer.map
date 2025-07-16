@@ -12,6 +12,7 @@
             OHOS::HiviewDFX::StackPrinter::PrintTreeStackBySampledStack*;
             OHOS::HiviewDFX::StackPrinter::SerializeSampledFrameMap*;
             OHOS::HiviewDFX::StackPrinter::DeserializeSampledFrameMap*;
+            OHOS::HiviewDFX::operator*;
         };
     local:
         *;
