@@ -21,6 +21,7 @@
 
 #include "dfx_frame_formatter.h"
 #include "dfx_log.h"
+#include "dfx_signal_handler.h"
 #include "fp_backtrace.h"
 #include "unique_stack_table.h"
 #include "unwinder.h"
@@ -31,14 +32,8 @@ static pthread_key_t g_stackidKey;
 static bool g_init = false;
 static OHOS::HiviewDFX::FpBacktrace* g_fpBacktrace = nullptr;
 
-extern "C" void SetAsyncStackCallbackFunc(void* func) __attribute__((weak));
 static void InitAsyncStackInner(void)
 {
-    if (SetAsyncStackCallbackFunc == nullptr) {
-        DFXLOGE("failed to init async stack, could not find SetAsyncStackCallbackFunc.");
-        return;
-    }
-
     // init unique stack table
     if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->Init()) {
         DFXLOGE("failed to init unique stack table?.");
@@ -53,7 +48,7 @@ static void InitAsyncStackInner(void)
     }
 
     // set callback for DfxSignalHandler to read stackId
-    SetAsyncStackCallbackFunc((void*)(&GetStackId));
+    DFX_SetAsyncStackCallback(GetStackId);
     g_fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
 }
 

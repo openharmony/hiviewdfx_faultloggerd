@@ -39,6 +39,7 @@
 #endif
 #include "dfx_crash.h"
 #include "dfx_define.h"
+#include "dfx_unique_crash_obj.h"
 #ifndef is_ohos_lite
 #include "ffrt_inner.h"
 #include "uv.h"
@@ -162,9 +163,6 @@ constexpr static CrasherCommandLineParam CMDLINE_TABLE_PARAM[] = {
         &DfxCrasher::CrashInLibuvWorkDone},
 #endif
 };
-
-extern "C" uintptr_t DFX_SetCrashObj(uint8_t type, uintptr_t addr) __attribute__((weak));
-extern "C" void DFX_ResetCrashObj(uintptr_t crashObj) __attribute__((weak));
 
 DfxCrasher::DfxCrasher() {}
 DfxCrasher::~DfxCrasher() {}
@@ -532,64 +530,37 @@ NOINLINE int DfxCrasher::PrintFatalMessageInLibc()
 
 NOINLINE static void TestGetCrashObjInner()
 {
-    uintptr_t val = 0;
-    if (DFX_SetCrashObj != nullptr) {
-        uint8_t type = 0;
-        std::string msg = "test get crashObjectInner.";
-        val = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
-    }
-    if (DFX_ResetCrashObj != nullptr) {
-        DFX_ResetCrashObj(val);
-    }
+    std::string msg = "test get crashObjectInner.";
+    UniqueCrashObj obj(OBJ_STRING, reinterpret_cast<uintptr_t>(msg.c_str()));
 }
 
 NOINLINE int DfxCrasher::TestGetCrashObj()
 {
-    uintptr_t crashObj = 0;
-    if (DFX_SetCrashObj != nullptr) {
-        uint8_t type = 0;
-        std::string msg = "test get crashObject.";
-        crashObj = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(msg.c_str()));
-    }
+    std::string msg = "test get crashObject.";
+    UniqueCrashObj obj(OBJ_STRING, reinterpret_cast<uintptr_t>(msg.c_str()));
     TestGetCrashObjInner();
     raise(SIGSEGV);
-    if (DFX_ResetCrashObj != nullptr) {
-        DFX_ResetCrashObj(crashObj);
-    }
     return 0;
 }
 
 NOINLINE static void TestGetCrashObjMemoryInner()
 {
-    uint8_t type = 1;
-    uintptr_t val = 0;
     constexpr size_t bufSize = 4096;
     uintptr_t memory[bufSize] = {2};
-    if (DFX_SetCrashObj != nullptr) {
-        val = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(memory));
-    }
-    if (DFX_ResetCrashObj != nullptr) {
-        DFX_ResetCrashObj(val);
-    }
+    UniqueCrashObj obj(OBJ_MEMORY_64B, reinterpret_cast<uintptr_t>(memory));
 }
 
 NOINLINE int DfxCrasher::TestGetCrashObjMemory()
 {
-    uint8_t type = 5;
-    uintptr_t crashObj = 0;
     constexpr size_t bufSize = 4096;
     uintptr_t memory[bufSize];
     for (size_t i = 0; i < bufSize; i++) {
         memory[i] = i;
     }
-    if (DFX_SetCrashObj != nullptr) {
-        crashObj = DFX_SetCrashObj(type, reinterpret_cast<uintptr_t>(memory));
-    }
+    UniqueCrashObj obj(OBJ_MEMORY_4096B, reinterpret_cast<uintptr_t>(memory));
+
     TestGetCrashObjMemoryInner();
     raise(SIGSEGV);
-    if (DFX_ResetCrashObj != nullptr) {
-        DFX_ResetCrashObj(crashObj);
-    }
     return 0;
 }
 

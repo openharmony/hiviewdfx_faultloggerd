@@ -39,8 +39,8 @@
 #define LOG_TAG "DfxSignalHandlerException"
 #endif
 
-static const int TIME_OUT = 2;       /* seconds */
-static const char FAULTLOGGERD_SOCKET_NAME[] = "/dev/unix/socket/faultloggerd.server";
+static const int TIME_OUT = 2;       /* socket connecet timeout 2 seconds */
+const char * const FAULTLOGGERD_SOCKET_NAME = "/dev/unix/socket/faultloggerd.server";
 
 static int ConnectSocket(const char* path, const int timeout)
 {
