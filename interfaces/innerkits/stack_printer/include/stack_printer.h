@@ -28,9 +28,9 @@ struct TimeStampedPcs {
 };
 
 struct SampledFrame {
-    int indent {0};                    // the indent of this frame.
-    int count {0};                     // the count of this frame in the serial stacks.
-    int level {0};                     // the level of this frame in its stack call chain.
+    uint32_t indent {0};               // the indent of this frame.
+    int32_t count {0};                 // the count of this frame in the serial stacks.
+    uint32_t level {0};                // the level of this frame in its stack call chain.
     uintptr_t pc {0};                  // pc of this stack frame.
     bool isLeaf {false};               // whether is leaf node in the tree format stack string.
     std::vector<uint64_t> timestamps;  // timestamps of this stack sampled.

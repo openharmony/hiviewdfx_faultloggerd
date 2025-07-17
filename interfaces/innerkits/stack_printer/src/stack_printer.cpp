@@ -33,6 +33,7 @@ constexpr uint64_t SEC_TO_NANOSEC = 1000000000;
 constexpr uint64_t MICROSEC_TO_NANOSEC = 1000;
 constexpr int FORMAT_TIME_LEN = 20;
 constexpr int MICROSEC_LEN = 6;
+constexpr size_t MAX_SAMPLE_TIDS = 10;
 }  // namespace
 
 struct StackRecord {
@@ -43,7 +44,7 @@ struct StackRecord {
 struct StackItem {
     uintptr_t pc {0};
     int32_t pcCount {0};
-    uint64_t level {0};
+    uint32_t level {0};
     uint64_t stackId {0};  // Only leaf node update this.
     std::shared_ptr<DfxFrame> current {nullptr};
     std::shared_ptr<StackItem> child {nullptr};
@@ -464,7 +465,7 @@ std::vector<SampledFrame> StackPrinter::Impl::GenerateTreeStackFrames(const std:
     if (root_ != nullptr) {
         nodes.emplace_back(root_);
     }
-    const int indent = 2;
+    const uint32_t indent = 2;
     while (!nodes.empty()) {
         std::shared_ptr<StackItem> back = nodes.back();
         SampledFrame sampledFrame;
@@ -537,19 +538,41 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::Impl::DeserializeSampledF
 {
     std::map<int, std::vector<SampledFrame>> sampledFrameMap;
     size_t mapSize;
-    is >> mapSize;
-    is.ignore(1);
+    if (!(is >> mapSize)) {
+        is.setstate(std::ios::failbit);
+        return sampledFrameMap;
+    }
+    if (mapSize > MAX_SAMPLE_TIDS) {
+        return sampledFrameMap;
+    }
+    is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     for (size_t i = 0; i < mapSize; i++) {
-        int tid;
+        std::string tidStr;
         size_t vecSize;
+        if (!(is >> tidStr >> vecSize)) {
+            is.setstate(std::ios::failbit);
+            return sampledFrameMap;
+        }
+        int base = 10;
+        char* endPtr;
+        long tidNum = std::strtol(tidStr.c_str(), &endPtr, base);
+        if (*endPtr != '\0') {
+            return sampledFrameMap;
+        }
+        int tid = static_cast<int>(tidNum);
         std::vector<SampledFrame> sampledFrameVec;
-        is >> tid >> vecSize;
         for (size_t j = 0; j < vecSize; j++) {
             SampledFrame frame;
-            is >> frame;
+            if (!(is >> frame)) {
+                is.setstate(std::ios::failbit);
+                return sampledFrameMap;
+            }
             sampledFrameVec.emplace_back(frame);
         }
-        is.ignore(1);
+        is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        if (tid <= 0) {
+            continue;
+        }
         sampledFrameMap[tid] = sampledFrameVec;
     }
     return sampledFrameMap;
