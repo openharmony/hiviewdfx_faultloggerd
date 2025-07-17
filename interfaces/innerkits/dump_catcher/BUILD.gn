@@ -100,6 +100,5 @@ if (defined(ohos_lite)) {
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
-    kernel_permission_path = "./encaps.json"
   }
 }
