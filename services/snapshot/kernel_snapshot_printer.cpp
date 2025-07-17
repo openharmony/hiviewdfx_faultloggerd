@@ -18,7 +18,7 @@
 #include "dfx_log.h"
 #include "string_util.h"
 
-#include "kernel_snapshot_util.h"
+#include "kernel_snapshot_content_builder.h"
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -27,18 +27,15 @@ constexpr const char * const KBOX_SNAPSHOT_DUMP_PATH = "/data/log/faultlog/temp/
 
 void KernelSnapshotPrinter::OutputToFile(const std::string& filePath, CrashMap& output)
 {
-    FILE* file = fopen(filePath.c_str(), "w");
-    if (file == nullptr) {
+    std::unique_ptr<FILE, decltype(&fclose)> file(fopen(filePath.c_str(), "w"), fclose);
+    if (!file) {
         DFXLOGE("open file failed %{public}s errno %{public}d", filePath.c_str(), errno);
         return;
     }
 
-    std::string outputCont = KernelSnapshotUtil::FillSummary(output, true);
-    if (fwrite(outputCont.c_str(), sizeof(char), outputCont.length(), file) != outputCont.length()) {
+    std::string outputCont = KernelSnapshotContentBuilder(output, true).GenerateSummary();
+    if (fwrite(outputCont.c_str(), sizeof(char), outputCont.length(), file.get()) != outputCont.length()) {
         DFXLOGE("write file failed %{public}s errno %{public}d", filePath.c_str(), errno);
-    }
-    if (fclose(file) != 0) {
-        DFXLOGE("close file failed %{public}s errno %{public}d", filePath.c_str(), errno);
     }
 }
 

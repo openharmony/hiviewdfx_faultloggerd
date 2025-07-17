@@ -41,6 +41,7 @@ if (defined(ohos_lite)) {
     ]
 
     sources = [
+      "$faultloggerd_path/services/snapshot/kernel_snapshot_content_builder.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_kernel_frame.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_manager.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_parser.cpp",
@@ -48,7 +49,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/services/snapshot/kernel_snapshot_processor_impl.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_reporter.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_trie.cpp",
-      "$faultloggerd_path/services/snapshot/kernel_snapshot_util.cpp",
       "kernel_snapshot_test.cpp",
     ]
     cflags_cc = [ "-Dprivate=public" ]

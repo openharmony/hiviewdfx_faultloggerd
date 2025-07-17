@@ -21,12 +21,12 @@
 #include <unistd.h>
 
 #include "dfx_test_util.h"
+#include "kernel_snapshot_content_builder.h"
 #include "kernel_snapshot_parser.h"
 #include "kernel_snapshot_printer.h"
 #include "kernel_snapshot_processor_impl.h"
 #include "kernel_snapshot_reporter.h"
 #include "kernel_snapshot_trie.h"
-#include "kernel_snapshot_util.h"
 
 using namespace testing::ext;
 using namespace std;
@@ -511,27 +511,6 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest025, TestSize.Level2)
 }
 
 /**
- * @tc.name: KernelSnapshotTest040
- * @tc.desc: test FilterEmptySection
- * @tc.type: FUNC
- */
-HWTEST_F(KernelSnapshotTest, KernelSnapshotTest040, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "KernelSnapshotTest040: start.";
-    std::string secHead = "secHead";
-    std::string secCont = "";
-    std::string end = "end";
-
-    std::string res = KernelSnapshotUtil::FilterEmptySection(secHead, secCont, end);
-    ASSERT_EQ(res, "");
-
-    secCont = "secCont";
-    res = KernelSnapshotUtil::FilterEmptySection(secHead, secCont, end);
-    ASSERT_EQ(res, "secHeadsecContend");
-    GTEST_LOG_(INFO) << "KernelSnapshotTest040: end.";
-}
-
-/**
  * @tc.name: KernelSnapshotTest041
  * @tc.desc: test SaveSnapshot
  * @tc.type: FUNC
@@ -654,6 +633,52 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest053, TestSize.Level2)
     EXPECT_EQ(ret, false);
 
     GTEST_LOG_(INFO) << "KernelSnapshotTest053: end.";
+}
+
+/**
+ * @tc.name: KernelSnapshotTest054
+ * @tc.desc: test generate summary local is true
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotTest054, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotTest054: start.";
+    CrashMap output;
+    output[CrashSection::PID] = "";
+    output[CrashSection::UID] = "1000";
+    output[CrashSection::FAULT_STACK] = "[0000005b36f41a70][FP: 0000005b36fafbd0]";
+    auto summary = KernelSnapshotContentBuilder(output, true).GenerateSummary();
+
+    EXPECT_TRUE(summary.find("Pid:") == std::string::npos);
+    EXPECT_TRUE(summary.find("Uid:") != std::string::npos);
+    EXPECT_TRUE(summary.find("FaultStack:") != std::string::npos);
+
+    output[CrashSection::PID] = "123";
+    summary = KernelSnapshotContentBuilder(output, true).GenerateSummary();
+    EXPECT_TRUE(summary.find("Pid:") != std::string::npos);
+
+    GTEST_LOG_(INFO) << "KernelSnapshotTest054: end.";
+}
+
+/**
+ * @tc.name: KernelSnapshotTest055
+ * @tc.desc: test test generate summary local is false
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotTest055, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotTest055: start.";
+    CrashMap output = {
+        {CrashSection::UID, "1000"},
+        {CrashSection::FAULT_STACK, "[0000005b36f41a70][FP: 0000005b36fafbd0]"}
+    };
+
+    auto summary = KernelSnapshotContentBuilder(output, false).GenerateSummary();
+
+    EXPECT_TRUE(summary.find("Uid:") != std::string::npos);
+    EXPECT_TRUE(summary.find("FaultStack:") == std::string::npos);
+
+    GTEST_LOG_(INFO) << "KernelSnapshotTest055: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
