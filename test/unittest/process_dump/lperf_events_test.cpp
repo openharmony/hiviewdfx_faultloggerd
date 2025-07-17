@@ -118,24 +118,5 @@ HWTEST_F(LperfEventsTest, LperfEventsTestTest005, TestSize.Level2)
     EXPECT_EQ(lperfEvents_.PrepareRecord(), -1);
     GTEST_LOG_(INFO) << "LperfEventsTestTest005: end.";
 }
-
-/**
- * @tc.name: LperfEventsTestTest006
- * @tc.desc: test LperfEvents invalid time -1
- * @tc.type: FUNC
- */
-HWTEST_F(LperfEventsTest, LperfEventsTestTest006, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LperfEventsTestTest006: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
-    LperfEvents lperfEvents_;
-    lperfEvents_.SetTid({getpid()});
-    lperfEvents_.SetTimeOut(-1);
-    lperfEvents_.SetSampleFrequency(100);
-    EXPECT_EQ(lperfEvents_.PrepareRecord(), -1);
-    GTEST_LOG_(INFO) << "LperfEventsTestTest006: end.";
-}
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -238,17 +238,13 @@ bool LperfEvents::RecordLoop()
 void LperfEvents::Clear()
 {
     LperfRecordFactory::ClearData();
-    if (lperfMmap_.mmapPage != nullptr) {
-        if (munmap(lperfMmap_.mmapPage, static_cast<size_t>((mmapPages_ + 1) * pageSize_)) < 0) {
-            DFXLOGE("munmap lperfMmap failed");
-        }
-        lperfMmap_.mmapPage = nullptr;
-    }
     pollFds_.clear();
     if (lperfFd_ != -1) {
+        // munmap(lperfMmap_.mmapPage) in kernel when close lperfFd_.
         close(lperfFd_);
         lperfFd_ = -1;
     }
+    lperfMmap_.mmapPage = nullptr;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
