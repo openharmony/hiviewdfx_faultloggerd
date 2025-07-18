@@ -59,7 +59,7 @@ public:
     bool Init(uint8_t* data);
     void Clear();
 protected:
-    void InitHeader(uint8_t* data);
+    void InitHeader(uint8_t* p);
 
 private:
     struct perf_event_header header_ = {};
@@ -76,12 +76,12 @@ private:
 };
 
 template<typename T>
-bool PopFromBinary(bool condition, uint8_t*& data, T& dest, uint64_t& size);
+bool PopFromBinary(bool condition, uint8_t*& p, T& v, uint64_t& size);
 
 template<typename T1, typename T2>
-bool PopFromBinary2(bool condition, uint8_t*& data, T1& dest1, T2& dest2, uint64_t& size);
+bool PopFromBinary2(bool condition, uint8_t*& p, T1& v1, T2& v2, uint64_t& size);
 
-bool SetPointerOffset(uint8_t*& data, uint64_t offset, uint64_t& size);
+bool SetPointerOffset(uint8_t*& p, uint64_t offset, uint64_t& size);
 
 #define NO_RETVAL /* retval */
 #ifndef CHECK_TRUE_AND_RET

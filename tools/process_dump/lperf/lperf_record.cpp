@@ -93,9 +93,6 @@ void LperfRecord::PrepareLperfEvent()
 void LperfRecord::SymbolicRecord(LperfRecordSample& record)
 {
     CHECK_TRUE_AND_RET(record.data_.tid > 0, NO_RETVAL, "Symbolic invalid Record, tid: %d", record.data_.tid);
-    const uint64_t maxNr = 51;
-    CHECK_TRUE_AND_RET(record.data_.nr > 0 && record.data_.nr < maxNr,
-                       NO_RETVAL, "Symbolic invalid Record, nr: %llu", record.data_.nr);
     std::vector<uintptr_t> pcs;
     for (uint64_t i = 0; i < record.data_.nr; i++) {
         if (record.data_.ips[i] != PERF_CONTEXT_USER) {

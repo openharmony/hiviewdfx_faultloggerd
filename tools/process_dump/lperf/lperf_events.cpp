@@ -56,7 +56,7 @@ struct LperfThreadInputArg {
 
 LperfEvents::LperfEvents()
 {
-    pageSize_ = static_cast<unsigned int>(sysconf(_SC_PAGESIZE));
+    pageSize_ = sysconf(_SC_PAGESIZE);
 }
 
 LperfEvents::~LperfEvents()
@@ -146,7 +146,7 @@ bool LperfEvents::AddRecordThreads()
     size_t count = std::min(tids_.size(), maxCount);
     threadInfo.tidCount = static_cast<unsigned int>(count);
     for (size_t i = 0; i < count; i++) {
-        threadInfo.tids[i] = static_cast<unsigned int>(tids_[i]);
+        threadInfo.tids[i] = tids_[i];
     }
     int err = ioctl(lperfFd_, static_cast<unsigned long>(LPERF_IOCTL_ADD_THREADS), &threadInfo);
     CHECK_ERR(err, "add lperf threads failed");
@@ -203,7 +203,7 @@ void LperfEvents::ReadRecordsFromMmaps()
     if (dataSize <= 0) {
         return;
     }
-    lperfMmap_.dataSize = static_cast<size_t>(dataSize);
+    lperfMmap_.dataSize = dataSize;
     while (GetHeaderFromMmap(lperfMmap_)) {
         GetRecordFromMmap(lperfMmap_);
     }
@@ -227,7 +227,7 @@ bool LperfEvents::RecordLoop()
             continue;
         }
         ReadRecordsFromMmaps();
-        if ((static_cast<unsigned short>(pollFds_[0].revents) & POLLHUP) == POLLHUP) {
+        if ((pollFds_[0].revents & POLLHUP) == POLLHUP) {
             DFXLOGE("poll status is POLLHUP, revents: %{public}d", pollFds_[0].revents);
             loopCondition = false;
         }

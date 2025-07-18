@@ -44,13 +44,13 @@ public:
 
 private:
     struct MmapFd {
-        int fd = 0;
+        int fd;
         perf_event_mmap_page* mmapPage = nullptr;
         uint8_t *buf = nullptr;
         size_t bufSize = 0;
         size_t dataSize = 0;
 
-        perf_event_header header = {};
+        perf_event_header header;
     };
 
     bool PrepareFdEvents();
@@ -62,7 +62,7 @@ private:
     bool PerfEventsEnable(bool enable);
     bool RecordLoop();
 
-    MmapFd lperfMmap_ = {};
+    MmapFd lperfMmap_;
     ProcessRecordCB recordCallBack_;
 
     int lperfFd_ = -1;
