@@ -865,5 +865,62 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_009, TestSize.Level2)
 
     GTEST_LOG_(INFO) << "StackPrinterTest_009: end.";
 }
+
+/**
+ * @tc.name: StackPrinterTest010
+ * @tc.desc: test StackPrinter functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, StackPrinterTest_010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "StackPrinterTest_010: start.";
+    // SampledFrame string to be deserialized: mapSize + \n + tid + vecSize + frameinfo + \n
+    // frameinfo: indent + count + level + pc + isLeaf + timestamps.size() + timestamps(set empty)
+    std::string sampledFrameMapStr = "11\n" + std::to_string(gettid()) + " 1 1 5 3 546040902012 0 0\n";
+    std::stringstream ss(sampledFrameMapStr);
+    auto result = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_TRUE(ss.fail());
+    ASSERT_TRUE(result.empty());
+
+    ss.str("");
+    ss.clear();
+    ss.str("invalidMapSize");
+    result = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_TRUE(ss.fail());
+    ASSERT_TRUE(result.empty());
+
+    ss.str("");
+    ss.clear();
+    sampledFrameMapStr = "1\n-1 1 1 5 3 546040902012 0 0\n";
+    ss.str(sampledFrameMapStr);
+    result = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_FALSE(ss.fail());
+    ASSERT_TRUE(result.empty());
+
+    ss.str("");
+    ss.clear();
+    ss.str("1\ninvalidTid");
+    result = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_TRUE(ss.fail());
+    ASSERT_TRUE(result.empty());
+
+    ss.str("");
+    ss.clear();
+    ss.str("1\ninvalidTid 1");
+    result = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_FALSE(ss.fail());
+    ASSERT_TRUE(result.empty());
+
+    ss.str("");
+    ss.clear();
+    sampledFrameMapStr = "1\n" + std::to_string(gettid()) + " 1 1 5 3 546040902012 0 0\n";
+    ss.str(sampledFrameMapStr);
+    result = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_FALSE(ss.fail());
+    ASSERT_EQ(result.size(), 1);
+    ASSERT_EQ(result[gettid()].size(), 1);
+
+    GTEST_LOG_(INFO) << "StackPrinterTest_010: end.";
+}
 }  // namespace HiviewDFX
 }  // namespace OHOS
