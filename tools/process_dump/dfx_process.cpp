@@ -198,14 +198,15 @@ bool GetProcessInfo(pid_t tid, unsigned long long &startTime)
 
 std::string DfxProcess::GetProcessLifeCycle(pid_t pid)
 {
-    struct sysinfo si;
-    sysinfo(&si);
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_BOOTTIME, &ts);
+    uint64_t sysUpTime = static_cast<uint64_t>(ts.tv_sec + static_cast<time_t>(ts.tv_nsec != 0 ? 1L : 0L));
     unsigned long long startTime = 0;
     if (GetProcessInfo(pid, startTime)) {
         if (sysconf(_SC_CLK_TCK) == -1) {
             return "";
         }
-        uint64_t upTime = si.uptime - startTime / static_cast<uint32_t>(sysconf(_SC_CLK_TCK));
+        uint64_t upTime = sysUpTime - startTime / static_cast<uint32_t>(sysconf(_SC_CLK_TCK));
         return std::to_string(upTime) + "s";
     }
     return "";
