@@ -44,7 +44,7 @@ public:
     static void SetUpTestCase(void);
     void TearDown() override;
 protected:
-    static SmartFd CreateTestFile(const string& fileName, uint32_t fileSize = 0);
+    static SmartFd CreateTestFile(const string& fileName, uint32_t fileSize = 1);
     static bool IsFileExist(const string& fileName);
     static string GetFileName(const string& fileNamePrefix, uint32_t time);
 };
@@ -236,10 +236,13 @@ HWTEST_F(TempFileManagerTest, OverFileSizeFileTest01, TestSize.Level2)
  */
 HWTEST_F(TempFileManagerTest, OverFileSizeFileTest02, TestSize.Level2)
 {
-    string testFileName = GetFileName(JS_HEAP, 0);
-    ASSERT_TRUE(CreateTestFile(testFileName, 6));
+    string testOverLimitFile = GetFileName(JS_HEAP, 0);
+    ASSERT_TRUE(CreateTestFile(testOverLimitFile, 6));
+    string testEmptyFile = GetFileName(JS_HEAP, 1);
+    ASSERT_TRUE(CreateTestFile(testEmptyFile, 0));
     this_thread::sleep_for(chrono::milliseconds(100));
-    ASSERT_FALSE(IsFileExist(testFileName));
+    ASSERT_FALSE(IsFileExist(testOverLimitFile));
+    ASSERT_FALSE(IsFileExist(testEmptyFile));
 }
 
 /**
@@ -249,11 +252,11 @@ HWTEST_F(TempFileManagerTest, OverFileSizeFileTest02, TestSize.Level2)
  */
 HWTEST_F(TempFileManagerTest, ScanCurrentFilesOnStartTest01, TestSize.Level2)
 {
-    string testFileName = GetFileName(JS_HEAP, 0);
-    ASSERT_TRUE(CreateTestFile(testFileName, 5));
-    ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 1)));
+    ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 0), 5));
+    ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 1), 5));
+    ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 2), 5));
     this_thread::sleep_for(chrono::milliseconds(100));
-    ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 2);
+    ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 3);
     tempFileManager.ScanTempFilesOnStart();
     ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 0);
 }

@@ -109,7 +109,7 @@ void ParseDirectoryConfig(const cJSON* json, DirectoryConfig& directoryConfig)
 void InitFaultloggerTestConfig(DirectoryConfig& directoryConfig)
 {
     directoryConfig.tempFilePath = "/data/test/faultloggerd/temp";
-    constexpr uint64_t maxTempFilesSize = 4ull << 10; // 4KB
+    constexpr uint64_t maxTempFilesSize = 10ull << 10; // 10KB
     directoryConfig.maxTempFilesSize = maxTempFilesSize;
     constexpr int32_t fileClearTimeAfterBoot = 3; // 3S
     directoryConfig.fileClearTimeAfterBoot = fileClearTimeAfterBoot;
