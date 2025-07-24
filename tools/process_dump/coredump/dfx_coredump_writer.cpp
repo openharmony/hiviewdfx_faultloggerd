@@ -758,6 +758,9 @@ char* SectionHeaderTableWriter::Write()
 
 void SectionHeaderTableWriter::AdjustOffset(uint8_t remain)
 {
+    if (remain > 8) { // 8
+        return;
+    }
     for (uint8_t i = 0; i < (8 - remain); i++) { // 8
         if (remain == 0) {
             break;
