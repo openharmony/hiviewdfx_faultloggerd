@@ -334,11 +334,9 @@ NOINLINE int DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678
     return 0;
 }
 
-static void *DoStackOverflow(void * inputArg)
+static void *DoStackOverflow(void * inputArg) __attribute__((optnone))
 {
     int b[10] = {1};
-    int *c = nullptr;
-    (void)memcpy_s(c, sizeof(int), b, sizeof(int));
     if (b[0] == 0) {
         return static_cast<void*>(b + 9); // 9: last element of array
     }
