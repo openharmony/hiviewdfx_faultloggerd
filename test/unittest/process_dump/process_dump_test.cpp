@@ -172,7 +172,6 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest007, TestSize.Level2)
     };
     process.InitKeyThread(request);
     id = process.ChangeTid(pid, false);
-    ProcessDumper::GetInstance().RemoveFileIfNeed("/data/log/faultlog/temp");
     ASSERT_EQ(id, 0);
     GTEST_LOG_(INFO) << "DfxProcessTest007: end.";
 }
