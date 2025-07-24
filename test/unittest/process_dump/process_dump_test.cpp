@@ -158,6 +158,7 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest007, TestSize.Level2)
     pid_t pid = fork();
     if (pid == 0) {
         sleep(1);
+        _exit(0);
     }
     int status = 0;
     waitpid(pid, &status, WNOHANG);
