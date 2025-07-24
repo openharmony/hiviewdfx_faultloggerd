@@ -488,7 +488,9 @@ std::vector<SampledFrame> StackPrinter::Impl::GenerateTreeStackFrames(const std:
             auto it = std::find_if(stackRecordVec.begin(), stackRecordVec.end(), [&stackId](const auto& record) {
                 return record.stackId == stackId;
             });
-            sampledFrame.timestamps = it->snapshotTimes;
+            if (it != stackRecordVec.end()) {
+                sampledFrame.timestamps = it->snapshotTimes;
+            }
         }
         sampledFrameVec.emplace_back(sampledFrame);
     }
@@ -540,10 +542,11 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::Impl::DeserializeSampledF
     size_t mapSize;
     if (!(is >> mapSize)) {
         is.setstate(std::ios::failbit);
-        return sampledFrameMap;
+        return std::map<int, std::vector<SampledFrame>>();
     }
     if (mapSize > MAX_SAMPLE_TIDS) {
-        return sampledFrameMap;
+        is.setstate(std::ios::failbit);
+        return std::map<int, std::vector<SampledFrame>>();
     }
     is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     for (size_t i = 0; i < mapSize; i++) {
@@ -551,13 +554,13 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::Impl::DeserializeSampledF
         size_t vecSize;
         if (!(is >> tidStr >> vecSize)) {
             is.setstate(std::ios::failbit);
-            return sampledFrameMap;
+            return std::map<int, std::vector<SampledFrame>>();
         }
         int base = 10;
         char* endPtr;
         long tidNum = std::strtol(tidStr.c_str(), &endPtr, base);
-        if (*endPtr != '\0') {
-            return sampledFrameMap;
+        if (*endPtr != '\0' || tidNum < INT_MIN || tidNum > INT_MAX) {
+            return std::map<int, std::vector<SampledFrame>>();
         }
         int tid = static_cast<int>(tidNum);
         std::vector<SampledFrame> sampledFrameVec;
@@ -565,13 +568,13 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::Impl::DeserializeSampledF
             SampledFrame frame;
             if (!(is >> frame)) {
                 is.setstate(std::ios::failbit);
-                return sampledFrameMap;
+                return std::map<int, std::vector<SampledFrame>>();
             }
             sampledFrameVec.emplace_back(frame);
         }
         is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        if (tid <= 0) {
-            continue;
+        if (tid < 0) {
+            return std::map<int, std::vector<SampledFrame>>();
         }
         sampledFrameMap[tid] = sampledFrameVec;
     }
