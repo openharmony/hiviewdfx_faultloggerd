@@ -512,6 +512,7 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest014, TestSize.Level2)
     EXPECT_FALSE(cur);
     GTEST_LOG_(INFO) << "DfxMemoryTest014: end.";
 }
+
 /**
  * @tc.name: DfxMemoryTest015
  * @tc.desc: test DfxMemory class 256 Read
@@ -544,6 +545,73 @@ HWTEST_F(DfxMemoryTest, DfxMemoryTest015, TestSize.Level2)
     ASSERT_EQ(memory->ReadSleb128(addr), 2);
     ASSERT_EQ(memory->ReadSleb128(invalidAddr), 0);
     GTEST_LOG_(INFO) << "DfxMemoryTest015: end.";
+}
+
+/**
+ * @tc.name: DfxMemoryTest016
+ * @tc.desc: test GetArkStackRange FUNC
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxMemoryTest, DfxMemoryTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxMemoryTest016: start.";
+    uintptr_t stackBottom;
+    uintptr_t stackTop;
+    bool ret = StackUtils::Instance().GetMainStackRange(stackBottom, stackTop);
+    ASSERT_TRUE(ret);
+    GTEST_LOG_(INFO) << "DfxMemoryTest016: end.";
+}
+
+/**
+ * @tc.name: DfxMemoryTest017
+ * @tc.desc: test ReadFormatEncodedValue FUNC
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxMemoryTest, DfxMemoryTest017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxMemoryTest017: start.";
+    uint8_t values[] = {0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0x10};
+    auto memory = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
+    uintptr_t addr = reinterpret_cast<uintptr_t>(&values[0]);
+    uintptr_t val;
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_uleb128);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sleb128);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata1);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata1);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata2);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata2);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata4);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata4);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_udata8);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_sdata8);
+    memory->ReadFormatEncodedValue(addr, val, DW_EH_PE_omit);
+    uint8_t formatEncoding = 0x11;
+    memory->ReadFormatEncodedValue(addr, val, formatEncoding);
+    ASSERT_EQ(val, 0);
+    GTEST_LOG_(INFO) << "DfxMemoryTest017: end.";
+}
+
+/**
+ * @tc.name: DfxMemoryTest018
+ * @tc.desc: test ReadFormatEncodedValue FUNC
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxMemoryTest, DfxMemoryTest018, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxMemoryTest018: start.";
+    auto accessors = std::make_shared<UnwindAccessors>();
+    DfxAccessorsCustomize acc(nullptr);
+    acc.AccessReg(0, nullptr, nullptr);
+    UnwindTableInfo uti;
+    acc.FindUnwindTable(0, uti, nullptr);
+    auto map = std::make_shared<DfxMap>();
+    acc.GetMapByPc(0, map, nullptr);
+    DfxAccessorsCustomize acc1(accessors);
+    acc1.AccessReg(0, nullptr, nullptr);
+    acc1.FindUnwindTable(0, uti, nullptr);
+    int ret = acc1.GetMapByPc(0, map, nullptr);
+    ASSERT_EQ(ret, -1);
+    GTEST_LOG_(INFO) << "DfxMemoryTest018: end.";
 }
 }
 } // namespace HiviewDFX

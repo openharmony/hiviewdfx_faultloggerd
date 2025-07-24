@@ -111,6 +111,9 @@ HWTEST_F(JsvmTest, JsvmTest003, TestSize.Level2)
     ReadMemFunc readMemFn = nullptr;
     JsvmStepParam *jsvmParam = nullptr;
     DfxJsvm::Instance().StepJsvmFrame(obj, readMemFn, jsvmParam);
+    int a = 0;
+    obj = &a;
+    DfxJsvm::Instance().StepJsvmFrame(obj, readMemFn, jsvmParam);
     ASSERT_EQ(DfxJsvm::Instance().stepJsvmFn_, nullptr);
     GTEST_LOG_(INFO) << "JsvmTest003: end.";
 }

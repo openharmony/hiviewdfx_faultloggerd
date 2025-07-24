@@ -134,7 +134,7 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest005, TestSize.Level2)
  */
 HWTEST_F (ProcessDumpTest, DfxProcessTest006, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "DfxProcessTest005: start.";
+    GTEST_LOG_(INFO) << "DfxProcessTest006: start.";
     pid_t pid = getpid();
     DfxProcess process;
     process.InitProcessInfo(pid, pid, getuid(), "");
@@ -144,6 +144,37 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest006, TestSize.Level2)
     DfxPtrace::Detach(pid);
     ASSERT_TRUE(id != 0);
     GTEST_LOG_(INFO) << "DfxProcessTest006: end.";
+}
+
+/**
+ * @tc.name: DfxProcessTest007
+ * @tc.desc: test DfxProcess ChangeTid
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxProcessTest007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxProcessTest007: start.";
+    pid_t curPid = getpid();
+    pid_t pid = fork();
+    if (pid == 0) {
+        sleep(1);
+    }
+    int status = 0;
+    waitpid(pid, &status, WNOHANG);
+    DfxProcess process;
+    process.InitProcessInfo(curPid, pid, getuid(), "");
+    pid_t id = process.ChangeTid(pid, false);
+    ProcessDumpRequest request = {
+        .type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH,
+        .tid = pid,
+        .pid = pid,
+        .nsPid = curPid,
+    };
+    process.InitKeyThread(request);
+    id = process.ChangeTid(pid, false);
+    ProcessDumper::GetInstance().RemoveFileIfNeed("/data/log/faultlog/temp");
+    ASSERT_EQ(id, 0);
+    GTEST_LOG_(INFO) << "DfxProcessTest007: end.";
 }
 
 /**

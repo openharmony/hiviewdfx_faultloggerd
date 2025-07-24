@@ -33,7 +33,6 @@ public:
     bool GetMainStackRange(uintptr_t& stackBottom, uintptr_t& stackTop) const;
     bool GetArkStackRange(uintptr_t& start, uintptr_t& end) const;
     static bool GetSelfStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
-    static bool GetSigAltStackRange(uintptr_t& stackBottom, uintptr_t& stackTop);
 private:
     struct MapRange {
         bool IsValid() const
