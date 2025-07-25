@@ -1156,7 +1156,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest043, TestSize.Level
     }
     const int checkCnt = 500; // 500 : check processdump start in 500ms
     const int waitForkPidStartTime = 50; // 50 : 50ms
-    const int hungUpProcessdumpTime = 2900; // 2900 : 2.9s
+    const int hungUpProcessdumpTime = 2880; // 2880 : 2.88s
     int timeStart = static_cast<int>(GetAbsTimeMilliSeconds());
     pid_t pidCheck = fork();
     if (pidCheck < 0) {

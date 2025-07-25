@@ -234,10 +234,10 @@ int ProcessDumper::DumpProcess()
         DFXLOGE("No invalid hitraceId struct size!");
     }
 #endif
-    SetProcessdumpTimeout(request_.siginfo);
     DFXLOGI("Processdump SigVal(%{public}d), TargetPid(%{public}d:%{public}d), TargetTid(%{public}d), " \
         "threadname(%{public}s).",
         request_.siginfo.si_value.sival_int, request_.pid, request_.nsPid, request_.tid, request_.threadName);
+    SetProcessdumpTimeout(request_.siginfo);
     UpdateConfigByRequest();
     if (!InitDfxProcess()) {
         DFXLOGE("Failed to init crash process info.");
@@ -279,6 +279,7 @@ void ProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
     uint64_t curTime = GetAbsTimeMilliSeconds();
     if (curTime >= expectedDumpFinishTime_) {
         DFXLOGI("now has timeout, processdump exit");
+        ReportSigDumpStats();
 #ifndef CLANG_COVERAGE
         _exit(0);
 #endif
@@ -455,14 +456,12 @@ void ProcessDumper::PrintDumpInfo(int& dumpRes)
 int ProcessDumper::ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo)
 {
     uint64_t curTime = GetAbsTimeMilliSeconds();
-    uint32_t reservedSymbolParseTime =
+    uint32_t lessRemainTimeMs =
         static_cast<uint32_t>(ProcessDumpConfig::GetInstance().GetConfig().reservedParseSymbolTime);
-    const int lessRemainTimeMs = 50;
-    reservedSymbolParseTime = reservedSymbolParseTime > lessRemainTimeMs ? reservedSymbolParseTime : lessRemainTimeMs;
     int dumpRes = 0;
     if (request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH || expectedDumpFinishTime_ == 0) {
         threadDumpInfo->Symbolize(*process_, *unwinder_);
-    } else if (expectedDumpFinishTime_ > curTime && expectedDumpFinishTime_ - curTime >= reservedSymbolParseTime) {
+    } else if (expectedDumpFinishTime_ > curTime && expectedDumpFinishTime_ - curTime > lessRemainTimeMs) {
         parseSymbolTask_ = std::async(std::launch::async, [threadDumpInfo, this]() {
             DFX_TRACE_SCOPED("parse symbol task");
             threadDumpInfo->Symbolize(*process_, *unwinder_);
