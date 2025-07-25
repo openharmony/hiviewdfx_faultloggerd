@@ -29,38 +29,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-constexpr const char* const CPP_CRASH_FILE = "cppcrash";
-constexpr const char* const JS_HEAP = "jsheap";
-constexpr const char* const LEAK_STACK = "leakstack";
-
-TempFileManager& tempFileManager = FaultLoggerDaemon::GetInstance().tempFileManager_;
-}
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
-class TempFileManagerTest : public testing::Test {
-public:
-    static void SetUpTestCase(void);
-    void TearDown() override;
-protected:
-    static SmartFd CreateTestFile(const string& fileName, uint32_t fileSize = 1);
-    static bool IsFileExist(const string& fileName);
-    static string GetFileName(const string& fileNamePrefix, uint32_t time);
-};
 
-void TempFileManagerTest::TearDown()
-{
-    ClearTempFiles();
-}
+namespace {
+constexpr auto CPP_CRASH_FILE = "cppcrash";
+constexpr auto JS_HEAP = "jsheap";
+constexpr auto LEAK_STACK = "leakstack";
+constexpr auto OTHER_FILE = "others";
 
-void TempFileManagerTest::SetUpTestCase()
-{
-    FaultLoggerdTestServer::GetInstance();
-    ClearTempFiles();
-}
+TempFileManager& tempFileManager = FaultLoggerDaemon::GetInstance().tempFileManager_;
 
-string TempFileManagerTest::GetFileName(const string &fileNamePrefix, uint32_t time)
+string GetFileName(const string &fileNamePrefix, uint32_t time)
 {
     string fileName = TEST_TEMP_FILE_PATH;
     fileName += fileNamePrefix;
@@ -73,13 +54,13 @@ string TempFileManagerTest::GetFileName(const string &fileNamePrefix, uint32_t t
     return fileName;
 }
 
-bool TempFileManagerTest::IsFileExist(const string &fileName)
+bool IsFileExist(const string &fileName)
 {
     error_code errorCode;
     return filesystem::exists(fileName, errorCode);
 }
 
-SmartFd TempFileManagerTest::CreateTestFile(const string& fileName, uint32_t fileSize)
+SmartFd CreateTestFile(const string& fileName, uint32_t fileSize = 1)
 {
     GTEST_LOG_(INFO) << "Create test file: " << fileName;
     SmartFd fd{static_cast<int>(OHOS_TEMP_FAILURE_RETRY(open(fileName.c_str(),
@@ -93,6 +74,24 @@ SmartFd TempFileManagerTest::CreateTestFile(const string& fileName, uint32_t fil
         write(fd.GetFd(), testContent, oneKb);
     }
     return fd;
+}
+}
+
+class TempFileManagerTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    void TearDown() override;
+};
+
+void TempFileManagerTest::TearDown()
+{
+    ClearTempFiles();
+}
+
+void TempFileManagerTest::SetUpTestCase()
+{
+    FaultLoggerdTestServer::GetInstance();
+    ClearTempFiles();
 }
 
 /**
@@ -245,36 +244,74 @@ HWTEST_F(TempFileManagerTest, OverFileSizeFileTest02, TestSize.Level2)
     ASSERT_FALSE(IsFileExist(testEmptyFile));
 }
 
+class ScanCurrentFilesTest : public testing::Test {
+public:
+    static void SetUpTestCase(void);
+    static void TearDownTestCase(void);
+    void TearDown() override;
+};
+
+void ScanCurrentFilesTest::TearDown()
+{
+    ClearTempFiles();
+}
+
+void ScanCurrentFilesTest::SetUpTestCase()
+{
+    FaultLoggerdTestServer::GetInstance();
+    ClearTempFiles();
+    for (const auto& listener : tempFileManager.epollManager_.listeners_) {
+        tempFileManager.epollManager_.DelEpollEvent(listener->GetFd());
+    }
+}
+
+void ScanCurrentFilesTest::TearDownTestCase()
+{
+    for (const auto& listener : tempFileManager.epollManager_.listeners_) {
+        tempFileManager.epollManager_.AddEpollEvent(*listener);
+    }
+}
+
 /**
  * @tc.name: ScanCurrentFilesOnStartTest01
  * @tc.desc: Delete js files immediately when the file size exceeds the limit.
  * @tc.type: FUNC
  */
-HWTEST_F(TempFileManagerTest, ScanCurrentFilesOnStartTest01, TestSize.Level2)
+HWTEST_F(ScanCurrentFilesTest, ScanCurrentFilesOnStartTest01, TestSize.Level2)
 {
     ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 0), 5));
     ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 1), 5));
     ASSERT_TRUE(CreateTestFile(GetFileName(JS_HEAP, 2), 5));
-    this_thread::sleep_for(chrono::milliseconds(100));
-    ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 3);
     tempFileManager.ScanTempFilesOnStart();
     ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 0);
 }
 
 /**
  * @tc.name: ScanCurrentFilesOnStartTest02
- * @tc.desc: Delete files that exceed the limit when the process starts.
+ * @tc.desc: Delete js files in 3 second when the file size not exceeds the limit.
  * @tc.type: FUNC
  */
-HWTEST_F(TempFileManagerTest, ScanCurrentFilesOnStartTest02, TestSize.Level2)
+HWTEST_F(ScanCurrentFilesTest, ScanCurrentFilesOnStartTest02, TestSize.Level2)
 {
-    for (const auto& listener : tempFileManager.epollManager_.listeners_) {
-        tempFileManager.epollManager_.DelEpollEvent(listener->GetFd());
-    }
     string oldFilePath1 = GetFileName(JS_HEAP, 0);
     ASSERT_TRUE(CreateTestFile(oldFilePath1));
     string oldFilePath2 = GetFileName(JS_HEAP, 1);
     ASSERT_TRUE(CreateTestFile(oldFilePath2));
+    tempFileManager.ScanTempFilesOnStart();
+    ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 2);
+    this_thread::sleep_for(chrono::milliseconds(3100));
+    ASSERT_FALSE(IsFileExist(oldFilePath1));
+    ASSERT_FALSE(IsFileExist(oldFilePath2));
+    tempFileManager.fileCounts_.clear();
+}
+
+/**
+ * @tc.name: ScanCurrentFilesOnStartTest03
+ * @tc.desc: Delete the oldest file when the file count exceeds the max file count.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ScanCurrentFilesTest, ScanCurrentFilesOnStartTest03, TestSize.Level2)
+{
     ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 1)));
     ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 2)));
     ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 3)));
@@ -285,14 +322,20 @@ HWTEST_F(TempFileManagerTest, ScanCurrentFilesOnStartTest02, TestSize.Level2)
     ASSERT_TRUE(CreateTestFile(GetFileName(CPP_CRASH_FILE, 8)));
     tempFileManager.ScanTempFilesOnStart();
     ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::CPP_CRASH), 5);
-    ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 2);
     tempFileManager.fileCounts_.clear();
-    this_thread::sleep_for(chrono::milliseconds(3100));
-    ASSERT_FALSE(IsFileExist(oldFilePath1));
-    ASSERT_FALSE(IsFileExist(oldFilePath2));
-    for (const auto& listener : tempFileManager.epollManager_.listeners_) {
-        tempFileManager.epollManager_.AddEpollEvent(*listener);
-    }
+}
+
+/**
+ * @tc.name: ScanCurrentFilesOnStartTest04
+ * @tc.desc: Delete file immediately which is not configured.
+ * @tc.type: FUNC
+ */
+HWTEST_F(ScanCurrentFilesTest, ScanCurrentFilesOnStartTest04, TestSize.Level2)
+{
+    string testFile = GetFileName(OTHER_FILE, 1);
+    ASSERT_TRUE(CreateTestFile(OTHER_FILE));
+    tempFileManager.ScanTempFilesOnStart();
+    ASSERT_FALSE(IsFileExist(testFile));
 }
 }
 }

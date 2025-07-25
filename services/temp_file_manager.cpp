@@ -175,11 +175,13 @@ uint64_t CheckTempFileSize(const SingleFileConfig& fileConfig, const std::string
 
 uint64_t CheckTempFileSize(const SingleFileConfig& tempFileConfig, std::list<std::string>& tempFiles)
 {
-    uint64_t fileSize = 0;
-    for (auto& tempFile : tempFiles) {
-        fileSize += CheckTempFileSize(tempFileConfig, tempFile);
-    }
-    return fileSize;
+    uint64_t totalFileSize = 0;
+    tempFiles.remove_if([&](const std::string& tempFile) {
+        auto fileSize = CheckTempFileSize(tempFileConfig, tempFile);
+        totalFileSize += fileSize;
+        return fileSize == 0;
+    });
+    return totalFileSize;
 }
 
 uint64_t CheckTempFileSize(std::map<const SingleFileConfig*, std::list<std::string>>& tempFilesMap)
@@ -187,8 +189,7 @@ uint64_t CheckTempFileSize(std::map<const SingleFileConfig*, std::list<std::stri
     uint64_t fileSize = 0;
     for (auto& pair : tempFilesMap) {
         if (pair.first == nullptr) {
-            std::for_each(pair.second.begin(), pair.second.end(), RemoveTempFile);
-            tempFilesMap.erase(pair.first);
+            pair.second.remove_if(RemoveTempFile);
         } else {
             fileSize += CheckTempFileSize(*pair.first, pair.second);
         }
@@ -272,13 +273,14 @@ void TempFileManager::ScanTempFilesOnStart()
     uint64_t filesSize = CheckTempFileSize(tempFilesMap);
     bool isOverLimit = filesSize > FaultLoggerConfig::GetInstance().GetTempFileConfig().maxTempFilesSize;
     for (auto& pair : tempFilesMap) {
+        if (!pair.first) {
+            continue;
+        }
         int32_t fileType = pair.first->type;
         if (fileType <= FaultLoggerType::JS_HEAP_LEAK_LIST && fileType >= FaultLoggerType::JS_HEAP_SNAPSHOT) {
             ClearBigFilesOnStart(isOverLimit, pair.second);
         }
-        if (pair.first) {
-            ForceRemoveFileIfNeed(*pair.first, pair.second);
-        }
+        ForceRemoveFileIfNeed(*pair.first, pair.second);
         GetTargetFileCount(fileType) = static_cast<int32_t>(pair.second.size());
     }
 }
