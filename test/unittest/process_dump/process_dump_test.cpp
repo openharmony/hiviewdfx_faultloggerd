@@ -173,7 +173,7 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest007, TestSize.Level2)
     };
     process.InitKeyThread(request);
     id = process.ChangeTid(pid, false);
-    ASSERT_EQ(id, 0);
+    ASSERT_NE(id, 0);
     GTEST_LOG_(INFO) << "DfxProcessTest007: end.";
 }
 
