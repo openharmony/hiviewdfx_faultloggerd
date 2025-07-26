@@ -79,6 +79,7 @@ private:
 #if defined(__aarch64__)
     std::unique_ptr<CoreDumpService> coreDumpService_ = nullptr;
 #endif
+    uint64_t finishParseSymbolTime_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

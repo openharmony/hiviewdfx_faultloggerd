@@ -193,11 +193,10 @@ void ProcessDumper::Dump()
     startTime_ = GetTimeMillisec();
     int resDump = DumpProcess();
     FormatJsonInfoIfNeed();
+    WriteDumpResIfNeed(resDump);
     finishTime_ = GetTimeMillisec();
 
     ReportSigDumpStats();
-
-    WriteDumpResIfNeed(resDump);
     DfxBufferWriter::GetInstance().PrintBriefDumpInfo();
     DfxBufferWriter::GetInstance().Finish();
     DFXLOGI("Finish dump stacktrace for %{public}s(%{public}d:%{public}d).",
@@ -475,6 +474,7 @@ int ProcessDumper::ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo)
         DFXLOGW("do not parse symbol, remain %{public}" PRId64 "ms", expectedDumpFinishTime_ - curTime);
         dumpRes = DumpErrorCode::DUMP_ESYMBOL_NO_PARSE;
     }
+    finishParseSymbolTime_ = GetTimeMillisec();
     return dumpRes;
 }
 
@@ -673,6 +673,7 @@ void ProcessDumper::ReportSigDumpStats()
     stat->signalTime = request_.timeStamp;
     stat->processdumpStartTime = startTime_;
     stat->processdumpFinishTime = finishTime_ == 0 ? GetTimeMillisec() : finishTime_;
+    stat->writeDumpInfoCost = finishParseSymbolTime_ > 0 ? stat->processdumpFinishTime - finishParseSymbolTime_ : 0;
     if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
         request_.processName, sizeof(request_.processName)) != 0) {
         DFXLOGE("Failed to copy target processName (%{public}d)", errno);
