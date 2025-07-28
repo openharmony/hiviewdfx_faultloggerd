@@ -648,7 +648,7 @@ HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << " when DfxFrame::map is null, frame.buildId.size() is 0";
     ASSERT_EQ(frame.buildId.size(), 0);
     string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so.noexit";
-    auto map = DfxMap::Create(testMap, sizeof(testMap));
+    auto map = DfxMap::Create(testMap, testMap.size());
     frame.map = map;
     unwinder->FillFrame(frame);
     GTEST_LOG_(INFO) << " when DfxFrame::map is not null and file not exist, frame.buildId.size() is 0";
@@ -658,7 +658,7 @@ HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
 #else
     testMap = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /system/lib64/init/libinit_context.z.so";
 #endif
-    map = DfxMap::Create(testMap, sizeof(testMap));
+    map = DfxMap::Create(testMap, testMap.size());
     frame.map = map;
     unwinder->FillFrame(frame);
     GTEST_LOG_(INFO) << " when DfxFrame::map is not null and file exist, frame.buildId.size() is bigger than 0";
@@ -681,7 +681,7 @@ HWTEST_F(UnwinderTest, FillJsFrameTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << " when DfxFrame::map is null, frame.map is nullptr";
     ASSERT_EQ(frame.map, nullptr);
     string testMap = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
-    auto map = DfxMap::Create(testMap, sizeof(testMap));
+    auto map = DfxMap::Create(testMap, testMap.size());
     frame.map = map;
     unwinder->FillJsFrame(frame);
     GTEST_LOG_(INFO) << " when DfxFrame::map is not null and file exist, frame.map.GetHap is not nullptr";
@@ -706,7 +706,7 @@ HWTEST_F(UnwinderTest, FillFramesTest001, TestSize.Level2)
     auto unwinder = std::make_shared<Unwinder>();
     std::vector<DfxFrame> frames;
     DfxFrame frame;
-    auto map = DfxMap::Create(testMap, sizeof(testMap));
+    auto map = DfxMap::Create(testMap, testMap.size());
     frame.map = map;
     frames.push_back(frame);
     ASSERT_EQ(frames[0].buildId.size(), 0);

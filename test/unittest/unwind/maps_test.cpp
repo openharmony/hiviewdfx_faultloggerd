@@ -257,7 +257,7 @@ HWTEST_F(MapsTest, IsArkExecutedMapTest, TestSize.Level2)
 HWTEST_F(MapsTest, IsVdsoMapTest, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsVdsoMapTest: start.";
-    shared_ptr<DfxMap> map = DfxMap::Create(VDSO_MAP_ITEM, sizeof(VDSO_MAP_ITEM));
+    shared_ptr<DfxMap> map = DfxMap::Create(VDSO_MAP_ITEM, VDSO_MAP_ITEM.size());
     ASSERT_TRUE(map->IsVdsoMap());
     GTEST_LOG_(INFO) << "IsVdsoMapTest: end.";
 }
