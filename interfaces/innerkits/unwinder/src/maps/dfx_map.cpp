@@ -192,20 +192,20 @@ AT_ALWAYS_INLINE bool PermsToProtsAndFlag(const char* permChs, const size_t sz, 
 #endif
 }
 
-std::shared_ptr<DfxMap> DfxMap::Create(std::string buf, size_t size)
+std::shared_ptr<DfxMap> DfxMap::Create(const std::string& vma)
 {
-    if (buf.empty() || size == 0) {
+    if (vma.empty()) {
         return nullptr;
     }
     auto map = std::make_shared<DfxMap>();
-    if (!map->Parse(&buf[0], size)) {
-        DFXLOGW("Failed to parse map: %{public}s", buf.c_str());
+    if (!map->Parse(vma.c_str(), vma.size())) {
+        DFXLOGW("Failed to parse map: %{public}s", vma.c_str());
         return nullptr;
     }
     return map;
 }
 
-bool DfxMap::Parse(char* buf, size_t size)
+bool DfxMap::Parse(const char* buf, size_t size)
 {
 #if defined(is_ohos) && is_ohos
     if (buf == nullptr || size == 0) {

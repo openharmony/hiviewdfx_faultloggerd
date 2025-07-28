@@ -29,7 +29,7 @@ class DfxHap;
 
 class DfxMap {
 public:
-    static std::shared_ptr<DfxMap> Create(std::string buf, size_t size);
+    static std::shared_ptr<DfxMap> Create(const std::string& vma);
     static void PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag);
     static void FormatMapName(pid_t pid, std::string& mapName);
     static std::string UnFormatMapName(const std::string& mapName);
@@ -42,7 +42,7 @@ public:
         uint32_t prots, const std::string& name)
         : begin(begin), end(end), offset(offset), prots(prots), name(name) {}
 
-    bool Parse(char* buf, size_t size);
+    bool Parse(const char* buf, size_t size);
     bool IsMapExec();
     bool IsArkExecutable();
     bool IsJsvmExecutable();
