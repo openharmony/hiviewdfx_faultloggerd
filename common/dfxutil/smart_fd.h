@@ -19,7 +19,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <unistd.h>
-#include "dfx_log_define.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -29,7 +28,7 @@ public:
     explicit SmartFd(int fd, bool fdsan = true) : fd_(fd), fdsan_(fdsan)
     {
         if (fd_ >= 0 && fdsan_) {
-            fdsan_exchange_owner_tag(fd_, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
+            fdsan_exchange_owner_tag(fd_, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, DFX_FDSAN_DOMAIN));
         }
     }
 
@@ -86,12 +85,13 @@ private:
             return;
         }
         if (fdsan_) {
-            fdsan_close_with_tag(fd_, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN));
+            fdsan_close_with_tag(fd_, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, DFX_FDSAN_DOMAIN));
             return;
         }
         close(fd_);
     }
 
+    static constexpr uint64_t DFX_FDSAN_DOMAIN = 0xD002D11;
     int fd_{-1};
     bool fdsan_{false};
 };
