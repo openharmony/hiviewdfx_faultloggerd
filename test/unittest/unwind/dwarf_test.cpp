@@ -1234,7 +1234,9 @@ HWTEST_F(DwarfTest, DwarfCfaInstructionsTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DwarfCfaInstructionsTest001: start.";
     uint8_t values[] = {DW_CFA_set_loc, DW_CFA_undefined, DW_CFA_register,
-        DW_CFA_def_cfa_register, DW_CFA_offset_extended_sf};
+        DW_CFA_def_cfa_register, DW_CFA_offset_extended_sf, DW_CFA_def_cfa_sf,
+        DW_CFA_def_cfa_offset_sf, DW_CFA_val_offset, DW_CFA_val_offset_sf, DW_CFA_def_cfa_expression,
+        DW_CFA_expression, DW_CFA_val_expression, DW_CFA_GNU_negative_offset_extended};
     for (size_t i = 0; i < sizeof(values) / sizeof(uint8_t); i++) {
         ASSERT_EQ(DwarfDecode(values[i]), true);
     }
