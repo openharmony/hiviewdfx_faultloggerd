@@ -198,12 +198,12 @@ void LperfEvents::GetRecordFromMmap(MmapFd& mmap)
 
 void LperfEvents::ReadRecordsFromMmaps()
 {
-    ssize_t dataSize = lperfMmap_.mmapPage->data_head - lperfMmap_.mmapPage->data_tail;
-    __sync_synchronize();
-    if (dataSize <= 0) {
+    if (lperfMmap_.mmapPage->data_head <= lperfMmap_.mmapPage->data_tail) {
         return;
     }
-    lperfMmap_.dataSize = static_cast<size_t>(dataSize);
+    size_t dataSize = static_cast<size_t>(lperfMmap_.mmapPage->data_head - lperfMmap_.mmapPage->data_tail);
+    __sync_synchronize();
+    lperfMmap_.dataSize = dataSize;
     while (GetHeaderFromMmap(lperfMmap_)) {
         GetRecordFromMmap(lperfMmap_);
     }
