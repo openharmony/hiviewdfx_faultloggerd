@@ -876,7 +876,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_010, TestSize.Level2)
     GTEST_LOG_(INFO) << "StackPrinterTest_010: start.";
     // SampledFrame string to be deserialized: mapSize + \n + tid + vecSize + frameinfo + \n
     // frameinfo: indent + count + level + pc + isLeaf + timestamps.size() + timestamps(set empty)
-    std::string sampledFrameMapStr = "11\n" + std::to_string(gettid()) + " 1 1 5 3 546040902012 0 0\n";
+    std::string sampledFrameMapStr = "11\n" + std::to_string(gettid()) + " 1 1 5 3 9630076 0 0\n";
     std::stringstream ss(sampledFrameMapStr);
     auto result = StackPrinter::DeserializeSampledFrameMap(ss);
     ASSERT_TRUE(ss.fail());
@@ -891,7 +891,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_010, TestSize.Level2)
 
     ss.str("");
     ss.clear();
-    sampledFrameMapStr = "1\n-1 1 1 5 3 546040902012 0 0\n";
+    sampledFrameMapStr = "1\n-1 1 1 5 3 9630076 0 0\n";
     ss.str(sampledFrameMapStr);
     result = StackPrinter::DeserializeSampledFrameMap(ss);
     ASSERT_FALSE(ss.fail());
@@ -913,7 +913,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_010, TestSize.Level2)
 
     ss.str("");
     ss.clear();
-    sampledFrameMapStr = "1\n" + std::to_string(gettid()) + " 1 1 5 3 546040902012 0 0\n";
+    sampledFrameMapStr = "1\n" + std::to_string(gettid()) + " 1 1 5 3 9630076 0 0\n";
     ss.str(sampledFrameMapStr);
     result = StackPrinter::DeserializeSampledFrameMap(ss);
     ASSERT_FALSE(ss.fail());
