@@ -166,7 +166,7 @@ HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
     uint64_t pc = 0x7f0ab40016;
     const uint64_t invalidOffset = 0x16;
 #endif
-    shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAP_ITEM, sizeof(INVALID_MAP_ITEM));
+    shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAP_ITEM);
     EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(pc) == invalidOffset)));
     GTEST_LOG_(INFO) << "GetRelPcTest: end.";
 }
@@ -179,7 +179,7 @@ HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
 HWTEST_F(MapsTest, ToStringTest, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ToStringTest: start.";
-    shared_ptr<DfxMap> map = DfxMap::Create(VALID_MAP_ITEM, sizeof(VALID_MAP_ITEM));
+    shared_ptr<DfxMap> map = DfxMap::Create(VALID_MAP_ITEM);
     GTEST_LOG_(INFO) << map->ToString();
     EXPECT_EQ(true, sizeof(map->ToString()) != 0);
     GTEST_LOG_(INFO) << "ToStringTest: end.";
@@ -257,7 +257,7 @@ HWTEST_F(MapsTest, IsArkExecutedMapTest, TestSize.Level2)
 HWTEST_F(MapsTest, IsVdsoMapTest, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsVdsoMapTest: start.";
-    shared_ptr<DfxMap> map = DfxMap::Create(VDSO_MAP_ITEM, VDSO_MAP_ITEM.size());
+    shared_ptr<DfxMap> map = DfxMap::Create(VDSO_MAP_ITEM);
     ASSERT_TRUE(map->IsVdsoMap());
     GTEST_LOG_(INFO) << "IsVdsoMapTest: end.";
 }
