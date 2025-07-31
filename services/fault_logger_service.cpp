@@ -146,6 +146,7 @@ void StatsService::ReportDumpStats(const DumpStats& stat)
         "OVERALL_TIME", stat.dumpCatcherFinishTime - stat.requestTime,
         "SIGNAL_TIME", stat.signalTime - stat.requestTime,
         "DUMPER_START_TIME", stat.processdumpStartTime - stat.signalTime,
+        "WRITE_DUMP_INFO_TIME", stat.writeDumpInfoCost,
         "UNWIND_TIME", stat.processdumpFinishTime - stat.processdumpStartTime,
         "TARGET_PROCESS_THREAD_COUNT", stat.targetProcessThreadCount);
 }
@@ -173,6 +174,7 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
         stats.processdumpStartTime = requestData.processdumpStartTime;
         stats.processdumpFinishTime = requestData.processdumpFinishTime;
         stats.targetProcessName = requestData.targetProcess;
+        stats.writeDumpInfoCost = requestData.writeDumpInfoCost;
     } else if (requestData.type == DUMP_CATCHER) {
         auto task = [requestData, this] {
             auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
