@@ -71,7 +71,7 @@
 7f028ef000-7f02aef000 rw-p 00000000 00:00 0
 7f030ef000-7f038ef000 rw-p 00000000 00:00 0
 7f038ef000-7f03930000 rw-p 00000000 00:00 0                              [anon:native_heap:mmap]
-7f03930000-7f03984000 r--p 00000000 b3:07 1427                           /system/fonts/HarmonyOS_Sans.ttf
+7f03930000-7f03984000 r--p 00000000 b3:07 1427                           /system/fonts/XXXX_font.ttf
 7f03984000-7f03ac0000 rw-p 00000000 00:00 0                              [anon:native_heap:mmap]
 7f03ac0000-7f03ac6000 r--p 00000000 b3:07 3517                           /system/lib64/platformsdk/libframe_ui_intf.z.so
 7f03ac6000-7f03acc000 r-xp 00005000 b3:07 3517                           /system/lib64/platformsdk/libframe_ui_intf.z.so
