@@ -6,7 +6,7 @@
 011e2000-0128a000 rw-p 00000000 00:00 0                                  [heap]
 b8f68000-b9168000 rw-p 00000000 00:00 0
 b9768000-b97a9000 rw-p 00000000 00:00 0                                  [anon:native_heap:mmap]
-b97a9000-b97fd000 r--p 00000000 b3:07 1424                               /system/fonts/HarmonyOS_Sans.ttf
+b97a9000-b97fd000 r--p 00000000 b3:07 1424                               /system/fonts/XXXX_font.ttf
 b97fd000-b9880000 rw-p 00000000 00:00 0                                  [anon:native_heap:mmap]
 b9880000-b9887000 r--p 00000000 b3:07 1708                               /system/lib/chipset-sdk/libdrm.so
 b9887000-b9895000 r-xp 00006000 b3:07 1708                               /system/lib/chipset-sdk/libdrm.so
