@@ -194,6 +194,9 @@ if (defined(ohos_lite)) {
       "DFX_LOG_HILOG_BASE",
       "DFX_ENABLE_TRACE",
     ]
+    if (is_asan) {
+      defines += [ "DFX_ALLOCATE_ASAN" ]
+    }
     if (faultloggerd_liteperf_enable) {
       defines += [ "DFX_ENABLE_LPERF" ]
     }

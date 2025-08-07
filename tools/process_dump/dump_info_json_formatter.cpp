@@ -168,11 +168,10 @@ void DumpInfoJsonFormatter::FillNativeFrameJson(const DfxFrame& frame, Json::Val
 #else
     frameJson["pc"] = StringPrintf("%08llx", frame.relPc);
 #endif
-    if (frame.funcName.length() > MAX_FUNC_NAME_LEN) {
-        DFXLOGD("length of funcName greater than 256 byte, do not report it");
-        frameJson["symbol"] = "";
-    } else {
+    if (frame.parseSymbolState.IsParseSymbolComplete() && frame.funcName.length() <= MAX_FUNC_NAME_LEN) {
         frameJson["symbol"] = frame.funcName;
+    } else {
+        frameJson["symbol"] = "";
     }
     frameJson["offset"] = frame.funcOffset;
     std::string strippedMapName = DfxMap::UnFormatMapName(frame.mapName);
