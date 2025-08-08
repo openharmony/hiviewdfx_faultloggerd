@@ -1273,7 +1273,7 @@ void Unwinder::Impl::ParseFrameSymbol(DfxFrame& frame)
         DFXLOGU("Failed to get symbol, relPc: %{public}" PRIx64 ", mapName: %{public}s",
             frame.relPc, frame.mapName.c_str());
     }
-    frame.buildId = elf->GetBuildId();
+    frame.parseSymbolState.SetParseSymbolState(true);
 }
 
 void Unwinder::Impl::FillFrame(DfxFrame& frame, bool needSymParse)
@@ -1288,6 +1288,10 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame, bool needSymParse)
     DFX_TRACE_SCOPED_DLSYM("FillFrame:%s", frame.mapName.c_str());
     frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapOffset = frame.map->offset;
+    if (frame.map->GetElf() == nullptr) {
+        return;
+    }
+    frame.buildId = frame.map->GetElf()->GetBuildId();
     DFXLOGU("mapName: %{public}s, mapOffset: %{public}" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
     if (needSymParse) {
         ParseFrameSymbol(frame);

@@ -36,7 +36,7 @@ static int DoGetCrashFd(const struct ProcessDumpRequest* request)
 
 int main(int argc, char *argv[])
 {
-#if defined(DEBUG_CRASH_LOCAL_HANDLER)
+#if defined(DEBUG_CRASH_LOCAL_HANDLER) && !defined(DFX_ALLOCATE_ASAN)
     DFX_GetCrashFdFunc(DoGetCrashFd);
     DFX_InstallLocalSignalHandler();
 #endif

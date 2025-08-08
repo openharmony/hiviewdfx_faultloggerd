@@ -57,7 +57,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
 int main(int argc, char *argv[])
 {
     DFXLOGI("Start main function of processdump");
-#if defined(DEBUG_CRASH_LOCAL_HANDLER)
+#if defined(DEBUG_CRASH_LOCAL_HANDLER) && !defined(DFX_ALLOCATE_ASAN)
     DFX_InstallLocalSignalHandler();
 #endif
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {

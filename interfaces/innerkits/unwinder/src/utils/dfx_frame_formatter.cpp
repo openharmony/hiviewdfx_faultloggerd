@@ -62,9 +62,8 @@ std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
         } else {
             data += " [Unknown]";
         }
-        if (frame.funcName.length() > MAX_FUNC_NAME_LEN) {
-            DFXLOGD("length of funcName greater than 256 byte, do not display it");
-        } else if (!frame.funcName.empty()) {
+        if (frame.parseSymbolState.IsParseSymbolComplete() && !frame.funcName.empty() &&
+            frame.funcName.length() <= MAX_FUNC_NAME_LEN) {
             data += "(" + frame.funcName;
             data += StringPrintf("+%" PRId64, frame.funcOffset);
             data += ")";

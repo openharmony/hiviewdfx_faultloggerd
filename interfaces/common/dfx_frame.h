@@ -15,6 +15,7 @@
 #ifndef DFX_FRAME_H
 #define DFX_FRAME_H
 
+#include <atomic>
 #include <cinttypes>
 #include <memory>
 #include <string>
@@ -23,7 +24,36 @@
 namespace OHOS {
 namespace HiviewDFX {
 class DfxMap;
-
+struct ParseSymbolState {
+    ParseSymbolState() = default;
+    ParseSymbolState(const ParseSymbolState &parseSymbolState)
+    {
+        if (parseSymbolState.isParseSymbolComplete) {
+            isParseSymbolComplete.store(true);
+        } else {
+            isParseSymbolComplete.store(false);
+        }
+    }
+    ParseSymbolState& operator=(const ParseSymbolState& parseSymbolState)
+    {
+        if (parseSymbolState.isParseSymbolComplete) {
+            isParseSymbolComplete.store(true);
+        } else {
+            isParseSymbolComplete.store(false);
+        }
+        return *this;
+    }
+    bool IsParseSymbolComplete() const
+    {
+        return isParseSymbolComplete.load();
+    }
+    void SetParseSymbolState(bool state)
+    {
+        isParseSymbolComplete.store(state);
+    }
+private:
+    std::atomic<bool> isParseSymbolComplete {false};
+};
 /**
  * @brief Native Frame struct
  * It serves as the public definition of the native stack frame.
@@ -61,6 +91,8 @@ struct DfxFrame {
     int32_t column {0};
     /** Js frame package name */
     std::string packageName;
+    /** state of parse symbol */
+    ParseSymbolState parseSymbolState;
 
     DfxFrame() {}
     DfxFrame(uint64_t pc, uint64_t sp = 0) : pc(pc), sp(sp) {}
