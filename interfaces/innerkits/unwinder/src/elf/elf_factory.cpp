@@ -137,16 +137,11 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
         return regularElf;
     }
 #endif
-    std::string realPath = filePath_;
-    // sandbox file should not be check by realpath function,as start with "/proc/"
-    if (!StartsWith(filePath_, "/proc/") && !RealPath(filePath_, realPath)) {
-        DFXLOGW("Failed to realpath %{public}s, errno(%{public}d)", filePath_.c_str(), errno);
-        return regularElf;
-    }
+
 #if defined(is_mingw) && is_mingw
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY | O_BINARY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(filePath_.c_str(), O_RDONLY | O_BINARY));
 #else
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(realPath.c_str(), O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(filePath_.c_str(), O_RDONLY));
 #endif
     SmartFd smartFd(fd);
     if (!smartFd) {

@@ -316,6 +316,9 @@ uint64_t DfxMap::GetRelPc(uint64_t pc)
     if (GetElf() != nullptr) {
         return GetElf()->GetRelPc(pc, begin, offset);
     }
+    if (prevMap != nullptr) {
+        return (pc - prevMap->begin);
+    }
     return (pc - begin + offset);
 }
 
