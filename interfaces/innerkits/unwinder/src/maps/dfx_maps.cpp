@@ -110,6 +110,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
 
     char mapBuf[PATH_LEN] = {0};
     int fgetCount = 0;
+    std::shared_ptr<DfxMap> prevMap = nullptr;
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
         fgetCount++;
         auto map = std::make_shared<DfxMap>();
@@ -117,14 +118,16 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             DFXLOGU("Failed to parse map: %{public}s", mapBuf);
             continue;
         }
-
         DfxMap::FormatMapName(pid, map->name);
+        if (map->IsMapExec()) {
+            map->prevMap = prevMap;
+        }
+        prevMap = map;
         if (IsArkHapMapItem(map->name) || IsArkCodeMapItem(map->name)) {
             AddMap(map, enableMapIndex_);
             continue;
         }
         HandleSpecialMap(map);
-
         if (onlyExec_ && !map->IsMapExec()) {
             continue;
         }
