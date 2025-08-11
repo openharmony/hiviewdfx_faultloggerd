@@ -68,6 +68,9 @@ std::string KernelSnapshotManager::ReadKernelSnapshot()
             DFXLOGE("read snapshot filed %{public}d", errno);
         }
     } while (ret > 0);
+    if (!snapshotCont.empty()) {
+        DFXLOGI("read snapshot begin with %{public}s", snapshotCont.substr(0, 25)); // 25 : only need 25
+    }
     return snapshotCont;
 }
 
