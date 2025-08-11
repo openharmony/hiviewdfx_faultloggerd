@@ -267,8 +267,8 @@ bool LitePerf::Impl::DoReadRes(int fd, int& pollRet)
 bool LitePerf::Impl::InitDumpParam(const std::vector<int>& tids, int freq, int durationMs, LitePerfParam& lperf)
 {
     (void)memset_s(&lperf, sizeof(LitePerfParam), 0, sizeof(LitePerfParam));
-    lperf.pid = getpid();
     int tidSize = 0;
+    lperf.pid = getpid();
     for (size_t i = 0; i < tids.size() && i < MAX_SAMPLE_TIDS; ++i) {
         if (tids[i] <= 0 || !IsThreadInPid(lperf.pid, tids[i])) {
             DFXLOGW("%{public}s :: tid(%{public}d) error", __func__, tids[i]);
