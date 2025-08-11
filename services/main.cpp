@@ -18,7 +18,7 @@
 #endif
 #include "fault_logger_daemon.h"
 
-#if defined(DEBUG_CRASH_LOCAL_HANDLER)
+#if defined(DEBUG_CRASH_LOCAL_HANDLER) && !defined(DFX_ALLOCATE_ASAN)
 #include "dfx_dump_request.h"
 #include "dfx_signal_local_handler.h"
 #include "dfx_util.h"
