@@ -391,7 +391,7 @@ static void DFX_InstallSignalHandler(void)
         for (size_t j = 0; j < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); j++) {
             sigdelset(&sigchain.sca_mask, SIGCHAIN_CRASH_SIGNAL_LIST[j]);
         }
-        add_special_handler_at_last(signo, &sigchain);
+        add_special_signal_handler(signo, &sigchain);
     }
     for (size_t i = 0; i < sizeof(SIGCHAIN_CRASH_SIGNAL_LIST) / sizeof(SIGCHAIN_CRASH_SIGNAL_LIST[0]); i++) {
         int32_t signo = SIGCHAIN_CRASH_SIGNAL_LIST[i];

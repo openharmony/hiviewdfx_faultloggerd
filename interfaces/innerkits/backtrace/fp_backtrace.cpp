@@ -70,12 +70,12 @@ bool FpBacktraceImpl::Init()
         ffrt_get_current_coroutine_stack(&stackBegin, &stackSize);
         DfxArk::Instance().InitArkFunction(ArkFunction::STEP_ARK);
     });
-    StackUtils::Instance().GetMainStackRange(mainStackBegin_, mainStackEnd_);
     maps_ = DfxMaps::Create(0, false);
     if (maps_ == nullptr) {
         DFXLOGI("failed creat maps");
         return false;
     }
+    maps_->GetStackRange(mainStackBegin_, mainStackEnd_);
     return true;
 }
 
