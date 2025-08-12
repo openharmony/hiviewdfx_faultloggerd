@@ -170,18 +170,10 @@ static void FillLastFatalMessageLocked(int32_t signo)
         lastFatalMessage = GetLastFatalMessage();
     }
 
-    if (lastFatalMessage == NULL) {
-        return;
-    }
-
-    size_t len = strlen(lastFatalMessage);
-    if (len > MAX_FATAL_MSG_SIZE) {
-        DFXLOGE("Last message is longer than MAX_FATAL_MSG_SIZE");
-        return;
-    }
-
     g_request.msg.type = MESSAGE_FATAL;
-    (void)strncpy(g_request.msg.body, lastFatalMessage, sizeof(g_request.msg.body) - 1);
+    if (strcpy_s(g_request.msg.body, sizeof(g_request.msg.body), lastFatalMessage) != EOK) {
+        DFXLOGE("Last message strcpy fail");
+    }
 }
 
 static bool FillDebugMessageLocked(int32_t signo, siginfo_t *si)
