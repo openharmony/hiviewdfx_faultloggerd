@@ -69,7 +69,7 @@ std::string KernelSnapshotManager::ReadKernelSnapshot()
         }
     } while (ret > 0);
     if (!snapshotCont.empty()) {
-        DFXLOGI("read snapshot begin with %{public}s", snapshotCont.substr(0, 25)); // 25 : only need 25
+        DFXLOGI("read snapshot begin with %{public}s", snapshotCont.substr(0, 25).c_str()); // 25 : only need 25
     }
     return snapshotCont;
 }
