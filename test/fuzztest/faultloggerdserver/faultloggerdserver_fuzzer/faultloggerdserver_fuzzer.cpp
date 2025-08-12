@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,9 +13,17 @@
  * limitations under the License.
  */
 
-#ifndef FAULTLOGGERDSERVER_FUZZER_H
-#define FAULTLOGGERDSERVER_FUZZER_H
-
 #define FUZZ_PROJECT_NAME "faultloggerdserver_fuzzer"
 
-#endif
+#include "faultloggerd_test.h"
+
+/* Fuzzer entry point */
+extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
+{
+    FaultLoggerdTestServer::GetInstance();
+    if (data == nullptr || size < sizeof(FaultLoggerdRequest)) {
+        return 0;
+    }
+    SendRequestToServer({data, static_cast<uint32_t>(size)});
+    return 0;
+}

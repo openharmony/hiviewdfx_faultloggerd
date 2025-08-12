@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,6 +15,14 @@
 
 #ifndef FAULTLOGGERD_TEST_H
 #define FAULTLOGGERD_TEST_H
+
+#include "dfx_socket_request.h"
+#include "faultloggerd_socket.h"
+
+void SendRequestToServer(const OHOS::HiviewDFX::SocketRequestData &socketRequestData,
+    OHOS::HiviewDFX::SocketFdData* socketFdData = nullptr);
+
+void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType);
 
 class FaultLoggerdTestServer {
 public:

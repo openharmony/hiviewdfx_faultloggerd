@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,7 +22,6 @@
 #include "dfx_hap.h"
 #include "dfx_regs.h"
 #include "dwarf_op.h"
-#include "faultloggerd_fuzzertest_common.h"
 #include "thread_context.h"
 #include "unwinder.h"
 #include "unwind_define.h"
@@ -30,111 +29,88 @@
 namespace OHOS {
 namespace HiviewDFX {
 const int FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH = 50;
-
-void TestStepArkFrame(const uint8_t* data, size_t size)
-{
+struct TestArkFrameData {
     uintptr_t pc;
     uintptr_t fp;
     uintptr_t sp;
     uintptr_t methodid;
-    int offsetTotalLength = sizeof(pc) + sizeof(fp) + sizeof(sp) + sizeof(methodid);
-    if (offsetTotalLength > size) {
+};
+
+void TestStepArkFrame(const uint8_t* data, size_t size)
+{
+    if (data == nullptr || size < sizeof(TestArkFrameData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, pc);
-    STREAM_TO_VALUEINFO(data, fp);
-    STREAM_TO_VALUEINFO(data, sp);
-    STREAM_TO_VALUEINFO(data, methodid);
-    bool isJsFrame = methodid % 2;
+    auto testData = *reinterpret_cast<const TestArkFrameData *>(data);
+    bool isJsFrame = testData.methodid % 2;
 
     DfxMemory dfxMemory;
-    ArkStepParam arkParam(&fp, &sp, &pc, &isJsFrame);
+    ArkStepParam arkParam(&testData.fp, &testData.sp, &testData.pc, &isJsFrame);
     DfxArk::Instance().StepArkFrame(&dfxMemory, &(Unwinder::AccessMem), &arkParam);
 }
 
 void TestStepArkFrameWithJit(const uint8_t* data, size_t size)
 {
-    uintptr_t fp;
-    uintptr_t pc;
-    uintptr_t sp;
-    uintptr_t methodid;
-    int offsetTotalLength = sizeof(pc) + sizeof(fp) + sizeof(sp) + sizeof(methodid);
-    if (offsetTotalLength > size) {
+    if (data == nullptr || size < sizeof(TestArkFrameData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, pc);
-    STREAM_TO_VALUEINFO(data, fp);
-    STREAM_TO_VALUEINFO(data, sp);
-    STREAM_TO_VALUEINFO(data, methodid);
-    bool isJsFrame = methodid % 2;
-
+    auto testData = *reinterpret_cast<const TestArkFrameData*>(data);
+    bool isJsFrame = testData.methodid % 2;
     std::vector<uintptr_t> jitCache_ = {};
     DfxMemory dfxMemory;
-    ArkUnwindParam arkParam(&dfxMemory, &(Unwinder::AccessMem), &fp, &sp, &pc, &methodid, &isJsFrame, jitCache_);
+    ArkUnwindParam arkParam(&dfxMemory, &(Unwinder::AccessMem), &testData.fp,
+        &testData.sp, &testData.pc, &testData.methodid, &isJsFrame, jitCache_);
     DfxArk::Instance().StepArkFrameWithJit(&arkParam);
 }
 
 void TestJitCodeWriteFile(const uint8_t* data, size_t size)
 {
-    int fd;
-    uintptr_t jitCacheData;
-    size_t offsetTotalLength = sizeof(fd) + sizeof(jitCacheData);
-    if (offsetTotalLength > size) {
+    struct TestData {
+        int fd;
+        uintptr_t jitCacheData;
+    };
+    if (data == nullptr || size < sizeof(TestData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, fd);
-    STREAM_TO_VALUEINFO(data, jitCacheData);
-
+    const auto testData = reinterpret_cast<const TestData*>(data);
     std::vector<uintptr_t> jitCache = {};
-    jitCache.push_back(jitCacheData);
+    jitCache.push_back(testData->jitCacheData);
     DfxMemory dfxMemory;
-    DfxArk::Instance().JitCodeWriteFile(&dfxMemory, &(Unwinder::AccessMem), fd, jitCache.data(), jitCache.size());
+    DfxArk::Instance().JitCodeWriteFile(&dfxMemory, &(Unwinder::AccessMem),
+        testData->fd, jitCache.data(), jitCache.size());
 }
 
 void TestParseArkFrameInfoLocal(const uint8_t* data, size_t size)
 {
-    uintptr_t pc;
-    uintptr_t mapBegin;
-    uintptr_t offset;
-    int offsetTotalLength = sizeof(pc) + sizeof(mapBegin) + sizeof(offset);
-    if (offsetTotalLength > size) {
+    struct TestData {
+        uintptr_t pc;
+        uintptr_t mapBegin;
+        uintptr_t offset;
+    };
+    if (data == nullptr || size < sizeof(TestData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, pc);
-    STREAM_TO_VALUEINFO(data, mapBegin);
-    STREAM_TO_VALUEINFO(data, offset);
+    const auto testData = reinterpret_cast<const TestData*>(data);
 
     JsFunction jsFunction;
-    DfxArk::Instance().ParseArkFrameInfoLocal(static_cast<uintptr_t>(pc),
-        static_cast<uintptr_t>(mapBegin), static_cast<uintptr_t>(offset), &jsFunction);
+    DfxArk::Instance().ParseArkFrameInfoLocal(testData->pc, testData->mapBegin, testData->offset, &jsFunction);
 }
 
 void TestArkCreateJsSymbolExtractor(const uint8_t* data, size_t size)
 {
-    uintptr_t extractorPtr;
-    if (size < sizeof(extractorPtr)) {
+    if (data == nullptr || size < sizeof(uintptr_t)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, extractorPtr);
-
+    auto extractorPtr = *reinterpret_cast<const uintptr_t*>(data);
     DfxArk::Instance().ArkCreateJsSymbolExtractor(&extractorPtr);
 }
 
 void TestArkDestoryJsSymbolExtractor(const uint8_t* data, size_t size)
 {
-    uintptr_t extractorPtr;
-    if (size < sizeof(extractorPtr)) {
+    if (data == nullptr || size < sizeof(uintptr_t)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, extractorPtr);
-
-    DfxArk::Instance().ArkDestoryJsSymbolExtractor(extractorPtr);
+    DfxArk::Instance().ArkDestoryJsSymbolExtractor(*reinterpret_cast<const uintptr_t*>(data));
 }
 
 void TestDfxArk(const uint8_t* data, size_t size)
@@ -148,51 +124,49 @@ void TestDfxArk(const uint8_t* data, size_t size)
 
 void TestDfxHap(const uint8_t* data, size_t size)
 {
-    pid_t pid;
-    uint64_t pc;
-    uintptr_t offset;
-    unsigned int offsetTotalLength = sizeof(pid) + sizeof(pc) + sizeof(offset);
-    if (offsetTotalLength > size) {
+    struct TestData {
+        pid_t pid;
+        uint64_t pc;
+    };
+    if (data == nullptr || size < sizeof(TestData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, pid);
-    STREAM_TO_VALUEINFO(data, pc);
-    STREAM_TO_VALUEINFO(data, offset);
+    const auto testData = reinterpret_cast<const TestData*>(data);
 
     auto map = std::make_shared<DfxMap>();
     JsFunction jsFunction;
     DfxHap dfxHap;
-    dfxHap.ParseHapInfo(pid, pc, map, &jsFunction);
+    dfxHap.ParseHapInfo(testData->pid, testData->pc, map, &jsFunction);
 }
 
 #if defined(__aarch64__)
 void TestSetFromFpMiniRegs(const uint8_t* data, size_t size)
 {
-    uintptr_t regs[FP_MINI_REGS_SIZE];
-    if (size < sizeof(regs)) {
+    struct TestData {
+        uintptr_t regs[FP_MINI_REGS_SIZE];
+    };
+    if (data == nullptr || size < sizeof(TestData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, regs);
+    const auto testData = reinterpret_cast<const TestData*>(data);
 
     auto dfxregs = std::make_shared<DfxRegsArm64>();
-    dfxregs->SetFromFpMiniRegs(regs, FP_MINI_REGS_SIZE);
+    dfxregs->SetFromFpMiniRegs(testData->regs, FP_MINI_REGS_SIZE);
 }
 #endif
 
 #if defined(__aarch64__)
 void TestSetFromQutMiniRegs(const uint8_t* data, size_t size)
 {
-    uintptr_t regs[QUT_MINI_REGS_SIZE];
-    if (size < sizeof(regs)) {
+    struct TestData {
+        uintptr_t regs[QUT_MINI_REGS_SIZE];
+    };
+    if (data == nullptr || size < sizeof(TestData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, regs);
-
+    const auto testData = reinterpret_cast<const TestData*>(data);
     auto dfxregs = std::make_shared<DfxRegsArm64>();
-    dfxregs->SetFromQutMiniRegs(regs, QUT_MINI_REGS_SIZE);
+    dfxregs->SetFromQutMiniRegs(testData->regs, QUT_MINI_REGS_SIZE);
 }
 #endif
 
@@ -206,19 +180,13 @@ void TestDfxRegsArm64(const uint8_t* data, size_t size)
 
 void TestThreadContext(const uint8_t* data, size_t size)
 {
-    int32_t tid;
-    uintptr_t stackBottom;
-    uintptr_t stackTop;
-    unsigned int offsetTotalLength = sizeof(tid) + sizeof(stackBottom) + sizeof(stackTop);
-    if (offsetTotalLength > size) {
+    if (data || size < sizeof(int32_t)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, tid);
-    STREAM_TO_VALUEINFO(data, stackBottom);
-    STREAM_TO_VALUEINFO(data, stackTop);
-
+    auto tid = *reinterpret_cast<const int32_t*>(data);
     LocalThreadContext& context = LocalThreadContext::GetInstance();
+    uintptr_t stackBottom;
+    uintptr_t stackTop;
     context.GetStackRange(tid, stackBottom, stackTop);
     context.CollectThreadContext(tid);
     context.GetThreadContext(tid);
@@ -227,32 +195,21 @@ void TestThreadContext(const uint8_t* data, size_t size)
 
 void TestDfxInstrStatistic(const uint8_t* data, size_t size)
 {
-    uint32_t type;
-    uint64_t val;
-    uint64_t errInfo;
-    unsigned int offsetTotalLength = sizeof(type) + sizeof(val) + sizeof(errInfo) +
-                                     FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
-    if (offsetTotalLength > size) {
+    struct TestData {
+        uint32_t type;
+        uint64_t val;
+        uint64_t errInfo;
+    };
+    if (data == nullptr || size < sizeof(TestData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, type);
-    type = type % 10; // 10 : get the last digit of the number
-    STREAM_TO_VALUEINFO(data, val);
-    STREAM_TO_VALUEINFO(data, errInfo);
-
+    auto testData = reinterpret_cast<const TestData*>(data);
     std::string soName(reinterpret_cast<const char*>(data), FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
     data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
-
-    InstrStatisticType statisticType;
-    if (type == 0) {
-        statisticType = InstrStatisticType::InstructionEntriesArmExidx;
-    } else {
-        statisticType = InstrStatisticType::UnsupportedArmExidx;
-    }
+    InstrStatisticType statisticType = (testData->type % 10) ? InstructionEntriesArmExidx : UnsupportedArmExidx;
     DfxInstrStatistic& statistic = DfxInstrStatistic::GetInstance();
     statistic.SetCurrentStatLib(soName);
-    statistic.AddInstrStatistic(statisticType, val, errInfo);
+    statistic.AddInstrStatistic(statisticType, testData->val, testData->errInfo);
     std::vector<std::pair<uint32_t, uint32_t>> result;
     statistic.DumpInstrStatResult(result);
 }
