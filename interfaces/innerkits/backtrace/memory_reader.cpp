@@ -26,7 +26,7 @@ ThreadMemoryReader::ThreadMemoryReader(uintptr_t stackBegin, uintptr_t stackEnd)
 
 bool ThreadMemoryReader::ReadMemory(const uint64_t src, void* dst, size_t dataSize)
 {
-    if (src >= stackBegin_ && (src + dataSize) < stackEnd_) {
+    if (src >= stackBegin_ && src < stackEnd_  && (stackEnd_ - src) > dataSize) {
         for (size_t i = 0; i < dataSize; i++) {
             static_cast<unsigned char*>(dst)[i] = reinterpret_cast<const unsigned char*>(src)[i];
         }
