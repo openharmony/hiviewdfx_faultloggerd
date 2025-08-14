@@ -104,6 +104,10 @@ static int ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid, in
                 ret = GetIdFromArgs(optarg, tid);
                 break;
             case 'c':
+                if (optind >= argc) {
+                    printf("input error, input should like dumpcatcher -c save/cancel pid\n");
+                    return 0;
+                }
                 ExecuteCoredumpCmd(optarg, argv[optind]);
                 return 0;
             case 'T':
