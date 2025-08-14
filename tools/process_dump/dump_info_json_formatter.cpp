@@ -59,6 +59,7 @@ void DumpInfoJsonFormatter::GetCrashJsonFormatInfo(const ProcessDumpRequest& req
     jsonInfo["time"] = request.timeStamp;
     jsonInfo["uuid"] = "";
     jsonInfo["crash_type"] = "NativeCrash";
+    jsonInfo["process_name"] = process.GetProcessInfo().processName;
     jsonInfo["pid"] = process.GetProcessInfo().pid;
     jsonInfo["uid"] = process.GetProcessInfo().uid;
     jsonInfo["app_running_unique_id"] = request.appRunningId;
