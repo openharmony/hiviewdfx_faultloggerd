@@ -79,11 +79,11 @@ static std::string TimeFormat(uint64_t time)
     uint64_t nsec = time % SEC_TO_NANOSEC;
     time_t sec = static_cast<time_t>(time / SEC_TO_NANOSEC);
     char timeChars[FORMAT_TIME_LEN];
-    struct tm* localTime = localtime(&sec);
-    if (localTime == nullptr) {
+    struct tm localTime;
+    if (localtime_r(&sec, &localTime) == nullptr) {
         return "";
     }
-    size_t sz = strftime(timeChars, FORMAT_TIME_LEN, "%Y-%m-%d-%H-%M-%S", localTime);
+    size_t sz = strftime(timeChars, FORMAT_TIME_LEN, "%Y-%m-%d-%H-%M-%S", &localTime);
     if (sz == 0) {
         return "";
     }
