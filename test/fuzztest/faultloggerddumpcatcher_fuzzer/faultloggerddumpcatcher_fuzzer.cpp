@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,38 +16,30 @@
 #include "faultloggerddumpcatcher_fuzzer.h"
 
 #include "dfx_dump_catcher.h"
-#include "faultloggerd_fuzzertest_common.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 const int FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH = 50;
-
 void DumpStackTraceTest(const uint8_t* data, size_t size)
 {
-    int pid;
-    int tid;
-    int offsetTotalLength = sizeof(pid) + sizeof(tid) +
-                            (2 * FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH); // 2 : Offset by 2 string length
-    if (offsetTotalLength > size) {
+    struct TestArkFrameData {
+        int pid;
+        int tid;
+        char option[FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH];
+    };
+    if (data == nullptr || size <= sizeof(TestArkFrameData)) {
         return;
     }
-
-    STREAM_TO_VALUEINFO(data, pid);
-    STREAM_TO_VALUEINFO(data, tid);
-
-    std::string msg(reinterpret_cast<const char*>(data), FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
-    data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
-    std::string invalidOption(reinterpret_cast<const char*>(data), FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
-    data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
+    const auto* testData = reinterpret_cast<const TestArkFrameData *>(data);
+    std::string msg;
 
     std::shared_ptr<DfxDumpCatcher> catcher = std::make_shared<DfxDumpCatcher>();
-    catcher->DumpCatch(pid, tid, msg);
-
-    std::string processdumpCmd = "dumpcatcher -p " + std::to_string(pid) + " -t " + std::to_string(tid);
+    catcher->DumpCatch(testData->pid, testData->tid, msg);
+    std::string processdumpCmd = "dumpcatcher -p " + std::to_string(testData->pid) + " -t " +
+        std::to_string(testData->tid);
     system(processdumpCmd.c_str());
-
-    std::string processdumpInvalidCmd = "dumpcatcher -" + invalidOption + " -p " +
-        std::to_string(pid) + " -t " + std::to_string(tid);
+    std::string processdumpInvalidCmd = std::string("dumpcatcher -") + std::string(testData->option) + " -p " +
+        std::to_string(testData->pid) + " -t " + std::to_string(testData->tid);
     system(processdumpInvalidCmd.c_str());
 }
 } // namespace HiviewDFX

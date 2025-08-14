@@ -1,0 +1,56 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+import("//build/config/features.gni")
+import("//build/test.gni")
+
+ohos_fuzztest("FaultloggerdServerFuzzTest") {
+  module_out_path = "faultloggerd/faultloggerd"
+  fuzz_config_file = "$faultloggerd_path/test/fuzztest/faultloggerdserver/faultloggerdserver_fuzzer"
+  sources = [
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_client.cpp",
+    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
+    "$faultloggerd_path/test/fuzztest/faultloggerdserver/common/faultloggerd_test.cpp",
+    "faultloggerdserver_fuzzer.cpp",
+  ]
+  deps = [
+    "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
+    "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
+    "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
+    "$faultloggerd_path/common/dfxutil:dfx_util",
+    "$faultloggerd_path/common/trace:dfx_trace",
+    "$faultloggerd_path/services:faultloggerd_test_src",
+  ]
+  external_deps = [
+    "bounds_checking_function:libsec_shared",
+    "c_utils:utils",
+    "ffrt:libffrt",
+    "hilog:libhilog_base",
+    "hisysevent:libhisysevent",
+    "hitrace:hitrace_meter",
+    "init:libbegetutil",
+    "jsoncpp:jsoncpp",
+  ]
+  include_dirs = [
+    "$faultloggerd_interfaces_path/common",
+    "$faultloggerd_interfaces_path/innerkits/faultloggerd_client",
+    "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
+    "$faultloggerd_interfaces_path/innerkits/procinfo/include",
+    "$faultloggerd_path/common/dfxlog",
+    "$faultloggerd_path/services",
+    "$faultloggerd_path/test/fuzztest/faultloggerdserver/common/include",
+    "$faultloggerd_path/test/utils",
+  ]
+  defines = [ "FAULTLOGGERD_TEST" ]
+}
