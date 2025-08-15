@@ -270,5 +270,41 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest015, TestSize.Level2)
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest015 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest015: end.";
 }
+
+/**
+ * @tc.name: DumpCatcherCommandTest016
+ * @tc.desc: test dumpcatcher command: -c save
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest016: start.";
+    string testCommand = "dumpcatcher -c save";
+    string dumpRes = ExecuteCommands(testCommand);
+    GTEST_LOG_(INFO) << dumpRes;
+    string log[] = {"input", "error"};
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(dumpRes, log, len);
+    EXPECT_EQ(count, len) << "DumpCatcherCommandTest016 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest016: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherCommandTest017
+ * @tc.desc: test dumpcatcher command: -c save 0
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest017: start.";
+    string testCommand = "dumpcatcher -c save 0";
+    string dumpRes = ExecuteCommands(testCommand);
+    GTEST_LOG_(INFO) << dumpRes;
+    string log[] = {"pid", "error"};
+    int len = sizeof(log) / sizeof(log[0]);
+    int count = GetKeywordsNum(dumpRes, log, len);
+    EXPECT_EQ(count, len) << "DumpCatcherCommandTest017 Failed";
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest017: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
