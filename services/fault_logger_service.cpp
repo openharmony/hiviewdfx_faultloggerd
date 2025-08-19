@@ -332,7 +332,8 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
      */
     auto& faultLoggerPipe = FaultLoggerPipePair::CreateSdkDumpPipePair(requestData.pid, requestData.time);
 
-    if (auto ret = FaultCommonUtil::SendSignalToProcess(requestData.pid, si); ret != ResponseCode::REQUEST_SUCCESS) {
+    if (auto ret = FaultCommonUtil::SendSignalToProcess(requestData.pid, si);
+        ret != ResponseCode::REQUEST_SUCCESS) {
         FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
         return ret;
     }

@@ -1,0 +1,34 @@
+{
+    "whitelist": [0, 1202, 7005],
+    "coredumpProfiles": {
+        "FULL": {
+            "process": {
+                "prpsinfo": true,
+                "multiThread": true,
+                "auxv": true,
+                "dumpMappings": true
+            },
+            "threads": {
+                "prstatus": true,
+                "fpregset": true,
+                "siginfo": true,
+                "dumpAll": true,
+                "armPacMask": true,
+                "armTaggedAddrCtrl": true
+            },
+            "dumpType": "FULL",
+            "outputPath": "/data/storage/el2/base/files",
+            "maxCoredumpSize": 0,
+            "includeTags": true,
+            "hwsanTagRegion": 1048576,
+            "isPtraceBySelf": false,
+            "isNeedDumpPid": false,
+            "loadCfg": {
+                "coredumpFilter": 0,
+                "excludePaths": "[vvar]",
+                "requiredPriority": "r",
+                "excludeSubstrings": "CMGC"
+            }
+        }
+    }
+}
