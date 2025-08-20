@@ -195,20 +195,21 @@ void TestThreadContext(const uint8_t* data, size_t size)
 
 void TestDfxInstrStatistic(const uint8_t* data, size_t size)
 {
+    constexpr int maxStringLength = 50;
     struct TestData {
         uint32_t type;
         uint64_t val;
         uint64_t errInfo;
+        char soName[maxStringLength];
     };
     if (data == nullptr || size < sizeof(TestData)) {
         return;
     }
     auto testData = reinterpret_cast<const TestData*>(data);
-    std::string soName(reinterpret_cast<const char*>(data), FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH);
-    data += FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH;
     InstrStatisticType statisticType = (testData->type % 10) ? InstructionEntriesArmExidx : UnsupportedArmExidx;
     DfxInstrStatistic& statistic = DfxInstrStatistic::GetInstance();
-    statistic.SetCurrentStatLib(soName);
+    std::string testSoName(testData->soName, maxStringLength);
+    statistic.SetCurrentStatLib(testSoName);
     statistic.AddInstrStatistic(statisticType, testData->val, testData->errInfo);
     std::vector<std::pair<uint32_t, uint32_t>> result;
     statistic.DumpInstrStatResult(result);
