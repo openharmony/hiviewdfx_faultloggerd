@@ -22,9 +22,11 @@ namespace OHOS {
 namespace HiviewDFX {
 class KernelSnapshotReporter : public IKernelSnapshotReporter {
 public:
-    void ReportEvents(std::vector<CrashMap>& outputs) override;
+    void ReportEvents(std::vector<CrashMap>& outputs, const std::string& snapshot) override;
 private:
+    bool ReportRawMsg(const std::string& content);
     bool ReportCrashNoLogEvent(CrashMap& output);
+    int32_t GetSnapshotPid(const std::string& content);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

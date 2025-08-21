@@ -37,7 +37,7 @@ void KernelSnapshotProcessorImpl::Process(const std::string& snapshot)
         DFXLOGE("reporter is null");
         return;
     }
-    reporter_->ReportEvents(crashMaps);
+    reporter_->ReportEvents(crashMaps, snapshot);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
