@@ -97,27 +97,28 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
             thread["thread_name"].isConvertibleTo(Json::stringValue)) {
             ss += "Tid:" + thread["tid"].asString() + ", Name:" + thread["thread_name"].asString() + "\n";
         }
-        if (thread.isMember("frames") && thread["frames"].isArray()) {
-            const Json::Value frames = thread["frames"];
-            constexpr int maxFrameNum = 1000;
-            if (frames.size() > maxFrameNum) {
-                continue;
+        if (!thread.isMember("frames") || !thread["frames"].isArray()) {
+            continue;
+        }
+        const Json::Value frames = thread["frames"];
+        constexpr int maxFrameNum = 1000;
+        if (frames.size() > maxFrameNum) {
+            continue;
+        }
+        for (uint32_t j = 0; j < frames.size(); ++j) {
+            std::string frameStr = "";
+            bool formatStatus = false;
+            if (frames[j]["line"].asString().empty()) {
+                formatStatus = FormatNativeFrame(frames, j, frameStr);
+            } else {
+                formatStatus = FormatJsFrame(frames, j, frameStr);
             }
-            for (uint32_t j = 0; j < frames.size(); ++j) {
-                std::string frameStr = "";
-                bool formatStatus = false;
-                if (frames[j]["line"].asString().empty()) {
-                    formatStatus = FormatNativeFrame(frames, j, frameStr);
-                } else {
-                    formatStatus = FormatJsFrame(frames, j, frameStr);
-                }
-                if (formatStatus) {
-                    ss += frameStr + "\n";
-                } else {
-                    // Shall we try to print more information?
-                    outStackStr.append("Frame info is illegal.");
-                    return false;
-                }
+            if (formatStatus) {
+                ss += frameStr + "\n";
+            } else {
+                // Shall we try to print more information?
+                outStackStr.append("Frame info is illegal.");
+                return false;
             }
         }
 
