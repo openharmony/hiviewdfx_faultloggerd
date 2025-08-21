@@ -50,7 +50,9 @@ namespace {
 std::mutex g_localMutex;
 std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap {};
 constexpr std::chrono::seconds TIME_OUT = std::chrono::seconds(1);
+#ifndef __aarch64__
 constexpr std::chrono::seconds TIME_OUT_IN_COPY_CONTEXT = std::chrono::seconds(3);
+#endif
 
 void CreateContext(std::shared_ptr<ThreadContext>& threadContext)
 {
