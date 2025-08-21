@@ -27,9 +27,11 @@ public:
     SmartFd() = default;
     explicit SmartFd(int fd, bool fdsan = true) : fd_(fd), fdsan_(fdsan)
     {
+#ifndef is_host
         if (fd_ >= 0 && fdsan_) {
             fdsan_exchange_owner_tag(fd_, 0, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, DFX_FDSAN_DOMAIN));
         }
+#endif // is_host
     }
 
     ~SmartFd()
@@ -84,10 +86,12 @@ private:
         if (fd_ < 0) {
             return;
         }
+#ifndef is_host
         if (fdsan_) {
             fdsan_close_with_tag(fd_, fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, DFX_FDSAN_DOMAIN));
             return;
         }
+#endif // is_host
         close(fd_);
     }
 

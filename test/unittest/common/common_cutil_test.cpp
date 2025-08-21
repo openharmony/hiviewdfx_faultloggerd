@@ -79,34 +79,6 @@ HWTEST_F(CommonCutilTest, DfxCutilTest003, TestSize.Level2)
 }
 
 /**
- * @tc.name: DfxCutilTest004
- * @tc.desc: test cutil functions TrimAndDupStr
- * @tc.type: FUNC
- */
-HWTEST_F(CommonCutilTest, DfxCutilTest004, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxCutilTest004: start.";
-    ASSERT_FALSE(TrimAndDupStr(nullptr, nullptr));
-    GTEST_LOG_(INFO) << "DfxCutilTest004: end.";
-}
-
-/**
- * @tc.name: DfxCutilTest005
- * @tc.desc: test cutil functions TrimAndDupStr
- * @tc.type: FUNC
- */
-HWTEST_F(CommonCutilTest, DfxCutilTest005, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxCutilTest005: start.";
-    const char src[] = "ab cd \n ef";
-    char dst[11] = {0}; // 11: The length is consistent with the src[] array
-    ASSERT_TRUE(TrimAndDupStr(src, dst));
-    GTEST_LOG_(INFO) << "dst:" << dst;
-    ASSERT_EQ(strncmp(dst, "abcd", 5), 0); // 5:length of "abcd"
-    GTEST_LOG_(INFO) << "DfxCutilTest005: end.";
-}
-
-/**
  * @tc.name: TraceTest001
  * @tc.desc: test Trace functions DfxStartTraceDlsym
  * @tc.type: FUNC
