@@ -430,7 +430,7 @@ static bool StartProcessdump(void)
 
 static bool StartVMProcessUnwind(void)
 {
-    uint32_t startTime = GetAbsTimeMilliSecondsCInterce();
+    uint64_t startTime = GetAbsTimeMilliSecondsCInterce();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork vm process(%{public}d)", errno);

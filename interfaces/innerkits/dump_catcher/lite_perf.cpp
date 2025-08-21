@@ -300,9 +300,9 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
     }
 
     pid_t pid = 0;
-    pid = vfork();
+    pid = fork();
     if (pid < 0) {
-        DFXLOGE("Failed to vfork.");
+        DFXLOGE("Failed to fork.");
         return -1;
     }
     if (pid == 0) {
@@ -312,9 +312,9 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
             _exit(-1);
         }
 
-        pid_t dumpPid = vfork();
+        pid_t dumpPid = fork();
         if (dumpPid < 0) {
-            DFXLOGE("Failed to vfork.");
+            DFXLOGE("Failed to fork.");
             _exit(-1);
         }
         if (dumpPid == 0) {
