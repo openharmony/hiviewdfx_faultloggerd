@@ -12,21 +12,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef COREDUMP_SIGNAL_SERVICE_H
+#define COREDUMP_SIGNAL_SERVICE_H
 
-#ifndef FAULT_COMMON_UTIL_H
-#define FAULT_COMMON_UTIL_H
-
-#include <sys/socket.h>
-#include "csignal"
-#include "cstdint"
+#include <sys/types.h>
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace FaultCommonUtil {
-bool GetUcredByPeerCred(struct ucred& rcred, int32_t connectionFd);
-int32_t SendSignalToHapWatchdogThread(pid_t pid, const siginfo_t& si);
-int32_t SendSignalToProcess(pid_t pid, const siginfo_t& si);
-}
+class CoredumpSignalService {
+public:
+    int32_t SendStartSignal(pid_t targetPid);
+    int32_t SendCancelSignal(pid_t workerPid);
+};
 }
 }
 #endif

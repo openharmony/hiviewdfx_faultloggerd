@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -20,7 +20,6 @@ faultloggerd_sources = [
   "fault_logger_server.cpp",
   "fault_logger_service.cpp",
   "temp_file_manager.cpp",
-  "fault_coredump_service.cpp",
   "fault_common_util.cpp"
 ]
 
@@ -78,6 +77,14 @@ if (defined(ohos_lite)) {
   }
 } else {
   faultloggerd_sources += [
+    "./coredump/coredump_callback_service.cpp",
+    "./coredump/coredump_facade.cpp",
+    "./coredump/coredump_manager_service.cpp",
+    "./coredump/coredump_session_manager.cpp",
+    "./coredump/coredump_session_service.cpp",
+    "./coredump/coredump_session_state.cpp",
+    "./coredump/coredump_signal_service.cpp",
+    "./coredump/coredump_task_scheduler.cpp",
     "./snapshot/kernel_snapshot_content_builder.cpp",
     "./snapshot/kernel_snapshot_kernel_frame.cpp",
     "./snapshot/kernel_snapshot_manager.cpp",
@@ -94,6 +101,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
+      "./coredump",
       "./snapshot",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxlog",
@@ -142,6 +150,12 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  ohos_prebuilt_etc("fault_coredump.json") {
+    source = "config/fault_coredump.json"
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
   ohos_executable("faultloggerd") {
     install_enable = true
     configs = [
@@ -156,13 +170,13 @@ if (defined(ohos_lite)) {
       "DFX_LOG_HILOG_BASE",
       "DFX_ENABLE_TRACE",
     ]
-    
 
     deps = [
       ":faultlogger.conf",
       ":faultloggerd.para",
       ":faultloggerd.para.dac",
       ":faultloggerd_config.json",
+      ":fault_coredump.json",
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/common/dfxlog:dfx_hilog_base",

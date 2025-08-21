@@ -64,7 +64,6 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/services/fault_logger_service.cpp",
         "$faultloggerd_path/services/temp_file_manager.cpp",
         "$faultloggerd_path/services/fault_common_util.cpp",
-        "$faultloggerd_path/services/fault_coredump_service.cpp",
         "faultlogger_server_test.cpp",
         "faultloggerd_test.cpp",
         "temp_file_manager_test.cpp",
@@ -116,12 +115,14 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$faultloggerd_path/services",
       "$faultloggerd_path/test/utils",
+      "$faultloggerd_path/services/coredump",
     ]
     sources = [
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_client.cpp",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
       "faultlogger_server_test.cpp",
       "faultloggerd_client_test.cpp",
+      "faultloggerd_coredump_test.cpp",
       "faultloggerd_test.cpp",
       "temp_file_manager_test.cpp",
     ]

@@ -12,21 +12,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef COREDUMP_SESSION_MANAGER_H
+#define COREDUMP_SESSION_MANAGER_H
 
-#ifndef FAULT_COMMON_UTIL_H
-#define FAULT_COMMON_UTIL_H
+#include <unordered_map>
 
-#include <sys/socket.h>
-#include "csignal"
-#include "cstdint"
+#include "coredump_model.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace FaultCommonUtil {
-bool GetUcredByPeerCred(struct ucred& rcred, int32_t connectionFd);
-int32_t SendSignalToHapWatchdogThread(pid_t pid, const siginfo_t& si);
-int32_t SendSignalToProcess(pid_t pid, const siginfo_t& si);
-}
+class CoredumpSessionManager {
+public:
+    static CoredumpSessionManager& Instance();
+    SessionId CreateSession(const CreateCoredumpRequest& request);
+    CoredumpSession* GetSession(SessionId sessionId);
+    void RemoveSession(SessionId sessionId);
+
+    CoredumpSessionManager(const CoredumpSessionManager&) = delete;
+    CoredumpSessionManager& operator =(const CoredumpSessionManager&) = delete;
+private:
+    CoredumpSessionManager() = default;
+    std::unordered_map<SessionId, CoredumpSession> sessions_;
+};
 }
 }
 #endif

@@ -63,8 +63,8 @@ int32_t SendSignalToHapWatchdogThread(pid_t pid, const siginfo_t& si)
     }
 #ifndef FAULTLOGGERD_TEST
     if (syscall(SYS_rt_tgsigqueueinfo, pid, tid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_tgsigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+        DFXLOGE("Failed to SYS_rt_tgsigqueueinfo signal(%{public}d), errno(%{public}d).",
+            si.si_signo, errno);
         return ResponseCode::SDK_DUMP_NOPROC;
     }
 #endif
@@ -79,8 +79,8 @@ int32_t SendSignalToProcess(pid_t pid, const siginfo_t& si)
     }
 #ifndef FAULTLOGGERD_TEST
     if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
-        DFXLOGE("%{public}s :: Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
-            FAULTLOGGERD_SERVICE_TAG, si.si_signo, errno);
+        DFXLOGE("Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
+            si.si_signo, errno);
         return ResponseCode::SDK_DUMP_NOPROC;
     }
 #endif

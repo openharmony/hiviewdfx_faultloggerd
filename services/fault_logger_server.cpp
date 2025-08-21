@@ -22,7 +22,10 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "faultloggerd_socket.h"
-#include "fault_coredump_service.h"
+#ifndef is_ohos_lite
+#include "coredump_callback_service.h"
+#include "coredump_manager_service.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -47,8 +50,8 @@ bool SocketServer::Init()
         return false;
     }
 #ifndef is_ohos_lite
-    AddService(COREDUMP_CLIENT, std::make_unique<CoredumpService>());
-    AddService(COREDUMP_PROCESS_DUMP_CLIENT, std::make_unique<CoredumpStatusService>());
+    AddService(COREDUMP_CLIENT, std::make_unique<CoredumpManagerService>());
+    AddService(COREDUMP_PROCESS_DUMP_CLIENT, std::make_unique<CoredumpCallbackService>());
 
     AddService(PIPE_FD_CLIENT, std::make_unique<PipeService>());
     AddService(SDK_DUMP_CLIENT, std::make_unique<SdkDumpService>());
