@@ -178,7 +178,7 @@ void LperfEvents::GetRecordFieldFromMmap(MmapFd& mmap, void* dest, size_t destSi
     if (memcpy_s(dest, destSize, mmap.buf + pos, copySize) != 0) {
         DFXLOGE("memcpy_s failed. size %{public}zd", copySize);
     }
-    if (copySize < size) {
+    if (copySize < size && destSize > copySize) {
         size -= copySize;
         if (memcpy_s(static_cast<uint8_t *>(dest) + copySize, destSize - copySize, mmap.buf, size) != 0) {
             DFXLOGE("memcpy_s mmap.buf to dest failed. size %{public}zd", size);
