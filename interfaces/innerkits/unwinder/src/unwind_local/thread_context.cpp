@@ -50,6 +50,7 @@ namespace {
 std::mutex g_localMutex;
 std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap {};
 constexpr std::chrono::seconds TIME_OUT = std::chrono::seconds(1);
+constexpr std::chrono::seconds TIME_OUT_IN_COPY_CONTEXT = std::chrono::seconds(3);
 
 void CreateContext(std::shared_ptr<ThreadContext>& threadContext)
 {
@@ -175,7 +176,7 @@ NO_SANITIZE void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context
 
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);
     ctxPtr->cv.notify_all();
-    ctxPtr->cv.wait_for(lock, TIME_OUT);
+    ctxPtr->cv.wait_for(lock, TIME_OUT_IN_COPY_CONTEXT);
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
 #endif
 }
