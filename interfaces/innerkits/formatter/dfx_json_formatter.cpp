@@ -85,7 +85,11 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
         outStackStr.append("Failed to parse json stack info.");
         return false;
     }
-
+    constexpr int maxThreadCount = 10000;
+    if (threads.size() > maxThreadCount) {
+        outStackStr.append("Thread count exceeds limit(10000).");
+        return false;
+    }
     for (uint32_t i = 0; i < threads.size(); ++i) {
         std::string ss;
         Json::Value thread = threads[i];
@@ -93,23 +97,30 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
             thread["thread_name"].isConvertibleTo(Json::stringValue)) {
             ss += "Tid:" + thread["tid"].asString() + ", Name:" + thread["thread_name"].asString() + "\n";
         }
-        const Json::Value frames = thread["frames"];
-        for (uint32_t j = 0; j < frames.size(); ++j) {
-            std::string frameStr = "";
-            bool formatStatus = false;
-            if (frames[j]["line"].asString().empty()) {
-                formatStatus = FormatNativeFrame(frames, j, frameStr);
-            } else {
-                formatStatus = FormatJsFrame(frames, j, frameStr);
+        if (thread.isMember("frames") && thread["frames"].isArray()) {
+            const Json::Value frames = thread["frames"];
+            constexpr int maxFrameNum = 1000;
+            if (frames.size() > maxFrameNum) {
+                continue;
             }
-            if (formatStatus) {
-                ss += frameStr + "\n";
-            } else {
-                // Shall we try to print more information?
-                outStackStr.append("Frame info is illegal.");
-                return false;
+            for (uint32_t j = 0; j < frames.size(); ++j) {
+                std::string frameStr = "";
+                bool formatStatus = false;
+                if (frames[j]["line"].asString().empty()) {
+                    formatStatus = FormatNativeFrame(frames, j, frameStr);
+                } else {
+                    formatStatus = FormatJsFrame(frames, j, frameStr);
+                }
+                if (formatStatus) {
+                    ss += frameStr + "\n";
+                } else {
+                    // Shall we try to print more information?
+                    outStackStr.append("Frame info is illegal.");
+                    return false;
+                }
             }
         }
+
         outStackStr.append(ss);
     }
     return true;
