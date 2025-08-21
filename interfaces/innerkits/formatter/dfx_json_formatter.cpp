@@ -93,7 +93,11 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
         outStackStr.append("Failed to parse json stack info.");
         return false;
     }
-
+    constexpr int maxThreadCount = 10000;
+    if (threads.size() > maxThreadCount) {
+        outStackStr.append("Thread count exceeds limit(10000).");
+        return false;
+    }
     for (uint32_t i = 0; i < threads.size(); ++i) {
         std::string ss;
         Json::Value thread = threads[i];
@@ -101,7 +105,14 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
             thread["thread_name"].isConvertibleTo(Json::stringValue)) {
             ss += "Tid:" + JsonAsString(thread["tid"]) + ", Name:" + JsonAsString(thread["thread_name"]) + "\n";
         }
+        if (!thread.isMember("frames") || !thread["frames"].isArray()) {
+            continue;
+        }
         const Json::Value frames = thread["frames"];
+        constexpr int maxFrameNum = 1000;
+        if (frames.size() > maxFrameNum) {
+            continue;
+        }
         for (uint32_t j = 0; j < frames.size(); ++j) {
             std::string frameStr = "";
             bool formatStatus = false;
@@ -118,6 +129,7 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
                 return false;
             }
         }
+
         outStackStr.append(ss);
     }
     return true;
