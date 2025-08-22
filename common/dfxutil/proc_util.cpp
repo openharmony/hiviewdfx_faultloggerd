@@ -45,7 +45,6 @@ bool Schedstat::ParseSchedstat(const std::string& schedstatPath)
 {
     char realPath[PATH_MAX] = {0};
     if (realpath(schedstatPath.c_str(), realPath) == nullptr) {
-        DFXLOGE("path invalid. %{public}s", schedstatPath.c_str());
         return false;
     }
 
@@ -104,6 +103,7 @@ bool ThreadInfo::ParserThreadInfo(pid_t tid)
 
     ProcessInfo info;
     if (!ParseProcInfo(tid, info)) {
+        DFXLOGE("read %{public}d info failed.", tid);
         return false;
     }
 
@@ -222,7 +222,6 @@ bool ParseStat(const std::string& statPath, ProcessInfo& info)
 {
     char realPath[PATH_MAX] = {0};
     if (realpath(statPath.c_str(), realPath) == nullptr) {
-        DFXLOGE("path invalid. %{public}s", statPath.c_str());
         return false;
     }
 
