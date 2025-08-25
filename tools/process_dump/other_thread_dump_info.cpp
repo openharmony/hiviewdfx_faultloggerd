@@ -23,9 +23,9 @@ namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(OtherThreadDumpInfo);
 
-int OtherThreadDumpInfo::UnwindStack(DfxProcess& process, Unwinder& unwinder)
+int OtherThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    int unwindSuccessCnt = DecorativeDumpInfo::UnwindStack(process, unwinder);
+    int unwindSuccessCnt = DecorativeDumpInfo::UnwindStack(process, request, unwinder);
     DFXLOGI("unwind other thread dump start");
     auto pid = process.GetVmPid();
     if (pid == 0) {

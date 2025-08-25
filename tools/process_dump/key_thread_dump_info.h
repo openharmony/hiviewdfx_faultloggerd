@@ -28,7 +28,7 @@ namespace HiviewDFX {
 class KeyThreadDumpInfo : public DumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
-    int UnwindStack(DfxProcess& process, Unwinder& unwinder) override;
+    int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     void Symbolize(DfxProcess& process, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<KeyThreadDumpInfo>(); }
 private:
