@@ -27,6 +27,8 @@ int32_t DFX_InheritCapabilities(void);
 
 bool DFX_SetDumpableState(void);
 void DFX_RestoreDumpableState(void);
+void SetKernelSnapshot(bool enable);
+bool DFX_EnableNativeCrashKernelSnapshot();
 
 #ifdef __cplusplus
 }

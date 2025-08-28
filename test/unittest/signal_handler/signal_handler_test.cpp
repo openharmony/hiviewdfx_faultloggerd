@@ -1055,5 +1055,17 @@ HWTEST_F(SignalHandlerTest, SetCrashLogConfig003, TestSize.Level2)
         ASSERT_EQ(CheckKeyWords(filePath, keywords, length, minRegIdx), length);
     }
 }
+
+#if defined(__aarch64__)
+/**
+ * @tc.name: EnableNativeCrashKernelSnapshot Test
+ * @tc.desc: add testcase enable NativeCrashKernelSnapshot
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, EnableNativeCrashKernelSnapshot_001, TestSize.Level2)
+{
+    EXPECT_TRUE(DFX_EnableNativeCrashKernelSnapshot());
+}
+#endif
 } // namespace HiviewDFX
 } // namepsace OHOS
