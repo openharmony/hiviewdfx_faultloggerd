@@ -78,6 +78,8 @@ Note:If the text contains special characters, please escape them according to th
                 <filteritem type="filename" name="testmaps_32" desc="test resource file, no license header"/>
                 <filteritem type="filename" name="testmaps_64" desc="test resource file, no license header"/>
                 <filteritem type="filename" name="dwarf_test_aarch64_elf_result" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="stack_printer_testmaps32" desc="test resource file, no license header"/>
+                <filteritem type="filename" name="stack_printer_testmaps64" desc="test resource file, no license header"/>
             </filefilter>
             <filefilter name="copyrightPolicyFilter" desc="Filters for copyright header policies">
                 <filteritem type="filename" name="ehdr_from_readelf_32" desc="test resource file, no copyright header"/>
@@ -91,6 +93,8 @@ Note:If the text contains special characters, please escape them according to th
                 <filteritem type="filename" name="testmaps_32" desc="test resource file, no copyright header"/>
                 <filteritem type="filename" name="testmaps_64" desc="test resource file, no copyright header"/>
                 <filteritem type="filename" name="dwarf_test_aarch64_elf_result" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="stack_printer_testmaps32" desc="test resource file, no copyright header"/>
+                <filteritem type="filename" name="stack_printer_testmaps64" desc="test resource file, no copyright header"/>
             </filefilter>
             <filefilter name="licenseFileNamePolicyFilter" desc="Filters for LICENSE file policies">
             </filefilter>
