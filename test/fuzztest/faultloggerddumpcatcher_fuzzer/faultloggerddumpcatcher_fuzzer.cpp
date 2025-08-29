@@ -38,7 +38,8 @@ void DumpStackTraceTest(const uint8_t* data, size_t size)
     std::string processdumpCmd = "dumpcatcher -p " + std::to_string(testData->pid) + " -t " +
         std::to_string(testData->tid);
     system(processdumpCmd.c_str());
-    std::string processdumpInvalidCmd = std::string("dumpcatcher -") + std::string(testData->option) + " -p " +
+    std::string processdumpInvalidCmd = std::string("dumpcatcher -") +
+        std::string(testData->option, FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH) + " -p " +
         std::to_string(testData->pid) + " -t " + std::to_string(testData->tid);
     system(processdumpInvalidCmd.c_str());
 }
