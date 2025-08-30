@@ -478,7 +478,8 @@ uint64_t CoreDumpService::GetCoreFileSize(pid_t pid)
         lineNumber += 1;
         ObtainDumpRegion(line, region);
         maps_.push_back(region);
-        if (!strcmp(region.pathName, "[vvar]") || region.priority[0] != 'r' || strstr(region.pathName, "CMCGC")) {
+        std::string pri(region.priority);
+        if (pri.find('r') == std::string::npos || pri.find('p') == std::string::npos) {
             continue;
         }
         coreFileSize += region.memorySizeHex;
