@@ -12,23 +12,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef KERNEL_SNAPSHOT_TASK_H_
+#define KERNEL_SNAPSHOT_TASK_H_
+#include "epoll_manager.h"
 
-#ifndef KERNEL_SNAPSHOT_MANAGER_H
-#define KERNEL_SNAPSHOT_MANAGER_H
-
-#include <string>
 namespace OHOS {
 namespace HiviewDFX {
-class KernelSnapshotManager {
+class ReadKernelSnapshotTask : public TimerTask {
 public:
-    KernelSnapshotManager(const KernelSnapshotManager&) = delete;
-    KernelSnapshotManager& operator=(const KernelSnapshotManager&) = delete;
-    static void StartMonitor();
-private:
-    KernelSnapshotManager() = default;
-    void MonitorCrashKernelSnapshot();
-    int GetSnapshotCheckInterval();
-    std::string ReadKernelSnapshot();
+    ReadKernelSnapshotTask();
+protected:
+    void OnTimer() override;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

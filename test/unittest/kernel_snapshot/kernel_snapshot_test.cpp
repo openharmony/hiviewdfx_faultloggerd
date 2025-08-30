@@ -110,13 +110,11 @@ public:
 HWTEST_F(KernelSnapshotTest, KernelSnapshotTest002, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "KernelSnapshotTest002: start.";
-    std::shared_ptr<IKernelSnapshotProcessor> processor = std::make_shared<KernelSnapshotProcessorImpl>();
     std::ifstream file(KERNEL_SNAPSHOT_EXECPTION_FILE);
     if (file.is_open()) {
         std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         file.close();
-
-        processor->Process(content);
+        ProcessKernelSnapShot(content);
         std::string filePath = "/data/log/faultlog/temp/cppcrash-799-1736169993223";
         auto ret = access(filePath.c_str(), F_OK);
         EXPECT_EQ(ret, 0);

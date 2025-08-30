@@ -40,4 +40,12 @@ private:
 };
 } // namespace HiviewDFX
 } // namespace OHOS
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void ProcessKernelSnapShot(const std::string& kernelSnapShotMsg);
+#ifdef __cplusplus
+}
+#endif
 #endif

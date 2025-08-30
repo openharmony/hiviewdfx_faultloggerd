@@ -64,6 +64,11 @@
             <option name="push" value="testdata/kernel_snapshot_2_execption.txt -> /data/test/resource/testdata/" src="res"/>
         </preparer>
     </target>
+    <target name="test_service">
+        <preparer>
+            <option name="push" value="testdata/kernel_snapshot_execption.txt -> /data/test/resource/testdata/" src="res"/>
+        </preparer>
+    </target>
     <target name="test_common">
         <preparer>
             <option name="push" value="proc/ParseStatTest002/stat -> /data/test/resource/proc/ParseStatTest002/" src="res"/>

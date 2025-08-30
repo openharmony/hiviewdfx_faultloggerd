@@ -24,6 +24,10 @@
 #include "epoll_manager.h"
 #include "fault_logger_server.h"
 
+#ifndef is_ohos_lite
+#include "kernel_snapshot_task.h"
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 
@@ -57,6 +61,11 @@ FaultLoggerDaemon::FaultLoggerDaemon() : mainServer_(mainEpollManager_), tempFil
         DFXLOGE("%{public}s :: Failed to init tempFileManager", FAULTLOGGERD_DAEMON_TAG);
         return;
     }
+#ifndef is_ohos_lite
+    if (OHOS::HiviewDFX::IsBetaVersion()) {
+        secondaryEpollManager_.AddListener(std::make_unique<ReadKernelSnapshotTask>());
+    }
+#endif
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR || signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
         DFXLOGE("%{public}s :: Failed to signal SIGCHLD or SIGPIPE, errno: %{public}d",
             FAULTLOGGERD_DAEMON_TAG, errno);
