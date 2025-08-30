@@ -547,7 +547,7 @@ static bool ReadProcessDumpGetRegsMsg(void)
     return false;
 }
 
-static void SetKernelSnapshot(bool enable)
+void SetKernelSnapshot(bool enable)
 {
     const char *filePath = "/proc/self/unexpected_die_catch";
     if (access(filePath, F_OK) < 0) {
@@ -613,7 +613,6 @@ static int ProcessDump(int signo)
     bool isTracerStatusModified = SetDumpState();
     if (!IsDumpSignal(signo)) {
         ResetFlags();
-        SetKernelSnapshot(true);
 #ifndef is_ohos_lite
         if (HiTraceChainGetId != NULL) {
             DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
@@ -658,4 +657,14 @@ void DfxDumpRequest(int signo, struct ProcessDumpRequest *request)
     }
     g_request = request;
     ProcessDump(signo);
+}
+
+bool DFX_EnableNativeCrashKernelSnapshot()
+{
+    if (!DFX_SetDumpableState()) {
+        return false;
+    }
+    SetKernelSnapshot(true);
+    DFX_RestoreDumpableState();
+    return true;
 }

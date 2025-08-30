@@ -2,6 +2,7 @@
   global:
     extern "C" {
         SetThreadInfoCallback;
+        DFX_EnableNativeCrashKernelSnapshot;
         DFX_SetAsyncStackCallback;
         DFX_GetAppRunningUniqueId;
         DFX_SetAppRunningUniqueId;
