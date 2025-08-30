@@ -555,7 +555,6 @@ void SetKernelSnapshot(bool enable)
     }
     int dieCatchFd = open(filePath, O_RDWR);
     if (dieCatchFd < 0) {
-        DFXLOGE("Failed to open unexpecterd_die_catch %{public}d", errno);
         return;
     }
     do {

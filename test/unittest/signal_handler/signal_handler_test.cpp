@@ -31,6 +31,7 @@
 #include <thread>
 
 #include "dfx_define.h"
+#include "dfx_dumprequest.h"
 #include "dfx_signal_handler.h"
 #include "dfx_signalhandler_exception.h"
 #include "dfx_test_util.h"
