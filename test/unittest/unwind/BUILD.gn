@@ -40,6 +40,7 @@ ohos_unittest("test_unwind") {
     "jsvm_test.cpp",
     "maps_test.cpp",
     "memory_test.cpp",
+    "offline_parser_test.cpp",
     "regs_test.cpp",
     "signal_test.cpp",
     "symbols_test.cpp",

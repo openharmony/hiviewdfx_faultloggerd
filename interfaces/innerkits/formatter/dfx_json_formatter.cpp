@@ -19,6 +19,7 @@
 #include <securec.h>
 #include "dfx_kernel_stack.h"
 #ifndef is_ohos_lite
+#include "dfx_frame_formatter.h"
 #include "json/json.h"
 #endif
 
@@ -146,17 +147,37 @@ static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack
         std::string ss = "Tid:" + std::to_string(threadStack.tid) + ", Name:" + threadStack.threadName + "\n";
         formattedStack.append(ss);
         for (size_t frameIdx = 0; frameIdx < threadStack.frames.size(); ++frameIdx) {
-            std::string file = threadStack.frames[frameIdx].mapName;
-            char buf[FRAME_BUF_LEN] = {0};
-            char format[] = "#%02zu pc %016" PRIx64 " %s";
-            if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frameIdx, threadStack.frames[frameIdx].relPc,
-                file.empty() ? "Unknown" : file.c_str()) <= 0) {
-                continue;
-            }
-            formattedStack.append(std::string(buf, strlen(buf)) + "\n");
+            formattedStack.append(DfxFrameFormatter::GetFrameStr(threadStack.frames[frameIdx]));
         }
     }
     return true;
+}
+
+static void FillJsFrameJson(const DfxFrame& frame, Json::Value& frameJson)
+{
+    frameJson["file"] = frame.mapName;
+    frameJson["packageName"] = frame.packageName;
+    frameJson["symbol"] = frame.funcName;
+    frameJson["line"] = frame.line;
+    frameJson["column"] = frame.column;
+}
+
+static void FillNativeFrameJson(const DfxFrame& frame, Json::Value& frameJson)
+{
+    frameJson["pc"] = StringPrintf("%016lx", frame.relPc);
+    if (!frame.funcName.empty() && frame.funcName.length() <= MAX_FUNC_NAME_LEN) {
+        frameJson["symbol"] = frame.funcName;
+    } else {
+        frameJson["symbol"] = "";
+    }
+    frameJson["offset"] = frame.funcOffset;
+    frameJson["file"] = frame.mapName.empty() ? "Unknown" : frame.mapName;
+    frameJson["buildId"] = frame.buildId;
+}
+
+static void FillFrameJson(const DfxFrame& frame, Json::Value& frameJson)
+{
+    frame.isJsFrame ? FillJsFrameJson(frame, frameJson) : FillNativeFrameJson(frame, frameJson);
 }
 
 static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std::string& formattedStack)
@@ -172,16 +193,7 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
         Json::Value frames(Json::arrayValue);
         for (const auto& frame : threadStack.frames) {
             Json::Value frameJson;
-            char buf[FRAME_BUF_LEN] = {0};
-            char format[] = "%016" PRIx64;
-            if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frame.relPc) <= 0) {
-                continue;
-            }
-            frameJson["pc"] = std::string(buf);
-            frameJson["symbol"] = "";
-            frameJson["offset"] = 0;
-            frameJson["file"] = frame.mapName.empty() ? "Unknown" : frame.mapName;
-            frameJson["buildId"] = "";
+            FillFrameJson(frame, frameJson);
             frames.append(frameJson);
         }
         threadInfo["frames"] = frames;
@@ -192,11 +204,12 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
 }
 #endif
 
-bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat)
+bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
+    bool needParseSymbol, const std::string& bundleName)
 {
 #ifdef __aarch64__
     std::vector<DfxThreadStack> processStack;
-    if (!FormatProcessKernelStack(kernelStack, processStack)) {
+    if (!FormatProcessKernelStack(kernelStack, processStack, needParseSymbol, bundleName)) {
         return false;
     }
     if (jsonFormat) {

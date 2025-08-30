@@ -43,6 +43,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
@@ -68,7 +69,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/unwinder/include",
     ]
 
-    defines = [ "is_ohos=${is_ohos}" ]
+    defines = [
+      "is_ohos=${is_ohos}",
+      "DFX_ENABLE_TRACE",
+    ]
   }
 
   ohos_shared_library("libbacktrace_local") {
@@ -83,6 +87,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
@@ -120,6 +125,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base_static",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym_static",
       "$faultloggerd_interfaces_path/innerkits/procinfo:dfx_procinfo_static",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_base",
     ]

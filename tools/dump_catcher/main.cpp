@@ -28,22 +28,27 @@
 #include "dfx_signal_local_handler.h"
 #endif
 
+using namespace OHOS::HiviewDFX;
 static const std::string DUMP_STACK_TAG_USAGE = "Usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "Failed:";
-static constexpr int WAIT_GET_KERNEL_STACK_TIMEOUT = 1000; // 1000 : time out 1000 ms
 static constexpr int SAVE_CORE_DUMP_TIMEOUT = 10000; //  time out 10000 ms
 
 static void PrintCommandHelp()
 {
     printf("%s\n", DUMP_STACK_TAG_USAGE.c_str());
-    printf("-p pid -t tid    dump the stacktrace of the thread with given tid.\n");
-    printf("-p pid    dump the stacktrace of all the threads with given pid.\n");
-    printf("-T timeout(ms)     dump in the timeout.\n");
+    printf("-p pid                | dump the stacktrace of all the threads with given pid, timeout default 3000ms.\n");
+    printf("-p pid -t tid         | dump the stacktrace of the thread with given tid .\n");
+    printf("-p pid -T timeout(ms) | dump the stacktrace of the thread with given tid in timeout.\n");
+    printf("-k pid                | dump the origin kernel stacktrace with noark of the pid.\n");
+    printf("-k pid -a             | dump the origin kernel stacktrace with ark of the pid.\n");
+    printf("-k pid -a -f          | dump the origin kernel stacktrace with ark of the pid and format parse stack.\n");
+    printf("-c save pid           | begin to coredump the process of the pid.\n");
+    printf("-c cancel pid         | cancel to coredump the process of the pid.\n");
 }
 
 static void PrintCommandFailed()
 {
-    printf("%s\npid and tid must > 0 and timeout must > 1000.\n", DUMP_STACK_TAG_FAILED.c_str());
+    printf("%s\npid and tid and timeout must > 0.\n", DUMP_STACK_TAG_FAILED.c_str());
 }
 
 
@@ -82,7 +87,7 @@ static int ExecuteCoredumpCmd(std::string subCmd, char* pidChar)
     }
 }
 
-static int ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid, int &timeout)
+static int ParseParamters(int argc, char *argv[], DumpOptions& dumpOpt)
 {
     int ret = 0;
     if (argc <= 1) {
@@ -91,17 +96,14 @@ static int ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid, in
     DFXLOGD("[%{public}d]: argc: %{public}d, argv1: %{public}s", __LINE__, argc, argv[1]);
 
     int optRet;
-    const char *optString = "p:t:c:T:";
+    const char *optString = "p:t:c:T:k:af";
     while ((optRet = getopt(argc, argv, optString)) != -1) {
         if (optarg == nullptr) {
             continue;
         }
         switch (optRet) {
-            case 'p':
-                ret = GetIdFromArgs(optarg, pid);
-                break;
-            case 't':
-                ret = GetIdFromArgs(optarg, tid);
+            case 'a':
+                dumpOpt.needArk = true;
                 break;
             case 'c':
                 if (optind >= argc) {
@@ -110,13 +112,22 @@ static int ParseParamters(int argc, char *argv[], int32_t &pid, int32_t &tid, in
                 }
                 ExecuteCoredumpCmd(optarg, argv[optind]);
                 return 0;
+            case 'f':
+                dumpOpt.needParse = true;
+                break;
+            case 'k':
+                ret = GetIdFromArgs(optarg, dumpOpt.pid);
+                dumpOpt.type = DumpType::DUMP_KERNEL_STACK;
+                break;
+            case 'p':
+                ret = GetIdFromArgs(optarg, dumpOpt.pid);
+                dumpOpt.type = DumpType::DUMP_USER_STACK;
+                break;
+            case 't':
+                ret = GetIdFromArgs(optarg, dumpOpt.tid);
+                break;
             case 'T':
-                if (atoi(optarg) > WAIT_GET_KERNEL_STACK_TIMEOUT) {
-                    timeout = atoi(optarg);
-                } else {
-                    ret = -1;
-                    PrintCommandFailed();
-                }
+                ret = GetIdFromArgs(optarg, dumpOpt.timeout);
                 break;
             default:
                 ret = 0;
@@ -136,18 +147,20 @@ int main(int argc, char *argv[])
     DFX_InstallLocalSignalHandler();
 #endif
 
-    int32_t pid = 0;
-    int32_t tid = 0;
-    int timeout = 3000;
+    DumpOptions dumpOpt;
 
     alarm(DUMPCATCHER_TIMEOUT);
     setsid();
 
-    if (ParseParamters(argc, argv, pid, tid, timeout) <= 0) {
+    if (ParseParamters(argc, argv, dumpOpt) <= 0) {
         return 0;
     }
 
-    DFXLOGD("pid: %{public}d, tid: %{public}d, timeout: %{public}d", pid, tid, timeout);
-    OHOS::HiviewDFX::DumpCatcher::GetInstance().Dump(pid, tid, timeout);
+    DFXLOGD("pid: %{public}d, tid: %{public}d, timeout: %{public}d", dumpOpt.pid, dumpOpt.tid, dumpOpt.timeout);
+    if (dumpOpt.type == DumpType::DUMP_USER_STACK) {
+        DumpCatcher::GetInstance().Dump(dumpOpt);
+    } else if (dumpOpt.type == DumpType::DUMP_KERNEL_STACK) {
+        DumpCatcher::GetInstance().DumpKernelStack(dumpOpt);
+    }
     return 0;
 }

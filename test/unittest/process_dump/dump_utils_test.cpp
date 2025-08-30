@@ -49,7 +49,7 @@ void DumpUtilsTest::SetUpTestCase(void)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
 }
- 
+
 namespace {
 #ifdef __aarch64__
 constexpr const int LOCK_TYPE_IDX = 0;
@@ -235,7 +235,7 @@ HWTEST_F(DumpUtilsTest, LockParserUnittest003, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "LockParserUnittest003: end.";
 }
- 
+
 /**
  * @tc.name: LockParserUnittest004
  * @tc.desc: test lock parser parse errorcheck lock
@@ -274,7 +274,7 @@ HWTEST_F(DumpUtilsTest, LockParserUnittest004, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "LockParserUnittest004: end.";
 }
- 
+
 /**
  * @tc.name: LockParserUnittest005
  * @tc.desc: test lock parser parse PTHREAD_MUTEX_RECURSIVE lock

@@ -33,6 +33,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
+      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
       "$hilog_lite_include_path",
     ]
 
@@ -81,9 +82,9 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
       "$faultloggerd_interfaces_path/innerkits/stack_printer:libstack_printer",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+      "$faultloggerd_path/interfaces/innerkits/signal_handler:dfx_signalhandler",
     ]
 
     external_deps = [

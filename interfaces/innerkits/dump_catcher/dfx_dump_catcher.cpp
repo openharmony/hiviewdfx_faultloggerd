@@ -135,6 +135,7 @@ private:
     void DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& ret, std::string& msg);
     std::pair<int, std::string> DealWithDumpCatchRet(int pid, int32_t& ret, std::string& msg);
     void ReportDumpCatcherStats(int32_t pid, uint64_t requestTime, int32_t ret, void* retAddr);
+    void GetKernelStack(int32_t uid, int pid);
 
     static int32_t KernelRet2DumpcatchRet(int32_t ret);
     static const int DUMPCATCHER_REMOTE_P90_TIMEOUT = 1000;
@@ -478,6 +479,13 @@ void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, s
     }
 }
 
+void DfxDumpCatcher::Impl::GetKernelStack(int32_t uid, int pid)
+{
+    if (uid == HIVIEW_UID || uid == FOUNDATION_UID) {
+        stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
+    }
+}
+
 void DfxDumpCatcher::Impl::DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& ret, std::string& msg)
 {
     uint32_t uid = getuid();
@@ -492,24 +500,19 @@ void DfxDumpCatcher::Impl::DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& 
         msg.append("Result: pid(" + std::to_string(pid) + ") process has exited.\n");
         ret = DUMPCATCH_NO_PROCESS;
     } else if (sdkdumpRet == ResponseCode::SDK_PROCESS_CRASHED) {
+        GetKernelStack(uid, pid);
         msg.append("Result: pid(" + std::to_string(pid) + ") process has been crashed.\n");
         ret = DUMPCATCH_HAS_CRASHED;
     } else if (sdkdumpRet == ResponseCode::CONNECT_FAILED) {
-        if (uid == HIVIEW_UID || uid == FOUNDATION_UID) {
-            stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
-        }
+        GetKernelStack(uid, pid);
         msg.append("Result: pid(" + std::to_string(pid) + ") process fail to conntect faultloggerd.\n");
         ret = DUMPCATCH_ECONNECT;
     } else if (sdkdumpRet == ResponseCode::SEND_DATA_FAILED) {
-        if (uid == HIVIEW_UID || uid == FOUNDATION_UID) {
-            stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
-        }
+        GetKernelStack(uid, pid);
         msg.append("Result: pid(" + std::to_string(pid) + ") process fail to write to faultloggerd.\n");
         ret = DUMPCATCH_EWRITE;
     } else {
-        if (uid == HIVIEW_UID || uid == FOUNDATION_UID) {
-            stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
-        }
+        GetKernelStack(uid, pid);
         msg.append("Result: pid(" + std::to_string(pid) + ") faultloggerd maybe exception occurred.\n");
         ret = DUMPCATCH_EFAULTLOGGERD;
     }

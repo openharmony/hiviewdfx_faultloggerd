@@ -161,6 +161,7 @@ if (defined(ohos_lite)) {
       "hilog:libhilog",
       "hisysevent:libhisysevent",
       "hitrace:libhitracechain",
+      "hitrace:hitrace_meter",
       "init:libbegetutil",
       "jsoncpp:jsoncpp",
       "ipc:ipc_core",

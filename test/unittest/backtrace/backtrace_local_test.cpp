@@ -438,7 +438,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
         ASSERT_GT(formattedStack.size(), 0);
         ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
         ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
-    
+
         ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, true));
         ASSERT_TRUE(formattedStack.find("\"tid\":") != std::string::npos) << formattedStack;
         ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
@@ -716,6 +716,113 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest019, TestSize.Level2)
     backtraceThread.join();
     ASSERT_GT(g_tid, 0) << "Failed to create child thread.\n";
     g_tid = 0;
+}
+
+/**
+ * @tc.name: BacktraceLocalTest020
+ * @tc.desc: test get thread kernel stack with ark
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest020, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest020: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        std::string kernelStack;
+        ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack, true), 0);
+        GTEST_LOG_(INFO) << "BacktraceLocalTest020: end.";
+    }
+}
+
+/**
+ * @tc.name: BacktraceLocalTest021
+ * @tc.desc: test get FormatThreadKernelStack with parser
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest021, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest021: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        std::string kernelStack;
+        ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
+        DfxThreadStack threadStack;
+        auto parser = std::make_unique<DfxOfflineParser>("");
+        ASSERT_TRUE(FormatThreadKernelStack(kernelStack, threadStack, parser.get()));
+        ASSERT_GT(threadStack.frames.size(), 0);
+        for (const auto& frame : threadStack.frames) {
+            auto line = DfxFrameFormatter::GetFrameStr(frame);
+            ASSERT_NE(line.find("#"), std::string::npos);
+            ASSERT_NE(line.find("("), std::string::npos);
+            GTEST_LOG_(INFO) << line;
+        }
+        GTEST_LOG_(INFO) << "BacktraceLocalTest021: end.";
+    }
+}
+
+/**
+ * @tc.name: BacktraceLocalTest022
+ * @tc.desc: test FormatProcessKernelStack with parsesymbol
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest022, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest022: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        pid_t pid = GetProcessPid(FOUNDATION_NAME);
+        std::vector<int> tids;
+        std::vector<int> nstids;
+        ASSERT_TRUE(GetTidsByPid(pid, tids, nstids));
+        std::string processKernelStackInfo;
+        for (const auto& tid : tids) {
+            std::string kernelStack;
+            ASSERT_EQ(DfxGetKernelStack(tid, kernelStack), 0);
+            processKernelStackInfo += kernelStack;
+        }
+        std::vector<DfxThreadStack> processStack;
+        ASSERT_TRUE(FormatProcessKernelStack(processKernelStackInfo, processStack, true));
+        for (const auto& threadStack : processStack) {
+            ASSERT_GT(threadStack.frames.size(), 0);
+            for (auto const& frame : threadStack.frames) {
+                auto line = DfxFrameFormatter::GetFrameStr(frame);
+                ASSERT_NE(line.find("#"), std::string::npos);
+                ASSERT_NE(line.find("("), std::string::npos);
+                GTEST_LOG_(INFO) << line;
+            }
+        }
+        GTEST_LOG_(INFO) << "BacktraceLocalTest022: end.";
+    }
+}
+
+/**
+ * @tc.name: BacktraceLocalTest023
+ * @tc.desc: test FormatKernelStack with parsesymbol
+ * @tc.type: FUNC
+ */
+HWTEST_F(BacktraceLocalTest, BacktraceLocalTest023, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest023: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        std::string kernelStack;
+        ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
+        std::string formattedStack;
+        ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, false, true));
+        ASSERT_GT(formattedStack.size(), 0);
+        ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
+        ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
+        ASSERT_TRUE(formattedStack.find("OHOS::HiviewDFX::DfxGetKernelStack") != std::string::npos) << formattedStack;
+        GTEST_LOG_(INFO) << "BacktraceLocalTest023: end.";
+    }
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
