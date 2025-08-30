@@ -567,7 +567,8 @@ bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, siz
 #if defined(__aarch64__)
     if (threadContext != nullptr && threadContext->frameSz > 0) {
         pcs_.clear();
-        for (size_t i = skipFrameNum; i < threadContext->frameSz && i < skipFrameNum + maxFrameNum; i++) {
+        size_t frameSize = std::min(threadContext->frameSz.load(), skipFrameNum + maxFrameNum);
+        for (size_t i = skipFrameNum; i < frameSize; i++) {
             pcs_.emplace_back(threadContext->pcs[i]);
         }
         firstFrameSp_ = threadContext->firstFrameSp;

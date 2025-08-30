@@ -84,12 +84,25 @@ enum PIPE_FD_TYPE {
     PIPE_MAX,
 };
 
+enum START_PROCESS_DUMP_RESULT {
+    START_PROCESS_DUMP_SUCESS = 0,
+    START_PROCESS_DUMP_FAIL,
+    START_PROCESS_DUMP_RETRY,
+};
+
+enum PROCESS_EXIT_STATUS {
+    PROCESS_NORMAL_EXIT = 0,
+    PROCESS_ABNORMAL_EXIT,
+    PROCESS_ALARM_EXIT,
+};
+
 static int g_pipeFds[PIPE_MAX][2] = {
     {-1, -1},
     {-1, -1}
 };
 
 static const int ALARM_TIME_S = 10;
+static const int TRY_WAIT_SECONDS = 1;
 static const uint32_t CRASH_SNAPSHOT_FLAG = 0x8;
 static const int WAITPID_TIMEOUT = 3000; // 3000 : 3 sec timeout
 enum DumpPreparationStage {
@@ -354,13 +367,9 @@ static void SafeDelayOneMillSec(void)
     OHOS_TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
 }
 
-static bool WaitProcessExitTimeout(pid_t pid, int timeoutMs)
+static int WaitProcessExitTimeout(pid_t pid, int timeoutMs)
 {
-    if (timeoutMs <= 0) {
-        DFXLOGE("Invalid timeout value(%{public}d)", timeoutMs);
-        return false;
-    }
-    int status;
+    int status = 1; // abnomal exit code
     while (timeoutMs > 0) {
         int res = waitpid(pid, &status, WNOHANG);
         if (res > 0) {
@@ -375,57 +384,96 @@ static bool WaitProcessExitTimeout(pid_t pid, int timeoutMs)
             DFXLOGI("waitpid %{public}d timeout", pid);
             kill(pid, SIGKILL);
             FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
-            return false;
+            return PROCESS_ABNORMAL_EXIT;
         }
     }
+    if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM) {
+        DFXLOGE("dummy exit with signal(%{public}d)", WTERMSIG(status));
+        return PROCESS_ALARM_EXIT;
+    }
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-        return true;
+        DFXLOGE("dummy exit (%{public}d)", WEXITSTATUS(status));
+        return PROCESS_NORMAL_EXIT;
     }
     DFXLOGE("dummy exit with error(%{public}d)", WEXITSTATUS(status));
-    return false;
+    return PROCESS_ABNORMAL_EXIT;
 }
 
-static bool StartProcessdump(void)
+static void TryNonSafeOperate(bool isCrash)
+{
+    DFX_SetUpSigAlarmAction();
+    alarm(TRY_WAIT_SECONDS);
+#ifndef is_ohos_lite
+    if (HiTraceChainGetId != NULL && isCrash) {
+        DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
+        if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
+            &hitraceChainId, sizeof(hitraceChainId)) != 0) {
+            DFXLOGE("memcpy hitrace fail");
+        }
+    }
+#endif
+    alarm(0); // cancel alarm
+}
+
+static void ForkProcessdump(uint64_t startTime)
+{
+    pid_t processDumpPid = ForkBySyscall();
+    if (processDumpPid < 0) {
+        DFXLOGE("Failed to fork processdump(%{public}d)", errno);
+        syscall(SYS_exit, errno);
+    } else if (processDumpPid > 0) {
+        int ret = ReadProcessDumpGetRegsMsg() == true ? 0 : errno;
+        DFXLOGI("exit the processdump parent process.");
+        syscall(SYS_exit, ret);
+    } else {
+        uint64_t endTime;
+        int tid;
+        ParseSiValue(&g_request->siginfo, &endTime, &tid);
+        uint64_t curTime = GetAbsTimeMilliSecondsCInterce();
+        DFXLOGI("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
+        if (endTime != 0) {
+            DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
+        }
+        if (endTime == 0 || endTime > curTime) {
+            g_request->blockCrashExitAddr = (intptr_t)&g_blockExit;
+            g_request->vmProcRealPidAddr = (intptr_t)&g_vmRealPid;
+            g_request->unwindResultAddr = (intptr_t)&g_unwindResult;
+            DFX_ExecDump();
+        } else {
+            DFXLOGI("current has spend all time, not execl processdump");
+        }
+        syscall(SYS_exit, 0);
+    }
+}
+
+static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
 {
     uint64_t startTime = GetAbsTimeMilliSecondsCInterce();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork dummy processdump(%{public}d)", errno);
-        return false;
+        return START_PROCESS_DUMP_FAIL;
     } else if (pid == 0) {
+        if (allowNonSafeOperate) {
+            TryNonSafeOperate(isCrash);
+        }
         if (!InitPipe()) {
             DFXLOGE("init pipe fail");
             syscall(SYS_exit, errno);
         }
-        pid_t processDumpPid = ForkBySyscall();
-        if (processDumpPid < 0) {
-            DFXLOGE("Failed to fork processdump(%{public}d)", errno);
-            syscall(SYS_exit, errno);
-        } else if (processDumpPid > 0) {
-            int ret = ReadProcessDumpGetRegsMsg() == true ? 0 : errno;
-            DFXLOGI("exit the processdump parent process.");
-            syscall(SYS_exit, ret);
-        } else {
-            uint64_t endTime;
-            int tid;
-            ParseSiValue(&g_request->siginfo, &endTime, &tid);
-            uint64_t curTime = GetAbsTimeMilliSecondsCInterce();
-            DFXLOGI("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
-            if (endTime != 0) {
-                DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
-            }
-            if (endTime == 0 || endTime > curTime) {
-                g_request->blockCrashExitAddr = (intptr_t)&g_blockExit;
-                g_request->vmProcRealPidAddr = (intptr_t)&g_vmRealPid;
-                g_request->unwindResultAddr = (intptr_t)&g_unwindResult;
-                DFX_ExecDump();
-            } else {
-                DFXLOGI("current has spend all time, not execl processdump");
-            }
-            syscall(SYS_exit, 0);
-        }
+        ForkProcessdump(startTime);
     }
-    return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
+    switch (WaitProcessExitTimeout(pid, WAITPID_TIMEOUT)) {
+        case PROCESS_NORMAL_EXIT:
+            return START_PROCESS_DUMP_SUCESS;
+        case PROCESS_ABNORMAL_EXIT:
+            return START_PROCESS_DUMP_FAIL;
+        case PROCESS_ALARM_EXIT:
+            return START_PROCESS_DUMP_RETRY;
+        default:
+            break;
+    }
+    return START_PROCESS_DUMP_FAIL;
 }
 
 static bool StartVMProcessUnwind(void)
@@ -450,7 +498,7 @@ static bool StartVMProcessUnwind(void)
         }
     }
 
-    return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
+    return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT) == PROCESS_NORMAL_EXIT;
 }
 
 static void CleanFd(int *pipeFd)
@@ -610,16 +658,10 @@ static void ReadUnwindFinishMsg(int signo)
 static int ProcessDump(int signo)
 {
     bool isTracerStatusModified = SetDumpState();
-    if (!IsDumpSignal(signo)) {
+    bool isCrash = !IsDumpSignal(signo);
+    if (isCrash) {
         ResetFlags();
 #ifndef is_ohos_lite
-        if (HiTraceChainGetId != NULL) {
-            DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
-            if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
-                         &hitraceChainId, sizeof(hitraceChainId)) != 0) {
-                DFXLOGE("memcpy hitrace fail");
-            }
-        }
         HiLogRecordSnapshot(HILOG_SNAPSHOT_LINES, g_request->timeStamp);
 #endif
     }
@@ -632,7 +674,10 @@ static int ProcessDump(int signo)
             DFXLOGI("enter processdump has coat all time, just exit");
             break;
         }
-        if (!StartProcessdump()) {
+        int result = StartProcessdump(true, isCrash);
+        // not allow non-safe operate and try again
+        if (result == START_PROCESS_DUMP_FAIL || (result == START_PROCESS_DUMP_RETRY &&
+                StartProcessdump(false, isCrash) != START_PROCESS_DUMP_SUCESS)) {
             DFXLOGE("start processdump fail");
             break;
         }
