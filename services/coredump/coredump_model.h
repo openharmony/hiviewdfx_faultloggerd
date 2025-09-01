@@ -68,7 +68,7 @@ struct CoredumpSession {
     uint64_t endTime {0};
     int32_t timerFd {0};
 
-    std::string StatusToString(CoredumpStatus coredumpStatus) const
+    static std::string StatusToString(CoredumpStatus coredumpStatus)
     {
         switch (coredumpStatus) {
             case CoredumpStatus::PENDING:

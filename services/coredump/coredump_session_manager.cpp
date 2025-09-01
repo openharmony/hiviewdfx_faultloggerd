@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 #include "coredump_session_manager.h"
-#include "coredump_task_scheduler.h"
 #include <unistd.h>
+
+#include "coredump_task_scheduler.h"
+#include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -32,6 +34,7 @@ SessionId CoredumpSessionManager::CreateSession(const CreateCoredumpRequest& req
     session.clientFd = request.clientFd;
     session.status = CoredumpStatus::PENDING;
     session.endTime = request.endTime;
+    session.startTime = GetTimeMilliSeconds();
 
     sessions_.emplace(session.sessionId, std::move(session));
 
@@ -44,7 +47,7 @@ CoredumpSession* CoredumpSessionManager::GetSession(SessionId sessionId)
 {
     auto session = sessions_.find(sessionId);
     if (session == sessions_.end()) {
-        DFXLOGW("fail to get sessin by id %{public}d", sessionId);
+        DFXLOGW("fail to get sessoin by id %{public}d", sessionId);
         return nullptr;
     }
     return &session->second;
@@ -54,7 +57,7 @@ void CoredumpSessionManager::RemoveSession(SessionId sessionId)
 {
     if (auto it = sessions_.find(sessionId); it != sessions_.end()) {
         DFXLOGI("success remove session %{public}d", sessionId);
-        if (int& fd = it->second.clientFd;  fd >= 0) {
+        if (int& fd = it->second.clientFd; fd >= 0) {
             close(fd);
             fd = -1;
         }

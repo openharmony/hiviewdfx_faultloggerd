@@ -34,7 +34,7 @@ void CoredumpTaskScheduler::ScheduleCancelTime(SessionId sessionId, int timeoutM
         DFXLOGI("timer real remove %{public}d", session->sessionId);
     };
 
-    constexpr int32_t maxDelaySec = 60; // 60 : 60s
+    constexpr int32_t maxDelaySec = 30;
     auto curTime = GetAbsTimeMilliSeconds();
     int32_t delaySec = endTime > curTime ? static_cast<int32_t>((endTime - curTime) / 1000) : 0;
     delaySec = std::min(delaySec, maxDelaySec);

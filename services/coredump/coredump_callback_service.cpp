@@ -42,12 +42,13 @@ int32_t CoredumpCallbackService::HandleUpdateWorkerPid(const CoreDumpStatusData&
 {
     if (requestData.processDumpPid <= 0) {
         DFXLOGE("workpid is invalid, targetpid %{public}d errno%{public}d", requestData.pid, requestData.retCode);
+        return ResponseCode::ABNORMAL_SERVICE;
     }
 
     CoredumpCallbackReport req;
     req.workerPid = requestData.processDumpPid;
     bool ret = cf_.UpdateWorkerPid(requestData.pid, req.workerPid);
-    return  ret ? ResponseCode::REQUEST_SUCCESS : ResponseCode::ABNORMAL_SERVICE;
+    return ret ? ResponseCode::REQUEST_SUCCESS : ResponseCode::ABNORMAL_SERVICE;
 }
 
 int32_t CoredumpCallbackService::HandleReport(const CoreDumpStatusData& requestData)

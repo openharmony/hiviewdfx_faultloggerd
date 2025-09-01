@@ -15,6 +15,7 @@ group("fuzzServerTest") {
     testonly = true
     deps = [
         "dumpstatsservice_fuzzer:DumpStatsServiceFuzzTest",
+        "faultloggerdcoredump_fuzzer:FaultloggerdCoredumpFuzzTest",
         "exceptionreportservice_fuzzer:ExceptionReportServiceFuzzTest",
         "faultloggerdclient_fuzzer:FaultloggerdClientFuzzTest",
         "faultloggerdserver_fuzzer:FaultloggerdServerFuzzTest",

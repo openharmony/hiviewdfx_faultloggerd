@@ -57,11 +57,9 @@ void CoredumpFacade::ReportResult(SessionId sessionId, const CoredumpCallbackRep
     if (!session) {
         return;
     }
-    if (rpt.status == CoredumpStatus::SUCCESS) {
-        stateContext_.HandleEvent(*session, CoredumpEvent::REPORT_SUCCESS);
-    } else {
-        stateContext_.HandleEvent(*session, CoredumpEvent::REPORT_FAIL);
-    }
+
+    stateContext_.HandleEvent(*session,
+        rpt.status == CoredumpStatus::SUCCESS ? CoredumpEvent::REPORT_SUCCESS : CoredumpEvent::REPORT_FAIL);
 }
 
 void CoredumpFacade::OnTimeout(SessionId sessionId)

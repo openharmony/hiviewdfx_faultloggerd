@@ -32,7 +32,6 @@
 #include "coredump_manager_service.h"
 #include "faultloggerd_test.h"
 #include "fault_logger_daemon.h"
-#include "smart_fd.h"
 #include "coredump_callback_service.h"
 
 using namespace testing;
@@ -172,25 +171,31 @@ HWTEST_F(FaultloggerdCoredumpTest, DoCoredumpRequestTest, TestSize.Level2)
         .pid = 666
     };
     CoredumpManagerService coredumpService;
-    auto ret = coredumpService.HandleCreate(connectionFd, requestData);
-    coredumpService.HandleCancel(requestData);
+    auto ret = coredumpService.HandleCreateEvent(connectionFd, requestData);
+    coredumpService.HandleCancelEvent(requestData);
     requestData.pid = 999;
-    coredumpService.HandleCancel(requestData);
+    coredumpService.HandleCancelEvent(requestData);
 
     GTEST_LOG_(INFO) << "DoCoredumpRequestTest: end.";
 }
 
 /**
- * @tc.name: RecorderProcessMapTest
+ * @tc.name: CoredumpSessionManager001
  * @tc.desc: test sessionManager
  * @tc.type: FUNC
  */
-HWTEST_F(FaultloggerdCoredumpTest, RecorderProcessMapTest, TestSize.Level2)
+HWTEST_F(FaultloggerdCoredumpTest, CoredumpSessionManager001, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "RecorderProcessMapTest: start.";
+    GTEST_LOG_(INFO) << "CoredumpSessionManager001: start.";
     auto& sessionManager = CoredumpSessionManager::Instance();
+    CreateCoredumpRequest request;
+    request.targetPid = 666;
+    request.clientFd = -1;
+    auto ret = sessionManager.CreateSession(request);
+    EXPECT_EQ(ret, request.targetPid);
+    sessionManager.RemoveSession(request.targetPid);
     sessionManager.RemoveSession(0);
-    GTEST_LOG_(INFO) << "RecorderProcessMapTest: end.";
+    GTEST_LOG_(INFO) << "CoredumpSessionManager001: end.";
 }
 
 /**
@@ -359,11 +364,11 @@ HWTEST_F(FaultloggerdCoredumpTest, CoredumpSessionService001, TestSize.Level2)
     sessionService.GetClientFd(sessionId);
     sessionService.GetClientFd(validPid);
 
-    sessionService.WriteTimeoutAndClose(sessionId);
-    sessionService.WriteTimeoutAndClose(validPid);
+    sessionService.WriteTimeout(sessionId);
+    sessionService.WriteTimeout(validPid);
 
-    sessionService.WriteResultAndClose(sessionId);
-    sessionService.WriteResultAndClose(validPid);
+    sessionService.WriteResult(sessionId);
+    sessionService.WriteResult(validPid);
 
     CoreDumpResult result;
     sessionService.WriteResult(sessionId, result);
@@ -384,42 +389,41 @@ HWTEST_F(FaultloggerdCoredumpTest, CoredumpSessionService001, TestSize.Level2)
 HWTEST_F(FaultloggerdCoredumpTest, FaultCoredumpConfig001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultCoredumpConfig001: start.";
-    FaultCoredumpConfig::GetInstance();
-
-    string path = "/system/etc/fault_coredump.json";
-    auto& coredumpConfig = FaultCoredumpConfig::GetInstance(path);
-
-    coredumpConfig.Contains(999);
+    EXPECT_FALSE(FaultCoredumpConfig::Create(""));
+    EXPECT_FALSE(FaultCoredumpConfig::Create("/fault_coredump_test.json"));
+    auto coredumpConfig = FaultCoredumpConfig::Create("/system/etc/fault_coredump.json");
+    EXPECT_TRUE(coredumpConfig);
+    EXPECT_FALSE(coredumpConfig->Contains(999999));
 
     std::string content = R"({
         "Profiles": {
 
     })";
-    auto ret = coredumpConfig.Parse(content);
+    auto ret = coredumpConfig->Parse(content);
     EXPECT_FALSE(ret);
 
     content = R"({
         "Profiles": {
         }
     })";
-
-    ret = coredumpConfig.Parse(content);
+    ret = coredumpConfig->Parse(content);
     EXPECT_FALSE(ret);
 
     content = R"({
         "whitelist": 123
     })";
-    ret = coredumpConfig.Parse(content);
+    ret = coredumpConfig->Parse(content);
     EXPECT_FALSE(ret);
+
     content = R"({
         "whitelist": ["ABC"]
     })";
-    ret = coredumpConfig.Parse(content);
+    ret = coredumpConfig->Parse(content);
 
     content = R"({
         "whitelist": [0, 134]
     })";
-    ret = coredumpConfig.Parse(content);
+    ret = coredumpConfig->Parse(content);
     EXPECT_TRUE(ret);
 
     GTEST_LOG_(INFO) << "FaultCoredumpConfig001: end.";

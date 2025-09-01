@@ -27,8 +27,8 @@ public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const CoreDumpRequestData& requestData) override;
 private:
-    int32_t HandleCreate(int32_t connectionFd, const CoreDumpRequestData& requestData);
-    int32_t HandleCancel(const CoreDumpRequestData& requestData);
+    int32_t HandleCreateEvent(int32_t connectionFd, const CoreDumpRequestData& requestData);
+    int32_t HandleCancelEvent(const CoreDumpRequestData& requestData);
     CoredumpFacade cf_;
     CoredumpSessionManager& sessionManager_;
 };
@@ -46,16 +46,10 @@ private:
 
 class FaultCoredumpConfig {
 public:
-    static FaultCoredumpConfig& GetInstance(const std::string& jsonFilePath = "");
-
+    static std::unique_ptr<FaultCoredumpConfig> Create(const std::string& jsonFilePath);
     bool Contains(uint32_t uid) const;
 private:
-    FaultCoredumpConfig() = default;
-    FaultCoredumpConfig(const FaultCoredumpConfig&) = delete;
-    FaultCoredumpConfig& operator=(const FaultCoredumpConfig&) = delete;
-
     bool Parse(const std::string& jsonText);
-
     std::vector<uint32_t> uids;
 };
 }
