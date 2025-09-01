@@ -37,15 +37,15 @@ int32_t CoredumpManagerService::OnRequest(const std::string& socketName, int32_t
     }
 
     if (requestData.coredumpAction == CoreDumpAction::DO_CORE_DUMP) {
-        res = HandleCreate(connectionFd, requestData);
+        res = HandleCreateEvent(connectionFd, requestData);
     } else if (requestData.coredumpAction == CoreDumpAction::CANCEL_CORE_DUMP) {
-        res = HandleCancel(requestData);
+        res = HandleCancelEvent(requestData);
     }
     SendMsgToSocket(connectionFd, &res, sizeof(res));
     return res;
 }
 
-int32_t CoredumpManagerService::HandleCreate(int32_t connectionFd, const CoreDumpRequestData& requestData)
+int32_t CoredumpManagerService::HandleCreateEvent(int32_t connectionFd, const CoreDumpRequestData& requestData)
 {
     auto session = sessionManager_.GetSession(requestData.pid);
     if (session) {
@@ -64,7 +64,7 @@ int32_t CoredumpManagerService::HandleCreate(int32_t connectionFd, const CoreDum
     return cf_.CreateCoredump(request) ? ResponseCode::REQUEST_SUCCESS : ResponseCode::DEFAULT_ERROR_CODE;
 }
 
-int32_t CoredumpManagerService::HandleCancel(const CoreDumpRequestData& requestData)
+int32_t CoredumpManagerService::HandleCancelEvent(const CoreDumpRequestData& requestData)
 {
     auto session = sessionManager_.GetSession(requestData.pid);
     if (!session) {
@@ -78,10 +78,13 @@ int32_t CoredumpManagerService::HandleCancel(const CoreDumpRequestData& requestD
 
 bool CoredumpRequestValidator::CheckCoredumpUID(uint32_t callerUid)
 {
-    const std::string configPath = "/system/etc/fault_coredump.json";
-    FaultCoredumpConfig::GetInstance(configPath);
+    constexpr const char* const configPath = "/system/etc/fault_coredump.json";
+    auto config = FaultCoredumpConfig::Create(configPath);
+    if (!config) {
+        return false;
+    }
 
-    if (FaultCoredumpConfig::GetInstance().Contains(callerUid)) {
+    if (config->Contains(callerUid)) {
         DFXLOGI("UID %{public}d is whitelisted.", callerUid);
         return true;
     } else {
@@ -135,31 +138,30 @@ bool CoredumpRequestValidator::IsAuthorizedUid(int32_t connectionFd)
     return CheckCoredumpUID(creds.uid);
 }
 
-FaultCoredumpConfig& FaultCoredumpConfig::GetInstance(const std::string& jsonFilePath)
+std::unique_ptr<FaultCoredumpConfig> FaultCoredumpConfig::Create(const std::string& jsonFilePath)
 {
-    static FaultCoredumpConfig instance;
-    static bool initialized = false;
-
-    if (!initialized && !jsonFilePath.empty()) {
-        std::string jsonText;
-        if (!LoadStringFromFile(jsonFilePath, jsonText)) {
-            DFXLOGE("Failed to read JSON file.");
-        } else if (!instance.Parse(jsonText)) {
-            DFXLOGE("Failed to parse whitelist.");
-        } else {
-            initialized = true;
-        }
+    if (jsonFilePath.empty()) {
+        return nullptr;
     }
 
-    return instance;
+    std::string jsonText;
+    if (!LoadStringFromFile(jsonFilePath, jsonText)) {
+        DFXLOGE("Failed to read JSON file.");
+        return nullptr;
+    }
+
+    auto config = std::make_unique<FaultCoredumpConfig>();
+    if (!config->Parse(jsonText)) {
+        DFXLOGE("Failed to parse whitelist.");
+        return nullptr;
+    }
+
+    return config;
 }
 
 bool FaultCoredumpConfig::Contains(uint32_t uid) const
 {
-    for (uint32_t allowed : uids) {
-        if (allowed == uid) return true;
-    }
-    return false;
+    return std::find(uids.begin(), uids.end(), uid) != uids.end();
 }
 
 bool FaultCoredumpConfig::Parse(const std::string& jsonText)

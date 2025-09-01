@@ -32,10 +32,11 @@ public:
 
     int GetClientFd(SessionId sessionId) const;
 
-    bool WriteTimeoutAndClose(SessionId sessionId);
-    bool WriteResultAndClose(SessionId sessionId);
+    bool WriteTimeout(SessionId sessionId);
+    bool WriteResult(SessionId sessionId);
 private:
     bool WriteResult(SessionId sessionId, const CoreDumpResult& result);
+    bool ReportCoredumpStatistics(SessionId sessionId);
     CoredumpSessionManager& sessionManager_;
 };
 }

@@ -13,8 +13,11 @@
  * limitations under the License.
  */
 #include "coredump_session_service.h"
-#include "securec.h"
+
+#include "dfx_util.h"
 #include "faultloggerd_socket.h"
+#include "hisysevent_c.h"
+#include "securec.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -62,15 +65,15 @@ int CoredumpSessionService::GetClientFd(SessionId sessionId) const
     return session->clientFd;
 }
 
-bool CoredumpSessionService::WriteTimeoutAndClose(SessionId sessionId)
+bool CoredumpSessionService::WriteTimeout(SessionId sessionId)
 {
-    CoreDumpResult coredumpRequst;
-    coredumpRequst.retCode = -1;
-    coredumpRequst.fileName[0] = '\0';
-    return WriteResult(sessionId, coredumpRequst);
+    CoreDumpResult coredumpRequest;
+    coredumpRequest.retCode = -1;
+    coredumpRequest.fileName[0] = '\0';
+    return WriteResult(sessionId, coredumpRequest);
 }
 
-bool CoredumpSessionService::WriteResultAndClose(SessionId sessionId)
+bool CoredumpSessionService::WriteResult(SessionId sessionId)
 {
     DFXLOGI("%{public}s sessionId %{public}d ", __func__, sessionId);
 
@@ -99,8 +102,34 @@ bool CoredumpSessionService::WriteResult(SessionId sessionId, const CoreDumpResu
 
     int32_t savedConnectionFd = session->clientFd;
     SendMsgToSocket(savedConnectionFd, &coredumpResult, sizeof(coredumpResult));
+    ReportCoredumpStatistics(sessionId);
     sessionManager_.RemoveSession(sessionId);
     return true;
+}
+
+bool CoredumpSessionService::ReportCoredumpStatistics(SessionId sessionId)
+{
+    const auto session = sessionManager_.GetSession(sessionId);
+    if (!session) {
+        return false;
+    }
+    char summary[] = "coredump event happen";
+    HiSysEventParam params[] = {
+        {.name = "TARGET_PROCESS_NAME", .t = HISYSEVENT_STRING,
+            .v = {.s = const_cast<char*>(session->filePath.c_str())}, .arraySize = 0},
+        {.name = "TARGET_PID", .t = HISYSEVENT_INT32, .v = { .i32 = session->sessionId}, .arraySize = 0},
+        {.name = "WORKER_PID", .t = HISYSEVENT_INT32, .v = { .i32 = session->workerPid}, .arraySize = 0},
+        {.name = "RESULT", .t = HISYSEVENT_INT32, .v = { .i32 = session->errorCode}, .arraySize = 0},
+        {.name = "SUMMARY", .t = HISYSEVENT_STRING, .v = {.s = summary}, .arraySize = 0},
+        {.name = "REQUEST_TIMESTAMP", .t = HISYSEVENT_UINT32,
+            .v = {.ui32 = static_cast<uint32_t>(session->startTime)}, .arraySize = 0},
+        {.name = "FINISH_TIMESTAMP", .t = HISYSEVENT_UINT32,
+            .v = {.ui32 = static_cast<uint32_t>(GetTimeMilliSeconds())}, .arraySize = 0},
+    };
+    int ret = OH_HiSysEvent_Write("RELIABILITY", "COREDUMP_STATISTICS",
+                                  HISYSEVENT_STATISTIC, params, sizeof(params) / sizeof(params[0]));
+    DFXLOGI(" report coredump event %{public}d result %{public}d", sessionId, ret);
+    return ret == 0;
 }
 }
 }

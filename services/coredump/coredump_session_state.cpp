@@ -29,6 +29,7 @@ std::unique_ptr<SessionState> SessionStateContext::CreateState(CoredumpStatus st
         case CoredumpStatus::CANCEL_PENDING:
             return std::make_unique<CancelPendingState>();
         default:
+            DFXLOGE("not support current status %{public}s", CoredumpSession::StatusToString(status).c_str());
             return nullptr;
     }
 }
@@ -53,7 +54,7 @@ void PendingState::OnEvent(CoredumpEvent event, CoredumpSession& session)
             session.status = CoredumpStatus::CANCEL_PENDING;
             break;
         case CoredumpEvent::TIMEOUT:
-            sessionService_.WriteTimeoutAndClose(session.sessionId);
+            sessionService_.WriteTimeout(session.sessionId);
             session.status = CoredumpStatus::CANCEL_TIMEOUT;
             break;
         default:
@@ -66,16 +67,16 @@ void RunningState::OnEvent(CoredumpEvent event, CoredumpSession& session)
 {
     switch (event) {
         case CoredumpEvent::REPORT_SUCCESS:
-            sessionService_.WriteResultAndClose(session.sessionId);
+            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::SUCCESS;
             break;
         case CoredumpEvent::REPORT_FAIL:
-            sessionService_.WriteResultAndClose(session.sessionId);
+            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::FAILED;
             break;
         case CoredumpEvent::CANCEL:
             signalService_.SendCancelSignal(session.workerPid);
-            sessionService_.WriteResultAndClose(session.sessionId);
+            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::CANCELED;
             break;
         default:
@@ -89,11 +90,11 @@ void CancelPendingState::OnEvent(CoredumpEvent event, CoredumpSession& session)
     switch (event) {
         case CoredumpEvent::UPDATE_DUMPER:
             signalService_.SendCancelSignal(session.workerPid);
-            sessionService_.WriteResultAndClose(session.sessionId);
+            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::CANCELED;
             break;
         case CoredumpEvent::TIMEOUT:
-            sessionService_.WriteTimeoutAndClose(session.sessionId);
+            sessionService_.WriteTimeout(session.sessionId);
             session.status = CoredumpStatus::CANCEL_TIMEOUT;
             break;
         default:
