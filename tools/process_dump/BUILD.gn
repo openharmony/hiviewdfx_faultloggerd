@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2025 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -14,8 +14,6 @@
 import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 processdump_sources = [
-  "coredump/dfx_coredump_service.cpp",
-  "coredump/dfx_coredump_writer.cpp",
   "dfx_buffer_writer.cpp",
   "dfx_process.cpp",
   "dfx_thread.cpp",
@@ -50,7 +48,6 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
-      "coredump",
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
@@ -134,8 +131,27 @@ if (defined(ohos_lite)) {
     }
   }
 
+  if (target_cpu == "arm64") {
+    coredump_sources = [
+      "coredump/coredump_buffer_writer.cpp",
+      "coredump/coredump_config_manager.cpp",
+      "coredump/coredump_controller.cpp",
+      "coredump/coredump_dump_generator.cpp",
+      "coredump/coredump_file_manager.cpp",
+      "coredump/coredump_generator_factory.cpp",
+      "coredump/coredump_header_writer.cpp",
+      "coredump/coredump_load_segment_writer.cpp",
+      "coredump/coredump_manager.cpp",
+      "coredump/coredump_mapping_manager.cpp",
+      "coredump/coredump_note_segment_writer.cpp",
+    ]
+  }
+
   ohos_source_set("process_info_src") {
     sources = processdump_sources
+    if (target_cpu == "arm64") {
+      sources += coredump_sources
+    }
     configs = [
       ":processdump_config",
       "$faultloggerd_common_path/build:coverage_flags",
@@ -185,6 +201,9 @@ if (defined(ohos_lite)) {
       "lperf/lperf_events.cpp",
       "lperf/lperf_record.cpp",
     ]
+    if (target_cpu == "arm64") {
+      sources += coredump_sources
+    }
     sources += [
       "main.cpp",
       "reporter.cpp",

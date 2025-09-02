@@ -25,7 +25,9 @@
 #include <thread>
 
 #include "reporter.h"
-#include "dfx_coredump_service.h"
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+#include "coredump_manager.h"
+#endif
 #include "dfx_dump_request.h"
 #include "dfx_process.h"
 #include "dump_info.h"
@@ -76,8 +78,8 @@ private:
     bool isJsonDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
     std::future<void> parseSymbolTask_;
-#if defined(__aarch64__)
-    std::unique_ptr<CoreDumpService> coreDumpService_ = nullptr;
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+    std::unique_ptr<CoredumpManager> coredumpManager_;
 #endif
     uint64_t finishParseSymbolTime_ = 0;
 };
