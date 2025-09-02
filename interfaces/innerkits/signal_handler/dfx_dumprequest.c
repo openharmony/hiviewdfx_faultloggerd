@@ -612,6 +612,7 @@ static int ProcessDump(int signo)
     bool isTracerStatusModified = SetDumpState();
     if (!IsDumpSignal(signo)) {
         ResetFlags();
+        SetKernelSnapshot(true);
 #ifndef is_ohos_lite
         if (HiTraceChainGetId != NULL) {
             DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
