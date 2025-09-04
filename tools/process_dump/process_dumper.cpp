@@ -72,7 +72,9 @@
 #include "parameters.h"
 #endif // !is_ohos_lite
 #include "info/fatal_message.h"
-
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+#include "coredump_controller.h"
+#endif
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -138,8 +140,8 @@ void ReadPids(const ProcessDumpRequest& request, int& realPid, int& vmPid, DfxPr
 
     // freeze detach after fork child to fork vm process
     if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH ||
-#if defined(__aarch64__)
-        CoreDumpService::IsCoredumpSignal(request)
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+        CoredumpController::IsCoredumpSignal(request)
 #else
         false
 #endif
@@ -494,9 +496,9 @@ bool ProcessDumper::InitUnwinder(int &dumpRes)
         dumpRes = DumpErrorCode::DUMP_EREADPID;
         return false;
     }
-#if defined(__aarch64__)
-    if (coreDumpService_) {
-        coreDumpService_->StartSecondStageDump(vmPid, request_);
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+    if (coredumpManager_) {
+        coredumpManager_->DumpMemoryForPid(vmPid);
     }
 #endif
     process_->SetVmPid(vmPid);
@@ -537,12 +539,10 @@ bool ProcessDumper::InitDfxProcess()
         NotifyOperateResult(request_, OPE_FAIL);
         return false;
     }
-#if defined(__aarch64__)
-    if (CoreDumpService::IsCoredumpAllowed(request_)) {
-        coreDumpService_ = std::unique_ptr<CoreDumpService>(new CoreDumpService());
-    }
-    if (coreDumpService_) {
-        coreDumpService_->GetKeyThreadData(request_);
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+    if (CoredumpController::IsCoredumpAllowed(request_)) {
+        coredumpManager_ = std::make_unique<CoredumpManager>();
+        coredumpManager_->ProcessRequest(request_);
     }
 #endif
     DFXLOGI("Init key thread successfully.");
@@ -555,9 +555,9 @@ bool ProcessDumper::InitDfxProcess()
         process_->InitOtherThreads(request_.tid);
     }
     DFXLOGI("Finish create all thread.");
-#if defined(__aarch64__)
-    if (coreDumpService_) {
-        coreDumpService_->StartFirstStageDump(request_);
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+    if (coredumpManager_) {
+        coredumpManager_->TriggerCoredump();
     }
 #endif
     return true;

@@ -19,15 +19,12 @@
             "dumpType": "FULL",
             "outputPath": "/data/storage/el2/base/files",
             "maxCoredumpSize": 0,
-            "includeTags": true,
-            "hwsanTagRegion": 1048576,
-            "isPtraceBySelf": false,
-            "isNeedDumpPid": false,
+            "coredumpSwitch": false,
+            "dumperThreadCount": 2,
             "loadCfg": {
                 "coredumpFilter": 0,
                 "excludePaths": "[vvar]",
-                "requiredPriority": "r",
-                "excludeSubstrings": "CMGC"
+                "requiredPriority": "rp"
             }
         }
     }
