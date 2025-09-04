@@ -147,7 +147,7 @@ bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
 
 std::string DfxOfflineParser::GetBundlePath(const std::string& originPath) const
 {
-    if (originPath.find(SANDBOX_PATH_PREFIX) != 0 || bundleName_.empty()) {
+    if (!StartsWith(originPath, SANDBOX_PATH_PREFIX) || bundleName_.empty()) {
         return originPath;
     }
     return BUNDLE_PATH_PREFIX + bundleName_ + "/" + originPath.substr(std::strlen(SANDBOX_PATH_PREFIX));
@@ -162,7 +162,7 @@ std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
     auto it = std::find_if(maps.begin(), maps.end(), [&](const std::shared_ptr<DfxMap>& map) {
         return map->name == frame.mapName;
     });
-    if (it != maps.end()) {
+    if (it != maps.end() && *it) {
         return (*it)->elf;
     }
     RegularElfFactory factory(GetBundlePath(frame.mapName));

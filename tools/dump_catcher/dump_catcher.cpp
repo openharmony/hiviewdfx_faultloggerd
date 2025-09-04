@@ -35,7 +35,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-constexpr int WAIT_GET_KERNEL_STACK_TIMEOUT = 1000; // 1000 : time out 1000 ms
+constexpr int WAIT_GET_KERNEL_STACK_TIMEOUT = 1000;
 
 #ifndef is_ohos_lite
 sptr<AppExecFwk::IBundleMgr> GetBundleManager()
