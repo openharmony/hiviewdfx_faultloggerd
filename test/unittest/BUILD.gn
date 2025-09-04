@@ -29,6 +29,7 @@ group("unittest") {
       "async_stack:unittest",
       "backtrace:unittest",
       "crash_exception:unittest",
+      "coredump:unittest",
       "dump_catcher:unittest",
       "kernel_snapshot:unittest",
       "panic_handler:unittest",
