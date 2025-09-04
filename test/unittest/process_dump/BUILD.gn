@@ -133,6 +133,7 @@ if (defined(ohos_lite)) {
       "hitrace:libhitracechain",
       "ipc:ipc_core",
       "jsoncpp:jsoncpp",
+      "cJSON:cjson",
       "samgr:samgr_proxy",
     ]
     if (support_jsapi) {
