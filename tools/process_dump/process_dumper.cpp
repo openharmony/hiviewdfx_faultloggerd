@@ -437,7 +437,7 @@ void ProcessDumper::PrintDumpInfo(int& dumpRes)
         prevDumpInfo = dumpInfo;
     }
     if (threadDumpInfo != nullptr) {
-        int unwindSuccessCnt = threadDumpInfo->UnwindStack(*process_, *unwinder_);
+        int unwindSuccessCnt = threadDumpInfo->UnwindStack(*process_, request_, *unwinder_);
         DFXLOGI("unwind success thread count(%{public}d)", unwindSuccessCnt);
         if (unwindSuccessCnt > 0) {
             dumpRes = ParseSymbols(threadDumpInfo);

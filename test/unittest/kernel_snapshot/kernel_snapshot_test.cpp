@@ -576,16 +576,57 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest051, TestSize.Level2)
     KernelSnapshotReporter reporter;
 
     CrashMap output;
-    auto ret = reporter.ReportCrashNoLogEvent(output);
-    ASSERT_FALSE(ret);
-
     output[CrashSection::UID] = "123";
     output[CrashSection::PID] = "156";
     output[CrashSection::TIME_STAMP] = "152451571481";
     output[CrashSection::PROCESS_NAME] = "testProcess";
-    ret = reporter.ReportCrashNoLogEvent(output);
+    auto ret = reporter.ReportCrashNoLogEvent(output);
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "KernelSnapshotTest051: end.";
+}
+
+/**
+ * @tc.name: KernelSnapshotReporter002
+ * @tc.desc: test ReportRawMsg
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotReporter002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotReporter002: start.";
+    KernelSnapshotReporter reporter;
+
+    std::string snapshot;
+    std::vector<CrashMap> outputs;
+    CrashMap output;
+    output[CrashSection::UID] = "";
+    output[CrashSection::PID] = "156";
+    output[CrashSection::TIME_STAMP] = "152451571481";
+    output[CrashSection::PROCESS_NAME] = "testProcess";
+    outputs.push_back(output);
+    reporter.ReportEvents(outputs, snapshot);
+
+    auto ret = reporter.ReportRawMsg(snapshot);
+    EXPECT_FALSE(ret);
+    snapshot = "kernel_snapshot";
+    ret = reporter.ReportRawMsg(snapshot);
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << "KernelSnapshotReporter002: end.";
+}
+
+/**
+ * @tc.name: KernelSnapshotReporter003
+ * @tc.desc: test GetSnapshotPid
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotReporter003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotReporter003: start.";
+    KernelSnapshotReporter reporter;
+    EXPECT_EQ(reporter.GetSnapshotPid("12)"), 0);
+    EXPECT_EQ(reporter.GetSnapshotPid("abcpid=123"), 0);
+    EXPECT_EQ(reporter.GetSnapshotPid("abcpid=abc)"), 0);
+    EXPECT_EQ(reporter.GetSnapshotPid("abcpid=123)"), 123);
+    GTEST_LOG_(INFO) << "KernelSnapshotReporter003: end.";
 }
 
 /**
