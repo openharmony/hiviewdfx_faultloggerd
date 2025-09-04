@@ -395,16 +395,16 @@ static bool StartProcessdump(void)
     } else if (pid == 0) {
         if (!InitPipe()) {
             DFXLOGE("init pipe fail");
-            _exit(errno);
+            syscall(SYS_exit, errno);
         }
         pid_t processDumpPid = ForkBySyscall();
         if (processDumpPid < 0) {
             DFXLOGE("Failed to fork processdump(%{public}d)", errno);
-            _exit(errno);
+            syscall(SYS_exit, errno);
         } else if (processDumpPid > 0) {
             int ret = ReadProcessDumpGetRegsMsg() == true ? 0 : errno;
             DFXLOGI("exit the processdump parent process.");
-            _exit(ret);
+            syscall(SYS_exit, ret);
         } else {
             uint64_t endTime;
             int tid;
@@ -422,7 +422,7 @@ static bool StartProcessdump(void)
             } else {
                 DFXLOGI("current has spend all time, not execl processdump");
             }
-            _exit(0);
+            syscall(SYS_exit, 0);
         }
     }
     return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
@@ -443,10 +443,10 @@ static bool StartVMProcessUnwind(void)
                     GetAbsTimeMilliSecondsCInterce() - startTime);
             g_vmRealPid = GetRealPid();
             DFXLOGI("vm prorcecc read pid = %{public}ld", g_vmRealPid);
-            _exit(0);
+            syscall(SYS_exit, 0);
         } else {
             DFXLOGI("exit dummy vm process");
-            _exit(0);
+            syscall(SYS_exit, 0);
         }
     }
 
