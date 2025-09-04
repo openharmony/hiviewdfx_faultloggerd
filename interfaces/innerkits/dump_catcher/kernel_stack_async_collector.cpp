@@ -132,12 +132,14 @@ void KernelStackAsyncCollector::CollectKernelStackTask(int pid, std::promise<Ker
     }
     std::string kernelStackInfo;
     int kernelRet = 0;
-    std::function<bool(int)> stackTask = [&kernelStackInfo, &kernelRet](int tid) {
+    bool isMainThread = true;
+    std::function<bool(int)> stackTask = [&kernelStackInfo, &kernelRet, &isMainThread](int tid) {
         if (tid <= 0) {
             return false;
         }
         std::string tidKernelStackInfo;
-        int32_t ret = DfxGetKernelStack(tid, tidKernelStackInfo);
+        int32_t ret = DfxGetKernelStack(tid, tidKernelStackInfo, isMainThread);
+        isMainThread = false;
         if (ret == 0) {
             kernelStackInfo.append(tidKernelStackInfo);
         } else if (kernelRet == 0) {

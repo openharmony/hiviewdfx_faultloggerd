@@ -30,6 +30,7 @@ if (defined(ohos_lite)) {
     ]
     deps = [
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
     sources = [ "dfx_json_formatter.cpp" ]
 

@@ -18,6 +18,7 @@
 #include <cinttypes>
 #include <string>
 #include "dfx_frame.h"
+#include "dfx_offline_parser.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -32,9 +33,11 @@ enum KernelStackErrorCode : int32_t {
     KERNELSTACK_EOPEN,
     KERNELSTACK_EIOCTL,
 };
-int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack);
-bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack);
-bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack);
+int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack, bool needArkts = false);
+bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack,
+    DfxOfflineParser *parser = nullptr);
+bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack,
+    bool needParseSymbol = false, const std::string& bundleName = std::string());
 }
 }
 #endif

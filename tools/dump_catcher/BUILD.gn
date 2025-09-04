@@ -16,6 +16,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 if (defined(ohos_lite)) {
   executable("dumpcatcher") {
     visibility = [ "*:*" ]
+    defines = [ "is_ohos_lite" ]
     include_dirs = [
       ".",
       "$faultloggerd_interfaces_path/common",
@@ -47,6 +48,7 @@ if (defined(ohos_lite)) {
       ".",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/interfaces/innerkits/signal_handler",
+      "$faultloggerd_path/tools/process_dump",
     ]
   }
 
@@ -69,12 +71,19 @@ if (defined(ohos_lite)) {
         "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
         "$faultloggerd_path/common/dfxlog:dfx_hilog",
         "$faultloggerd_path/common/dfxutil:dfx_util",
+        "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
+        "$faultloggerd_path/interfaces/innerkits/formatter:libjson_stack_formatter",
+        "$faultloggerd_path/interfaces/innerkits/procinfo:libdfx_procinfo",
       ]
 
       external_deps = [
+        "bundle_framework:appexecfwk_base",
+        "bundle_framework:appexecfwk_core",
         "c_utils:utils",
         "hilog:libhilog",
+        "ipc:ipc_core",
+        "samgr:samgr_proxy",
       ]
     } else {
       sources = [ "dummy_dumpcatcher.cpp" ]

@@ -306,5 +306,153 @@ HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest017, TestSize.Level2)
     EXPECT_EQ(count, len) << "DumpCatcherCommandTest017 Failed";
     GTEST_LOG_(INFO) << "DumpCatcherCommandTest017: end.";
 }
+
+/**
+ * @tc.name: DumpCatcherCommandTest018
+ * @tc.desc: test dumpcatcher command: -k [test hap]
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest018, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest018: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        bool isSuccess = g_testPid != 0;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
+            GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        } else {
+            isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+            if (!isSuccess) {
+                ASSERT_FALSE(isSuccess);
+                GTEST_LOG_(ERROR) << "Error process comm";
+            } else {
+                string testCommand = "dumpcatcher -k " + to_string(g_testPid);
+                string dumpRes = ExecuteCommands(testCommand);
+                GTEST_LOG_(INFO) << dumpRes;
+                string log[] = {"tid=", "name=", "/system"};
+                log[0] = log[0] + to_string(g_testPid);
+                log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
+                int len = sizeof(log) / sizeof(log[0]);
+                int count = GetKeywordsNum(dumpRes, log, len);
+                EXPECT_EQ(count, len) << "DumpCatcherCommandTest018 Failed";
+                GTEST_LOG_(INFO) << "DumpCatcherCommandTest018: end.";
+            }
+        }
+    }
+}
+
+/**
+ * @tc.name: DumpCatcherCommandTest019
+ * @tc.desc: test dumpcatcher command: -k [test hap] -a
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest019, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest019: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        bool isSuccess = g_testPid != 0;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
+            GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        } else {
+            isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+            if (!isSuccess) {
+                ASSERT_FALSE(isSuccess);
+                GTEST_LOG_(ERROR) << "Error process comm";
+            } else {
+                string testCommand = "dumpcatcher -k " + to_string(g_testPid) + " -a";
+                string dumpRes = ExecuteCommands(testCommand);
+                GTEST_LOG_(INFO) << dumpRes;
+                string log[] = {"tid=", "name=", "/system"};
+                log[0] = log[0] + to_string(g_testPid);
+                log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
+                int len = sizeof(log) / sizeof(log[0]);
+                int count = GetKeywordsNum(dumpRes, log, len);
+                EXPECT_EQ(count, len) << "DumpCatcherCommandTest019 Failed";
+                GTEST_LOG_(INFO) << "DumpCatcherCommandTest019: end.";
+            }
+        }
+    }
+}
+
+/**
+ * @tc.name: DumpCatcherCommandTest020
+ * @tc.desc: test dumpcatcher command: -k [test hap] -f
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest020, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest020: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        bool isSuccess = g_testPid != 0;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
+            GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        } else {
+            isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+            if (!isSuccess) {
+                ASSERT_FALSE(isSuccess);
+                GTEST_LOG_(ERROR) << "Error process comm";
+            } else {
+                string testCommand = "dumpcatcher -k " + to_string(g_testPid) + " -f";
+                string dumpRes = ExecuteCommands(testCommand);
+                GTEST_LOG_(INFO) << dumpRes;
+                string log[] = {"Tid:", "Name:", "#00", "#01", "#02", "/system"};
+                log[0] = log[0] + to_string(g_testPid);
+                log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
+                int len = sizeof(log) / sizeof(log[0]);
+                int count = GetKeywordsNum(dumpRes, log, len);
+                EXPECT_EQ(count, len) << "DumpCatcherCommandTest020 Failed";
+                GTEST_LOG_(INFO) << "DumpCatcherCommandTest020: end.";
+            }
+        }
+    }
+}
+
+/**
+ * @tc.name: DumpCatcherCommandTest021
+ * @tc.desc: test dumpcatcher command: -k [test hap] -a -f
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherCommandTest, DumpCatcherCommandTest021, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherCommandTest021: start.";
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        bool isSuccess = g_testPid != 0;
+        if (!isSuccess) {
+            ASSERT_FALSE(isSuccess);
+            GTEST_LOG_(ERROR) << "Failed to launch target hap.";
+        } else {
+            isSuccess = CheckProcessComm(g_testPid, TRUNCATE_TEST_BUNDLE_NAME);
+            if (!isSuccess) {
+                ASSERT_FALSE(isSuccess);
+                GTEST_LOG_(ERROR) << "Error process comm";
+            } else {
+                string testCommand = "dumpcatcher -k " + to_string(g_testPid) + " -a -f";
+                string dumpRes = ExecuteCommands(testCommand);
+                GTEST_LOG_(INFO) << dumpRes;
+                string log[] = {"Tid:", "Name:", "#00", "#01", "#02", "/system"};
+                log[0] = log[0] + to_string(g_testPid);
+                log[1] = log[1] + TRUNCATE_TEST_BUNDLE_NAME;
+                int len = sizeof(log) / sizeof(log[0]);
+                int count = GetKeywordsNum(dumpRes, log, len);
+                EXPECT_EQ(count, len) << "DumpCatcherCommandTest021 Failed";
+                GTEST_LOG_(INFO) << "DumpCatcherCommandTest021: end.";
+            }
+        }
+    }
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -122,6 +122,7 @@
       OHOS::HiviewDFX::DfxJsvm::JsvmDestroyJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxJsvm::ParseJsvmFrameInfo*;
       OHOS::HiviewDFX::DfxJsvm::Instance*;
+      OHOS::HiviewDFX::DfxOfflineParser*;
     };
   local:
     *;

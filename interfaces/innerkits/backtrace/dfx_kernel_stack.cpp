@@ -23,9 +23,12 @@
 #include <unistd.h>
 
 #include "dfx_log.h"
+#include "dfx_trace_dlsym.h"
+#include "elapsed_time.h"
 #include "smart_fd.h"
 
 #define LOGGER_GET_STACK    _IO(0xAB, 9)
+#define LOGGER_GET_STACK_ARKTS    _IO(0xAB, 10)
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -39,7 +42,7 @@ typedef struct HstackVal {
     char hstackLogBuff[BUFF_STACK_SIZE] {0};
 } HstackVal;
 }
-int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
+int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack, bool needArkts)
 {
     auto kstackBuf = std::make_shared<HstackVal>();
     if (kstackBuf == nullptr) {
@@ -53,8 +56,8 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
         DFXLOGW("Failed to open bbox, pid:%{public}d, errno:%{public}d", pid, errno);
         return KERNELSTACK_EOPEN;
     }
-
-    int ret = ioctl(fd.GetFd(), LOGGER_GET_STACK, kstackBuf.get());
+    int ctlCode = needArkts ? LOGGER_GET_STACK_ARKTS : LOGGER_GET_STACK;
+    int ret = ioctl(fd.GetFd(), ctlCode, kstackBuf.get());
     int32_t res = KERNELSTACK_ESUCCESS;
     if (ret != 0) {
         DFXLOGW("Failed to get pid(%{public}d) kernel stack, errno:%{public}d", pid, errno);
@@ -65,9 +68,11 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack)
     return res;
 }
 
-bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack)
+bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack,
+    DfxOfflineParser *parser)
 {
 #ifdef __aarch64__
+    DFX_TRACE_SCOPED_DLSYM("FormatThreadKernelStack");
     std::regex headerPattern(R"(name=(.{1,20}), tid=(\d{1,10}), ([\w\=\.]{1,256}, ){3}pid=(\d{1,10}))");
     std::smatch result;
     if (!regex_search(kernelStack, result, headerPattern)) {
@@ -93,6 +98,10 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
         base = 16; // 16 : Hexadecimal
         frame.relPc = strtoull((*it)[1].str().c_str(), nullptr, base);
         frame.mapName = (*it)[2].str(); // 2 : second of searched element is map name
+        if (parser) {
+            DFX_TRACE_SCOPED_DLSYM("ParseSymbolWithFrame:%s", frame.mapName.c_str());
+            parser->ParseSymbolWithFrame(frame);
+        }
         threadStack.frames.emplace_back(frame);
     }
     return true;
@@ -101,9 +110,11 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
 #endif
 }
 
-bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack)
+bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack,
+    bool needParseSymbol, const std::string& bundleName)
 {
 #if !defined(is_ohos_lite) && defined(__aarch64__)
+    ElapsedTime counter;
     std::vector<std::string> threadKernelStackVec;
     std::string keyWord = "Thread info:";
     OHOS::SplitStr(kernelStack, keyWord, threadKernelStackVec);
@@ -111,12 +122,19 @@ bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThr
         DFXLOGE("Invalid kernelStack, please check it!");
         return false;
     }
+    DfxEnableTraceDlsym(true);
+    std::unique_ptr<DfxOfflineParser> parser = nullptr;
+    if (needParseSymbol) {
+        parser = std::make_unique<DfxOfflineParser>(bundleName);
+    }
     for (const std::string& threadKernelStack : threadKernelStackVec) {
         DfxThreadStack threadStack;
-        if (FormatThreadKernelStack(threadKernelStack, threadStack)) {
+        if (FormatThreadKernelStack(threadKernelStack, threadStack, parser.get())) {
             processStack.emplace_back(threadStack);
         }
     }
+    DfxEnableTraceDlsym(false);
+    DFXLOGI("format kernel stack cost time = %{public}" PRId64 " ms", counter.Elapsed<std::chrono::milliseconds>());
     return true;
 #else
     return false;

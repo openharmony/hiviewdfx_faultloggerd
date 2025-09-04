@@ -38,6 +38,7 @@ dfx_unwinder_sources = [
   "src/utils/dfx_frame_formatter.cpp",
   "src/utils/dfx_instr_statistic.cpp",
   "src/utils/dfx_instructions.cpp",
+  "src/utils/dfx_offline_parser.cpp",
   "src/utils/dfx_ptrace.cpp",
   "src/utils/safe_reader.cpp",
   "src/utils/unwinder_config.cpp",

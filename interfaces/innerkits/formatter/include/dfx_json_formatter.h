@@ -43,8 +43,8 @@ public:
      * @param jsonFormat whether return json format stack, default false
      * @return if succeed return true, otherwise return false
      */
-    static bool FormatKernelStack(const std::string& kernelStack,
-        std::string& formattedStack, bool jsonFormat = false);
+    static bool FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat = false,
+        bool needParseSymbol = false, const std::string& bundleName = "");
 #endif
 };
 } // namespace HiviewDFX
