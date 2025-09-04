@@ -28,7 +28,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-const int FAULTLOGGER_FUZZTEST_MAX_STRING_LENGTH = 50;
+
 struct TestArkFrameData {
     uintptr_t pc;
     uintptr_t fp;
