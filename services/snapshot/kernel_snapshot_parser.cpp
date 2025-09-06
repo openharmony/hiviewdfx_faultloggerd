@@ -16,8 +16,6 @@
 #include "kernel_snapshot_parser.h"
 
 #include "dfx_log.h"
-#include "string_util.h"
-
 #include "kernel_snapshot_kernel_frame.h"
 
 namespace OHOS {
@@ -228,7 +226,7 @@ bool KernelSnapshotParser::ProcessTransStart(const std::vector<std::string>& lin
     std::string keyword, CrashMap& output)
 {
     for (; index < lines.size(); index++) {
-        if (StartsWith(lines[index], keyword)) {
+        if (lines[index].size() >= keyword.size() && std::equal(keyword.begin(), keyword.end(), lines[index].begin())) {
             break;
         }
     }

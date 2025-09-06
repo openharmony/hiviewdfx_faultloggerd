@@ -174,37 +174,63 @@ void EpollManager::StopEpoll()
     }
 }
 
-std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workFunc, int32_t timeout)
+SmartFd TimerTask::CreateTimeFd()
 {
-    if (timeout <= 0) {
-        return nullptr;
-    }
     SmartFd timefd{timerfd_create(CLOCK_MONOTONIC, 0)};
     if (!timefd) {
         DFXLOGE("%{public}s :: failed to create time fd, errno: %{public}d", EPOLL_MANAGER, errno);
-        return nullptr;
     }
-    struct itimerspec timeOption{};
-    timeOption.it_value.tv_sec = timeout;
-    if (timerfd_settime(timefd.GetFd(), 0, &timeOption, nullptr) == -1) {
-        DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
-        return nullptr;
-    }
-    return std::unique_ptr<DelayTask>(new (std::nothrow)DelayTask(workFunc, std::move(timefd)));
+    return timefd;
 }
 
-DelayTask::DelayTask(std::function<void()> workFunc, SmartFd timeFd)
-    : EpollListener(std::move(timeFd)), work_(std::move(workFunc)) {}
+TimerTask::TimerTask(bool persist) : EpollListener(CreateTimeFd(), persist) {}
 
-void DelayTask::OnEventPoll()
+bool TimerTask::SetTimeOption(int32_t delayTime, int32_t periodicity)
+{
+    if (GetFd() < 0) {
+        return false;
+    }
+    struct itimerspec timeOption{};
+    timeOption.it_value.tv_sec = delayTime;
+    timeOption.it_interval.tv_sec = periodicity;
+    if (timerfd_settime(GetFd(), 0, &timeOption, nullptr) == -1) {
+        DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
+        return false;
+    }
+    return true;
+}
+
+void TimerTask::OnEventPoll()
 {
     uint64_t exp = 0;
     auto ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), &exp, sizeof(exp)));
     if (ret < 0 || static_cast<uint64_t>(ret) != sizeof(exp)) {
         DFXLOGE("%{public}s :: failed read time fd %{public}" PRId32, EPOLL_MANAGER, GetFd());
     } else {
-        work_();
+        OnTimer();
     }
+}
+
+std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workFunc, int32_t timeout)
+{
+    if (timeout <= 0) {
+        return nullptr;
+    }
+    auto delayTask = std::unique_ptr<DelayTask>(new (std::nothrow)DelayTask(workFunc));
+    if (!delayTask) {
+        return nullptr;
+    }
+    if (delayTask->SetTimeOption(timeout, 0)) {
+        return delayTask;
+    }
+    return nullptr;
+}
+
+DelayTask::DelayTask(std::function<void()> workFunc) : TimerTask(false), work_(std::move(workFunc)) {}
+
+void DelayTask::OnTimer()
+{
+    work_();
 }
 }
 }

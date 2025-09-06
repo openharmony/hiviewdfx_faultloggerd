@@ -85,15 +85,8 @@ if (defined(ohos_lite)) {
     "./coredump/coredump_session_state.cpp",
     "./coredump/coredump_signal_service.cpp",
     "./coredump/coredump_task_scheduler.cpp",
-    "./snapshot/kernel_snapshot_content_builder.cpp",
-    "./snapshot/kernel_snapshot_kernel_frame.cpp",
-    "./snapshot/kernel_snapshot_manager.cpp",
-    "./snapshot/kernel_snapshot_parser.cpp",
-    "./snapshot/kernel_snapshot_printer.cpp",
-    "./snapshot/kernel_snapshot_processor_impl.cpp",
-    "./snapshot/kernel_snapshot_reporter.cpp",
-    "./snapshot/kernel_snapshot_trie.cpp",
     "fault_logger_pipe.cpp",
+    "kernel_snapshot_task.cpp",
   ]
 
   config("faultloggerd_config") {
@@ -102,7 +95,6 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "./coredump",
-      "./snapshot",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",

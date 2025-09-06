@@ -29,6 +29,7 @@ group("faultloggerd_targets") {
         "interfaces/innerkits/stack_printer:libstack_printer",
         "interfaces/innerkits/unwinder:libunwinder",
         "interfaces/rust:faultloggerd_rust",
+        "services/snapshot:kernel_snapshot",
         "tools/dump_catcher:dumpcatcher",
       ]
       if (faultloggerd_hisysevent_enable) {

@@ -43,7 +43,6 @@ if (defined(ohos_lite)) {
     sources = [
       "$faultloggerd_path/services/snapshot/kernel_snapshot_content_builder.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_kernel_frame.cpp",
-      "$faultloggerd_path/services/snapshot/kernel_snapshot_manager.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_parser.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_printer.cpp",
       "$faultloggerd_path/services/snapshot/kernel_snapshot_processor_impl.cpp",

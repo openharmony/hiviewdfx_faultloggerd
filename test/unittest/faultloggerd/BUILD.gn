@@ -153,6 +153,7 @@ if (defined(ohos_lite)) {
       external_deps += [ "selinux:libselinux" ]
       cflags_cc += [ "-DHAS_LIB_SELINUX" ]
     }
+    resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
   }
 
   group("unittest") {

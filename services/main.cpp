@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 
-#ifndef is_ohos_lite
-#include "kernel_snapshot_manager.h"
-#endif
 #include "fault_logger_daemon.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER) && !defined(DFX_ALLOCATE_ASAN)
@@ -39,9 +36,6 @@ int main(int argc, char *argv[])
 #if defined(DEBUG_CRASH_LOCAL_HANDLER) && !defined(DFX_ALLOCATE_ASAN)
     DFX_GetCrashFdFunc(DoGetCrashFd);
     DFX_InstallLocalSignalHandler();
-#endif
-#ifndef is_ohos_lite
-    OHOS::HiviewDFX::KernelSnapshotManager::StartMonitor();
 #endif
     auto& faultLoggerDaemon = OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance();
     faultLoggerDaemon.StartServer();

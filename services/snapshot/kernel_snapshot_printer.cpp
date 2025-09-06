@@ -16,7 +16,6 @@
 #include "kernel_snapshot_printer.h"
 
 #include "dfx_log.h"
-#include "string_util.h"
 
 #include "kernel_snapshot_content_builder.h"
 namespace OHOS {

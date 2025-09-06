@@ -1,0 +1,38 @@
+# Copyright (c) 2025 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+ohos_shared_library("kernel_snapshot") {
+  branch_protector_ret = "pac_ret"
+  install_enable = true
+  sources = [
+    "kernel_snapshot_content_builder.cpp",
+    "kernel_snapshot_kernel_frame.cpp",
+    "kernel_snapshot_parser.cpp",
+    "kernel_snapshot_printer.cpp",
+    "kernel_snapshot_processor_impl.cpp",
+    "kernel_snapshot_reporter.cpp",
+    "kernel_snapshot_trie.cpp",
+  ]
+  version_script = "kernel_snapshot.map"
+  deps = [ "$faultloggerd_path/common/dfxutil:dfx_util" ]
+  external_deps = [
+    "hilog:libhilog",
+    "hisysevent:libhisysevent",
+    "init:libbegetutil",
+  ]
+  install_images = [ "system" ]
+  part_name = "faultloggerd"
+  subsystem_name = "hiviewdfx"
+}

@@ -41,3 +41,8 @@ void KernelSnapshotProcessorImpl::Process(const std::string& snapshot)
 }
 } // namespace HiviewDFX
 } // namespace OHOS
+
+void ProcessKernelSnapShot(const std::string& kernelSnapShotMsg)
+{
+    OHOS::HiviewDFX::KernelSnapshotProcessorImpl().Process(kernelSnapShotMsg);
+}
