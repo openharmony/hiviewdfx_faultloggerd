@@ -89,9 +89,6 @@ void KernelSnapshotManager::MonitorCrashKernelSnapshot()
             break;
         }
         std::string snapshotCont = ReadKernelSnapshot();
-        if (snapshotCont.empty()) {
-            continue;
-        }
         processor->Process(snapshotCont);
     }
 }

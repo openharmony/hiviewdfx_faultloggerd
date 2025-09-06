@@ -110,7 +110,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest001, TestSize.Level2)
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
-    EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
+    EXPECT_GT(dumpInfo.UnwindStack(process, unwinder), 0);
     dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
@@ -167,7 +167,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest002, TestSize.Level2)
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
-    EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
+    EXPECT_GT(dumpInfo.UnwindStack(process, unwinder), 0);
     dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
@@ -215,7 +215,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest003, TestSize.Level2)
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
-    EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
+    EXPECT_GT(dumpInfo.UnwindStack(process, unwinder), 0);
     dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
@@ -257,7 +257,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest004, TestSize.Level2)
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     OtherThreadDumpInfo dumpInfo;
-    EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
+    EXPECT_GT(dumpInfo.UnwindStack(process, unwinder), 0);
     dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
@@ -300,7 +300,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest005, TestSize.Level2)
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     OtherThreadDumpInfo dumpInfo;
-    EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
+    EXPECT_GT(dumpInfo.UnwindStack(process, unwinder), 0);
     dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
@@ -345,7 +345,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest006, TestSize.Level2)
     std::shared_ptr<DumpInfo> keyThreadDumpInfo = std::make_shared<KeyThreadDumpInfo>();
     OtherThreadDumpInfo dumpInfo;
     dumpInfo.SetDumpInfo(keyThreadDumpInfo);
-    EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), threadCount);
+    EXPECT_GT(dumpInfo.UnwindStack(process, unwinder), threadCount);
     dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {

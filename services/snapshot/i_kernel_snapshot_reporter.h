@@ -22,7 +22,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class IKernelSnapshotReporter {
 public:
-    virtual void ReportEvents(std::vector<CrashMap>& outputs, const std::string& snapshot) = 0;
+    virtual void ReportEvents(std::vector<CrashMap>& outputs) = 0;
     virtual ~IKernelSnapshotReporter() = default;
 };
 } // namespace HiviewDFX

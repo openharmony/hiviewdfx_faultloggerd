@@ -27,14 +27,6 @@ namespace HiviewDFX {
 #ifndef is_ohos_lite
 namespace {
 const int FRAME_BUF_LEN = 1024;
-static std::string JsonAsString(const Json::Value& val)
-{
-    if (val.isConvertibleTo(Json::stringValue)) {
-        return val.asString();
-    }
-    return "";
-}
-
 static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
 {
     const int jsIdxLen = 10;
@@ -44,18 +36,18 @@ static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, s
         return false;
     }
     outStr = std::string(buf);
-    std::string symbol = JsonAsString(frames[frameIdx]["symbol"]);
+    std::string symbol = frames[frameIdx]["symbol"].asString();
     if (!symbol.empty()) {
         outStr.append(" " + symbol);
     }
-    std::string packageName = JsonAsString(frames[frameIdx]["packageName"]);
+    std::string packageName = frames[frameIdx]["packageName"].asString();
     if (!packageName.empty()) {
         outStr.append(" " + packageName);
     }
-    std::string file = JsonAsString(frames[frameIdx]["file"]);
+    std::string file = frames[frameIdx]["file"].asString();
     if (!file.empty()) {
-        std::string line = JsonAsString(frames[frameIdx]["line"]);
-        std::string column = JsonAsString(frames[frameIdx]["column"]);
+        std::string line = frames[frameIdx]["line"].asString();
+        std::string column = frames[frameIdx]["column"].asString();
         outStr.append(" (" + file + ":" + line + ":" + column + ")");
     }
     return true;
@@ -65,11 +57,11 @@ static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameId
 {
     char buf[FRAME_BUF_LEN] = {0};
     char format[] = "#%02u pc %s %s";
-    std::string buildId = JsonAsString(frames[frameIdx]["buildId"]);
-    std::string file = JsonAsString(frames[frameIdx]["file"]);
-    std::string offset = JsonAsString(frames[frameIdx]["offset"]);
-    std::string pc = JsonAsString(frames[frameIdx]["pc"]);
-    std::string symbol = JsonAsString(frames[frameIdx]["symbol"]);
+    std::string buildId = frames[frameIdx]["buildId"].asString();
+    std::string file = frames[frameIdx]["file"].asString();
+    std::string offset = frames[frameIdx]["offset"].asString();
+    std::string pc = frames[frameIdx]["pc"].asString();
+    std::string symbol = frames[frameIdx]["symbol"].asString();
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frameIdx, pc.c_str(),
                    file.empty() ? "Unknown" : file.c_str()) <= 0) {
         return false;
@@ -93,30 +85,19 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
         outStackStr.append("Failed to parse json stack info.");
         return false;
     }
-    constexpr int maxThreadCount = 10000;
-    if (threads.size() > maxThreadCount) {
-        outStackStr.append("Thread count exceeds limit(10000).");
-        return false;
-    }
+
     for (uint32_t i = 0; i < threads.size(); ++i) {
         std::string ss;
         Json::Value thread = threads[i];
         if (thread["tid"].isConvertibleTo(Json::stringValue) &&
             thread["thread_name"].isConvertibleTo(Json::stringValue)) {
-            ss += "Tid:" + JsonAsString(thread["tid"]) + ", Name:" + JsonAsString(thread["thread_name"]) + "\n";
-        }
-        if (!thread.isMember("frames") || !thread["frames"].isArray()) {
-            continue;
+            ss += "Tid:" + thread["tid"].asString() + ", Name:" + thread["thread_name"].asString() + "\n";
         }
         const Json::Value frames = thread["frames"];
-        constexpr int maxFrameNum = 1000;
-        if (frames.size() > maxFrameNum) {
-            continue;
-        }
         for (uint32_t j = 0; j < frames.size(); ++j) {
             std::string frameStr = "";
             bool formatStatus = false;
-            if (JsonAsString(frames[j]["line"]).empty()) {
+            if (frames[j]["line"].asString().empty()) {
                 formatStatus = FormatNativeFrame(frames, j, frameStr);
             } else {
                 formatStatus = FormatJsFrame(frames, j, frameStr);
@@ -129,7 +110,6 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
                 return false;
             }
         }
-
         outStackStr.append(ss);
     }
     return true;

@@ -50,10 +50,10 @@ public:
         }
     }
 
-    int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override
+    int UnwindStack(DfxProcess& process, Unwinder& unwinder) override
     {
         if (dumpInfo_ != nullptr) {
-            return dumpInfo_->UnwindStack(process, request, unwinder);
+            return dumpInfo_->UnwindStack(process, unwinder);
         }
         return 0;
     }
@@ -113,7 +113,7 @@ private:
 
 class OtherThreadDumpInfo : public DecorativeDumpInfo {
 public:
-    int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    int UnwindStack(DfxProcess& process, Unwinder& unwinder) override;
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     void Symbolize(DfxProcess& process, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<OtherThreadDumpInfo>(); }

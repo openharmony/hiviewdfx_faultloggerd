@@ -86,6 +86,22 @@ uint64_t GetTimeMilliseconds(void)
         (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
 }
 
+bool TrimAndDupStr(const char* src, char* dst)
+{
+    if (src == NULL || dst == NULL) {
+        return false;
+    }
+
+    for (char ch = *src; ch != '\0' && ch != '\n';) {
+        if (ch != ' ') {
+            *dst++ = ch;
+        }
+        ch = *++src;
+    }
+    *dst = '\0';
+    return true;
+}
+
 uint64_t GetAbsTimeMilliSecondsCInterce(void)
 {
     struct timespec ts;

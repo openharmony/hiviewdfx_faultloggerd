@@ -83,7 +83,7 @@ if (defined(ohos_lite)) {
     ]
 
     innerapi_tags = [
-      "chipsetsdk_sp_indirect",
+      "chipsetsdk_indirect",
       "platformsdk_indirect",
     ]
     install_enable = true

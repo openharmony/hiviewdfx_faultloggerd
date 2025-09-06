@@ -333,9 +333,6 @@ if (defined(ohos_lite)) {
       "is_emulator=${is_emulator}",
       "DFX_NO_PRINT_LOG",
     ]
-    if (is_linux || is_mingw) {
-      defines += [ "is_host" ]
-    }
   }
 
   ohos_static_library("unwinder_host") {

@@ -107,7 +107,7 @@ void KeyThreadDumpInfo::Print(DfxProcess& process, const ProcessDumpRequest& req
     DfxBufferWriter::GetInstance().AppendBriefDumpInfo(dumpInfo);
 }
 
-int KeyThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+int KeyThreadDumpInfo::UnwindStack(DfxProcess& process, Unwinder& unwinder)
 {
     DFXLOGI("unwind key thread dump start");
     int result = 0;
@@ -119,7 +119,7 @@ int KeyThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpRequest
         DFXLOGW("vm pid is null, can not unwind key thread!");
         return result;
     }
-    unwinder.SetIsJitCrashFlag(request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
+
     if (process.GetKeyThread()->GetThreadRegs() != nullptr) {
         result = GetKeyThreadStack(process, unwinder) ? 1 : 0;
     } else {
