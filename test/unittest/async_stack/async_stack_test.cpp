@@ -92,8 +92,8 @@ static void TimerCallback(uv_timer_t* handle)
 HWTEST_F(AsyncStackTest, AsyncStackTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "AsyncStackTest001: start.";
-    setenv("HAP_DEBUGGABLE", "true", 1);
     ASSERT_EQ(DfxGetSubmitterStackLocal(g_stackTrace, BUFFER_SIZE), -1);
+    DfxInitAsyncStack();
     uv_timer_t timerHandle;
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
@@ -115,39 +115,21 @@ HWTEST_F(AsyncStackTest, AsyncStackTest001, TestSize.Level2)
 
 /**
  * @tc.name: AsyncStackTest002
- * @tc.desc: test GetStackId()
+ * @tc.desc: test DfxInitAsyncStack()
  * @tc.type: FUNC
  */
 HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "AsyncStackTest002: start.";
-    SetStackId(1);
-    auto res = GetStackId();
+    bool res = DfxInitAsyncStack();
     GTEST_LOG_(INFO) << "res: " << res;
 #if defined(__arm__)
-    ASSERT_EQ(0, res);
+    ASSERT_FALSE(res);
 #elif defined(__aarch64__)
-    ASSERT_NE(0, res);
+    ASSERT_TRUE(res);
 #endif
 
     GTEST_LOG_(INFO) << "AsyncStackTest002: end.";
-}
-
-/**
- * @tc.name: AsyncStackTest003
- * @tc.desc: test CollectAsyncStack()
- * @tc.type: FUNC
- */
-HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level0)
-{
-    GTEST_LOG_(INFO) << "AsyncStackTest003: start.";
-    auto ret = CollectAsyncStack();
-#if defined(__aarch64__)
-    ASSERT_NE(0, ret);
-#else
-    ASSERT_EQ(0, ret);
-#endif
-    GTEST_LOG_(INFO) << "AsyncStackTest003: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

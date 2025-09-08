@@ -135,6 +135,7 @@ if (defined(ohos_lite)) {
       "jsoncpp:jsoncpp",
       "cJSON:cjson",
       "samgr:samgr_proxy",
+      "libuv:uv",
     ]
     if (support_jsapi) {
       deps += [ "$faultloggerd_path/test/resource:FaultloggerdJsTest" ]

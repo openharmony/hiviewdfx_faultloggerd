@@ -143,24 +143,22 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
         &DfxCrasher::TestGetCrashObj},
     {"TestGetCrashObjMemory", "Test get memory info when crash",
         &DfxCrasher::TestGetCrashObjMemory},
-#ifndef is_ohos_lite
-    {"AsyncStack", "Test async stacktrace in nomal thread crash case",
-        &DfxCrasher::AsyncStacktrace},
-#endif
     {"Deadlock", "Test deadlock and parse lock owner",
         &DfxCrasher::TestDeadlock},
-};
-
-constexpr static CrasherCommandLineParam CMDLINE_TABLE_PARAM[] = {
 #ifndef is_ohos_lite
-    {"CrashInFFRT", "Test async-stacktrace api in ffrt crash case",
-        &DfxCrasher::CrashInFFRT},
     {"CrashInLibuvWork", "Test async-stacktrace api in work callback crash case",
         &DfxCrasher::CrashInLibuvWork},
     {"CrashInLibuvTimer", "Test async-stacktrace api in timer callback crash case",
         &DfxCrasher::CrashInLibuvTimer},
     {"CrashInLibuvWorkDone", "Test async-stacktrace api in work callback done crash case",
         &DfxCrasher::CrashInLibuvWorkDone},
+#endif
+};
+
+constexpr static CrasherCommandLineParam CMDLINE_TABLE_PARAM[] = {
+#ifndef is_ohos_lite
+    {"CrashInFFRT", "Test async-stacktrace api in ffrt crash case",
+        &DfxCrasher::CrashInFFRT},
 #endif
 };
 
@@ -480,6 +478,9 @@ void DfxCrasher::PrintUsage() const
     for (auto& item : CMDLINE_TABLE) {
         std::cout << "  " << item.cmdline << " : " << item.description << std::endl;
     }
+    for (auto& item : CMDLINE_TABLE_PARAM) {
+        std::cout << "  " << item.cmdline << " : " << item.description << std::endl;
+    }
     std::cout << "  if you want the command execute in a sub thread" << std::endl;
     std::cout << "  add thread Prefix, e.g crasher thread-SIGFPE" << std::endl;
     std::cout << "\n";
@@ -563,31 +564,6 @@ NOINLINE int DfxCrasher::TestGetCrashObjMemory()
 }
 
 #ifndef is_ohos_lite
-static void* CrashInSubThread(void* stackIdPtr)
-{
-    uint64_t value = *reinterpret_cast<uint64_t *>(stackIdPtr);
-    SetStackId(value);
-    printf("CrashInSubThread stackId:%p value:%p.\n", stackIdPtr, reinterpret_cast<void*>(value));
-    raise(SIGSEGV);
-    return nullptr;
-}
-
-NOINLINE int DfxCrasher::AsyncStacktrace()
-{
-#ifdef __aarch64__
-    uint64_t stackId = CollectAsyncStack();
-    printf("Current stackId:%p.\n", (void*)stackId);
-    pthread_t thread;
-    pthread_create(&thread, NULL, CrashInSubThread, (void*)&stackId);
-    void *result = nullptr;
-    pthread_join(thread, &result);
-    return reinterpret_cast<uint64_t>(result);
-#else
-    printf("Unsupported arch.\n");
-    return 0;
-#endif
-}
-
 NOINLINE static int FFRTTaskSubmit1(int i)
 {
     int inner = i + 1;
@@ -613,6 +589,10 @@ NOINLINE int DfxCrasher::CrashInFFRT(const std::string &debug)
 {
     if (debug == "true") {
         setenv("HAP_DEBUGGABLE", "true", 1);
+    }
+    if (!DfxInitAsyncStack()) {
+        printf("init async stack failed!\n");
+        return -1;
     }
     int i = FFRTTaskSubmit0(10);
     ffrt::wait();
@@ -642,10 +622,11 @@ static void TimerCallback(uv_timer_t* handle)
     g_done = true;
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvWork(const std::string &debug)
+NOINLINE int DfxCrasher::CrashInLibuvWork()
 {
-    if (debug == "true") {
-        setenv("HAP_DEBUGGABLE", "true", 1);
+    if (!DfxInitAsyncStack()) {
+        printf("init async stack failed!\n");
+        return -1;
     }
     uv_timer_t timerHandle;
     uv_work_t work;
@@ -664,10 +645,11 @@ static void TimerCallback2(uv_timer_t* handle)
     raise(SIGSEGV);
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvTimer(const std::string &debug)
+NOINLINE int DfxCrasher::CrashInLibuvTimer()
 {
-    if (debug == "true") {
-        setenv("HAP_DEBUGGABLE", "true", 1);
+    if (!DfxInitAsyncStack()) {
+        printf("init async stack failed!\n");
+        return -1;
     }
     uv_timer_t timerHandle;
     uv_work_t work;
@@ -691,10 +673,11 @@ NOINLINE static void CrashAfterWorkCallback(uv_work_t* req, int status)
     raise(SIGSEGV);
 }
 
-NOINLINE int DfxCrasher::CrashInLibuvWorkDone(const std::string &debug)
+NOINLINE int DfxCrasher::CrashInLibuvWorkDone()
 {
-    if (debug == "true") {
-        setenv("HAP_DEBUGGABLE", "true", 1);
+    if (!DfxInitAsyncStack()) {
+        printf("init async stack failed!\n");
+        return -1;
     }
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();

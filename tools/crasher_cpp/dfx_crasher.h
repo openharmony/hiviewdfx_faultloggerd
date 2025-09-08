@@ -67,11 +67,10 @@ public:
     static int TestGetCrashObj();
     static int TestGetCrashObjMemory();
 #ifndef is_ohos_lite
-    static int AsyncStacktrace();
     static int CrashInFFRT(const std::string &debug);
-    static int CrashInLibuvWork(const std::string &debug);
-    static int CrashInLibuvTimer(const std::string &debug);
-    static int CrashInLibuvWorkDone(const std::string &debug);
+    static int CrashInLibuvWork();
+    static int CrashInLibuvTimer();
+    static int CrashInLibuvWorkDone();
 #endif
     static int TestDeadlock();
 
