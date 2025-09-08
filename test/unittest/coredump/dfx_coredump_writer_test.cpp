@@ -228,9 +228,19 @@ HWTEST_F(DfxCoreDumpWriterTest, ThreadNoteWriter001, TestSize.Level2)
     ret = writer.ArmPacMaskWrite(getpid());
     EXPECT_FALSE(ret);
 
+    bw.capacity_ = 1;
+    bw.Reset();
+    ret = writer.PrstatusWrite(getpid());
+    EXPECT_FALSE(ret);
+
     bw.capacity_ = sizeof(prstatus_t) + 1;
     bw.Reset();
     ret = writer.PrstatusWrite(getpid());
+    EXPECT_FALSE(ret);
+
+    bw.capacity_ =  1;
+    bw.Reset();
+    ret = writer.FpregsetWrite(getpid());
     EXPECT_FALSE(ret);
 
     bw.capacity_ = sizeof(user_fpsimd_struct) + 1;
@@ -238,12 +248,24 @@ HWTEST_F(DfxCoreDumpWriterTest, ThreadNoteWriter001, TestSize.Level2)
     ret = writer.FpregsetWrite(getpid());
     EXPECT_FALSE(ret);
 
+    bw.capacity_ =  1;
+    bw.Reset();
+    writer.SiginfoWrite(getpid());
+    EXPECT_FALSE(ret);
+
     bw.capacity_ = sizeof(siginfo_t) + 1;
     bw.Reset();
     writer.SiginfoWrite(getpid());
     EXPECT_FALSE(ret);
 
+    bw.capacity_ =  1;
+    bw.Reset();
     writer.ArmTaggedAddrCtrlWrite();
+
+    bw.capacity_ = sizeof(NT_ARM_TAGGED_ADDR_CTRL) + 1;
+    bw.Reset();
+    writer.ArmTaggedAddrCtrlWrite();
+
     GTEST_LOG_(INFO) << "ThreadNoteWriter001: end.";
 }
 

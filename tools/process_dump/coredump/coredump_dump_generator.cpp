@@ -62,7 +62,6 @@ void CoredumpGenerator::FinishCoredump(bool ret)
     if (CoredumpController::IsHwasanCoredumpEnabled()) {
         DumpUtils::InfoCrashUnwindResult(request_, true);
     }
-    exit(0);
 }
 
 bool CoredumpGenerator::MmapCoredumpFile()

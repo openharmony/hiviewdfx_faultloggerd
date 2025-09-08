@@ -161,9 +161,9 @@ private:
  * ---------------
  * |   PT_NOTE   |
  * ---------------
- * | NT_PRSTATUS |  // process status (registers, etc.)
+ * | NT_PRPSINFO |  // process info (pid, ppid, name, etc.)
  * ---------------
- * | ........... |  // thread register ..
+ * | ........... |  // dump each thread core info , detail see ThreadNoteWriter
  * ---------------
  * | NT_AUXV     |  // Auxiliary vector
  * --------------

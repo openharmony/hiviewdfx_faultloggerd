@@ -194,6 +194,9 @@ void ProcessDumper::Dump()
 {
     startTime_ = GetTimeMillisec();
     int resDump = DumpProcess();
+    if (resDump == DumpErrorCode::DUMP_COREDUMP) {
+        return;
+    }
     FormatJsonInfoIfNeed();
     WriteDumpResIfNeed(resDump);
     finishTime_ = GetTimeMillisec();
@@ -499,6 +502,8 @@ bool ProcessDumper::InitUnwinder(int &dumpRes)
 #if defined(__aarch64__) && !defined(is_ohos_lite)
     if (coredumpManager_) {
         coredumpManager_->DumpMemoryForPid(vmPid);
+        dumpRes = DumpErrorCode::DUMP_COREDUMP;
+        return false; // coredump flow end
     }
 #endif
     process_->SetVmPid(vmPid);
