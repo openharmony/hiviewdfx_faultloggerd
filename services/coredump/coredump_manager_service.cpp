@@ -178,6 +178,7 @@ bool FaultCoredumpConfig::Parse(const std::string& jsonText)
         cJSON_Delete(root);
         return false;
     }
+    uids.clear();
 
     cJSON* uid = nullptr;
     cJSON_ArrayForEach(uid, whitelistArray) {

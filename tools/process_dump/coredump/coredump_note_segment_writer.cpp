@@ -209,7 +209,6 @@ bool ThreadNoteWriter::GetPrStatus(prstatus_t &ntPrstatus, pid_t tid)
     return true;
 }
 
-
 bool ThreadNoteWriter::GetRusage(prstatus_t &ntPrstatus)
 {
     struct rusage selfUsage;

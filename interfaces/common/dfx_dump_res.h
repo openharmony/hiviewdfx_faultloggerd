@@ -74,6 +74,8 @@ enum DumpErrorCode : int32_t {
     DUMP_ESYMBOL_NO_PARSE,
     /** parse symbol timeout */
     DUMP_ESYMBOL_PARSE_TIMEOUT,
+    /** coredump flow just exit*/
+    DUMP_COREDUMP,
 };
 
 class DfxDumpRes {
