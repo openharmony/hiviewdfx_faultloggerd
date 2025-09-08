@@ -16,6 +16,7 @@
 
 #include <fcntl.h>
 #include "dfx_ark.h"
+#include "dfx_hap.h"
 #include "dfx_log.h"
 #include "dfx_symbols.h"
 #include "elf_factory.h"
@@ -46,10 +47,6 @@ DfxOfflineParser::~DfxOfflineParser()
 {
     UnwinderConfig::SetEnableMiniDebugInfo(CachedEnableMiniDebugInfo_);
     UnwinderConfig::SetEnableLoadSymbolLazily(CachedEnableLoadSymbolLazily_);
-    if (arkSymbolExtractorPtr_ != 0) {
-        DfxArk::Instance().ArkDestoryJsSymbolExtractor(arkSymbolExtractorPtr_);
-        arkSymbolExtractorPtr_ = 0;
-    }
 }
 
 bool DfxOfflineParser::ParseSymbolWithFrame(DfxFrame& frame)
@@ -78,64 +75,40 @@ bool DfxOfflineParser::ParseNativeSymbol(DfxFrame& frame)
     return true;
 }
 
-bool DfxOfflineParser::ParseJsSymbolForArkHap(const DfxFrame& frame, JsFunction& jsFunction)
+std::shared_ptr<DfxMap> DfxOfflineParser::GetMapForFrame(const DfxFrame& frame)
 {
-    std::string realPath = GetBundlePath(frame.mapName);
-    bool success = DfxArk::Instance().ParseArkFileInfo(
-        static_cast<uintptr_t>(frame.relPc), 0,
-        realPath.c_str(), arkSymbolExtractorPtr_, &jsFunction) >= 0;
-    if (!success) {
-        DFXLOGW("Failed to parse ark file info, relPc: %{private}p, hapName: %{private}s",
-            reinterpret_cast<void *>(frame.relPc), realPath.c_str());
+    if (dfxMaps_ == nullptr) {
+        return nullptr;
     }
-    return success;
-}
-
-bool DfxOfflineParser::ParseJsSymbolForArkCode(const DfxFrame& frame, JsFunction& jsFunction)
-{
-    std::string realPath = GetBundlePath(frame.mapName);
-    SmartFd smartFd(open(realPath.c_str(), O_RDONLY));
-    if (!smartFd) {
-        DFXLOGE("Failed to open file: %{public}s, errno(%{public}d)", realPath.c_str(), errno);
-        return false;
+    auto maps = dfxMaps_->GetMaps();
+    auto it = std::find_if(maps.begin(), maps.end(), [&](const std::shared_ptr<DfxMap>& map) {
+        return map->name == frame.mapName;
+    });
+    if (it != maps.end() && *it) {
+        return *it;
     }
-    off_t size = lseek(smartFd.GetFd(), 0, SEEK_END);
-    if (size <= 0) {
-        DFXLOGE("fd is empty or error, fd(%{public}d)", smartFd.GetFd());
-        return false;
-    }
-    void* mptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, smartFd.GetFd(), 0);
-    if (mptr == MAP_FAILED) {
-        DFXLOGE("mmap failed, fd(%{public}d), errno(%{public}d)", smartFd.GetFd(), errno);
-        return false;
-    }
-    bool success = DfxArk::Instance().ParseArkFrameInfo(
-        static_cast<uintptr_t>(frame.relPc), 0, 0,
-        static_cast<uint8_t*>(mptr),
-        size, arkSymbolExtractorPtr_, &jsFunction) >= 0;
-    if (!success) {
-        DFXLOGW("Failed to parse ark frame info, relPc: %{private}p, codeName: %{private}s",
-            reinterpret_cast<void *>(frame.relPc), realPath.c_str());
-    }
-    munmap(mptr, size);
-    return success;
+    return nullptr;
 }
 
 bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
 {
-    if (arkSymbolExtractorPtr_ == 0) {
-        if (DfxArk::Instance().ArkCreateJsSymbolExtractor(&arkSymbolExtractorPtr_) < 0) {
-            DFXLOGE("Failed to create ark js symbol extractor");
-            return false;
-        }
-    }
-    JsFunction jsFunction;
-    bool success = DfxMaps::IsArkHapMapItem(frame.mapName)
-                        ? ParseJsSymbolForArkHap(frame, jsFunction)
-                        : ParseJsSymbolForArkCode(frame, jsFunction);
-    if (!success) {
+    auto dfxMap = GetMapForFrame(frame);
+    auto dfxHap = dfxMap ? dfxMap->hap : std::make_shared<DfxHap>();
+    if (!dfxHap) {
         return false;
     }
+    if (!dfxMap) {
+        dfxMap = std::make_shared<DfxMap>();
+        dfxMap->name = GetBundlePath(frame.mapName);
+        dfxMap->hap = dfxHap;
+        dfxMaps_->AddMap(dfxMap);
+    }
+    JsFunction jsFunction;
+    bool isSuccess = dfxHap->ParseHapInfo(0, frame.relPc, dfxMap, &jsFunction, true);
+    if (!isSuccess) {
+        return false;
+    }
+
     frame.isJsFrame = true;
     frame.mapName = std::string(jsFunction.url);
     frame.funcName = std::string(jsFunction.functionName);
@@ -155,15 +128,9 @@ std::string DfxOfflineParser::GetBundlePath(const std::string& originPath) const
 
 std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
 {
-    if (dfxMaps_ == nullptr) {
-        return nullptr;
-    }
-    auto maps = dfxMaps_->GetMaps();
-    auto it = std::find_if(maps.begin(), maps.end(), [&](const std::shared_ptr<DfxMap>& map) {
-        return map->name == frame.mapName;
-    });
-    if (it != maps.end() && *it) {
-        return (*it)->elf;
+    auto dfxMap = GetMapForFrame(frame);
+    if (dfxMap) {
+        return dfxMap->elf;
     }
     RegularElfFactory factory(GetBundlePath(frame.mapName));
     auto elf = factory.Create();
@@ -175,10 +142,10 @@ std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
         DFXLOGE("elf is invalid");
         return nullptr;
     }
-    auto newMap = std::make_shared<DfxMap>();
-    newMap->name = frame.mapName;
-    newMap->elf = elf;
-    dfxMaps_->AddMap(newMap);
+    dfxMap = std::make_shared<DfxMap>();
+    dfxMap->name = frame.mapName;
+    dfxMap->elf = elf;
+    dfxMaps_->AddMap(dfxMap);
     return elf;
 }
 } // namespace HiviewDFX
