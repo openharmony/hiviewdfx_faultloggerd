@@ -365,7 +365,6 @@ static void DFX_InstallSignalHandler(void)
         return;
     }
 
-    SetKernelSnapshot(true);
     InitCallbackItems();
     struct signal_chain_action sigchain = {
         .sca_sigaction = DFX_SigchainHandler,
