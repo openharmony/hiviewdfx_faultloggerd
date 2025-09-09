@@ -547,6 +547,7 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DealWithDumpCatchRet(int pid, 
 std::pair<int, std::string> DfxDumpCatcher::Impl::DumpCatchWithTimeout(int pid, std::string& msg, int timeout,
                                                                        int tid, bool isJson)
 {
+    std::unique_lock<std::mutex> lck(mutex_);
     DfxEnableTraceDlsym(true);
     ElapsedTime counter;
     uint64_t requestTime = GetTimeMilliSeconds();
@@ -567,7 +568,6 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DumpCatchWithTimeout(int pid, 
                 break;
             }
         }
-        std::unique_lock<std::mutex> lck(mutex_);
         int currentPid = getpid();
         if (pid == currentPid) {
             bool ret = DoDumpLocalLocked(pid, tid, msg, DEFAULT_MAX_FRAME_NUM);
