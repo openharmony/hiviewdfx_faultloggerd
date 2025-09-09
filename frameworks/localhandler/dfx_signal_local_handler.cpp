@@ -55,7 +55,7 @@ static struct ProcessDumpRequest g_request;
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static constexpr int CATCHER_STACK_SIGNALS[] = {
-    SIGABRT, SIGBUS, SIGILL, SIGSEGV, SIGALRM,
+    SIGABRT, SIGBUS, SIGILL, SIGSEGV,
 };
 
 #if !defined(__aarch64__) && !defined(__loongarch_lp64)
