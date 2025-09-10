@@ -662,6 +662,10 @@ int32_t DfxDumpCatcher::Impl::DoDumpCatchRemote(int pid, int tid, std::string& m
         return DUMPCATCH_EPARAM;
     }
 
+    if (IsFrozen(pid, ret) && ret == DUMPCATCH_TIMEOUT_KERNEL_FROZEN) {
+        stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
+        return ret;
+    }
     if (DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(pid)) {
         DFXLOGW("dumpcatch in slow period, return pid (%{public}d) kernel stack directly!", pid);
         msg.append("Result: pid(" + std::to_string(pid) + ") last dump slow, return kernel stack directly.\n");
