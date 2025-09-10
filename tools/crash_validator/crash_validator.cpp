@@ -250,7 +250,12 @@ void CrashValidator::CheckOutOfDateEvents()
 {
     std::vector<CrashEvent>::iterator it = pendingEvents_.begin();
     while (it != pendingEvents_.end()) {
-        uint64_t now = time(nullptr);
+        int64_t nowTime = time(nullptr);
+        if (nowTime < 0) {
+            printf("Failed to get the time.\n");
+            return;
+        }
+        uint64_t now = static_cast<uint64_t>(nowTime);
         uint64_t eventTime = it->time;
         if (eventTime > now) {
             eventTime = eventTime / 1000; // 1000 : convert to second

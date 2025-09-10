@@ -64,7 +64,7 @@ bool BacktraceLocalThread::Unwind(Unwinder& unwinder, bool fast, size_t maxFrame
         return ret;
     }
 
-    ret = unwinder.UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum + 1);
+    ret = unwinder.UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum);
 #ifdef __aarch64__
     Unwinder::GetLocalFramesByPcs(frames_, unwinder.GetPcs());
 #else

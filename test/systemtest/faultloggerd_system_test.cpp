@@ -1759,12 +1759,12 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
             }
         } else {
             usleep(sleepTime);
-            kill(pid, SIGKILL);
+            kill(pid, SIGSEGV);
             int status = 0;
             waitpid(pid, &status, 0);
             ASSERT_TRUE(WIFSIGNALED(status));
             int signal = WTERMSIG(status);
-            ASSERT_EQ(signal, SIGKILL);
+            ASSERT_EQ(signal, SIGSEGV);
             sleepTime = sleepTime + deviation;
         }
     }

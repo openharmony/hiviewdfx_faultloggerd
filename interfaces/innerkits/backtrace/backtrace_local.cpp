@@ -49,7 +49,10 @@ bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t 
 #endif
     Unwinder unwinder(isNeedMaps);
     BacktraceLocalThread thread(tid);
-    bool ret = thread.Unwind(unwinder, fast, maxFrameNums, skipFrameNum + 1);
+    if (tid == BACKTRACE_CURRENT_THREAD) {
+        skipFrameNum++;
+    }
+    bool ret = thread.Unwind(unwinder, fast, maxFrameNums, skipFrameNum);
     frames = thread.GetFrames();
     return ret;
 }
@@ -59,7 +62,10 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
                              size_t maxFrameNums, bool enableKernelStack)
 {
     std::vector<DfxFrame> frames;
-    bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum + 1, fast, maxFrameNums);
+    if (tid == BACKTRACE_CURRENT_THREAD) {
+        skipFrameNum++;
+    }
+    bool ret = GetBacktraceFramesByTid(frames, tid, skipFrameNum, fast, maxFrameNums);
     if (!ret && enableKernelStack) {
         std::string msg = "";
         DfxThreadStack threadStack;
