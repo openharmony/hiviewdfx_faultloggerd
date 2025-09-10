@@ -142,5 +142,50 @@ HWTEST_F(DfxHapTest, DfxHapTest005, TestSize.Level2)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DfxHapTest005: end.";
 }
+
+/**
+ * @tc.name: DfxHapTest006
+ * @tc.desc: test DfxHap ParseOfflineJsSymbol exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxHapTest, DfxHapTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxHapTest006: start.";
+    DfxHap dfxHap;
+    pid_t pid = 1;
+    uint64_t pc = 1;
+    auto map = std::make_shared<DfxMap>();
+    JsFunction jsFunction;
+
+    bool res = dfxHap.ParseHapInfo(pid, pc, map, nullptr, true);
+    ASSERT_EQ(res, false);
+    res = dfxHap.ParseHapInfo(pid, pc, map, &jsFunction, true);
+    ASSERT_EQ(res, false);
+    map->name = "test.hap";
+    res = dfxHap.ParseHapInfo(pid, pc, map, &jsFunction, true);
+    ASSERT_EQ(res, false);
+    GTEST_LOG_(INFO) << "DfxHapTest006: end.";
+}
+
+/**
+ * @tc.name: DfxHapTest007
+ * @tc.desc: test DfxHap ParseOfflineJsSymbolForArkHap exception
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxHapTest, DfxHapTest007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxHapTest007: start.";
+    DfxHap dfxHap;
+    std::string mapName = "";
+    bool ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, nullptr);
+    ASSERT_EQ(ret, false);
+    mapName = "test.abc";
+    ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, nullptr);
+    ASSERT_EQ(ret, false);
+    JsFunction jsFunction;
+    ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, &jsFunction);
+    ASSERT_EQ(ret, false);
+    GTEST_LOG_(INFO) << "DfxHapTest007: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -33,13 +33,11 @@ private:
     static bool IsJsFrame(const DfxFrame& frame);
     bool ParseNativeSymbol(DfxFrame& frame);
     bool ParseJsSymbol(DfxFrame& frame);
-    bool ParseJsSymbolForArkHap(const DfxFrame& frame, JsFunction& jsFunction);
-    bool ParseJsSymbolForArkCode(const DfxFrame& frame, JsFunction& jsFunction);
     std::string GetBundlePath(const std::string& originPath) const;
     std::shared_ptr<DfxElf> GetElfForFrame(const DfxFrame& frame);
+    std::shared_ptr<DfxMap> GetMapForFrame(const DfxFrame& frame);
     bool CachedEnableMiniDebugInfo_ {false};
     bool CachedEnableLoadSymbolLazily_ {false};
-    uintptr_t arkSymbolExtractorPtr_ {0};
     std::string bundleName_ {""};
     std::shared_ptr<DfxMaps> dfxMaps_ {nullptr};
 };

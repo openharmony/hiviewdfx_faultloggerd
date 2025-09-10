@@ -39,7 +39,7 @@ static void PrintCommandHelp()
     printf("-p pid                | dump the stacktrace of all the threads with given pid, timeout default 3000ms.\n");
     printf("-p pid -t tid         | dump the stacktrace of the thread with given tid .\n");
     printf("-p pid -T timeout(ms) | dump the stacktrace of the thread with given tid in timeout.\n");
-    printf("-k pid                | dump the origin kernel stacktrace with noark of the pid.\n");
+    printf("-k pid                | dump the origin kernel stacktrace without ark of the pid.\n");
     printf("-k pid -a             | dump the origin kernel stacktrace with ark of the pid.\n");
     printf("-k pid -a -f          | dump the origin kernel stacktrace with ark of the pid and format parse stack.\n");
     printf("-c save pid           | begin to coredump the process of the pid.\n");

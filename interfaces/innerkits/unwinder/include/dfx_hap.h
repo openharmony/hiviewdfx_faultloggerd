@@ -30,8 +30,8 @@ public:
     DfxHap() = default;
     ~DfxHap();
 
-    bool ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction);
-
+    bool ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction,
+        bool isOffline = false);
 private:
     bool ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction);
     bool ParseHapMemInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map,
@@ -39,6 +39,7 @@ private:
 
     bool ParseHapFileData(const std::string& name);
     bool ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map);
+    bool ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relPc, JsFunction *jsFunction);
 
 private:
     MAYBE_UNUSED uintptr_t arkSymbolExtractorPtr_ = 0;
