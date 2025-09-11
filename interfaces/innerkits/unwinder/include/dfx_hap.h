@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <memory>
 #include <unistd.h>
+#include <sys/mman.h>
 #include "dfx_ark.h"
 #include "dfx_extractor_utils.h"
 
@@ -40,6 +41,7 @@ private:
     bool ParseHapFileData(const std::string& name);
     bool ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map);
     bool ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relPc, JsFunction *jsFunction);
+    bool MmapForHap(const std::string& mapName);
 
 private:
     MAYBE_UNUSED uintptr_t arkSymbolExtractorPtr_ = 0;
@@ -50,6 +52,8 @@ private:
     MAYBE_UNUSED size_t srcMapDataSize_ = 0;
     MAYBE_UNUSED uintptr_t srcMapLoadOffset_ = 0;
     MAYBE_UNUSED std::unique_ptr<DfxExtractor> extractor_ = nullptr;
+    MAYBE_UNUSED void *mmap_ = MAP_FAILED;
+    MAYBE_UNUSED off_t hapSize_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
