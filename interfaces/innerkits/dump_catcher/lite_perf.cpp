@@ -59,7 +59,6 @@ public:
     int GetPerfCountByTid(pid_t tid);
     int FinishProcessStackSampling();
 private:
-    bool IsValidParam(const std::vector<int>& tids, int freq, int durationMs);
     int ExecDump(const std::vector<int>& tids, int freq, int durationMs);
     bool InitDumpParam(const std::vector<int>& tids, int freq, int durationMs, LitePerfParam& lperf);
     bool ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& lperf);
@@ -87,6 +86,11 @@ LitePerf::LitePerf() : impl_(std::make_shared<Impl>())
 
 int LitePerf::StartProcessStackSampling(const std::vector<int>& tids, int freq, int durationMs, bool parseMiniDebugInfo)
 {
+    if (tids.size() < MIN_SAMPLE_TIDS || tids.size() > MAX_SAMPLE_TIDS ||
+        freq < MIN_SAMPLE_FREQUENCY || freq > MAX_SAMPLE_FREQUENCY ||
+        durationMs < MIN_STOP_SECONDS || durationMs > MAX_STOP_SECONDS) {
+        return -1;
+    }
     return impl_->StartProcessStackSampling({
         .tids = tids,
         .freq = freq,
@@ -160,10 +164,6 @@ PerfErrorCode LitePerf::CollectProcessStackSampling(const LitePerfConfig& config
 PerfErrorCode LitePerf::Impl::StartProcessStackSampling(const LitePerfConfig& config, bool checkLimit)
 {
     DFXLOGI("StartProcessStackSampling.");
-    if (!IsValidParam(config.tids, config.freq, config.durationMs)) {
-        DFXLOGE("Invalid stack sampling param.");
-        return PerfErrorCode::INVALID_PARAM;
-    }
     bool expected = false;
     if (!isRunning_.compare_exchange_strong(expected, true)) {
         DFXLOGW("Process is being sampling.");
@@ -196,16 +196,6 @@ PerfErrorCode LitePerf::Impl::StartProcessStackSampling(const LitePerfConfig& co
         default:
             return PerfErrorCode::UN_SUPPORTED;
     }
-}
-
-bool LitePerf::Impl::IsValidParam(const std::vector<int>& tids, int freq, int durationMs)
-{
-    if (tids.size() < MIN_SAMPLE_TIDS || tids.size() > MAX_SAMPLE_TIDS ||
-        freq < MIN_SAMPLE_FREQUENCY || freq > MAX_SAMPLE_FREQUENCY ||
-        durationMs < MIN_STOP_SECONDS || durationMs > MAX_STOP_SECONDS) {
-        return false;
-    }
-    return true;
 }
 
 void LitePerf::Impl::FinishDump()
