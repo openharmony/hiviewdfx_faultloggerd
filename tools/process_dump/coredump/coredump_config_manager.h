@@ -45,7 +45,7 @@ struct LoadSegmentDumpConfig {
 };
 
 struct CoredumpConfig {
-    bool coredumpSwitch {true};
+    bool coredumpSwitch {false};
     size_t maxCoredumpSize {0};
     int dumperThreadCount {1};
     std::string outputPath {"/data/storage/el2/base/files"};
