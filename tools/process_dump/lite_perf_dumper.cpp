@@ -60,7 +60,7 @@ int LitePerfDumper::PerfProcess(LitePerfParam& lperf)
     }
 
     int pipeWriteFd[PIPE_NUM_SZ] = { -1, -1};
-    if (RequestLitePerfPipeFd(FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd, 0) == -1) {
+    if (RequestLitePerfPipeFd(FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd, 0, false) == -1) {
         DFXLOGE("%{public}s request pipe failed, err:%{public}d", __func__, errno);
         return -1;
     }

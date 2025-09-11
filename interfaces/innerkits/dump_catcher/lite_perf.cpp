@@ -27,6 +27,8 @@
 #include <sys/uio.h>
 #include <sys/wait.h>
 #include <unistd.h>
+
+#include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
 #include "dfx_dumprequest.h"
@@ -35,6 +37,7 @@
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "procinfo.h"
+#include "proc_util.h"
 #include "smart_fd.h"
 #include "stack_printer.h"
 #include "unwinder.h"
@@ -51,10 +54,10 @@ namespace {
 
 class LitePerf::Impl {
 public:
-    int StartProcessStackSampling(const std::vector<int>& tids, int freq, int durationMs, bool parseMiniDebugInfo);
-    int CollectSampleStackByTid(int tid, std::string& stack);
+    PerfErrorCode StartProcessStackSampling(const LitePerfConfig& config, bool checkLimit);
+    int CollectSampleStackByTid(int tid, std::string& stack, int& count);
+    int GetPerfCountByTid(pid_t tid);
     int FinishProcessStackSampling();
-
 private:
     bool IsValidParam(const std::vector<int>& tids, int freq, int durationMs);
     int ExecDump(const std::vector<int>& tids, int freq, int durationMs);
@@ -71,7 +74,7 @@ private:
 
     std::string bufMsg_;
     std::string resMsg_;
-    std::map<int, std::string> stackMaps_{};
+    std::map<int, std::pair<std::string, int>> stackMaps_{};
     std::mutex mutex_;
     std::atomic<bool> isRunning_{false};
 
@@ -84,12 +87,18 @@ LitePerf::LitePerf() : impl_(std::make_shared<Impl>())
 
 int LitePerf::StartProcessStackSampling(const std::vector<int>& tids, int freq, int durationMs, bool parseMiniDebugInfo)
 {
-    return impl_->StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+    return impl_->StartProcessStackSampling({
+        .tids = tids,
+        .freq = freq,
+        .durationMs = durationMs,
+        .parseMiniDebugInfo = parseMiniDebugInfo,
+    }, false) == PerfErrorCode::SUCCESS ? 0 : -1;
 }
 
 int LitePerf::CollectSampleStackByTid(int tid, std::string& stack)
 {
-    return impl_->CollectSampleStackByTid(tid, stack);
+    int count = 0;
+    return impl_->CollectSampleStackByTid(tid, stack, count);
 }
 
 int LitePerf::FinishProcessStackSampling()
@@ -97,53 +106,96 @@ int LitePerf::FinishProcessStackSampling()
     return impl_->FinishProcessStackSampling();
 }
 
-int LitePerf::Impl::StartProcessStackSampling(const std::vector<int>& tids, int freq, int durationMs,
-    bool parseMiniDebugInfo)
+inline uint64_t GetThreadCpuTimes(pid_t tid)
+{
+    ProcessInfo process{};
+    if (ParseThreadInfo(tid, process)) {
+        return process.utime + process.stime;
+    }
+    return 0;
+}
+
+std::map<pid_t, uint64_t> ParseThreadTimes(const std::vector<int>& tids)
+{
+    std::map<pid_t, uint64_t> cpuTimesMap;
+    for (auto tid : tids) {
+        cpuTimesMap[tid] = GetThreadCpuTimes(tid);
+    }
+    return cpuTimesMap;
+}
+
+PerfErrorCode LitePerf::CollectProcessStackSampling(const LitePerfConfig& config, bool checkLimit, std::string& stacks)
+{
+    auto cpuTimesMap = ParseThreadTimes(config.tids);
+    auto retCode = impl_->StartProcessStackSampling(config, checkLimit);
+    if (retCode != PerfErrorCode::SUCCESS) {
+        return retCode;
+    }
+    for (auto tid : config.tids) {
+        stacks.append("Tid: " + std::to_string(tid) + ", ThreadName: ");
+        char threadName[NAME_BUF_LEN];
+        if (GetThreadName(threadName, NAME_BUF_LEN)) {
+            stacks.append(std::string(threadName));
+        }
+        int count = 0;
+        stacks.append(", Cputime: ");
+        constexpr int secondToMillionSecond  = 1000;
+        int64_t jiffsToMs = secondToMillionSecond / sysconf(_SC_CLK_TCK);
+        stacks.append(std::to_string((GetThreadCpuTimes(tid) - cpuTimesMap[tid]) * jiffsToMs));
+        stacks.append("ms, Count: ");
+        std::string stackContent = "unknow";
+        if (impl_->CollectSampleStackByTid(tid, stackContent, count) != 0) {
+            DFXLOGI("Failed CollectSampleStackByTid, tid:%{public}d.", tid);
+            continue;
+        }
+        stacks.append(std::to_string(count));
+        stacks.append("\n");
+        stacks.append(stackContent);
+        stacks.append("\n");
+    }
+    impl_->FinishProcessStackSampling();
+    return PerfErrorCode::SUCCESS;
+}
+
+PerfErrorCode LitePerf::Impl::StartProcessStackSampling(const LitePerfConfig& config, bool checkLimit)
 {
     DFXLOGI("StartProcessStackSampling.");
-    int res = 0;
-    if (!IsValidParam(tids, freq, durationMs)) {
+    if (!IsValidParam(config.tids, config.freq, config.durationMs)) {
         DFXLOGE("Invalid stack sampling param.");
-        return -1;
+        return PerfErrorCode::INVALID_PARAM;
     }
     bool expected = false;
     if (!isRunning_.compare_exchange_strong(expected, true)) {
         DFXLOGW("Process is being sampling.");
-        return -1;
+        return PerfErrorCode::PERF_SAMPING;
     }
-    enableDebugInfoSymbolic_ = parseMiniDebugInfo;
-    int timeout = durationMs + DUMP_LITEPERF_TIMEOUT;
-
+    auto autoResetFlag = std::unique_ptr<std::atomic<bool>, void(*)(std::atomic<bool>*)>(&isRunning_,
+        [] (std::atomic<bool>* flag) {
+            flag->store(false);
+        });
+    enableDebugInfoSymbolic_ = config.parseMiniDebugInfo;
+    int timeout = config.durationMs + DUMP_LITEPERF_TIMEOUT;
     int pipeReadFd[] = {-1, -1};
-    int req = RequestLitePerfPipeFd(FaultLoggerPipeType::PIPE_FD_READ, pipeReadFd,
-        static_cast<int>(timeout / 1000));
-    if (req != ResponseCode::REQUEST_SUCCESS) {
-        DFXLOGE("Failed to request liteperf pipe read.");
-        if (pipeReadFd[0] != -1) {
-            close(pipeReadFd[0]);
+    constexpr int secondsToMillionSecond = 1000;
+    switch (RequestLitePerfPipeFd(FaultLoggerPipeType::PIPE_FD_READ, pipeReadFd,
+        (timeout / secondsToMillionSecond), checkLimit)) {
+        case ResponseCode::REQUEST_SUCCESS: {
+            SmartFd bufFd(pipeReadFd[PIPE_BUF_INDEX], false);
+            SmartFd resFd(pipeReadFd[PIPE_RES_INDEX], false);
+            PerfErrorCode res = PerfErrorCode::SUCCESS;
+            if (ExecDump(config.tids, config.freq, config.durationMs) < 0 || DumpPoll(pipeReadFd, timeout) < 0) {
+                res = PerfErrorCode::UN_SUPPORTED;
+            }
+            FinishDump();
+            return res;
         }
-        if (pipeReadFd[1] != -1) {
-            close(pipeReadFd[1]);
-        }
-        isRunning_.store(false);
-        return -1;
+        case ResponseCode::SDK_DUMP_REPEAT:
+            return PerfErrorCode::PERF_SAMPING;
+        case ResponseCode::RESOURCE_LIMIT:
+            return PerfErrorCode::RESOURCE_NOT_AVAILABLE;
+        default:
+            return PerfErrorCode::UN_SUPPORTED;
     }
-
-    do {
-        if (ExecDump(tids, freq, durationMs) < 0) {
-            res = -1;
-            break;
-        }
-
-        if (DumpPoll(pipeReadFd, timeout) < 0) {
-            res = -1;
-            break;
-        }
-    } while (false);
-    FinishDump();
-    close(pipeReadFd[0]);
-    close(pipeReadFd[1]);
-    return res;
 }
 
 bool LitePerf::Impl::IsValidParam(const std::vector<int>& tids, int freq, int durationMs)
@@ -163,7 +215,6 @@ void LitePerf::Impl::FinishDump()
     if (req != ResponseCode::REQUEST_SUCCESS) {
         DFXLOGE("Failed to request liteperf pipe delete.");
     }
-    isRunning_.store(false);
 }
 
 int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
@@ -416,22 +467,29 @@ bool LitePerf::Impl::ParseSampleStacks(const std::string& datas)
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
-    if (stackMaps_.empty()) {
-        auto unwinder = std::make_shared<Unwinder>(false);
-        auto maps = DfxMaps::Create();
-        defaultEnableDebugInfo_ = UnwinderConfig::GetEnableMiniDebugInfo();
-        UnwinderConfig::SetEnableMiniDebugInfo(enableDebugInfoSymbolic_);
-        std::istringstream iss(datas);
-        auto frameMap = StackPrinter::DeserializeSampledFrameMap(iss);
-        for (const auto& pair : frameMap) {
-            auto stack = StackPrinter::PrintTreeStackBySampledStack(pair.second, false, unwinder, maps);
-            stackMaps_.emplace(pair.first, std::move(stack));
-        }
+    if (!stackMaps_.empty()) {
+        return true;
     }
-    return (stackMaps_.size() > 0);
+    auto unwinder = std::make_shared<Unwinder>(false);
+    auto maps = DfxMaps::Create();
+    defaultEnableDebugInfo_ = UnwinderConfig::GetEnableMiniDebugInfo();
+    UnwinderConfig::SetEnableMiniDebugInfo(enableDebugInfoSymbolic_);
+    std::istringstream iss(datas);
+    auto frameMap = StackPrinter::DeserializeSampledFrameMap(iss);
+    for (const auto& pair : frameMap) {
+        auto stack = StackPrinter::PrintTreeStackBySampledStack(pair.second, false, unwinder, maps);
+        int count = 0;
+        for (auto& frame : pair.second) {
+            if (frame.indent == 0) {
+                count += frame.count;
+            }
+        }
+        stackMaps_.emplace(pair.first, std::make_pair(std::move(stack), count));
+    }
+    return !stackMaps_.empty();
 }
 
-int LitePerf::Impl::CollectSampleStackByTid(int tid, std::string& stack)
+int LitePerf::Impl::CollectSampleStackByTid(int tid, std::string& stack, int& count)
 {
     DFXLOGI("CollectSampleStackByTid, tid:%{public}d.", tid);
     if (!ParseSampleStacks(bufMsg_)) {
@@ -439,9 +497,11 @@ int LitePerf::Impl::CollectSampleStackByTid(int tid, std::string& stack)
     }
 
     std::unique_lock<std::mutex> lck(mutex_);
-    if (stackMaps_.find(tid) != stackMaps_.end()) {
-        stack = stackMaps_[tid];
-        if (stack.size() > 0) {
+    auto stackInterator =  stackMaps_.find(tid);
+    if (stackInterator != stackMaps_.end()) {
+        stack = stackInterator->second.first;
+        count = stackInterator->second.second;
+        if (!stack.empty()) {
             return 0;
         }
     }

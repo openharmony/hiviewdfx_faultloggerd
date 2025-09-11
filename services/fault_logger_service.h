@@ -16,10 +16,10 @@
 #ifndef FAULT_LOGGER_SERVICE_H_
 #define FAULT_LOGGER_SERVICE_H_
 
-#include "string"
-#include "vector"
-#include "csignal"
-#include "cstdint"
+#include <map>
+#include <string>
+#include <vector>
+
 #include "dfx_socket_request.h"
 #include "temp_file_manager.h"
 #include "dfx_exception.h"
@@ -112,7 +112,15 @@ public:
                       const LitePerfFdRequestData& requestData) override;
 private:
     static bool Filter(const std::string& socketName, int32_t connectionFd, const LitePerfFdRequestData& requestData);
-    void StartDelayTask(std::function<void()> workFunc, int32_t delayTime);
+    static int32_t CheckPerfLimit(int32_t uid, bool checkLimit);
+    class PerfResourceLimiter {
+    public:
+        PerfResourceLimiter();
+        int CheckPerfLimit(int32_t uid);
+    private:
+        std::map<int, int> perfCountsMap_;
+        int devicePerfCount = 0;
+    };
 };
 
 class PipeService : public FaultLoggerService<PipFdRequestData> {

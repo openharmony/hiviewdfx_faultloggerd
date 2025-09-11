@@ -259,7 +259,7 @@ void TempFileManager::ClearBigFilesOnStart(bool isSizeOverLimit, std::list<std::
         std::for_each(files.begin(), files.end(), RemoveTempFile);
         files.clear();
     } else {
-        auto tempFileRemover = DelayTask::CreateInstance([files] {
+        auto tempFileRemover = TimerTaskAdapter::CreateInstance([files] {
             std::for_each(files.begin(), files.end(), RemoveTempFile);
         }, fileClearTime);
         epollManager_.AddListener(std::move(tempFileRemover));
@@ -462,7 +462,7 @@ void TempFileManager::TempFileWatcher::HandleFileCreate(const std::string& fileP
             TEMP_FILE_MANAGER_TAG, filePath.c_str(), currentFileCount, fileConfig.keepFileCount,
             fileConfig.maxFileCount, fileConfig.fileExistTime, fileConfig.overTimeFileDeleteType);
     if (fileConfig.overTimeFileDeleteType == OverTimeFileDeleteType::ACTIVE) {
-        auto tempFileRemover = DelayTask::CreateInstance([filePath] {
+        auto tempFileRemover = TimerTaskAdapter::CreateInstance([filePath] {
             RemoveTempFile(filePath);
         }, fileConfig.fileExistTime);
         tempFileManager_.epollManager_.AddListener(std::move(tempFileRemover));

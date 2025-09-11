@@ -194,6 +194,8 @@ typedef struct LitePerfFdRequestData {
     int8_t pipeType;
     /** timeout of request */
     int32_t timeout;
+    /** whether to check limit */
+    bool checkLimit;
 } __attribute__((packed)) LitePerfFdRequestData;
 
 /**
@@ -294,6 +296,8 @@ typedef enum ResponseCode : int32_t {
     CORE_DUMP_CANCEL,
     /** coredump generate fail */
     CORE_DUMP_GENERATE_FAIL,
+    /** resource limit */
+    RESOURCE_LIMIT,
 } ResponseCode;
 
 #ifdef __cplusplus

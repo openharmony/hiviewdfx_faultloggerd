@@ -250,6 +250,12 @@ bool ParseProcInfo(pid_t pid, ProcessInfo& info)
     return ParseStat(path, info);
 }
 
+bool ParseThreadInfo(pid_t tid, ProcessInfo& info)
+{
+    std::string path = "/proc/self/task/" + std::to_string(tid) + "/stat";
+    return ParseStat(path, info);
+}
+
 std::string GetFirstNumberSeq(const std::string& cont)
 {
     auto start = std::find_if(cont.begin(), cont.end(), isdigit);

@@ -62,7 +62,7 @@ int32_t RequestFileDescriptorEx(struct FaultLoggerdRequest* request);
  *               pipeFd[1] to transfer backtrace result
  * @return if succeed return 0, otherwise return -1
 */
-int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2], int timeout);
+int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2], int timeout, bool checkLimit);
 
 /**
  * @brief request delete lite perf file descriptor
