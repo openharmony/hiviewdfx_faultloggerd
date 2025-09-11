@@ -15,8 +15,6 @@
 
 #include "dfx_hap.h"
 
-#include <sys/mman.h>
-
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_maps.h"
@@ -39,6 +37,11 @@ DfxHap::~DfxHap()
     if (arkSymbolExtractorPtr_ != 0) {
         DfxArk::Instance().ArkDestoryJsSymbolExtractor(arkSymbolExtractorPtr_);
         arkSymbolExtractorPtr_ = 0;
+    }
+    if (mmap_ != MAP_FAILED && hapSize_ > 0) {
+        munmap(mmap_, hapSize_);
+        mmap_ = MAP_FAILED;
+        hapSize_ = 0;
     }
 #endif
 }
@@ -79,10 +82,12 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, J
 #endif
 }
 
-bool DfxHap::ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relPc, JsFunction *jsFunction)
+bool DfxHap::MmapForHap(const std::string& mapName)
 {
-#if is_ohos && !is_mingw
-    if (jsFunction == nullptr || mapName.empty()) {
+    if (mmap_ != MAP_FAILED && hapSize_ > 0) {
+        return true;
+    }
+    if (mapName.empty()) {
         return false;
     }
     SmartFd smartFd(open(mapName.c_str(), O_RDONLY));
@@ -90,25 +95,36 @@ bool DfxHap::ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relP
         DFXLOGE("Failed to open file: %{public}s, errno(%{public}d)", mapName.c_str(), errno);
         return false;
     }
-    off_t size = lseek(smartFd.GetFd(), 0, SEEK_END);
-    if (size <= 0) {
+    hapSize_ = lseek(smartFd.GetFd(), 0, SEEK_END);
+    if (hapSize_ <= 0) {
         DFXLOGE("fd is empty or error, fd(%{public}d)", smartFd.GetFd());
         return false;
     }
-    void* mptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, smartFd.GetFd(), 0);
-    if (mptr == MAP_FAILED) {
+    mmap_ = mmap(nullptr, hapSize_, PROT_READ, MAP_PRIVATE, smartFd.GetFd(), 0);
+    if (mmap_ == MAP_FAILED) {
         DFXLOGE("mmap failed, fd(%{public}d), errno(%{public}d)", smartFd.GetFd(), errno);
+        return false;
+    }
+    return true;
+}
+
+bool DfxHap::ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relPc, JsFunction *jsFunction)
+{
+#if is_ohos && !is_mingw
+    if (jsFunction == nullptr) {
+        return false;
+    }
+    if (!MmapForHap(mapName)) {
         return false;
     }
     bool isSuccess = DfxArk::Instance().ParseArkFrameInfo(
         static_cast<uintptr_t>(relPc), 0, 0,
-        static_cast<uint8_t*>(mptr),
-        size, arkSymbolExtractorPtr_, jsFunction) >= 0;
+        static_cast<uint8_t*>(mmap_),
+        hapSize_, arkSymbolExtractorPtr_, jsFunction) >= 0;
     if (!isSuccess) {
         DFXLOGW("Failed to parse ark frame info, relPc: %{private}p, codeName: %{private}s",
             reinterpret_cast<void *>(relPc), mapName.c_str());
     }
-    munmap(mptr, size);
     return isSuccess;
 #else
     return false;
