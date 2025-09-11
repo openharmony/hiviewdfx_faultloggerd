@@ -67,6 +67,7 @@ private:
     bool DoReadBuf(int fd);
     bool DoReadRes(int fd, int& pollRet);
     bool ParseSampleStacks(const std::string& datas);
+    int WaitpidTimeout(pid_t pid, int *status);
 
     std::string bufMsg_;
     std::string resMsg_;
@@ -134,6 +135,8 @@ int LitePerf::Impl::StartProcessStackSampling(const std::vector<int>& tids, int 
         }
     } while (false);
     FinishDump();
+    close(pipeReadFd[0]);
+    close(pipeReadFd[1]);
     return res;
 }
 
@@ -292,6 +295,28 @@ bool LitePerf::Impl::InitDumpParam(const std::vector<int>& tids, int freq, int d
     return true;
 }
 
+int LitePerf::Impl::WaitpidTimeout(pid_t pid, int *status) {
+    for (int i = 0; i <= 10; i++) {
+        int result = waitpid(pid, status, WNOHANG);
+
+        if (result == pid) {
+            return 0;
+        }
+        if (result == -1) {
+            DFXLOGE("Failed to wait pid(%{public}d)", pid);
+            kill(pid, SIGKILL);
+            return -1;
+        }
+
+        constexpr time_t usleepTime = 100000;
+        usleep(usleepTime);
+    }
+    DFXLOGE("Failed to wait pid(%{public}d), timeout", pid);
+    kill(pid, SIGKILL);
+    constexpr int waitTimeout = -2;
+    return waitTimeout;
+}
+
 int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int durationMs)
 {
     static LitePerfParam lperf;
@@ -324,9 +349,10 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
             _exit(0);
         }
     }
-    int res = waitpid(pid, nullptr, 0);
+    int res = WaitpidTimeout(pid, nullptr);
     if (res < 0) {
         DFXLOGE("Failed to wait pid(%{public}d), errno(%{public}d)", pid, errno);
+        return -1;
     } else {
         DFXLOGI("wait pid(%{public}d) exit", pid);
     }
