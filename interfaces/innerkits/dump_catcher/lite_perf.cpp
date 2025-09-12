@@ -119,6 +119,12 @@ int LitePerf::Impl::StartProcessStackSampling(const std::vector<int>& tids, int 
         static_cast<int>(timeout / 1000));
     if (req != ResponseCode::REQUEST_SUCCESS) {
         DFXLOGE("Failed to request liteperf pipe read.");
+        if (pipeReadFd[0] != -1) {
+            close(pipeReadFd[0]);
+        }
+        if (pipeReadFd[1] != -1) {
+            close(pipeReadFd[1]);
+        }
         isRunning_.store(false);
         return -1;
     }
