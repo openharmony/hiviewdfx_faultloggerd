@@ -161,21 +161,21 @@ NOINLINE int MaxMethodNameTest12345678901234567890123456789012345678901234567890
     return 0;
 }
 
+static int DoStackOverflow(int depth)
+{
+    // for stack overflow test
+    char arr[1024][1024][1024] = { { {'1'} } };
+    printf("arr[0][0] is %s\n", arr[0][0]);
+    if (depth > 0xFFFF) {
+        return 0;
+    }
+    return DoStackOverflow(depth + 1);
+}
+
 NOINLINE int StackOverflow(void)
 {
     printf("call StackOverflow\n");
-
-    // for stack overflow test
-    char a[1024][1024][1024] = { { {'1'} } };
-    char b[1024][1024][1024] = { { {'1'} } };
-    char c[1024][1024][1024] = { { {'1'} } };
-    char d[1024][1024][1024] = { { {'1'} } };
-    printf("a[0][0] is %s\n", a[0][0]);
-    printf("b[0][0] is %s\n", b[0][0]);
-    printf("c[0][0] is %s\n", c[0][0]);
-    printf("d[0][0] is %s\n", d[0][0]);
-
-    return 0;
+    return DoStackOverflow(0);
 }
 
 NOINLINE int Oom(void)
