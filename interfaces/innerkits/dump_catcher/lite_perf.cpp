@@ -323,6 +323,15 @@ int LitePerf::Impl::WaitpidTimeout(pid_t pid)
     return -1;
 }
 
+static pid_t ForkBySyscall(void)
+{
+#ifdef SYS_fork
+    return syscall(SYS_fork);
+#else
+    return syscall(SYS_clone, SIGCHLD, 0);
+#endif
+}
+
 int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int durationMs)
 {
     static LitePerfParam lperf;
@@ -330,8 +339,7 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
         return -1;
     }
 
-    pid_t pid = 0;
-    pid = fork();
+    pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork.");
         return -1;
@@ -343,7 +351,7 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
             _exit(-1);
         }
 
-        pid_t dumpPid = fork();
+        pid_t dumpPid = ForkBySyscall();
         if (dumpPid < 0) {
             DFXLOGE("Failed to fork.");
             _exit(-1);
