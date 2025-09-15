@@ -87,7 +87,11 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$hilog_lite_deps_path",
     ]
-
+    if (faultloggerd_hisysevent_enable) {
+      deps += [ "hisysevent:libhisysevent" ]
+    } else {
+      defines = [ "HISYSEVENT_DISABLE" ]
+    }
     external_deps = [ "bounds_checking_function:libsec_shared" ]
   }
 
@@ -95,7 +99,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
 
     public_configs = [ ":ohos_lite_config" ]
-
+    defines = [ "HISYSEVENT_DISABLE" ]
     include_dirs = [
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
@@ -190,6 +194,7 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
+      "hisysevent:libhisysevent",
       "init:libbegetutil",
     ]
 
@@ -216,6 +221,7 @@ if (defined(ohos_lite)) {
       ":mixstack_config",
     ]
     defines = [ "CJ_DEMANGLE" ]
+    defines += [ "HISYSEVENT_DISABLE" ]
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
@@ -250,7 +256,7 @@ if (defined(ohos_lite)) {
       ":mixstack_config",
     ]
     defines = [ "DFX_LOG_HILOG_BASE" ]
-
+    defines += [ "HISYSEVENT_DISABLE" ]
     if (target_cpu != "x86_64") {
       dfx_unwinder_sources -= [ "src/registers/getcontext_x86_64.S" ]
     }
@@ -306,6 +312,7 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
+      "hisysevent:libhisysevent",
     ]
 
     if (is_ohos && !is_mingw && !is_emulator) {

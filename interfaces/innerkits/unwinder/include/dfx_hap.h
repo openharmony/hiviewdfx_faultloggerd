@@ -30,7 +30,8 @@ class DfxHap {
 public:
     DfxHap() = default;
     ~DfxHap();
-
+    DfxHap(const DfxHap&) = delete;
+    DfxHap& operator= (const DfxHap&) = delete;
     bool ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction,
         bool isOffline = false);
 private:
