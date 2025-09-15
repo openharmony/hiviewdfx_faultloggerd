@@ -111,7 +111,6 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest001, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Tid:",
@@ -168,7 +167,6 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest002, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Tid:",
@@ -216,7 +214,6 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest003, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Fault thread info:",
@@ -258,7 +255,6 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest004, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     OtherThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Other thread info:",
@@ -301,7 +297,6 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest005, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     OtherThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Tid:",
@@ -346,7 +341,6 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest006, TestSize.Level2)
     OtherThreadDumpInfo dumpInfo;
     dumpInfo.SetDumpInfo(keyThreadDumpInfo);
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), threadCount);
-    dumpInfo.Symbolize(process, unwinder);
     dumpInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Tid:",

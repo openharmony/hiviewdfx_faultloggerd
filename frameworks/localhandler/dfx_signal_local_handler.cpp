@@ -82,7 +82,7 @@ static int DoCrashHandler(void* arg)
 {
     int sig = *(static_cast<int *>(arg));
     RegisterAllocator();
-    DFXLOGI("DoCrashHandler::start handle sig(%d)", sig);
+    DFXLOGI("DoCrashHandler::start handle sig(%{public}d)", sig);
     if (sig == SIGALRM) {
         if (g_sigAlarmCallbackFn != nullptr) {
             g_sigAlarmCallbackFn();
@@ -98,7 +98,7 @@ static int DoCrashHandler(void* arg)
             }
         }
     }
-    DFXLOGI("DoCrashHandler::finish handle sig(%d)", sig);
+    DFXLOGI("DoCrashHandler::finish handle sig(%{public}d)", sig);
     UnregisterAllocator();
     pthread_mutex_unlock(&g_signalHandlerMutex);
     _exit(0);

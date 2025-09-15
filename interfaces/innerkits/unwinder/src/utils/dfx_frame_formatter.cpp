@@ -62,7 +62,7 @@ std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
         } else {
             data += " [Unknown]";
         }
-        if (frame.parseSymbolState.IsParseSymbolComplete() && !frame.funcName.empty() &&
+        if (!frame.funcName.empty() &&
             frame.funcName.length() <= MAX_FUNC_NAME_LEN) {
             data += "(" + frame.funcName;
             data += StringPrintf("+%" PRId64, frame.funcOffset);

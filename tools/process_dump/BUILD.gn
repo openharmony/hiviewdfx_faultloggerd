@@ -19,7 +19,6 @@ processdump_sources = [
   "dfx_thread.cpp",
   "dump_info_header.cpp",
   "dump_info_json_formatter.cpp",
-  "dump_utils.cpp",
   "extra_crash_info.cpp",
   "fault_stack.cpp",
   "key_thread_dump_info.cpp",
@@ -31,6 +30,8 @@ processdump_sources = [
   "process_dumper.cpp",
   "registers.cpp",
   "submitter_stack.cpp",
+  "utils/dump_utils.cpp",
+  "utils/thread_pool.cpp",
 ]
 
 if (defined(ohos_lite)) {
@@ -48,6 +49,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       ".",
+      "utils",
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
@@ -107,6 +109,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "coredump",
+      "utils",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",

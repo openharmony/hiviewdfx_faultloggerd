@@ -418,7 +418,7 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
     ASSERT_FALSE(ins.InitBufferWriter());
 
     ins.request_.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
-    ins.WriteDumpResIfNeed(1);
+    ins.WriteDumpResIfNeed(DumpErrorCode::DUMP_ESUCCESS);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest018: end.";
 }
 

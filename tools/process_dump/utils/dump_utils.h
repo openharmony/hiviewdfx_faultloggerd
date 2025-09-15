@@ -17,6 +17,7 @@
 #define DUMP_UTILS_H
 #include "unwinder.h"
 #include "dfx_dump_request.h"
+#include "dfx_process.h"
 #include "dfx_thread.h"
 #include <cinttypes>
 #include <memory>
@@ -32,6 +33,10 @@ public:
     static bool ReadTargetMemory(pid_t tid, uintptr_t addr, uintptr_t &value);
     static std::string GetSelfBundleName();
     static void InfoCrashUnwindResult(const ProcessDumpRequest& request, bool isUnwindSucc);
+    static void BlockCrashProcExit(const ProcessDumpRequest& request);
+    static void WaitForFork(pid_t pid, pid_t& childPid);
+    static void GetVmProcessRealPid(const ProcessDumpRequest& request, pid_t vmPid, pid_t& realPid);
+    static void NotifyOperateResult(ProcessDumpRequest& request, int result);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

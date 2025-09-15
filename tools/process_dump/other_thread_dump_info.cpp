@@ -19,6 +19,7 @@
 #include "dfx_trace.h"
 #include "process_dump_config.h"
 #include "dfx_buffer_writer.h"
+#include "thread_pool.h"
 namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(OtherThreadDumpInfo);
@@ -51,6 +52,11 @@ int OtherThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpReque
         DFX_TRACE_FINISH();
         DFX_TRACE_START("OtherThreadGetFrames:%d", tid);
         thread->SetFrames(unwinder.GetFrames());
+        for (const auto& frame : unwinder.GetFrames()) {
+            if (!frame.isJsFrame) {
+                process.AddNativeFramesTable(std::make_pair(frame.pc, frame));
+            }
+        }
         DFX_TRACE_FINISH();
 #ifdef PARSE_LOCK_OWNER
         DumpUtils::ParseLockInfo(unwinder, pid, tid);
@@ -71,16 +77,6 @@ void OtherThreadDumpInfo::Print(DfxProcess& process, const ProcessDumpRequest& r
         dumpInfo += thread->ToString();
     }
     DfxBufferWriter::GetInstance().WriteMsg(dumpInfo);
-}
-
-void OtherThreadDumpInfo::Symbolize(DfxProcess& process, Unwinder& unwinder)
-{
-    DecorativeDumpInfo::Symbolize(process, unwinder);
-    for (const auto &thread : process.GetOtherThreads()) {
-        DFX_TRACE_START("ParseSymbol otherThread:%d", thread->GetThreadInfo().nsTid);
-        thread->ParseSymbol(unwinder);
-        DFX_TRACE_FINISH();
-    }
 }
 }
 }

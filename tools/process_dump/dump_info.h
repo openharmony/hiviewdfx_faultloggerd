@@ -32,7 +32,6 @@ public:
     virtual void SetDumpInfo(const std::shared_ptr<DumpInfo>& dumpInfo) {}
     virtual void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) = 0;
     virtual int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) = 0;
-    virtual void Symbolize(DfxProcess& process, Unwinder& unwinder) = 0;
     virtual void GetMemoryValues(std::set<uintptr_t>& memoryValues) {};
 };
 }

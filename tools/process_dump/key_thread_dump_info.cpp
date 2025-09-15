@@ -21,6 +21,7 @@
 #include <elf.h>
 #include <link.h>
 #include <securec.h>
+#include <thread>
 
 #include "crash_exception.h"
 #include "decorative_dump_info.h"
@@ -77,18 +78,6 @@ bool ParseUnwindStack(const std::vector<uintptr_t>& stackValues,
 }
 
 REGISTER_DUMP_INFO_CLASS(KeyThreadDumpInfo);
-
-void KeyThreadDumpInfo::Symbolize(DfxProcess& process, Unwinder& unwinder)
-{
-    auto thread = process.GetKeyThread();
-    if (thread == nullptr) {
-        DFXLOGE("key thread is nullptr!");
-        return;
-    }
-    DFX_TRACE_START("ParseSymbol keyThread:%d", thread->GetThreadInfo().nsTid);
-    thread->ParseSymbol(unwinder);
-    DFX_TRACE_FINISH();
-}
 
 void KeyThreadDumpInfo::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
@@ -148,6 +137,11 @@ bool KeyThreadDumpInfo::GetKeyThreadStack(DfxProcess& process, Unwinder& unwinde
     DFX_TRACE_FINISH();
     DFX_TRACE_START("KeyThreadGetFrames:%d", tid);
     thread->SetFrames(unwinder.GetFrames());
+    for (const auto& frame : unwinder.GetFrames()) {
+        if (!frame.isJsFrame) {
+            process.AddNativeFramesTable(std::make_pair(frame.pc, frame));
+        }
+    }
     DFX_TRACE_FINISH();
     ReportUnwinderException(unwinder.GetLastErrorCode());
     UnwindThreadByParseStackIfNeed(thread, unwinder.GetMaps());

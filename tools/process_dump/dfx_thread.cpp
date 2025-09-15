@@ -126,17 +126,20 @@ void DfxThread::SetFrames(const std::vector<DfxFrame>& frames)
     frames_ = frames;
 }
 
-void DfxThread::ParseSymbol(Unwinder& unwinder)
+void DfxThread::FillSymbol(const std::map<int, DfxFrame>& frameTable)
 {
     if (!needParseSymbol_) {
         return;
     }
-
     for (auto& frame : frames_) {
         if (frame.isJsFrame) { // js frame parse in unwinder
             continue;
         }
-        unwinder.ParseFrameSymbol(frame);
+        auto foundFrame = frameTable.find(frame.pc);
+        if (foundFrame != frameTable.end() && foundFrame->second.parseSymbolState.IsParseSymbolComplete()) {
+            frame.funcName = foundFrame->second.funcName;
+            frame.funcOffset = foundFrame->second.funcOffset;
+        }
     }
 }
 

@@ -32,6 +32,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/test/utils",
         "$faultloggerd_path/tools/process_dump",
         "$faultloggerd_path/tools/process_dump/coredump",
+        "$faultloggerd_path/tools/process_dump/utils",
         "$hilog_lite_include_path",
       ]
 
@@ -72,6 +73,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/test/utils",
       "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/tools/process_dump/coredump",
+      "$faultloggerd_path/tools/process_dump/utils",
       "$faultloggerd_path/tools/process_dump/lperf",
     ]
   }

@@ -29,9 +29,11 @@
 #include "coredump_manager.h"
 #endif
 #include "dfx_dump_request.h"
+#include "dfx_dump_res.h"
 #include "dfx_process.h"
 #include "dump_info.h"
 #include "nocopyable.h"
+#include "thread_pool.h"
 #include "unwinder.h"
 
 namespace OHOS {
@@ -50,34 +52,41 @@ public:
 private:
     ProcessDumper() = default;
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
-    int DumpProcess();
-    int32_t ReadRequestAndCheck();
+    DumpErrorCode DumpProcess();
+    DumpErrorCode ReadRequestAndCheck();
     bool InitBufferWriter();
     bool InitDfxProcess();
-    bool InitUnwinder(int &dumpRes);
+    bool InitUnwinder(DumpErrorCode &dumpRes);
     int GeFaultloggerdRequestType();
     void UnwindWriteJit();
     void FormatJsonInfoIfNeed();
     void UpdateConfigByRequest();
-    void WriteDumpResIfNeed(int32_t resDump);
-    void PrintDumpInfo(int& dumpRes);
-    int ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo);
+    void WriteDumpResIfNeed(const DumpErrorCode& resDump);
+    void PrintDumpInfo(DumpErrorCode& dumpRes);
+    DumpErrorCode WaitParseSymbols();
     std::vector<std::string> FindDumpInfoByType(const ProcessDumpType& dumpType);
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
     void RemoveFileIfNeed(const std::string& dirPath) const;
+    int ReadVmPid();
+    std::future<DumpErrorCode> AsyncInitialization();
+    DumpErrorCode ConcurrentSymbolize();
+    DumpErrorCode DumpPreparation();
+    void FillAllThreadNativeSymbol();
 
 private:
     void SetProcessdumpTimeout(siginfo_t &si);
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<Unwinder> unwinder_ = nullptr;
+    ThreadPool threadPool_;
     ProcessDumpRequest request_{};
     uint64_t startTime_ = 0;
     uint64_t finishTime_ = 0;
 
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
     bool isJsonDump_ = false;
+    bool isCoreDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
-    std::future<void> parseSymbolTask_;
+    std::future<void> initUnwinderFinishFuture_;
 #if defined(__aarch64__) && !defined(is_ohos_lite)
     std::unique_ptr<CoredumpManager> coredumpManager_;
 #endif
