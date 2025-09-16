@@ -143,12 +143,10 @@ DfxFrame* FpBacktraceImpl::SymbolicAddress(void* pc)
     auto elf = frame->map->GetElf();
     if (elf == nullptr) {
         unwinder_.FillJsFrame(*frame);
-        if (!frame->funcName.empty()) {
-            return frame.get();
-        }
+    } else {
+        DfxSymbols::GetFuncNameAndOffsetByPc(frame->relPc, elf, frame->funcName, frame->funcOffset);
+        frame->buildId = elf->GetBuildId();
     }
-    DfxSymbols::GetFuncNameAndOffsetByPc(frame->relPc, elf, frame->funcName, frame->funcOffset);
-    frame->buildId = elf->GetBuildId();
     return frame.get();
 }
 #endif
