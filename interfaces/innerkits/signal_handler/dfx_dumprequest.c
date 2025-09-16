@@ -159,14 +159,12 @@ int32_t DFX_InheritCapabilities(void)
     capHeader.pid = 0;
     struct __user_cap_data_struct capData[2];
     if (capget(&capHeader, &capData[0]) == -1) {
-        DFXLOGE("Failed to get origin cap data");
         return -1;
     }
 
     capData[0].inheritable = capData[0].permitted;
     capData[1].inheritable = capData[1].permitted;
     if (capset(&capHeader, &capData[0]) == -1) {
-        DFXLOGE("Failed to set cap data, errno(%{public}d)", errno);
         return -1;
     }
 
@@ -175,7 +173,6 @@ int32_t DFX_InheritCapabilities(void)
     for (size_t i = 0; i < NUMBER_SIXTYFOUR; i++) {
         if (ambCap & ((uint64_t)1)) {
             if (prctl(PR_CAP_AMBIENT, PR_CAP_AMBIENT_RAISE, i, 0, 0) < 0) {
-                DFXLOGE("Failed to change the ambient capability set, errno(%{public}d)", errno);
             }
         }
         ambCap = ambCap >> 1;

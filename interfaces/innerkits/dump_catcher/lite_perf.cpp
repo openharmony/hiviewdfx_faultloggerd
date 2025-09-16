@@ -67,6 +67,7 @@ private:
     bool DoReadBuf(int fd);
     bool DoReadRes(int fd, int& pollRet);
     bool ParseSampleStacks(const std::string& datas);
+    int WaitpidTimeout(pid_t pid);
 
     std::string bufMsg_;
     std::string resMsg_;
@@ -118,6 +119,12 @@ int LitePerf::Impl::StartProcessStackSampling(const std::vector<int>& tids, int 
         static_cast<int>(timeout / 1000));
     if (req != ResponseCode::REQUEST_SUCCESS) {
         DFXLOGE("Failed to request liteperf pipe read.");
+        if (pipeReadFd[0] != -1) {
+            close(pipeReadFd[0]);
+        }
+        if (pipeReadFd[1] != -1) {
+            close(pipeReadFd[1]);
+        }
         isRunning_.store(false);
         return -1;
     }
@@ -134,6 +141,8 @@ int LitePerf::Impl::StartProcessStackSampling(const std::vector<int>& tids, int 
         }
     } while (false);
     FinishDump();
+    close(pipeReadFd[0]);
+    close(pipeReadFd[1]);
     return res;
 }
 
@@ -292,6 +301,37 @@ bool LitePerf::Impl::InitDumpParam(const std::vector<int>& tids, int freq, int d
     return true;
 }
 
+int LitePerf::Impl::WaitpidTimeout(pid_t pid)
+{
+    constexpr int waitCount = 30;
+    for (int i = 0; i <= waitCount; i++) {
+        int result = waitpid(pid, nullptr, WNOHANG);
+        if (result == pid) {
+            return 0;
+        }
+        if (result == -1) {
+            DFXLOGE("Failed to wait pid(%{public}d)", pid);
+            kill(pid, SIGKILL);
+            return -1;
+        }
+
+        constexpr time_t usleepTime = 100000;
+        usleep(usleepTime);
+    }
+    DFXLOGE("Failed to wait pid(%{public}d), timeout", pid);
+    kill(pid, SIGKILL);
+    return -1;
+}
+
+static pid_t ForkBySyscall(void)
+{
+#ifdef SYS_fork
+    return syscall(SYS_fork);
+#else
+    return syscall(SYS_clone, SIGCHLD, 0);
+#endif
+}
+
 int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int durationMs)
 {
     static LitePerfParam lperf;
@@ -299,8 +339,7 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
         return -1;
     }
 
-    pid_t pid = 0;
-    pid = fork();
+    pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork.");
         return -1;
@@ -308,13 +347,11 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
     if (pid == 0) {
         int pipefd[PIPE_NUM_SZ] = {-1, -1};
         if (pipe2(pipefd, O_NONBLOCK) != 0) {
-            DFXLOGE("Failed to create pipe, errno: %{public}d.", errno);
             _exit(-1);
         }
 
-        pid_t dumpPid = fork();
+        pid_t dumpPid = ForkBySyscall();
         if (dumpPid < 0) {
-            DFXLOGE("Failed to fork.");
             _exit(-1);
         }
         if (dumpPid == 0) {
@@ -324,9 +361,10 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
             _exit(0);
         }
     }
-    int res = waitpid(pid, nullptr, 0);
+    int res = WaitpidTimeout(pid);
     if (res < 0) {
         DFXLOGE("Failed to wait pid(%{public}d), errno(%{public}d)", pid, errno);
+        return -1;
     } else {
         DFXLOGI("wait pid(%{public}d) exit", pid);
     }
@@ -337,7 +375,6 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
 {
     ssize_t writeLen = sizeof(LitePerfParam);
     if (fcntl(pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
-        DFXLOGE("Failed to set pipe buffer size, errno(%{public}d).", errno);
         return false;
     }
 
@@ -349,7 +386,6 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
     };
 
     if (OHOS_TEMP_FAILURE_RETRY(writev(pipefd[PIPE_WRITE], iovs, 1)) != writeLen) {
-        DFXLOGE("Failed to write pipe, errno(%{public}d)", errno);
         return false;
     }
     OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[PIPE_READ], STDOUT_FILENO));
@@ -359,13 +395,10 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
     close(pipefd[PIPE_WRITE]);
 
     if (DFX_InheritCapabilities() != 0) {
-        DFXLOGE("Failed to inherit Capabilities from parent.");
         return false;
     }
 
-    DFXLOGI("execl processdump -liteperf.");
     execl(PROCESSDUMP_PATH, "processdump", "-liteperf", nullptr);
-    DFXLOGE("Failed to execl processdump -liteperf, errno(%{public}d)", errno);
     return false;
 }
 
