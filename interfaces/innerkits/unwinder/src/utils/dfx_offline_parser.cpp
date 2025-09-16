@@ -23,6 +23,11 @@
 #include "string_util.h"
 #include "unwinder_config.h"
 
+#ifndef HISYSEVENT_DISABLE
+#include "file_util.h"
+#include "hisysevent.h"
+#endif
+
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -33,6 +38,8 @@ namespace {
 
 const char* const SANDBOX_PATH_PREFIX = "/data/storage/el1/bundle/";
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
+MAYBE_UNUSED const char* const SELF_CMDLINE_PATH = "/proc/self/cmdline";
+const int MAX_SINGLE_FRAME_PARSE_TIME = 1000;
 }
 DfxOfflineParser::DfxOfflineParser(const std::string& bundleName) : bundleName_(bundleName)
 {
@@ -51,7 +58,13 @@ DfxOfflineParser::~DfxOfflineParser()
 
 bool DfxOfflineParser::ParseSymbolWithFrame(DfxFrame& frame)
 {
-    return IsJsFrame(frame) ? ParseJsSymbol(frame) : ParseNativeSymbol(frame);
+    counter_.Reset();
+    bool result = IsJsFrame(frame) ? ParseJsSymbol(frame) : ParseNativeSymbol(frame);
+    auto costTime = counter_.Elapsed<std::chrono::milliseconds>();
+    if (costTime > MAX_SINGLE_FRAME_PARSE_TIME) {
+        ReportDumpStats(frame, static_cast<uint32_t>(costTime));
+    }
+    return result;
 }
 
 bool DfxOfflineParser::IsJsFrame(const DfxFrame& frame)
@@ -147,6 +160,45 @@ std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
     dfxMap->elf = elf;
     dfxMaps_->AddMap(dfxMap);
     return elf;
+}
+
+void DfxOfflineParser::ReportDumpStats(const ReportData& reportData)
+{
+#ifndef HISYSEVENT_DISABLE
+    std::string cmdline;
+    if (!LoadStringFromFile(SELF_CMDLINE_PATH, cmdline)) {
+        DFXLOGE("Failed to read self cmdline, errno:%{public}d", errno);
+    }
+    Trim(cmdline);
+    HiSysEventWrite(
+        HiSysEvent::Domain::HIVIEWDFX,
+        "DUMP_CATCHER_STATS",
+        HiSysEvent::EventType::STATISTIC,
+        "CALLER_PROCESS_NAME", cmdline.c_str(),
+        "TARGET_PROCESS_NAME", reportData.bundleName.c_str(),
+        "RESULT", reportData.parseCostType,
+        "SUMMARY", reportData.summary.c_str(),
+        "WRITE_DUMP_INFO_TIME", reportData.costTime,
+        "TARGET_PROCESS_THREAD_COUNT", reportData.threadCount);
+#endif
+}
+
+void DfxOfflineParser::ReportDumpStats(const DfxFrame& frame, uint32_t costTime)
+{
+    ReportData reportData;
+    reportData.parseCostType = ParseCostType::PARSE_SINGLE_FRAME_TIME;
+    reportData.bundleName = bundleName_;
+    reportData.costTime = costTime;
+    std::string summary = "";
+    if (frame.isJsFrame) {
+        summary += StringPrintf("at %s, %s, %s", frame.funcName.c_str(), frame.packageName.c_str(),
+            frame.mapName.c_str());
+    } else {
+        summary += StringPrintf("relPc: %016" PRIx64 ", mapName:%s, buildId:%s", frame.relPc, frame.mapName.c_str(),
+            frame.buildId.c_str());
+    }
+    reportData.summary = summary;
+    ReportDumpStats(reportData);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

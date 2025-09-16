@@ -19,9 +19,22 @@
 #include "dfx_elf.h"
 #include "dfx_maps.h"
 #include "dfx_frame.h"
+#include "elapsed_time.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+enum ParseCostType : int32_t {
+    PARSE_ALL_FRAME_TIME = 100,
+    PARSE_SINGLE_FRAME_TIME = 101,
+};
+
+struct ReportData {
+    ParseCostType parseCostType {PARSE_ALL_FRAME_TIME};
+    std::string bundleName {""};
+    std::string summary {""};
+    uint32_t costTime {0};
+    uint32_t threadCount {0};
+};
 class DfxOfflineParser {
 public:
     DfxOfflineParser(const std::string& bundleName);
@@ -29,6 +42,7 @@ public:
     DfxOfflineParser(const DfxOfflineParser&) = delete;
     DfxOfflineParser& operator= (const DfxOfflineParser&) = delete;
     bool ParseSymbolWithFrame(DfxFrame& frame);
+    static void ReportDumpStats(const ReportData& reportData);
 private:
     static bool IsJsFrame(const DfxFrame& frame);
     bool ParseNativeSymbol(DfxFrame& frame);
@@ -36,10 +50,12 @@ private:
     std::string GetBundlePath(const std::string& originPath) const;
     std::shared_ptr<DfxElf> GetElfForFrame(const DfxFrame& frame);
     std::shared_ptr<DfxMap> GetMapForFrame(const DfxFrame& frame);
+    void ReportDumpStats(const DfxFrame& frame, uint32_t costTime);
     bool CachedEnableMiniDebugInfo_ {false};
     bool CachedEnableLoadSymbolLazily_ {false};
     std::string bundleName_ {""};
     std::shared_ptr<DfxMaps> dfxMaps_ {nullptr};
+    ElapsedTime counter_;
 };
 }
 }

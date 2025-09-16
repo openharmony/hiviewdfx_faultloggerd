@@ -63,6 +63,7 @@ if (defined(ohos_lite)) {
 
     include_dirs = [
       "include",
+      "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",

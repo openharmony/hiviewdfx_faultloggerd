@@ -36,6 +36,7 @@ namespace {
 const char* const BBOX_PATH = "/dev/bbox";
 const int BUFF_STACK_SIZE = 20 * 1024;
 const uint32_t MAGIC_NUM = 0x9517;
+MAYBE_UNUSED const int MAX_ALL_FRAME_PARSE_TIME = 3000;
 typedef struct HstackVal {
     uint32_t magic {0};
     pid_t pid {0};
@@ -134,7 +135,16 @@ bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThr
         }
     }
     DfxEnableTraceDlsym(false);
-    DFXLOGI("format kernel stack cost time = %{public}" PRId64 " ms", counter.Elapsed<std::chrono::milliseconds>());
+    auto costTime = counter.Elapsed<std::chrono::milliseconds>();
+    DFXLOGI("format kernel stack cost time = %{public}" PRId64 " ms", costTime);
+    if (costTime > MAX_ALL_FRAME_PARSE_TIME) {
+        ReportData reportData;
+        reportData.parseCostType = ParseCostType::PARSE_ALL_FRAME_TIME;
+        reportData.bundleName = bundleName;
+        reportData.costTime = static_cast<uint32_t>(costTime);
+        reportData.threadCount = static_cast<uint32_t>(threadKernelStackVec.size());
+        DfxOfflineParser::ReportDumpStats(reportData);
+    }
     return true;
 #else
     return false;

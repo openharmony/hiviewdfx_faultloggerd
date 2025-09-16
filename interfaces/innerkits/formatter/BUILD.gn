@@ -31,6 +31,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
     ]
     sources = [ "dfx_json_formatter.cpp" ]
 
@@ -38,6 +39,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "jsoncpp:jsoncpp",
+      "hilog:libhilog",
     ]
 
     install_images = [
