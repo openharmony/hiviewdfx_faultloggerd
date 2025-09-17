@@ -487,14 +487,10 @@ HWTEST_F(DfxCoreDumpTest, CoredumpGeneratorFactory001, TestSize.Level2)
     ret = coredumpGeneratorFactory.CreateGenerator(request);
     EXPECT_TRUE(ret);
 
-    std::string cmd = "param set faultloggerd.priv.hwasan_coredump.enabled true";
-    system(cmd.c_str());
-
     request.siginfo.si_signo = 6;
     request.siginfo.si_code = 3;
     ret = coredumpGeneratorFactory.CreateGenerator(request);
-    cmd = "param set faultloggerd.priv.hwasan_coredump.enabled false";
-    system(cmd.c_str());
+    EXPECT_FALSE(ret);
     GTEST_LOG_(INFO) << "CoredumpGeneratorFactory001: end.";
 }
 
