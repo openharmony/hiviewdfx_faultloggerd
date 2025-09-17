@@ -16,6 +16,7 @@
 #ifndef DECORATIVE_DUMP_INFO_H
 #define DECORATIVE_DUMP_INFO_H
 #include <cinttypes>
+#include <map>
 #include <memory>
 #include <set>
 #include <vector>
@@ -56,13 +57,6 @@ public:
             return dumpInfo_->UnwindStack(process, request, unwinder);
         }
         return 0;
-    }
-
-    void Symbolize(DfxProcess& process, Unwinder& unwinder) override
-    {
-        if (dumpInfo_ != nullptr) {
-            dumpInfo_->Symbolize(process, unwinder);
-        }
     }
 
     void GetMemoryValues(std::set<uintptr_t>& memoryValues) override
@@ -115,7 +109,6 @@ class OtherThreadDumpInfo : public DecorativeDumpInfo {
 public:
     int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
-    void Symbolize(DfxProcess& process, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<OtherThreadDumpInfo>(); }
 };
 

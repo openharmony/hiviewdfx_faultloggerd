@@ -35,6 +35,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/test/utils",
       "$faultloggerd_path/tools/process_dump",
       "$faultloggerd_path/tools/process_dump/coredump",
+      "$faultloggerd_path/tools/process_dump/utils",
     ]
   }
 

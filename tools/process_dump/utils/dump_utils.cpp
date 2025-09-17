@@ -16,22 +16,26 @@
 
 #include <vector>
 #include <pthread.h>
-#include "sys/ptrace.h"
+#include <sys/ptrace.h>
+#include <sys/wait.h>
 
-#include "dfx_util.h"
-#include "dfx_log.h"
-#include "dfx_kernel_stack.h"
 #include "dfx_frame_formatter.h"
+#include "dfx_kernel_stack.h"
+#include "dfx_log.h"
+#include "dfx_trace.h"
+#include "dfx_util.h"
 #ifndef is_ohos_lite
 #include "bundle_mgr_interface.h"
 #include "bundle_mgr_proxy.h"
 #include "if_system_ability_manager.h"
 #include "iservice_registry.h"
+#include "parameters.h"
 #include "system_ability_definition.h"
 #endif
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
 // defined in alltypes.h
 #define DFX_MUTEX_TYPE u.i[0]
 #define DFX_MUTEX_OWNER u.vi[1]
@@ -205,6 +209,80 @@ void DumpUtils::InfoCrashUnwindResult(const ProcessDumpRequest& request, bool is
     if (ptrace(PTRACE_POKEDATA, request.nsPid, reinterpret_cast<void*>(request.unwindResultAddr),
         CRASH_UNWIND_SUCCESS_FLAG) < 0) {
         DFXLOGE("pok unwind success flag to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
+    }
+}
+
+bool IsBlockCrashProcess()
+{
+#ifndef is_ohos_lite
+    static bool isBlockCrash = OHOS::system::GetParameter(BLOCK_CRASH_PROCESS, "false") == "true";
+    return isBlockCrash;
+#else
+    return false;
+#endif
+}
+
+void DumpUtils::WaitForFork(pid_t pid, pid_t& childPid)
+{
+    DFXLOGI("start wait fork event happen");
+    int waitStatus = 0;
+    pid_t result = waitpid(pid, &waitStatus, 0); // wait fork event
+    if (result != pid) {
+        DFXLOGE("waitpid failed, expected pid:%{public}d, got:%{public}d", pid, result);
+        return;
+    }
+    DFXLOGI("wait for fork status %{public}d", waitStatus);
+    if (static_cast<unsigned int>(waitStatus) >> 8 == (SIGTRAP | (PTRACE_EVENT_FORK << 8))) { // 8 : get fork event
+        ptrace(PTRACE_GETEVENTMSG, pid, NULL, &childPid);
+        DFXLOGI("next child pid %{public}d", childPid);
+        waitpid(childPid, &waitStatus, 0); // wait child stop event
+    }
+}
+
+void DumpUtils::GetVmProcessRealPid(const ProcessDumpRequest& request, pid_t vmPid, pid_t& realPid)
+{
+    int waitStatus = 0;
+    ptrace(PTRACE_SETOPTIONS, vmPid, NULL, PTRACE_O_TRACEEXIT); // block son exit
+    ptrace(PTRACE_CONT, vmPid, NULL, NULL);
+
+    DFXLOGI("start wait exit event happen");
+    pid_t result = waitpid(vmPid, &waitStatus, 0); // wait exit stop
+    if (result != vmPid) {
+        DFXLOGE("waitpid failed, expected pid:%{public}d, got:%{public}d", vmPid, result);
+        return;
+    }
+    long data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request.vmProcRealPidAddr), nullptr);
+    if (data < 0) {
+        DFXLOGI("ptrace peek data error %{public}d %{public}d", vmPid, errno);
+        return;
+    }
+    realPid = static_cast<pid_t>(data);
+}
+
+void DumpUtils::NotifyOperateResult(ProcessDumpRequest& request, int result)
+{
+    if (request.childPipeFd[0] != -1) {
+        close(request.childPipeFd[0]);
+        request.childPipeFd[0] = -1;
+    }
+    if (OHOS_TEMP_FAILURE_RETRY(write(request.childPipeFd[1], &result, sizeof(result))) < 0) {
+        DFXLOGE("write to child process fail %{public}d", errno);
+    }
+    if (request.childPipeFd[1] != -1) {
+        close(request.childPipeFd[1]);
+        request.childPipeFd[1] = -1;
+    }
+}
+
+void DumpUtils::BlockCrashProcExit(const ProcessDumpRequest& request)
+{
+    if (!IsBlockCrashProcess()) {
+        return;
+    }
+    DFXLOGI("start block crash process pid %{public}d nspid %{public}d", request.pid, request.nsPid);
+    if (ptrace(PTRACE_POKEDATA, request.nsPid, reinterpret_cast<void*>(request.blockCrashExitAddr),
+        CRASH_BLOCK_EXIT_FLAG) < 0) {
+        DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
     }
 }
 } // namespace HiviewDFX

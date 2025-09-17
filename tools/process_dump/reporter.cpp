@@ -72,17 +72,20 @@ void CppCrashReporter::Report(DfxProcess& process, const ProcessDumpRequest &req
 
 void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequest &request)
 {
-    void* handle = dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE);
+    std::shared_ptr<void> handle(dlopen("libfaultlogger.z.so", RTLD_LAZY | RTLD_NODELETE), [] (void* handle) {
+        if (handle != nullptr) {
+            dlclose(handle);
+        }
+    });
     if (handle == nullptr) {
         DFXLOGW("Failed to dlopen libfaultlogger, %{public}s\n", dlerror());
         dlerror();
         return;
     }
-    auto addFaultLog = reinterpret_cast<void (*)(FaultDFXLOGIInner*)>(dlsym(handle, "AddFaultLog"));
+    auto addFaultLog = reinterpret_cast<void (*)(FaultDFXLOGIInner*)>(dlsym(handle.get(), "AddFaultLog"));
     if (addFaultLog == nullptr) {
         DFXLOGW("Failed to dlsym AddFaultLog, %{public}s\n", dlerror());
         dlerror();
-        dlclose(handle);
         return;
     }
     FaultDFXLOGIInner info;
@@ -100,7 +103,6 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     addFaultLog(&info);
     DFXLOGI("Finish report fault to FaultLogger %{public}s(%{public}d,%{public}d)",
         info.module.c_str(), info.pid, info.id);
-    dlclose(handle);
 }
 
 std::string CppCrashReporter::GetSummary(DfxProcess& process)
@@ -159,23 +161,25 @@ SmartFd CppCrashReporter::TranferCrashInfoToHiview(const std::string& cppCrashIn
 
 void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process)
 {
-    void* handle = dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE);
+    std::shared_ptr<void> handle(dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE), [] (void* handle) {
+        if (handle != nullptr) {
+            dlclose(handle);
+        }
+    });
     if (handle == nullptr) {
         DFXLOGW("Failed to dlopen libabilityms, %{public}s\n", dlerror());
         return;
     }
 
-    RecordAppExitReason recordAppExitReason = (RecordAppExitReason)dlsym(handle, "RecordAppExitReason");
+    RecordAppExitReason recordAppExitReason = (RecordAppExitReason)dlsym(handle.get(), "RecordAppExitReason");
     if (recordAppExitReason == nullptr) {
         DFXLOGW("Failed to dlsym RecordAppExitReason, %{public}s\n", dlerror());
-        dlclose(handle);
         return;
     }
 
     // defined in interfaces/inner_api/ability_manager/include/ability_state.h
     const int cppCrashExitReason = 2;
     recordAppExitReason(cppCrashExitReason, process.GetReason().c_str());
-    dlclose(handle);
 #ifndef HISYSEVENT_DISABLE
     int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
         "PID", process.GetProcessInfo().pid, "PROCESS_NAME", process.GetProcessInfo().processName.c_str(),

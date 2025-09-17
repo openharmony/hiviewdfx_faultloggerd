@@ -49,6 +49,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/interfaces/innerkits/signal_handler",
       "$faultloggerd_path/tools/process_dump",
+      "$faultloggerd_path/tools/process_dump/utils",
     ]
   }
 

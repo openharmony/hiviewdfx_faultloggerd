@@ -33,7 +33,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/ptrace.h>
-#include <sys/wait.h>
 #include <ucontext.h>
 #include <unistd.h>
 
@@ -44,7 +43,6 @@
 #include "dump_utils.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
-#include "dfx_dump_res.h"
 
 #include "dfx_ptrace.h"
 #include "dfx_process.h"
@@ -63,15 +61,12 @@
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
-#include "info/fatal_message.h"
 #include "procinfo.h"
 #include "reporter.h"
 #include "unwinder_config.h"
 #ifndef is_ohos_lite
 #include "hitrace/hitracechainc.h"
-#include "parameters.h"
 #endif // !is_ohos_lite
-#include "info/fatal_message.h"
 #if defined(__aarch64__) && !defined(is_ohos_lite)
 #include "coredump_controller.h"
 #endif
@@ -82,8 +77,6 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxProcessDump"
-const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
-MAYBE_UNUSED const char *const MIXSTACK_ENABLE = "faultloggerd.priv.mixstack.enabled";
 const char * const OTHER_THREAD_DUMP_INFO = "OtherThreadDumpInfo";
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
@@ -92,96 +85,6 @@ void SigAlarmCallBack()
     ProcessDumper::GetInstance().ReportSigDumpStats();
 }
 #endif
-
-static bool IsBlockCrashProcess()
-{
-#ifndef is_ohos_lite
-    static bool isBlockCrash = OHOS::system::GetParameter(BLOCK_CRASH_PROCESS, "false") == "true";
-    return isBlockCrash;
-#else
-    return false;
-#endif
-}
-
-void WaitForFork(unsigned long pid, unsigned long& childPid)
-{
-    DFXLOGI("start wait fork event happen");
-    int waitStatus = 0;
-    waitpid(pid, &waitStatus, 0); // wait fork event
-    DFXLOGI("wait for fork status %{public}d", waitStatus);
-    if (static_cast<unsigned int>(waitStatus) >> 8 == (SIGTRAP | (PTRACE_EVENT_FORK << 8))) { // 8 : get fork event
-        ptrace(PTRACE_GETEVENTMSG, pid, NULL, &childPid);
-        DFXLOGI("next child pid %{public}lu", childPid);
-        waitpid(childPid, &waitStatus, 0); // wait child stop event
-    }
-}
-
-void GetVmProcessRealPid(const ProcessDumpRequest& request, unsigned long vmPid, int& realPid)
-{
-    int waitStatus = 0;
-    ptrace(PTRACE_SETOPTIONS, vmPid, NULL, PTRACE_O_TRACEEXIT); // block son exit
-    ptrace(PTRACE_CONT, vmPid, NULL, NULL);
-
-    DFXLOGI("start wait exit event happen");
-    waitpid(vmPid, &waitStatus, 0); // wait exit stop
-    long data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request.vmProcRealPidAddr), nullptr);
-    if (data < 0) {
-        DFXLOGI("ptrace peek data error %{public}lu %{public}d", vmPid, errno);
-    }
-    realPid = static_cast<int>(data);
-}
-
-void ReadPids(const ProcessDumpRequest& request, int& realPid, int& vmPid, DfxProcess process)
-{
-    unsigned long childPid = 0;
-    DFX_TRACE_SCOPED("ReadPids");
-    WaitForFork(request.tid, childPid);
-    ptrace(PTRACE_CONT, childPid, NULL, NULL);
-
-    // freeze detach after fork child to fork vm process
-    if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH ||
-#if defined(__aarch64__) && !defined(is_ohos_lite)
-        CoredumpController::IsCoredumpSignal(request)
-#else
-        false
-#endif
-    ) {
-        process.Detach();
-        DFXLOGI("ptrace detach all tids");
-    }
-
-    unsigned long sonPid = 0;
-    WaitForFork(childPid, sonPid);
-    vmPid = static_cast<int>(sonPid);
-
-    ptrace(PTRACE_DETACH, childPid, 0, 0);
-    GetVmProcessRealPid(request, sonPid, realPid);
-
-    DFXLOGI("procecdump get real pid is %{public}d vm pid is %{public}d", realPid, vmPid);
-}
-
-void NotifyOperateResult(ProcessDumpRequest& request, int result)
-{
-    if (request.childPipeFd[0] != -1) {
-        close(request.childPipeFd[0]);
-        request.childPipeFd[0] = -1;
-    }
-    if (OHOS_TEMP_FAILURE_RETRY(write(request.childPipeFd[1], &result, sizeof(result))) < 0) {
-        DFXLOGE("write to child process fail %{public}d", errno);
-    }
-}
-
-void BlockCrashProcExit(const ProcessDumpRequest& request)
-{
-    if (!IsBlockCrashProcess()) {
-        return;
-    }
-    DFXLOGI("start block crash process pid %{public}d nspid %{public}d", request.pid, request.nsPid);
-    if (ptrace(PTRACE_POKEDATA, request.nsPid, reinterpret_cast<void*>(request.blockCrashExitAddr),
-        CRASH_BLOCK_EXIT_FLAG) < 0) {
-        DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
-    }
-}
 }
 
 ProcessDumper &ProcessDumper::GetInstance()
@@ -193,7 +96,7 @@ ProcessDumper &ProcessDumper::GetInstance()
 void ProcessDumper::Dump()
 {
     startTime_ = GetTimeMillisec();
-    int resDump = DumpProcess();
+    DumpErrorCode resDump = DumpProcess();
     if (resDump == DumpErrorCode::DUMP_COREDUMP) {
         return;
     }
@@ -215,17 +118,17 @@ void ProcessDumper::Dump()
 
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         DumpUtils::InfoCrashUnwindResult(request_, resDump == DumpErrorCode::DUMP_ESUCCESS);
-        BlockCrashProcExit(request_);
+        DumpUtils::BlockCrashProcExit(request_);
     }
     if (process_ != nullptr) {
         process_->Detach();
     }
 }
 
-int ProcessDumper::DumpProcess()
+DumpErrorCode ProcessDumper::DumpProcess()
 {
     DFX_TRACE_SCOPED("DumpProcess");
-    int dumpRes = ReadRequestAndCheck();
+    DumpErrorCode dumpRes = ReadRequestAndCheck();
     if (dumpRes != DumpErrorCode::DUMP_ESUCCESS) {
         return dumpRes;
     }
@@ -242,23 +145,61 @@ int ProcessDumper::DumpProcess()
         "threadname(%{public}s).",
         request_.siginfo.si_value.sival_int, request_.pid, request_.nsPid, request_.tid, request_.threadName);
     SetProcessdumpTimeout(request_.siginfo);
-    UpdateConfigByRequest();
-    if (!InitDfxProcess()) {
-        DFXLOGE("Failed to init crash process info.");
-        dumpRes = DumpErrorCode::DUMP_EATTACH;
+    dumpRes = DumpPreparation();
+    if (dumpRes != DumpErrorCode::DUMP_ESUCCESS) {
         return dumpRes;
-    }
-    if (!InitUnwinder(dumpRes)) {
-        return dumpRes;
-    }
-    if (!InitBufferWriter()) {
-        DFXLOGE("Failed to init buffer writer.");
-        dumpRes = DumpErrorCode::DUMP_EGETFD;
     }
     PrintDumpInfo(dumpRes);
     UnwindWriteJit();
     DfxPtrace::Detach(process_->GetVmPid());
     return dumpRes;
+}
+
+std::future<DumpErrorCode> ProcessDumper::AsyncInitialization()
+{
+    std::promise<void> initUnwinderFinish;
+    initUnwinderFinishFuture_ = initUnwinderFinish.get_future();
+    return std::async(std::launch::async, [this, initFinish = std::move(initUnwinderFinish)] () mutable {
+        DumpErrorCode dumpRes = DumpErrorCode::DUMP_ESUCCESS;
+        if (!InitUnwinder(dumpRes)) {
+            initFinish.set_value();
+            return dumpRes;
+        }
+        initFinish.set_value();
+        if (!InitBufferWriter()) {
+            DFXLOGE("Failed to init buffer writer.");
+            return DumpErrorCode::DUMP_EGETFD;
+        }
+        return dumpRes;
+    });
+}
+
+DumpErrorCode ProcessDumper::DumpPreparation()
+{
+    UpdateConfigByRequest();
+    if (!InitDfxProcess()) {
+        DFXLOGE("Failed to init crash process info.");
+        return DumpErrorCode::DUMP_EATTACH;
+    }
+    std::future<DumpErrorCode> initTask;
+    if (!isCoreDump_) {
+        initTask = AsyncInitialization();
+    }
+    if (ReadVmPid() <= 0) {
+        ReportCrashException(CrashExceptionCode::CRASH_DUMP_EREADPID);
+        DFXLOGE("Failed to read vm pid!");
+        return DumpErrorCode::DUMP_EREADPID;
+    }
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+    if (isCoreDump_) {
+        coredumpManager_->DumpMemoryForPid(process_->GetVmPid());
+        return DumpErrorCode::DUMP_COREDUMP;
+    }
+#endif
+    if (initTask.valid()) {
+        return initTask.get(); // wait init task finish
+    }
+    return DumpErrorCode::DUMP_ESUCCESS;
 }
 
 void ProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
@@ -326,13 +267,13 @@ void ProcessDumper::FormatJsonInfoIfNeed()
     DFXLOGI("Finish GetJsonFormatInfo len %{public}" PRIuPTR "", jsonInfo.length());
 }
 
-void ProcessDumper::WriteDumpResIfNeed(int32_t resDump)
+void ProcessDumper::WriteDumpResIfNeed(const DumpErrorCode& resDump)
 {
     DFXLOGI("dump result: %{public}s", DfxDumpRes::ToString(resDump).c_str());
     if (request_.siginfo.si_signo != SIGDUMP) {
         return;
     }
-    if (!DfxBufferWriter::GetInstance().WriteDumpRes(resDump)) { // write dump res, retry request_ pipefd
+    if (!DfxBufferWriter::GetInstance().WriteDumpRes(resDump)) { // write dump res, retry request pipefd
         int pipeWriteFd[] = { -1, -1 };
         if (RequestPipeFd(request_.pid, FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == -1) {
             DFXLOGE("%{public}s request_ pipe failed, err:%{public}d", __func__, errno);
@@ -345,7 +286,7 @@ void ProcessDumper::WriteDumpResIfNeed(int32_t resDump)
     }
 }
 
-int32_t ProcessDumper::ReadRequestAndCheck()
+DumpErrorCode ProcessDumper::ReadRequestAndCheck()
 {
     DFX_TRACE_SCOPED("ReadRequestAndCheck");
     ElapsedTime counter("ReadRequestAndCheck", 20); // 20 : limit cost time 20 ms
@@ -378,9 +319,6 @@ void ProcessDumper::UpdateConfigByRequest()
                 OTHER_THREAD_DUMP_INFO), dumpInfoComponent.end());
             auto config = ProcessDumpConfig::GetInstance().GetConfig();
             config.dumpInfo[request_.type] = dumpInfoComponent;
-            for (const auto& info : dumpInfoComponent) {
-                DFXLOGI("component%{public}s.", info.c_str());
-            }
             ProcessDumpConfig::GetInstance().SetConfig(std::move(config));
         }
         isJsonDump_ =  request_.siginfo.si_code == DUMP_TYPE_REMOTE_JSON;
@@ -414,7 +352,7 @@ void ProcessDumper::UnwindWriteJit()
     }
 }
 
-void ProcessDumper::PrintDumpInfo(int& dumpRes)
+void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
 {
     DFX_TRACE_SCOPED("PrintDumpInfo");
     if (process_ == nullptr || unwinder_ == nullptr) {
@@ -444,35 +382,24 @@ void ProcessDumper::PrintDumpInfo(int& dumpRes)
     if (threadDumpInfo != nullptr) {
         int unwindSuccessCnt = threadDumpInfo->UnwindStack(*process_, request_, *unwinder_);
         DFXLOGI("unwind success thread count(%{public}d)", unwindSuccessCnt);
-        if (unwindSuccessCnt > 0) {
-            dumpRes = ParseSymbols(threadDumpInfo);
-        } else {
-            dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
-            DFXLOGE("Failed to unwind process.");
-        }
+        dumpRes = unwindSuccessCnt > 0 ? ConcurrentSymbolize() : DumpErrorCode::DUMP_ESTOPUNWIND;
     }
-
     if (dumpInfo != nullptr && !isJsonDump_) { // isJsonDump_ will print after format json
         dumpInfo->Print(*process_, request_, *unwinder_);
     }
 }
 
-int ProcessDumper::ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo)
+DumpErrorCode ProcessDumper::WaitParseSymbols()
 {
     uint64_t curTime = GetAbsTimeMilliSeconds();
     uint32_t lessRemainTimeMs =
         static_cast<uint32_t>(ProcessDumpConfig::GetInstance().GetConfig().reservedParseSymbolTime);
-    int dumpRes = 0;
+    DumpErrorCode dumpRes = DumpErrorCode::DUMP_ESUCCESS;
     if (request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH || expectedDumpFinishTime_ == 0) {
-        threadDumpInfo->Symbolize(*process_, *unwinder_);
+        threadPool_.Stop();
     } else if (expectedDumpFinishTime_ > curTime && expectedDumpFinishTime_ - curTime > lessRemainTimeMs) {
-        parseSymbolTask_ = std::async(std::launch::async, [threadDumpInfo, this]() {
-            DFX_TRACE_SCOPED("parse symbol task");
-            threadDumpInfo->Symbolize(*process_, *unwinder_);
-        });
         uint64_t waitTime = expectedDumpFinishTime_ - curTime - lessRemainTimeMs;
-        if (parseSymbolTask_.wait_for(std::chrono::milliseconds(waitTime)) != std::future_status::ready) {
-            DFXLOGW("Parse symbol timeout");
+        if (!threadPool_.StopWithTimeOut(waitTime)) {
             dumpRes = DumpErrorCode::DUMP_ESYMBOL_PARSE_TIMEOUT;
         }
     } else {
@@ -483,35 +410,68 @@ int ProcessDumper::ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo)
     return dumpRes;
 }
 
-bool ProcessDumper::InitUnwinder(int &dumpRes)
+DumpErrorCode ProcessDumper::ConcurrentSymbolize()
+{
+    DumpErrorCode dumpRes = DumpErrorCode::DUMP_ESTOPUNWIND;
+    if (process_ == nullptr || process_->GetNativeFramesTable().empty()) {
+        return dumpRes;
+    }
+    constexpr size_t threadPoolCapacity = 3;
+    threadPool_.Start(threadPoolCapacity);
+    using mapIterator = std::map<int, OHOS::HiviewDFX::DfxFrame>::iterator;
+    auto addTask = [this] (mapIterator left, mapIterator right) {
+        threadPool_.AddTask([this, left, right] () mutable {
+            DFX_TRACE_SCOPED("ParseSymbol:%s", left->second.mapName.c_str());
+            while (left != right) {
+                unwinder_->ParseFrameSymbol(left->second);
+                left++;
+            }
+        });
+    };
+    auto left = process_->GetNativeFramesTable().begin(); // left boundary of sliding window
+    auto initialLeft = left;
+    auto end = process_->GetNativeFramesTable().end();
+    for (auto right = ++initialLeft; right != end; ++right) {
+        // if map of right boundary of sliding window equal to left, right boundary moves right one step
+        if (left->second.map == right->second.map) {
+            continue;
+        }
+        // if not equal, add element of the sliding window to task
+        addTask(left, right);
+        left = right; // left moves to the location of right
+    }
+    addTask(left, end); // Add the element between left and end to the task
+    dumpRes = WaitParseSymbols();
+    FillAllThreadNativeSymbol();
+    return dumpRes;
+}
+
+void ProcessDumper::FillAllThreadNativeSymbol()
+{
+    auto keyThread = process_->GetKeyThread();
+    if (keyThread != nullptr) {
+        keyThread->FillSymbol(process_->GetNativeFramesTable());
+    }
+    for (const auto &thread : process_->GetOtherThreads()) {
+        if (thread != nullptr) {
+            thread->FillSymbol(process_->GetNativeFramesTable());
+        }
+    }
+}
+
+bool ProcessDumper::InitUnwinder(DumpErrorCode &dumpRes)
 {
     DFX_TRACE_SCOPED("InitUnwinder");
     if (process_ == nullptr) {
         DFXLOGE("Failed to read real pid!");
         return false;
     }
-    pid_t realPid = 0;
-    pid_t vmPid = 0;
-    ReadPids(request_, realPid, vmPid, *process_);
-    if (realPid <= 0 || vmPid <= 0) {
-        ReportCrashException(CrashExceptionCode::CRASH_DUMP_EREADPID);
-        DFXLOGE("Failed to read real pid!");
-        dumpRes = DumpErrorCode::DUMP_EREADPID;
-        return false;
-    }
-#if defined(__aarch64__) && !defined(is_ohos_lite)
-    if (coredumpManager_) {
-        coredumpManager_->DumpMemoryForPid(vmPid);
-        dumpRes = DumpErrorCode::DUMP_COREDUMP;
-        return false; // coredump flow end
-    }
-#endif
-    process_->SetVmPid(vmPid);
 #if defined(PROCESSDUMP_MINIDEBUGINFO)
     UnwinderConfig::SetEnableMiniDebugInfo(true);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
 #endif
-    unwinder_ = std::make_shared<Unwinder>(realPid, vmPid, request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
+    bool crash = request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    unwinder_ = std::make_shared<Unwinder>(request_.pid, request_.nsPid, crash);
     unwinder_->EnableParseNativeSymbol(false);
     if (unwinder_->GetMaps() == nullptr) {
         ReportCrashException(CrashExceptionCode::CRASH_LOG_EMAPLOS);
@@ -541,31 +501,54 @@ bool ProcessDumper::InitDfxProcess()
     process_ = std::make_shared<DfxProcess>();
     process_->InitProcessInfo(request_.pid, request_.nsPid, request_.uid, std::string(request_.processName));
     if (!process_->InitKeyThread(request_)) {
-        NotifyOperateResult(request_, OPE_FAIL);
+        DumpUtils::NotifyOperateResult(request_, OPE_FAIL);
         return false;
     }
+    DFXLOGI("Init key thread successfully.");
 #if defined(__aarch64__) && !defined(is_ohos_lite)
     if (CoredumpController::IsCoredumpAllowed(request_)) {
         coredumpManager_ = std::make_unique<CoredumpManager>();
         coredumpManager_->ProcessRequest(request_);
+        isCoreDump_ = true;
     }
 #endif
-    DFXLOGI("Init key thread successfully.");
-    NotifyOperateResult(request_, OPE_SUCCESS);
-    ptrace(PTRACE_SETOPTIONS, request_.tid, NULL, PTRACE_O_TRACEFORK);
-    ptrace(PTRACE_CONT, request_.tid, 0, 0);
-
+    DumpUtils::NotifyOperateResult(request_, OPE_SUCCESS);
     auto dumpInfoComp = FindDumpInfoByType(request_.type);
     if (std::find(dumpInfoComp.begin(), dumpInfoComp.end(), OTHER_THREAD_DUMP_INFO) != dumpInfoComp.end()) {
         process_->InitOtherThreads(request_.tid);
     }
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__) && !defined(is_ohos_lite)
-    if (coredumpManager_) {
+    if (isCoreDump_) {
         coredumpManager_->TriggerCoredump();
     }
 #endif
     return true;
+}
+
+int ProcessDumper::ReadVmPid()
+{
+    pid_t childPid = 0;
+    DFX_TRACE_SCOPED("ReadVmPid");
+    ptrace(PTRACE_SETOPTIONS, request_.tid, NULL, PTRACE_O_TRACEFORK);
+    ptrace(PTRACE_CONT, request_.tid, 0, 0);
+    DumpUtils::WaitForFork(request_.tid, childPid);
+    ptrace(PTRACE_CONT, childPid, NULL, NULL);
+    // freeze and coredump detach target processdump after fork child to fork vm process
+    if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH || isCoreDump_) {
+        if (initUnwinderFinishFuture_.valid()) {
+            initUnwinderFinishFuture_.get();
+        }
+        process_->Detach();
+        DFXLOGI("ptrace detach all tids");
+    }
+    pid_t sonPid = 0;
+    DumpUtils::WaitForFork(childPid, sonPid);
+    int vmPid = static_cast<int>(sonPid);
+    ptrace(PTRACE_DETACH, childPid, 0, 0);
+    process_->SetVmPid(vmPid);
+    DFXLOGI("processdump get vm pid is %{public}d", vmPid);
+    return vmPid;
 }
 
 int ProcessDumper::GeFaultloggerdRequestType()
