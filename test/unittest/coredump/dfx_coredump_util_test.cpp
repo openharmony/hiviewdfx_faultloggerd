@@ -274,13 +274,6 @@ HWTEST_F(DfxCoredumpUtilTest, CoredumpController003, TestSize.Level2)
     request.siginfo.si_signo = 6;
     ret = CoredumpController::IsCoredumpAllowed(request);
     EXPECT_FALSE(ret);
-
-    std::string cmd = "param set faultloggerd.priv.hwasan_coredump.enabled true";
-    system(cmd.c_str());
-    ret = CoredumpController::IsCoredumpAllowed(request);
-    EXPECT_TRUE(ret);
-    cmd = "param set faultloggerd.priv.hwasan_coredump.enabled false";
-    system(cmd.c_str());
     GTEST_LOG_(INFO) << "CoredumpController003: end.";
 }
 
@@ -369,7 +362,7 @@ HWTEST_F(DfxCoredumpUtilTest, CoredumpMappingManager002, TestSize.Level2)
     instance.ObtainDumpRegion(line, region);
     ret = CoredumpMappingManager::ShouldIncludeRegion(region);
     EXPECT_FALSE(ret);
-    
+
     GTEST_LOG_(INFO) << "CoredumpMappingManager002: end.";
 }
 

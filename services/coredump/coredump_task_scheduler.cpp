@@ -28,13 +28,13 @@ void CoredumpTaskScheduler::ScheduleCancelTime(SessionId sessionId, int timeoutM
         return;
     }
 
-    auto endTime = session->endTime;
-    auto removeTask = [session]() {
-        CoredumpSessionManager::Instance().RemoveSession(session->sessionId);
-        DFXLOGI("timer real remove %{public}d", session->sessionId);
+    auto removeTask = [sessionId]() {
+        CoredumpSessionManager::Instance().RemoveSession(sessionId);
+        DFXLOGI("timer real remove %{public}d", sessionId);
     };
 
-    constexpr int32_t maxDelaySec = 30;
+    auto endTime = session->endTime;
+    constexpr int32_t maxDelaySec = 30; // one coredump session is fail
     auto curTime = GetAbsTimeMilliSeconds();
     int32_t delaySec = endTime > curTime ? static_cast<int32_t>((endTime - curTime) / 1000) : 0;
     delaySec = std::min(delaySec, maxDelaySec);

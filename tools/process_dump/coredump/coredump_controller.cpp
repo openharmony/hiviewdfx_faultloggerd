@@ -35,11 +35,7 @@ std::string CoredumpController::GetCoredumpHapList()
 
 bool CoredumpController::IsHwasanCoredumpEnabled()
 {
-#ifndef UNITTEST
-    bool isHwasanCoredumpEnabled = OHOS::system::GetParameter(HWASAN_COREDUMP_ENABLE, "false") == "true";
-#else
     static bool isHwasanCoredumpEnabled = OHOS::system::GetParameter(HWASAN_COREDUMP_ENABLE, "false") == "true";
-#endif
     return isHwasanCoredumpEnabled;
 }
 
@@ -57,7 +53,7 @@ bool CoredumpController::VerifyTrustList(const std::string& bundleName)
     if (hapList.find(bundleName) != std::string::npos) {
         return true;
     }
-    DFXLOGE("The bundleName %{public}s is alllow do coredump", bundleName.c_str());
+    DFXLOGE("The bundleName %{public}s is not allowed to coredump", bundleName.c_str());
     return false;
 }
 
