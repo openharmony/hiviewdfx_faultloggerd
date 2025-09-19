@@ -31,7 +31,11 @@ using namespace std;
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
+#if defined(ENABLE_MINIDEBUGINFO)
+#ifndef __x86_64__
     constexpr const char* const DUMPCATCHER_ELF_FILE = "/system/bin/dumpcatcher";
+#endif //__x86_64__
+#endif //ENABLE_MINIDEBUGINFO
 }
 class ElfFactoryTest : public testing::Test {
 public:
@@ -120,6 +124,7 @@ HWTEST_F(ElfFactoryTest, ElfFactoryTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "ElfFactoryTest003 : end.";
 }
 
+#if defined(ENABLE_MINIDEBUGINFO)
 #ifndef __x86_64__
 /**
  * @tc.name: ElfFactoryTest004
@@ -219,7 +224,8 @@ HWTEST_F(ElfFactoryTest, ElfFactoryTest008, TestSize.Level2)
     ASSERT_TRUE(elf == nullptr);
     GTEST_LOG_(INFO) << "ElfFactoryTest008: end.";
 }
-#endif
+#endif //__x86_64__
+#endif //ENABLE_MINIDEBUGINFO
 
 /**
  * @tc.name: ElfFactoryTest009

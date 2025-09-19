@@ -239,8 +239,8 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
     }
     GetThreadNameByTid(g_request.tid, g_request.threadName, sizeof(g_request.threadName));
     GetProcessName(g_request.processName, sizeof(g_request.processName));
-    (void)memcpy_s(&(g_request.siginfo), sizeof(siginfo_t), si, sizeof(siginfo_t));
-    (void)memcpy_s(&(g_request.context), sizeof(ucontext_t), context, sizeof(ucontext_t));
+    (void)memcpy_s(&(g_request.siginfo), sizeof(g_request.siginfo), si, sizeof(siginfo_t));
+    (void)memcpy_s(&(g_request.context), sizeof(g_request.context), context, sizeof(ucontext_t));
 
     bool ret = true;
     switch (signo) {
