@@ -126,7 +126,7 @@ void DfxThread::SetFrames(const std::vector<DfxFrame>& frames)
     frames_ = frames;
 }
 
-void DfxThread::FillSymbol(const std::map<int, DfxFrame>& frameTable)
+void DfxThread::FillSymbol(const std::map<uint64_t, DfxFrame>& frameTable)
 {
     if (!needParseSymbol_) {
         return;

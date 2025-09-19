@@ -418,7 +418,7 @@ DumpErrorCode ProcessDumper::ConcurrentSymbolize()
     }
     constexpr size_t threadPoolCapacity = 3;
     threadPool_.Start(threadPoolCapacity);
-    using mapIterator = std::map<int, OHOS::HiviewDFX::DfxFrame>::iterator;
+    using mapIterator = std::map<uint64_t, OHOS::HiviewDFX::DfxFrame>::iterator;
     auto addTask = [this] (mapIterator left, mapIterator right) {
         threadPool_.AddTask([this, left, right] () mutable {
             DFX_TRACE_SCOPED("ParseSymbol:%s", left->second.mapName.c_str());

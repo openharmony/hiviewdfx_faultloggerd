@@ -117,12 +117,12 @@ public:
         memoryValues_ = memoryValues;
     }
 
-    void AddNativeFramesTable(std::pair<int, DfxFrame> frame)
+    void AddNativeFramesTable(std::pair<uint64_t, DfxFrame> frame)
     {
         nativeFramesTable_.emplace(std::move(frame));
     }
 
-    std::map<int, DfxFrame>& GetNativeFramesTable()
+    std::map<uint64_t, DfxFrame>& GetNativeFramesTable()
     {
         return nativeFramesTable_;
     }
@@ -145,7 +145,7 @@ private:
     std::string crashInfoJson_ = "";
     pid_t vmPid_ = 0;
     std::set<uintptr_t> memoryValues_;
-    std::map<int, DfxFrame> nativeFramesTable_;
+    std::map<uint64_t, DfxFrame> nativeFramesTable_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
