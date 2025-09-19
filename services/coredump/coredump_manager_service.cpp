@@ -40,6 +40,8 @@ int32_t CoredumpManagerService::OnRequest(const std::string& socketName, int32_t
         res = HandleCreateEvent(connectionFd, requestData);
     } else if (requestData.coredumpAction == CoreDumpAction::CANCEL_CORE_DUMP) {
         res = HandleCancelEvent(requestData);
+    } else {
+        res = ResponseCode::REQUEST_REJECT;
     }
     SendMsgToSocket(connectionFd, &res, sizeof(res));
     return res;
