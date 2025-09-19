@@ -52,7 +52,7 @@ public:
     {
         submitterFrames_ = frames;
     }
-    void FillSymbol(const std::map<int, DfxFrame>& frameTable);
+    void FillSymbol(const std::map<uint64_t, DfxFrame>& frameTable);
     std::string ToString(bool needPrintTid = true) const;
     const DfxThreadInfo& GetThreadInfo() const
     {
