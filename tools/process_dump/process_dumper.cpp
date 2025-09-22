@@ -294,7 +294,7 @@ DumpErrorCode ProcessDumper::ReadRequestAndCheck()
     request_.threadName[NAME_BUF_LEN - 1] = '\0';
     request_.processName[NAME_BUF_LEN - 1] = '\0';
     request_.msg.body[MAX_FATAL_MSG_SIZE - 1] = '\0';
-    request_.appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN - 1] = '\0';
+    request_.appRunningUniqueId[MAX_APP_RUNNING_UNIQUE_ID_LEN - 1] = '\0';
     auto processName = std::string(request_.processName);
     SetCrashProcInfo(request_.type, processName, request_.pid, request_.uid);
     if (readCount != static_cast<long>(sizeof(ProcessDumpRequest))) {

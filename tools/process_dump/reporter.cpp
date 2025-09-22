@@ -100,6 +100,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.reason = process.GetReason();
     info.registers = GetRegsString(process.GetFaultThreadRegisters());
     info.summary = GetSummary(process);
+    info.sectionMaps["app_running_unique_id"] = request.appRunningUniqueId;
     addFaultLog(&info);
     DFXLOGI("Finish report fault to FaultLogger %{public}s(%{public}d,%{public}d)",
         info.module.c_str(), info.pid, info.id);

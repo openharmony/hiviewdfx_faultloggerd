@@ -89,7 +89,7 @@ static bool g_crashObjInit = false;
 static BOOL g_hasInit = FALSE;
 static int g_prevHandledSignal = SIGDUMP;
 static struct sigaction g_oldSigactionList[NSIG] = {};
-static char g_appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
+static char g_appRunningUniqueId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
 
 const char* GetLastFatalMessage(void) __attribute__((weak));
 fatal_msg_t *get_fatal_message(void) __attribute__((weak));
@@ -229,9 +229,9 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
     g_request.fdTableAddr = (uint64_t)fdsan_get_fd_table();
-    if (memcpy_s(g_request.appRunningId, sizeof(g_request.appRunningId),
-                 g_appRunningId, sizeof(g_appRunningId)) != EOK) {
-        DFXLOGE("FillDumpRequest appRunningId memcpy fail!");
+    if (memcpy_s(g_request.appRunningUniqueId, sizeof(g_request.appRunningUniqueId),
+                 g_appRunningUniqueId, sizeof(g_appRunningUniqueId)) != EOK) {
+        DFXLOGE("FillDumpRequest appRunningUniqueId memcpy fail!");
     }
     if (!IsDumpSignal(signo) && g_getStackIdCallback != NULL) {
         g_request.stackId = g_getStackIdCallback();
@@ -399,18 +399,25 @@ static void DFX_InstallSignalHandler(void)
     if (pthread_key_create(&g_crashObjKey, NULL) == 0) {
         g_crashObjInit = true;
     }
+
+    uint64_t runingId = GetAbsTimeMilliSecondsCInterce();
+    int ret = snprintf_s(g_appRunningUniqueId, sizeof(g_appRunningUniqueId), sizeof(g_appRunningUniqueId) - 1,
+                         "%" PRIu64, runingId);
+    if (ret < 0) {
+        DFXLOGE("DFX_InstallSignalHandler :: snprintf_s failed, ret(%{public}d)", ret);
+    }
 }
 
 const char* DFX_GetAppRunningUniqueId(void)
 {
-    return g_appRunningId;
+    return g_appRunningUniqueId;
 }
 
-int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len)
+int DFX_SetAppRunningUniqueId(const char* appRunningUniqueId, size_t len)
 {
-    (void)memset_s(g_appRunningId, sizeof(g_appRunningId), 0, sizeof(g_appRunningId));
-    if (memcpy_s(g_appRunningId, sizeof(g_appRunningId) - 1, appRunningId, len) != EOK) {
-        DFXLOGE("param error. appRunningId is NULL or length overflow");
+    (void)memset_s(g_appRunningUniqueId, sizeof(g_appRunningUniqueId), 0, sizeof(g_appRunningUniqueId));
+    if (memcpy_s(g_appRunningUniqueId, sizeof(g_appRunningUniqueId) - 1, appRunningUniqueId, len) != EOK) {
+        DFXLOGE("param error. appRunningUniqueId is NULL or length overflow");
         return -1;
     }
     return 0;

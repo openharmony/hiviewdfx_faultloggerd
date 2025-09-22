@@ -621,7 +621,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
     } else {
         /**
          * @tc.steps: step1.
-         *            case: appRunningId == nullptr, len= 0
+         *            case: appRunningUniqueId == nullptr, len= 0
          * @tc.expected: ret == -1
          * */
         int ret = DFX_SetAppRunningUniqueId(nullptr, 0);
@@ -629,7 +629,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 
         /**
          * @tc.steps: step2.
-         *            case: appRunningId == nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
+         *            case: appRunningUniqueId == nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
          * @tc.expected: ret == -1
          * */
         ret = DFX_SetAppRunningUniqueId(nullptr, MAX_APP_RUNNING_UNIQUE_ID_LEN);
@@ -637,7 +637,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 
         /**
          * @tc.steps: step3.
-         *            case: appRunningId != nullptr, len= 0
+         *            case: appRunningUniqueId != nullptr, len= 0
          * @tc.expected: ret == 0
          * */
         constexpr char testId1[] = "App running unique test id";
@@ -646,7 +646,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 
         /**
          * @tc.steps: step4.
-         *            case: appRunningId != nullptr, len= strleng(appRunningId)
+         *            case: appRunningUniqueId != nullptr, len= strleng(appRunningUniqueId)
          * @tc.expected: ret == 0
          * */
         ret = DFX_SetAppRunningUniqueId(testId1, strlen(testId1));
@@ -654,7 +654,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 
         /**
          * @tc.steps: step5.
-         *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN + 1
+         *            case: appRunningUniqueId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN + 1
          * @tc.expected: ret == -1
          * */
         constexpr size_t testLen = MAX_APP_RUNNING_UNIQUE_ID_LEN + 1;
@@ -663,7 +663,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest015, TestSize.Level2)
 
         /**
          * @tc.steps: step6.
-         *            case: appRunningId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
+         *            case: appRunningUniqueId != nullptr, len= MAX_APP_RUNNING_UNIQUE_ID_LEN
          * @tc.expected: ret == 0
          * */
         constexpr char testId2[MAX_APP_RUNNING_UNIQUE_ID_LEN] = "App running unique test id";

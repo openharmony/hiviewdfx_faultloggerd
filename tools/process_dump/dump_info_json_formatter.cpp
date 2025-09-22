@@ -62,7 +62,7 @@ void DumpInfoJsonFormatter::GetCrashJsonFormatInfo(const ProcessDumpRequest& req
     jsonInfo["process_name"] = process.GetProcessInfo().processName;
     jsonInfo["pid"] = process.GetProcessInfo().pid;
     jsonInfo["uid"] = process.GetProcessInfo().uid;
-    jsonInfo["app_running_unique_id"] = request.appRunningId;
+    jsonInfo["app_running_unique_id"] = request.appRunningUniqueId;
 
     DfxSignal dfxSignal(request.siginfo.si_signo);
     Json::Value signal;
