@@ -92,7 +92,12 @@ NO_SANITIZE int DfxAccessorsLocal::AccessMem(uintptr_t addr, uintptr_t *val, voi
         DFXLOGU("Failed to access addr, the stackTop smaller than stackBottom");
         return UNW_ERROR_INVALID_MEMORY;
     }
-    if ((addr >= ctx->stackBottom) && (addr + sizeof(uintptr_t) < ctx->stackTop)) {
+    uintptr_t result;
+    if (__builtin_add_overflow(addr, sizeof(uintptr_t), &result)) {
+        DFXLOGU("Failed to access addr, the addr is invalid");
+        return UNW_ERROR_INVALID_MEMORY;
+    }
+    if ((addr >= ctx->stackBottom) && (result < ctx->stackTop)) {
         *val = *reinterpret_cast<uintptr_t *>(addr);
         return UNW_ERROR_NONE;
     }

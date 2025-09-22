@@ -945,6 +945,54 @@ HWTEST_F(UnwinderTest, AccessMemTest001, TestSize.Level2)
 }
 
 /**
+ * @tc.name: AccessMemTest002
+ * @tc.desc: test DfxAccessorsLocal AccessMem interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, AccessMemTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AccessMemTest002: start.";
+    DfxAccessorsLocal accessors;
+    UnwindContext ctx;
+    ctx.stackCheck = true;
+    ctx.stackBottom = 0xaaaa;
+    ctx.stackTop = 0xffff;
+#if defined(__aarch64__)
+    uintptr_t addr = 0xfffffffffffffff8;
+#else
+    uintptr_t addr = 0xfffffffc;
+#endif
+    uintptr_t val;
+    auto result = accessors.AccessMem(addr, &val, &ctx);
+    ASSERT_EQ(result, UNW_ERROR_INVALID_MEMORY);
+    GTEST_LOG_(INFO) << "AccessMemTest002: end.";
+}
+
+/**
+ * @tc.name: AccessMemTest003
+ * @tc.desc: test DfxAccessorsLocal AccessMem interface
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, AccessMemTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AccessMemTest003: start.";
+    DfxAccessorsLocal accessors;
+    UnwindContext ctx;
+    ctx.stackCheck = true;
+    ctx.stackBottom = 0;
+    ctx.stackTop = 0;
+#if defined(__aarch64__)
+    uintptr_t addr = 0xfffffffffffffff0;
+#else
+    uintptr_t addr = 0xfffffff0;
+#endif
+    uintptr_t val;
+    auto result = accessors.AccessMem(addr, &val, &ctx);
+    ASSERT_EQ(result, UNW_ERROR_INVALID_MEMORY);
+    GTEST_LOG_(INFO) << "AccessMemTest003: end.";
+}
+
+/**
  * @tc.name: UnwinderTest001
  * @tc.desc: test Unwinder::xxxx interface
  * @tc.type: FUNC
