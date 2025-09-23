@@ -4,10 +4,9 @@
       OHOS::HiviewDFX::UniqueStackTable*;
     };
     extern "C" {
-      CollectAsyncStack;
-      SetStackId;
-      GetStackId;
+      DfxInitAsyncStack;
       DfxGetSubmitterStackLocal;
+      DfxGetSubmitterStackId;
     };
   local:
     *;

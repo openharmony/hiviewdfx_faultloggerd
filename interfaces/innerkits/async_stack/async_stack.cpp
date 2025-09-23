@@ -15,6 +15,7 @@
 
 #include "async_stack.h"
 
+#include <dlfcn.h>
 #include <pthread.h>
 #include <securec.h>
 #include <threads.h>
@@ -27,43 +28,18 @@
 #include "unwinder.h"
 
 using namespace OHOS::HiviewDFX;
+static bool g_init = false;
 #if defined(__aarch64__)
 static pthread_key_t g_stackidKey;
-static bool g_init = false;
 static OHOS::HiviewDFX::FpBacktrace* g_fpBacktrace = nullptr;
+using SetStackIdFn = void(*)(uint64_t stackId);
+using CollectAsyncStackFn = uint64_t(*)();
+using UvSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
+using FFRTSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
 
-static void InitAsyncStackInner(void)
+extern "C" uint64_t DfxCollectAsyncStack(void)
 {
-    // init unique stack table
-    if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->Init()) {
-        DFXLOGE("failed to init unique stack table?.");
-        return;
-    }
-
-    if (pthread_key_create(&g_stackidKey, nullptr) == 0) {
-        g_init = true;
-    } else {
-        DFXLOGE("failed to create key for stackId.");
-        return;
-    }
-
-    // set callback for DfxSignalHandler to read stackId
-    DFX_SetAsyncStackCallback(GetStackId);
-    g_fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
-}
-
-static bool InitAsyncStack(void)
-{
-    static once_flag onceFlag = ONCE_FLAG_INIT;
-    call_once(&onceFlag, InitAsyncStackInner);
-    return g_init;
-}
-#endif
-
-extern "C" uint64_t CollectAsyncStack(void)
-{
-#if defined(__aarch64__)
-    if (!InitAsyncStack()) {
+    if (!g_init) {
         return 0;
     }
     const uint32_t maxSize = 16;
@@ -77,27 +53,58 @@ extern "C" uint64_t CollectAsyncStack(void)
     uintptr_t* pcs = reinterpret_cast<uintptr_t*>(pcArray);
     OHOS::HiviewDFX::UniqueStackTable::Instance()->PutPcsInTable(stackIdPtr, pcs, size);
     return stackId;
-#else
-    return 0;
-#endif
 }
 
-extern "C" void SetStackId(uint64_t stackId)
+extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
 {
-#if defined(__aarch64__)
-    if (!InitAsyncStack()) {
+    if (!g_init) {
         return;
     }
     pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(stackId));
-#else
-    return;
-#endif
 }
 
-extern "C" uint64_t GetStackId()
+void DfxSetAsyncStackCallback(void)
+{
+    // set callback for DfxSignalHandler to read stackId
+    DFX_SetAsyncStackCallback(DfxGetSubmitterStackId);
+    const char* uvSetAsyncStackFnName = "LibuvSetAsyncStackFunc";
+    auto uvSetAsyncStackFn = reinterpret_cast<UvSetAsyncStackFn>(dlsym(RTLD_DEFAULT, uvSetAsyncStackFnName));
+    if (uvSetAsyncStackFn != nullptr) {
+        uvSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
+    }
+
+    const char* ffrtSetAsyncStackFnName = "FFRTSetAsyncStackFunc";
+    auto ffrtSetAsyncStackFn = reinterpret_cast<FFRTSetAsyncStackFn>(dlsym(RTLD_DEFAULT, ffrtSetAsyncStackFnName));
+    if (ffrtSetAsyncStackFn != nullptr) {
+        ffrtSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
+    }
+}
+#endif
+
+bool DfxInitAsyncStack()
 {
 #if defined(__aarch64__)
-    if (!InitAsyncStack()) {
+    // init unique stack table
+    if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->Init()) {
+        DFXLOGE("failed to init unique stack table?.");
+        return false;
+    }
+
+    if (pthread_key_create(&g_stackidKey, nullptr) != 0) {
+        DFXLOGE("failed to create key for stackId.");
+        return false;
+    }
+    g_fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
+    DfxSetAsyncStackCallback();
+    g_init = true;
+#endif
+    return g_init;
+}
+
+extern "C" uint64_t DfxGetSubmitterStackId()
+{
+#if defined(__aarch64__)
+    if (!g_init) {
         return 0;
     }
     return reinterpret_cast<uint64_t>(pthread_getspecific(g_stackidKey));

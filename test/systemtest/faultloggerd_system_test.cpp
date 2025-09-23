@@ -1421,26 +1421,6 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest113, TestSize.Level2)
 
 #if defined(__aarch64__)
 /**
-* @tc.name: FaultLoggerdSystemTest114
-* @tc.desc: Test async stacktrace enable in nomal thread crash case
-* @tc.type: FUNC
-*/
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest114, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest114: start.";
-    string cmd = "AsyncStack";
-    string fileName;
-    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
-    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
-    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
-        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
-        FAIL();
-    }
-    EXPECT_TRUE(CheckCppCrashAsyncStackEnableKeywords(fileName, pid)) << "FaultLoggerdSystemTest114 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest114: end.";
-}
-
-/**
 * @tc.name: FaultLoggerdSystemTest115
 * @tc.desc: Test async-stacktrace api enable in ffrt crash case
 * @tc.type: FUNC
@@ -1468,7 +1448,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest115, TestSize.Level2)
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest116, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest116: start.";
-    string cmd = "CrashInLibuvWork true";
+    string cmd = "CrashInLibuvWork";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1488,7 +1468,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest116, TestSize.Level2)
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: start.";
-    string cmd = "CrashInLibuvTimer true";
+    string cmd = "CrashInLibuvTimer";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1508,7 +1488,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest118, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest118: start.";
-    string cmd = "CrashInLibuvWorkDone true";
+    string cmd = "CrashInLibuvWorkDone";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1542,72 +1522,12 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest119, TestSize.Level2)
 
 /**
 * @tc.name: FaultLoggerdSystemTest120
-* @tc.desc: Test async-stacktrace api disable in work callback crash case
+* @tc.desc: Test crash log to /log/crash when faultloggerd unstart case
 * @tc.type: FUNC
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest120, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest120: start.";
-    string cmd = "CrashInLibuvWork false";
-    string fileName;
-    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
-    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
-    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
-        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
-        FAIL();
-    }
-    EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest120 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest120: end.";
-}
-
-/**
-* @tc.name: FaultLoggerdSystemTest121
-* @tc.desc: Test async-stacktrace api disable in timer callback crash case
-* @tc.type: FUNC
-*/
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest121, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest121: start.";
-    string cmd = "CrashInLibuvTimer false";
-    string fileName;
-    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
-    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
-    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
-        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
-        FAIL();
-    }
-    EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest121 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest121: end.";
-}
-
-/**
-* @tc.name: FaultLoggerdSystemTest122
-* @tc.desc: Test async-stacktrace api disable in work callback done crash case
-* @tc.type: FUNC
-*/
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest122, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest122: start.";
-    string cmd = "CrashInLibuvWorkDone false";
-    string fileName;
-    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
-    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
-    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
-        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
-        FAIL();
-    }
-    EXPECT_TRUE(CheckCppCrashAsyncStackDisableKeywords(fileName, pid)) << "FaultLoggerdSystemTest122 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest122: end.";
-}
-
-/**
-* @tc.name: FaultLoggerdSystemTest123
-* @tc.desc: Test crash log to /log/crash when faultloggerd unstart case
-* @tc.type: FUNC
-*/
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: start.";
     string crashDir = "/log/crash/";
     bool dirExists = std::filesystem::exists(crashDir);
     if (dirExists) {
@@ -1626,21 +1546,21 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
             GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
             FAIL();
         }
-        EXPECT_TRUE(CheckCountNum(fileName, pid, cmd)) << "FaultLoggerdSystemTest123 Failed";
+        EXPECT_TRUE(CheckCountNum(fileName, pid, cmd)) << "FaultLoggerdSystemTest120 Failed";
     } else {
         EXPECT_FALSE(dirExists);
     }
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest120: end.";
 }
 
 /**
-* @tc.name: FaultLoggerdSystemTest124
+* @tc.name: FaultLoggerdSystemTest121
 * @tc.desc: Test get crash object
 * @tc.type: FUNC
 */
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest121, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest121: start.";
     string cmd = "TestGetCrashObj";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
@@ -1649,7 +1569,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckTestGetCrashObj(fileName, pid)) << "FaultLoggerdSystemTest124 Failed";
+    EXPECT_TRUE(CheckTestGetCrashObj(fileName, pid)) << "FaultLoggerdSystemTest121 Failed";
 
     cmd = "TestGetCrashObjMemory";
     pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
@@ -1658,19 +1578,19 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckTestGetCrashObjMemory(fileName, pid)) << "FaultLoggerdSystemTest124 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
+    EXPECT_TRUE(CheckTestGetCrashObjMemory(fileName, pid)) << "FaultLoggerdSystemTest121 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest121: end.";
 }
 #endif
 
 /**
-* @tc.name: FaultLoggerdSystemTest125
+* @tc.name: FaultLoggerdSystemTest122
 * @tc.desc: Test process exit after being killed
 * @tc.type: FUNC
 */
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest122, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest122: start.";
     InstallTestHap("/data/FaultloggerdJsTest.hap");
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
@@ -1683,24 +1603,24 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
             sleep(2);
             newPid = GetProcessPid(TEST_BUNDLE_NAME);
         }
-        EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest125 Failed";
+        EXPECT_NE(pid, newPid) << "FaultLoggerdSystemTest122 Failed";
     } else {
-        EXPECT_TRUE(pid <= 0) << "FaultLoggerdSystemTest125 Failed";
+        EXPECT_TRUE(pid <= 0) << "FaultLoggerdSystemTest122 Failed";
     }
     StopTestHap(TEST_BUNDLE_NAME);
     UninstallTestHap(TEST_BUNDLE_NAME);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest122: end.";
 }
 
 #if defined(__aarch64__)
 /**
-* @tc.name: FaultLoggerdSystemTest126
+* @tc.name: FaultLoggerdSystemTest123
 * @tc.desc: Test /log/crash files max num when faultloggerd unstart case
 * @tc.type: FUNC
 */
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: start.";
     string crashDir = "/log/crash/";
     bool dirExists = std::filesystem::exists(crashDir);
     if (dirExists) {
@@ -1726,21 +1646,21 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
         (void)ExecuteCommands(startFaultLoggerd);
         std::vector<std::string> files;
         ReadDirFiles(crashDir, files);
-        EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest126 Failed";
+        EXPECT_TRUE(files.size() <= maxFilesNum) << "FaultLoggerdSystemTest123 Failed";
     } else {
         EXPECT_FALSE(dirExists);
     }
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest123: end.";
 }
 #endif
 /**
-* @tc.name: FaultLoggerdSystemTest127
+* @tc.name: FaultLoggerdSystemTest124
 * @tc.desc: Test lock exit after being killed
 * @tc.type: FUNC
 */
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: start.";
     const size_t count = 50;
     const size_t threadSize = 10;
     const size_t msgSize = 10;
@@ -1768,17 +1688,17 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
             sleepTime = sleepTime + deviation;
         }
     }
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
 }
 
 /**
-* @tc.name: FaultLoggerdSystemTest128
+* @tc.name: FaultLoggerdSystemTest125
 * @tc.desc: Test block process exit debug function
 * @tc.type: FUNC
 */
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest128, TestSize.Level2)
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest125, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: start.";
     InstallTestHap("/data/FaultloggerdJsTest.hap");
     string testBundleName = TEST_BUNDLE_NAME;
     string testAbiltyName = testBundleName + ".MainAbility";
@@ -1790,24 +1710,24 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest128, TestSize.Level2)
         int newPid = GetProcessPid(TEST_BUNDLE_NAME);
         system("param set faultloggerd.priv.block_crash_process.enabled false");
         kill(pid, SIGKILL);
-        EXPECT_TRUE(pid == newPid) << "FaultLoggerdSystemTest128 Failed";
+        EXPECT_TRUE(pid == newPid) << "FaultLoggerdSystemTest125 Failed";
     } else {
-        EXPECT_TRUE(pid <= 0) << "FaultLoggerdSystemTest128 Failed";
+        EXPECT_TRUE(pid <= 0) << "FaultLoggerdSystemTest125 Failed";
     }
     StopTestHap(TEST_BUNDLE_NAME);
     UninstallTestHap(TEST_BUNDLE_NAME);
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: end.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest125: end.";
 }
 
 #if defined(__aarch64__)
 /**
-* @tc.name: FaultLoggerdSystemTest129
+* @tc.name: FaultLoggerdSystemTest126
 * @tc.desc: Test process fd leak unwind
 * @tc.type: FUNC
 */
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest129, TestSize.Level2)
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest126, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest129: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: start.";
     pid_t pid = fork();
     if (pid < 0) {
         EXPECT_GT(pid, -1);
@@ -1831,19 +1751,19 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest129, TestSize.Level2)
         int expectNum = sizeof(log) / sizeof(log[0]);
         int count = CheckKeyWords(fileName, log, expectNum, minRegIdx);
         EXPECT_EQ(count, expectNum);
-        GTEST_LOG_(INFO) << "FaultLoggerdSystemTest129: end.";
+        GTEST_LOG_(INFO) << "FaultLoggerdSystemTest126: end.";
     }
 }
 #endif
 
 /**
-* @tc.name: FaultLoggerdSystemTest130
+* @tc.name: FaultLoggerdSystemTest127
 * @tc.desc: test  crasher application: SetLastFatalMessage
 * @tc.type: FUNC
 */
-HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest130, TestSize.Level2)
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest130: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: start.";
     string cmd = "SetLastFatalMessage";
     string fileName;
     pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_C, fileName);
@@ -1852,7 +1772,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest130, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest130 Failed";
+    EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest127 Failed";
 
     pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
     GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
@@ -1860,8 +1780,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest130, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
         FAIL();
     }
-    EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest130 Failed";
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest130: end.";
+    EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest127 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

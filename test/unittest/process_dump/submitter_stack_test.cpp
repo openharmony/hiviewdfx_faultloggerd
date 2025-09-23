@@ -25,6 +25,7 @@
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "decorative_dump_info.h"
+#include "uv.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -63,6 +64,21 @@ int SubmitterStackTest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
 }
 
 namespace {
+static bool g_done = false;
+
+NOINLINE static void WorkCallback(uv_work_t* req) {}
+
+NOINLINE static void AfterWorkCallback(uv_work_t* req, int status)
+{
+    if (!g_done) {
+        uv_queue_work(req->loop, req, WorkCallback, AfterWorkCallback);
+    }
+}
+
+static void TimerCallback(uv_timer_t* handle)
+{
+    g_done = true;
+}
 /**
  * @tc.name: SubmitterStackTest001
  * @tc.desc: test print submitter stack
@@ -71,8 +87,15 @@ namespace {
 HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "SubmitterStackTest001: start.";
-    uint64_t stackId = CollectAsyncStack();
-    SetStackId(stackId);
+    DfxInitAsyncStack();
+    uv_timer_t timerHandle;
+    uv_work_t work;
+    uv_loop_t* loop = uv_default_loop();
+    int timeout = 1000;
+    uv_timer_init(loop, &timerHandle);
+    uv_timer_start(&timerHandle, TimerCallback, timeout, 0);
+    uv_queue_work(loop, &work, WorkCallback, AfterWorkCallback);
+    uv_run(loop, UV_RUN_DEFAULT);
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
@@ -80,22 +103,24 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
         sleep(3); // 3 : sleep 3 seconds
         exit(0);
     }
-    pid_t tid = pid;
-    pid_t nsPid = pid;
     ProcessDumpRequest request = {
         .type = ProcessDumpType::DUMP_TYPE_CPP_CRASH,
-        .tid = tid,
+        .tid = pid,
         .pid = pid,
         .nsPid = pid,
-        .stackId = GetStackId(),
+        .stackId = DfxGetSubmitterStackId(),
     };
+#if defined(__aarch64__)
+    ASSERT_NE(request.stackId, 0);
+#endif
     DfxProcess process;
-    process.InitProcessInfo(pid, nsPid, getuid(), "");
+    process.InitProcessInfo(pid, pid, getuid(), "");
     process.SetVmPid(pid);
     process.InitKeyThread(request);
-    Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
+    Unwinder unwinder(pid, pid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     SubmitterStack submitterStack;
     submitterStack.Print(process, request, unwinder);
+#if defined(__aarch64__)
     std::vector<std::string> keyWords = {
         "SubmitterStacktrace",
         "#00",
@@ -105,6 +130,7 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
     for (const std::string& keyWord : keyWords) {
         ASSERT_TRUE(CheckContent(result, keyWord, true));
     }
+#endif
     process.Detach();
     GTEST_LOG_(INFO) << "SubmitterStackTest001: end.";
 }

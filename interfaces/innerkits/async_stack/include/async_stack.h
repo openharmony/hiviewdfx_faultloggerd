@@ -22,14 +22,19 @@
 extern "C" {
 #endif
 
-// return stackId
-uint64_t CollectAsyncStack(void);
+/**
+ * @brief init async stack
+ *
+ * @return if succeed return 0, otherwise return -1
+*/
+bool DfxInitAsyncStack();
 
-// set stack id to TLS
-void SetStackId(uint64_t stackId);
-
-// get stack id from TLS
-uint64_t GetStackId(void);
+/**
+ * @brief get stack id of submitter
+ *
+ * @return stack id, if async stack not init, return 0
+*/
+uint64_t DfxGetSubmitterStackId(void);
 
 /**
  * @brief get submitter stack in local case
@@ -39,7 +44,6 @@ uint64_t GetStackId(void);
  * @return if succeed return 0, otherwise return -1
 */
 int DfxGetSubmitterStackLocal(char* stackTrace, size_t bufferSize);
-
 #ifdef __cplusplus
 }
 #endif
