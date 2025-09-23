@@ -187,7 +187,7 @@ TimerTask::TimerTask(bool persist) : EpollListener(CreateTimeFd(), persist) {}
 
 bool TimerTask::SetTimeOption(int32_t delayTime, int32_t periodicity)
 {
-    if (GetFd() < 0) {
+    if (GetFd() < 0 || delayTime < 0 || periodicity < 0) {
         return false;
     }
     struct itimerspec timeOption{};
@@ -211,24 +211,24 @@ void TimerTask::OnEventPoll()
     }
 }
 
-std::unique_ptr<DelayTask> DelayTask::CreateInstance(std::function<void()> workFunc, int32_t timeout)
+std::unique_ptr<TimerTask> TimerTaskAdapter::CreateInstance(std::function<void()> workFunc,
+    int32_t delayTimeInSecond, int32_t periodicityInSecond)
 {
-    if (timeout <= 0) {
+    if (delayTimeInSecond < 0 || periodicityInSecond < 0) {
         return nullptr;
     }
-    auto delayTask = std::unique_ptr<DelayTask>(new (std::nothrow)DelayTask(workFunc));
-    if (!delayTask) {
+    auto task = std::unique_ptr<TimerTaskAdapter>(new (std::nothrow)TimerTaskAdapter(std::move(workFunc),
+        periodicityInSecond > 0));
+    if (task == nullptr || !task->SetTimeOption(delayTimeInSecond, periodicityInSecond)) {
         return nullptr;
     }
-    if (delayTask->SetTimeOption(timeout, 0)) {
-        return delayTask;
-    }
-    return nullptr;
+    return task;
 }
 
-DelayTask::DelayTask(std::function<void()> workFunc) : TimerTask(false), work_(std::move(workFunc)) {}
+TimerTaskAdapter::TimerTaskAdapter(std::function<void()> workFunc, bool persist) : TimerTask(persist),
+    work_(std::move(workFunc)) {}
 
-void DelayTask::OnTimer()
+void TimerTaskAdapter::OnTimer()
 {
     work_();
 }

@@ -318,5 +318,35 @@ HWTEST_F(LitePerfTest, LitePerfTest008, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "LitePerfTest008: end.";
 }
+
+/**
+ * @tc.name: LitePerfTest009
+ * @tc.desc: test LitePerf CollectProcessStackSampling
+ * @tc.type: FUNC
+ */
+HWTEST_F(LitePerfTest, LitePerfTest009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LitePerfTest009: start.";
+    if (IsLinuxKernel()) {
+        return;
+    }
+    pid_t tid = gettid();
+
+    LitePerfConfig config{};
+    config.tids.emplace_back(tid);
+    config.durationMs = 1500;
+    LitePerf litePerf;
+    std::string perfContent;
+    std::thread([&]{
+        litePerf.CollectProcessStackSampling(config, true, perfContent);
+        ASSERT_FALSE(perfContent.empty());
+    }).detach();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    ASSERT_EQ(litePerf.CollectProcessStackSampling(config, true, perfContent), PerfErrorCode::PERF_SAMPING);
+    LitePerf litePerf2;
+    ASSERT_EQ(litePerf2.CollectProcessStackSampling(config, true, perfContent), PerfErrorCode::PERF_SAMPING);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    GTEST_LOG_(INFO) << "LitePerfTest009: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -21,12 +21,38 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+
+struct LitePerfConfig {
+    std::vector<int> tids;
+    int freq = 100;
+    int durationMs = 0;
+    bool parseMiniDebugInfo = true;
+};
+
+enum PerfErrorCode {
+    SUCCESS = 0,
+    INVALID_PARAM,
+    RESOURCE_NOT_AVAILABLE,
+    PERF_SAMPING,
+    UN_SUPPORTED,
+};
+
 class LitePerf {
 public:
     LitePerf();
     ~LitePerf() = default;
     LitePerf(const LitePerf&) = delete;
     LitePerf& operator=(const LitePerf&) = delete;
+
+    /**
+     * @brief Start process stack sampling
+     *
+     * @param config Sampling configuration parameters.
+     * @param checkLimit Whether to enable sampling quantity limit check.
+     * @param stacks Output parameter used to store the collected stack information string.
+     * @return the errorCode;
+    */
+    PerfErrorCode CollectProcessStackSampling(const LitePerfConfig& config, bool checkLimit, std::string& stacks);
 
     /**
      * @brief Start process stack sampling

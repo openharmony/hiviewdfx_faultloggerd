@@ -76,6 +76,7 @@ if (defined(ohos_lite)) {
     include_dirs = [ "$faultloggerd_interfaces_path/common" ]
     version_script = "libdfx_dumpcatcher.map"
     deps = [
+      "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace_dlsym",

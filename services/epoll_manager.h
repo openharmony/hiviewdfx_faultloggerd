@@ -71,14 +71,16 @@ private:
     static SmartFd CreateTimeFd();
 };
 
-class DelayTask : public TimerTask {
+class TimerTaskAdapter : public TimerTask {
 public:
-    DelayTask(const DelayTask&) = delete;
-    DelayTask& operator=(const DelayTask&) = delete;
-    static std::unique_ptr<DelayTask> CreateInstance(std::function<void()> workFunc, int32_t timeout);
+    static std::unique_ptr<TimerTask> CreateInstance(std::function<void()> workFunc,
+        int32_t delayTimeInSecond, int32_t periodicityInSecond = 0);
+    TimerTaskAdapter(const TimerTaskAdapter&) = delete;
+    TimerTaskAdapter& operator=(const TimerTaskAdapter&) = delete;
+    ~TimerTaskAdapter() override = default;
     void OnTimer() override;
 private:
-    explicit DelayTask(std::function<void()> workFunc);
+    TimerTaskAdapter(std::function<void()> workFunc, bool persist);
     std::function<void()> work_;
 };
 }

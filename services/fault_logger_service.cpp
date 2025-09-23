@@ -209,7 +209,7 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
 
 void StatsService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
 {
-    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime);
+    auto delayTask = TimerTaskAdapter::CreateInstance(workFunc, delayTime);
     FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
 }
 #endif
@@ -331,13 +331,11 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
      * threads that does not currently have the signal blocked.
      */
     auto& faultLoggerPipe = FaultLoggerPipePair::CreateSdkDumpPipePair(requestData.pid, requestData.time);
-
-    if (auto ret = FaultCommonUtil::SendSignalToProcess(requestData.pid, si);
-        ret != ResponseCode::REQUEST_SUCCESS) {
+    int32_t res = FaultCommonUtil::SendSignalToProcess(requestData.pid, si);
+    if (res != ResponseCode::REQUEST_SUCCESS) {
         FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
-        return ret;
+        return res;
     }
-
     int32_t fds[PIPE_NUM_SZ] = {
         faultLoggerPipe.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ),
         faultLoggerPipe.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ)
@@ -345,7 +343,6 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
     if (fds[PIPE_BUF_INDEX] < 0 || fds[PIPE_RES_INDEX] < 0) {
         return ResponseCode::ABNORMAL_SERVICE;
     }
-    int32_t res = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &res, sizeof(res));
     SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
     return res;
@@ -414,6 +411,49 @@ bool LitePerfPipeService::Filter(const std::string &socketName, int32_t connecti
     return true;
 }
 
+int LitePerfPipeService::CheckPerfLimit(int32_t uid, bool checkLimit)
+{
+    if (LitePerfPipePair::CheckDumpMax()) {
+        return ResponseCode::RESOURCE_LIMIT;
+    }
+    if (LitePerfPipePair::CheckDumpRecord(uid)) {
+        DFXLOGE("%{public}s :: uid(%{public}d) is dumping.", FAULTLOGGERD_SERVICE_TAG, uid);
+        return ResponseCode::SDK_DUMP_REPEAT;
+    }
+    if (!checkLimit) {
+        return ResponseCode::REQUEST_SUCCESS;
+    }
+    static PerfResourceLimiter deviceAndUidPerfLimit;
+    return deviceAndUidPerfLimit.CheckPerfLimit(uid);
+}
+
+LitePerfPipeService::PerfResourceLimiter::PerfResourceLimiter()
+{
+    constexpr uint32_t resetDuration = 24 * 60 * 60;
+    auto autoResetTask = TimerTaskAdapter::CreateInstance([this] {
+        perfCountsMap_.clear();
+        devicePerfCount = 0;
+    }, resetDuration, resetDuration);
+    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(autoResetTask));
+}
+
+int LitePerfPipeService::PerfResourceLimiter::CheckPerfLimit(int32_t uid)
+{
+    constexpr uint32_t deviceLimit = 50;
+    if (devicePerfCount >= deviceLimit) {
+        return ResponseCode::RESOURCE_LIMIT;
+    }
+    auto& perfCount = perfCountsMap_[uid];
+    constexpr uint32_t uidPerfLimit = 20;
+    if (perfCount >= uidPerfLimit) {
+        DFXLOGW("%{public}s :: perf resource is limited for uid %{public}d.", FAULTLOGGERD_SERVICE_TAG, uid);
+        return ResponseCode::RESOURCE_LIMIT;
+    }
+    perfCount++;
+    devicePerfCount++;
+    return ResponseCode::REQUEST_SUCCESS;
+}
+
 int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t connectionFd,
     const LitePerfFdRequestData& requestData)
 {
@@ -429,22 +469,21 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
         return responseData;
     }
 
-    int32_t fds[PIPE_NUM_SZ] = {0};
+    int32_t fds[PIPE_NUM_SZ] = {-1};
     if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
-        if (LitePerfPipePair::CheckDumpMax() || LitePerfPipePair::CheckDumpRecord(uid)) {
-            DFXLOGE("%{public}s :: uid(%{public}d) is dumping.", FAULTLOGGERD_SERVICE_TAG, uid);
-            return ResponseCode::SDK_DUMP_REPEAT;
+        responseData = CheckPerfLimit(uid, requestData.checkLimit);
+        if (responseData != ResponseCode::REQUEST_SUCCESS) {
+            return responseData;
         }
         auto& pipePair = LitePerfPipePair::CreatePipePair(uid);
         fds[PIPE_BUF_INDEX] = pipePair.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ);
         fds[PIPE_RES_INDEX] = pipePair.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ);
-
         constexpr int maxPerfTimeout = (MAX_STOP_SECONDS + DUMP_LITEPERF_TIMEOUT) / 1000;
         int32_t delayTime = std::min(requestData.timeout, maxPerfTimeout);
-        auto task = [uid, this] {
+        auto delayTask = TimerTaskAdapter::CreateInstance([uid] {
             LitePerfPipePair::DelPipePair(uid);
-        };
-        StartDelayTask(task, delayTime);
+        }, delayTime);
+        FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
     } else if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
         LitePerfPipePair* pipePair = LitePerfPipePair::GetPipePair(uid);
         if (pipePair == nullptr) {
@@ -463,12 +502,6 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
     return responseData;
-}
-
-void LitePerfPipeService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
-{
-    auto delayTask = DelayTask::CreateInstance(workFunc, delayTime);
-    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
 }
 #endif
 }

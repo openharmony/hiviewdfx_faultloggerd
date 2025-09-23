@@ -131,7 +131,7 @@ int32_t RequestSdkDump(int32_t pid, int32_t tid, int (&pipeReadFd)[2], bool isJs
 #endif
 }
 
-int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2], int timeout)
+int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2], int timeout, bool checkLimit)
 {
 #ifndef is_ohos_lite
     if (pipeType < FaultLoggerPipeType::PIPE_FD_READ || pipeType > FaultLoggerPipeType::PIPE_FD_DELETE) {
@@ -145,6 +145,7 @@ int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2], int timeout)
     request.pid = getpid();
     request.uid = getuid();
     request.timeout = timeout;
+    request.checkLimit = checkLimit;
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     SocketFdData socketFdData = {pipeFd, PIPE_NUM_SZ};
     return SendRequestToServer(GetSocketName().c_str(), socketRequestData, CRASHDUMP_SOCKET_TIMEOUT, &socketFdData);

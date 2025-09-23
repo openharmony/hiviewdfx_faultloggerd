@@ -39,7 +39,7 @@ void CoredumpTaskScheduler::ScheduleCancelTime(SessionId sessionId, int timeoutM
     int32_t delaySec = endTime > curTime ? static_cast<int32_t>((endTime - curTime) / 1000) : 0;
     delaySec = std::min(delaySec, maxDelaySec);
 
-    auto delayTask = DelayTask::CreateInstance(removeTask, delaySec);
+    auto delayTask = TimerTaskAdapter::CreateInstance(removeTask, delaySec);
     if (delayTask) {
         session->timerFd = delayTask->GetFd();
         FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));

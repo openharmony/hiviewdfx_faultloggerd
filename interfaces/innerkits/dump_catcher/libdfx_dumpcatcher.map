@@ -5,6 +5,7 @@
       OHOS::HiviewDFX::DfxDumpCatcher::DumpCatch*;
       OHOS::HiviewDFX::LitePerf::LitePerf*;
       OHOS::HiviewDFX::LitePerf::StartProcessStackSampling*;
+      OHOS::HiviewDFX::LitePerf::CollectProcessStackSampling*;
       OHOS::HiviewDFX::LitePerf::CollectSampleStackByTid*;
       OHOS::HiviewDFX::LitePerf::FinishProcessStackSampling*;
     };

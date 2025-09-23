@@ -160,10 +160,7 @@ LitePerfPipePair& LitePerfPipePair::CreatePipePair(int uid)
 
 bool LitePerfPipePair::CheckDumpMax()
 {
-    if (pipes_.size() > MAX_LITE_PERF_PIPE_SIZE) {
-        return true;
-    }
-    return false;
+    return pipes_.size() > MAX_LITE_PERF_PIPE_SIZE;
 }
 
 bool LitePerfPipePair::CheckDumpRecord(int uid)
