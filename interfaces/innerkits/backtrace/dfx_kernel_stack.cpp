@@ -137,9 +137,9 @@ bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThr
     DfxEnableTraceDlsym(false);
     auto costTime = counter.Elapsed<std::chrono::milliseconds>();
     DFXLOGI("format kernel stack cost time = %{public}" PRId64 " ms", costTime);
-    if (costTime > MAX_ALL_FRAME_PARSE_TIME) {
+    if (needParseSymbol) {
         ReportData reportData;
-        reportData.parseCostType = ParseCostType::PARSE_ALL_FRAME_TIME;
+        reportData.parseCostType = ParseCostType::PARSE_ALL_FRAME_TIME_NO_LIMIT;
         reportData.bundleName = bundleName;
         reportData.costTime = static_cast<uint32_t>(costTime);
         reportData.threadCount = static_cast<uint32_t>(threadKernelStackVec.size());
