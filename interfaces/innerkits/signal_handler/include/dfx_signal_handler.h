@@ -66,11 +66,11 @@ const char* DFX_GetAppRunningUniqueId(void);
 /**
  * @brief Sets the application's running unique identifier
  *
- * @param appRunningId Pointer to a null-terminated string (max 63 bytes)
+ * @param appRunningUniqueId Pointer to a null-terminated string (max 63 bytes)
  * @param len Length of the identifier string (excluding null terminator)
  * @return 0 on success, -1 on failure (invalid parameters or memory allocation error)
  */
-int DFX_SetAppRunningUniqueId(const char* appRunningId, size_t len);
+int DFX_SetAppRunningUniqueId(const char* appRunningUniqueId, size_t len);
 
 /**
  * @brief Types of crash objects for diagnostic information

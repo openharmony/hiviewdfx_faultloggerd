@@ -118,7 +118,7 @@ struct ProcessDumpRequest {
     /** stackId for async-stack */
     uint64_t stackId;
     /** application runing unique Id */
-    char appRunningId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
+    char appRunningUniqueId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
     /** source child process with processdump pipe */
     int childPipeFd[2];
     /** vm process pid addr */
