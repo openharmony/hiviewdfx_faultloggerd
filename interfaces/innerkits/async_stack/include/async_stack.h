@@ -25,7 +25,7 @@ extern "C" {
 /**
  * @brief init async stack
  *
- * @return if succeed return 0, otherwise return -1
+ * @return if succeed return true, otherwise return false
 */
 bool DfxInitAsyncStack();
 

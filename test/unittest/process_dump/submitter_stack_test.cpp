@@ -65,8 +65,13 @@ int SubmitterStackTest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
 
 namespace {
 static bool g_done = false;
+pid_t g_testTid = 0;
 
-NOINLINE static void WorkCallback(uv_work_t* req) {}
+NOINLINE static void WorkCallback(uv_work_t* req)
+{
+    g_testTid = gettid();
+    sleep(3); // 3 : sleep 3 seconds
+}
 
 NOINLINE static void AfterWorkCallback(uv_work_t* req, int status)
 {
@@ -96,28 +101,21 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
     uv_timer_start(&timerHandle, TimerCallback, timeout, 0);
     uv_queue_work(loop, &work, WorkCallback, AfterWorkCallback);
     uv_run(loop, UV_RUN_DEFAULT);
-    pid_t pid = fork();
-    if (pid < 0) {
-        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
-    } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
-        exit(0);
-    }
     ProcessDumpRequest request = {
         .type = ProcessDumpType::DUMP_TYPE_CPP_CRASH,
-        .tid = pid,
-        .pid = pid,
-        .nsPid = pid,
+        .tid = g_testTid,
+        .pid = g_testTid,
+        .nsPid = g_testTid,
         .stackId = DfxGetSubmitterStackId(),
     };
 #if defined(__aarch64__)
     ASSERT_NE(request.stackId, 0);
 #endif
     DfxProcess process;
-    process.InitProcessInfo(pid, pid, getuid(), "");
-    process.SetVmPid(pid);
+    process.InitProcessInfo(g_testTid, g_testTid, getuid(), "");
+    process.SetVmPid(g_testTid);
     process.InitKeyThread(request);
-    Unwinder unwinder(pid, pid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
+    Unwinder unwinder(g_testTid, g_testTid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     SubmitterStack submitterStack;
     submitterStack.Print(process, request, unwinder);
 #if defined(__aarch64__)
