@@ -252,8 +252,10 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator008, TestSize.Level2)
         ProcessDumpRequest request;
         FullCoredumpGenerator generator(request);
         generator.FinishCoredump(false);
+        exit(0);
     } else {
         ASSERT_TRUE(pid > 0);
+        waitpid(pid, nullptr, 0);
         GTEST_LOG_(INFO) << "FullCoredumpGenerator008: end.";
     }
 }
