@@ -35,7 +35,6 @@ public:
     static void InfoCrashUnwindResult(const ProcessDumpRequest& request, bool isUnwindSucc);
     static void BlockCrashProcExit(const ProcessDumpRequest& request);
     static void WaitForFork(pid_t pid, pid_t& childPid);
-    static void GetVmProcessRealPid(const ProcessDumpRequest& request, pid_t vmPid, pid_t& realPid);
     static void NotifyOperateResult(ProcessDumpRequest& request, int result);
 };
 } // namespace HiviewDFX

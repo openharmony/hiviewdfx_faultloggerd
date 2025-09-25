@@ -121,8 +121,6 @@ struct ProcessDumpRequest {
     char appRunningUniqueId[MAX_APP_RUNNING_UNIQUE_ID_LEN];
     /** source child process with processdump pipe */
     int childPipeFd[2];
-    /** vm process pid addr */
-    intptr_t vmProcRealPidAddr;
     /** whether block source process pid */
     intptr_t blockCrashExitAddr;
     /** whether processdump unwind crash success */

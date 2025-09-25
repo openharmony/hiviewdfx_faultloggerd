@@ -71,7 +71,6 @@
 static struct ProcessDumpRequest *g_request = NULL;
 
 static long g_blockExit = 0;
-static long g_vmRealPid = 0;
 static long g_unwindResult = 0;
 static atomic_int g_dumpCount = 0;
 static int g_dumpState = 0;
@@ -436,7 +435,6 @@ static void ForkProcessdump(uint64_t startTime)
         }
         if (endTime == 0 || endTime > curTime) {
             g_request->blockCrashExitAddr = (intptr_t)&g_blockExit;
-            g_request->vmProcRealPidAddr = (intptr_t)&g_vmRealPid;
             g_request->unwindResultAddr = (intptr_t)&g_unwindResult;
             DFX_ExecDump();
         } else {
@@ -478,7 +476,6 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
 
 static bool StartVMProcessUnwind(void)
 {
-    uint64_t startTime = GetAbsTimeMilliSecondsCInterce();
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork vm process(%{public}d)", errno);
@@ -487,10 +484,7 @@ static bool StartVMProcessUnwind(void)
     if (pid == 0) {
         pid_t vmPid = ForkBySyscall();
         if (vmPid == 0) {
-            DFXLOGI("start vm process, fork spend time %{public}" PRIu64 "ms",
-                    GetAbsTimeMilliSecondsCInterce() - startTime);
-            g_vmRealPid = GetRealPid();
-            DFXLOGI("vm prorcecc read pid = %{public}ld", g_vmRealPid);
+            DFXLOGI("exit vm process");
             syscall(SYS_exit, 0);
         } else {
             DFXLOGI("exit dummy vm process");
