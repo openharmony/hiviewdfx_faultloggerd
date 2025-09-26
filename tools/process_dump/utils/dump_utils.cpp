@@ -239,26 +239,6 @@ void DumpUtils::WaitForFork(pid_t pid, pid_t& childPid)
     }
 }
 
-void DumpUtils::GetVmProcessRealPid(const ProcessDumpRequest& request, pid_t vmPid, pid_t& realPid)
-{
-    int waitStatus = 0;
-    ptrace(PTRACE_SETOPTIONS, vmPid, NULL, PTRACE_O_TRACEEXIT); // block son exit
-    ptrace(PTRACE_CONT, vmPid, NULL, NULL);
-
-    DFXLOGI("start wait exit event happen");
-    pid_t result = waitpid(vmPid, &waitStatus, 0); // wait exit stop
-    if (result != vmPid) {
-        DFXLOGE("waitpid failed, expected pid:%{public}d, got:%{public}d", vmPid, result);
-        return;
-    }
-    long data = ptrace(PTRACE_PEEKDATA, vmPid, reinterpret_cast<void *>(request.vmProcRealPidAddr), nullptr);
-    if (data < 0) {
-        DFXLOGI("ptrace peek data error %{public}d %{public}d", vmPid, errno);
-        return;
-    }
-    realPid = static_cast<pid_t>(data);
-}
-
 void DumpUtils::NotifyOperateResult(ProcessDumpRequest& request, int result)
 {
     if (request.childPipeFd[0] != -1) {
