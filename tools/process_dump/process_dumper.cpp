@@ -78,6 +78,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxProcessDump"
 const char * const OTHER_THREAD_DUMP_INFO = "OtherThreadDumpInfo";
+MAYBE_UNUSED constexpr int PROCESSDUMP_REMAIN_TIME = 2500;
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 void SigAlarmCallBack()
@@ -96,6 +97,7 @@ ProcessDumper &ProcessDumper::GetInstance()
 void ProcessDumper::Dump()
 {
     startTime_ = GetTimeMillisec();
+    startAbsTime_ = GetAbsTimeMilliSeconds();
     DumpErrorCode resDump = DumpProcess();
     if (resDump == DumpErrorCode::DUMP_COREDUMP) {
         return;
@@ -392,9 +394,10 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
 DumpErrorCode ProcessDumper::WaitParseSymbols()
 {
     uint64_t curTime = GetAbsTimeMilliSeconds();
+    DumpErrorCode dumpRes = DumpErrorCode::DUMP_ESUCCESS;
+#if defined(__aarch64__)
     uint32_t lessRemainTimeMs =
         static_cast<uint32_t>(ProcessDumpConfig::GetInstance().GetConfig().reservedParseSymbolTime);
-    DumpErrorCode dumpRes = DumpErrorCode::DUMP_ESUCCESS;
     if (request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH || expectedDumpFinishTime_ == 0) {
         threadPool_.Stop();
     } else if (expectedDumpFinishTime_ > curTime && expectedDumpFinishTime_ - curTime > lessRemainTimeMs) {
@@ -406,6 +409,22 @@ DumpErrorCode ProcessDumper::WaitParseSymbols()
         DFXLOGW("do not parse symbol, remain %{public}" PRId64 "ms", expectedDumpFinishTime_ - curTime);
         dumpRes = DumpErrorCode::DUMP_ESYMBOL_NO_PARSE;
     }
+#else
+    uint64_t unwindTime = curTime > startAbsTime_ ? curTime - startAbsTime_ : 0;
+    uint64_t waitTime = (unwindTime > 0 && PROCESSDUMP_REMAIN_TIME > unwindTime) ?
+        PROCESSDUMP_REMAIN_TIME - unwindTime : 0;
+    if (request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+        threadPool_.Stop();
+    } else if (waitTime > 0) {
+        DFXLOGI("parse symbol, wait %{public}" PRId64 "ms", waitTime);
+        if (!threadPool_.StopWithTimeOut(waitTime)) {
+            dumpRes = DumpErrorCode::DUMP_ESYMBOL_PARSE_TIMEOUT;
+        }
+    } else {
+        DFXLOGW("do not parse symbol, time not enough!");
+        dumpRes = DumpErrorCode::DUMP_ESYMBOL_NO_PARSE;
+    }
+#endif
     finishParseSymbolTime_ = GetTimeMillisec();
     return dumpRes;
 }

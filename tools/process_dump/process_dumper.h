@@ -81,6 +81,7 @@ private:
     ProcessDumpRequest request_{};
     uint64_t startTime_ = 0;
     uint64_t finishTime_ = 0;
+    uint64_t startAbsTime_ = 0;
 
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
     bool isJsonDump_ = false;
