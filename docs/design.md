@@ -5,7 +5,7 @@ Faultloggerd 设计上需要达成下面几个目标：
 3.控制记录信息的大小、数量以及访问权限
 4.轻量，灵活，使用简单
 业界商用系统均提供了类似的功能，也有一些专注类似功能的开源项目以及商业公司。
-本文档主要用于记录设计上的一些细节问题，简介可以参考[hiviewdfx\_faultloggerd](https://gitee.com/openharmony/hiviewdfx_faultloggerd/blob/master/README_zh.md)的介绍。使用可以参考[使用说明](https://gitee.com/openharmony/hiviewdfx_faultloggerd/blob/master/docs/usage.md)。
+本文档主要用于记录设计上的一些细节问题，简介可以参考[hiviewdfx\_faultloggerd](https://gitcode.com/openharmony/hiviewdfx_faultloggerd/blob/master/README_zh.md)的介绍。使用可以参考[使用说明](https://gitcode.com/openharmony/hiviewdfx_faultloggerd/blob/master/docs/usage.md)。
 
 对于目标(1)，需要关注
 1)现场信息的范围，目前包括信号，执行上下文，调用栈，异常栈以及虚拟内存空间映射关系。
@@ -24,7 +24,7 @@ Faultloggerd 设计上需要达成下面几个目标：
 3)请求冲突管理
 
 ## 和FaultLogger的关系
-FaultLogger是运行在[hiview](https://gitee.com/openharmony/hiviewdfx_hiview/blob/master/README_zh.md)部件中的服务。
+FaultLogger是运行在[hiview](https://gitcode.com/openharmony/hiviewdfx_hiview/blob/master/README_zh.md)部件中的服务。
 通过API向三方应用提供获取自身故障日志的功能，通过[hidumper]向IDE提供日志导出功能。
 Faultloggerd和FaultLogger在名字上很类似，却不是一个模块，这样拆分有有以下考虑：
 1.分类权限
