@@ -189,7 +189,7 @@ echo /data/log/coredump.%p.bin > /proc/sys/kernel/core_pattern \\ 设置生成�
 如果需要在版本中打开，可以在init.cfg添加类似的命令，设置生成文件的名称以及最大的文件大小
 
 Q6.GDB的位置 \
-版本中未提供，可以使用[三方编译的版本](https://gitee.com/stesen/ohos_cross_tools)
+版本中未提供，可以使用[三方编译的版本](https://gitcode.com/stesen/ohos_cross_tools)
 
 Q7.进程崩溃退出而没有日志可能原因? \
 如果进程使用了signal/sigaction/sigprocmask等函数屏蔽/拦截了信号的分发，也会导致进程由于信号退出时没有日志。 \
@@ -214,7 +214,7 @@ hdc shell "sed -i 's/enforcing/permissive/g' /etc/selinux/config"
 也可使用strace来排查，strace -p pid 操作后查看是否有signal/sigaction/sigprocmask/sigblock等函数,导致block信号或替换掉了原handler。
 如果自身的代码里没有使用，可以考虑排查是否引入的三方库中拦截、替换了信号处理。一个例子如下：
 ```
-https://gitee.com/openharmony/third_party_pulseaudio/pulls/20
+https://gitcode.com/openharmony/third_party_pulseaudio/pulls/20
 ```
 
 Q8.进程崩溃退出发现生成了CPPCRASH日志，但是日志内容为空可能原因？\

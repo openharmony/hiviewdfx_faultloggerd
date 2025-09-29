@@ -373,21 +373,21 @@ fn main() {
 
 ## 相关仓
 
-[DFX子系统](https://gitee.com/openharmony/docs/blob/master/zh-cn/readme/DFX%E5%AD%90%E7%B3%BB%E7%BB%9F.md)
+[DFX子系统](https://gitcode.com/openharmony/docs/blob/master/zh-cn/readme/DFX%E5%AD%90%E7%B3%BB%E7%BB%9F.md)
 
-[hiviewdfx\_hiview](https://gitee.com/openharmony/hiviewdfx_hiview/blob/master/README_zh.md)
+[hiviewdfx\_hiview](https://gitcode.com/openharmony/hiviewdfx_hiview/blob/master/README_zh.md)
 
-[hiviewdfx\_hilog](https://gitee.com/openharmony/hiviewdfx_hilog/blob/master/README_zh.md)
+[hiviewdfx\_hilog](https://gitcode.com/openharmony/hiviewdfx_hilog/blob/master/README_zh.md)
 
-[hiviewdfx\_hiappevent](https://gitee.com/openharmony/hiviewdfx_hiappevent/blob/master/README_zh.md)
+[hiviewdfx\_hiappevent](https://gitcode.com/openharmony/hiviewdfx_hiappevent/blob/master/README_zh.md)
 
-[hiviewdfx\_hisysevent](https://gitee.com/openharmony/hiviewdfx_hisysevent/blob/master/README_zh.md)
+[hiviewdfx\_hisysevent](https://gitcode.com/openharmony/hiviewdfx_hisysevent/blob/master/README_zh.md)
 
 **hiviewdfx\_faultloggerd**
 
-[hiviewdfx\_hilog\_lite](https://gitee.com/openharmony/hiviewdfx_hilog_lite/blob/master/README_zh.md)
+[hiviewdfx\_hilog\_lite](https://gitcode.com/openharmony/hiviewdfx_hilog_lite/blob/master/README_zh.md)
 
-[hiviewdfx\_hievent\_lite](https://gitee.com/openharmony/hiviewdfx_hievent_lite/blob/master/README_zh.md)
+[hiviewdfx\_hievent\_lite](https://gitcode.com/openharmony/hiviewdfx_hievent_lite/blob/master/README_zh.md)
 
-[hiviewdfx\_hiview\_lite](https://gitee.com/openharmony/hiviewdfx_hiview_lite/blob/master/README_zh.md)
+[hiviewdfx\_hiview\_lite](https://gitcode.com/openharmony/hiviewdfx_hiview_lite/blob/master/README_zh.md)
 
