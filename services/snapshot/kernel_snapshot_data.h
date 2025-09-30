@@ -36,7 +36,8 @@ enum class CrashSection {
     FAULT_STACK,
     MAPS,
     EXCEPTION_REGISTERS,
-    INVALID_SECTION
+    INVALID_SECTION,
+    SEQ_NUM
 };
 
 enum class SnapshotSection {

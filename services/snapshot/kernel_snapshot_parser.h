@@ -38,7 +38,8 @@ public:
 private:
     void SplitByNewLine(const std::string &str, std::vector<std::string> &lines);
     std::vector<CrashMap> ParseSnapshot(std::vector<std::string> &snapshotLines);
-    void ParseSameSeqSnapshot(const std::vector<std::string> &lines, std::vector<CrashMap>& crashMaps);
+    void ParseSameSeqSnapshot(const std::string& seqNum, const std::vector<std::string> &lines,
+            std::vector<CrashMap>& crashMaps);
     CrashMap ParseSnapshotUnit(const std::vector<std::string> &lines, size_t &index);
 
     bool PreProcessLine(std::string &line) const;

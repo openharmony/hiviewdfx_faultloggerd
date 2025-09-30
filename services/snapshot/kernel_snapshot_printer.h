@@ -26,8 +26,8 @@ class KernelSnapshotPrinter : public IKernelSnapshotPrinter {
 public:
     void SaveSnapshots(std::vector<CrashMap>& outputs) override;
 private:
-    void SaveSnapshot(CrashMap& output);
-    void OutputToFile(const std::string& filePath, CrashMap& output);
+    bool SaveSnapshot(CrashMap& output);
+    bool OutputToFile(const std::string& filePath, CrashMap& output);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
