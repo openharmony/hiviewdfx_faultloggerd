@@ -95,6 +95,7 @@ std::string DfxSignal::FormatSignalName(const int32_t signal)
         { SIGFPE, std::string("SIGFPE") },
         { SIGSEGV, std::string("SIGSEGV") },
         { SIGSTKFLT, std::string("SIGSTKFLT") },
+        { SIGPIPE, std::string("SIGPIPE") },
         { SIGSYS, std::string("SIGSYS") },
         { SIGDUMP, std::string("SIGDUMP") },
         { SIGLEAK_STACK, std::string("DEBUG SIGNAL") },

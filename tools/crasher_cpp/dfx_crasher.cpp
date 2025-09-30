@@ -30,6 +30,8 @@
 #include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <thread>
 #include <unistd.h>
 #include <vector>
@@ -47,6 +49,7 @@
 
 #include "info/fatal_message.h"
 #include "securec.h"
+#include "smart_fd.h"
 
 #ifdef HAS_HITRACE
 #include <hitrace/hitracechain.h>
@@ -102,6 +105,8 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
     {"triSIGSEGV", "trigger a SIGSEGV", &DfxCrasher::SegmentFaultException},
     {"triSIGTRAP", "trigger a SIGTRAP", &DfxCrasher::TriggerTrapException},
     {"triSIGABRT", "trigger a SIGABRT", &DfxCrasher::Abort},
+    {"triSIGPIPE", "trigger a SIGPIPE", &DfxCrasher::TriggerPipeException},
+    {"triSocketSIGPIPE", "trigger a socket SIGPIPE", &DfxCrasher::TriggerSocketException},
 
     {"Loop", "trigger a ForeverLoop", &DfxCrasher::Loop},
     {"MaxStack", "trigger SIGSEGV after 64 function call", &DfxCrasher::MaxStackDepth},
@@ -310,6 +315,100 @@ NOINLINE int DfxCrasher::Abort(void)
 {
     HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     abort();
+    return 0;
+}
+
+NOINLINE int DfxCrasher::TriggerPipeException(void)
+{
+    setenv("HAP_DEBUGGABLE", "true", 1);
+    DfxNotifyWatchdogThreadStart();
+    int pipe[2]{-1};
+    if (pipe2(pipe, 0) != 0) {
+        return 0;
+    }
+    close(pipe[0]);
+    int src = 1;
+    write(pipe[1], reinterpret_cast<const void*>(&src), sizeof(int));
+    close(pipe[1]);
+    return 0;
+}
+
+
+const char* SOCKET_PATH = "/dev/unix/socket/test_sigpipe.server";
+static void StartServer(int fd)
+{
+    SmartFd serverFd(socket(AF_LOCAL, SOCK_STREAM, 0));
+    if (!serverFd) {
+        std::cout << "Server socket failed" << std::endl;
+        return;
+    }
+    struct sockaddr_un serverAddr;
+    (void)memset_s(&serverAddr, sizeof(serverAddr), 0, sizeof(serverAddr));
+    serverAddr.sun_family = AF_LOCAL;
+    strncpy_s(serverAddr.sun_path, sizeof(serverAddr.sun_path), SOCKET_PATH, sizeof(serverAddr.sun_path) - 1);
+
+    unlink(SOCKET_PATH);
+
+    if (bind(serverFd.GetFd(), reinterpret_cast<struct sockaddr *>(&serverAddr), sizeof(serverAddr)) == -1) {
+        std::cout << "Server bind failed" << std::endl;
+        return;
+    }
+    if (listen(serverFd.GetFd(), 1) == -1) {
+        std::cout << "Server listen failed" << std::endl;
+        return;
+    }
+    const char* msg = "server listen complete";
+    SmartFd writePipe(fd);
+    write(writePipe.GetFd(), msg, strlen(msg));
+    struct sockaddr_un clientAddr;
+    socklen_t clientLen = sizeof(clientAddr);
+    SmartFd connectFd(accept(serverFd.GetFd(), reinterpret_cast<struct sockaddr *>(&clientAddr), &clientLen));
+    if (!connectFd) {
+        std::cout << "Server accept failed" << std::endl;
+        return;
+    }
+    connectFd.Reset();
+    serverFd.Reset();
+    unlink(SOCKET_PATH);
+    msg = "close fd successfully";
+    write(writePipe.GetFd(), msg, strlen(msg));
+}
+
+NOINLINE int DfxCrasher::TriggerSocketException(void)
+{
+    setenv("HAP_DEBUGGABLE", "true", 1);
+    DfxNotifyWatchdogThreadStart();
+    int pipe[2] {-1};
+    if (pipe2(pipe, 0) != 0) {
+        return 0;
+    }
+    std::thread ([pipe] {
+        StartServer(pipe[1]);
+    }).detach();
+    SmartFd readPipe(pipe[0]);
+    char buffer[30];
+    if (read(readPipe.GetFd(), buffer, sizeof(buffer)) < 0) {
+        return -1;
+    }
+    SmartFd sockFd(socket(AF_LOCAL, SOCK_STREAM, 0));
+    struct sockaddr_un serverAddr;
+    if (!sockFd) {
+        std::cout << "socket failed" <<std::endl;
+        return -1;
+    }
+    (void)memset_s(&serverAddr, sizeof(serverAddr), 0, sizeof(serverAddr));
+    serverAddr.sun_family = AF_LOCAL;
+    strncpy_s(serverAddr.sun_path, sizeof(serverAddr.sun_path), SOCKET_PATH, sizeof(serverAddr.sun_path) - 1);
+    if (connect(sockFd.GetFd(), reinterpret_cast<struct sockaddr *>(&serverAddr), sizeof(serverAddr)) == -1) {
+        return -1;
+    }
+    if (read(readPipe.GetFd(), buffer, sizeof(buffer)) < 0) {
+        return -1;
+    }
+    const char* message = "Hello from client!";
+    if (send(sockFd.GetFd(), message, strlen(message), 0) == -1) {
+        std::cout << "Client send failed" <<std::endl;
+    }
     return 0;
 }
 

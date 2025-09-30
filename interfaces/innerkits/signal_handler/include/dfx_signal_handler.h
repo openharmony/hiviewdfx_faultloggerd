@@ -123,6 +123,14 @@ enum CrashLogConfigType : uint8_t {
  */
 int DFX_SetCrashLogConfig(uint8_t type, uint32_t value);
 
+/**
+ * @brief notify watchdog thread start
+ *
+ * @return 0 on success, -1 on error (check errno for details)
+ * @warning Non-thread-safe and non-signal-safe. Call early in program initialization.
+ */
+int DfxNotifyWatchdogThreadStart();
+
 #ifdef __cplusplus
 }
 #endif

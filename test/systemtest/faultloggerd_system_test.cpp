@@ -1783,5 +1783,49 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest127, TestSize.Level2)
     EXPECT_TRUE(CheckCountNumAbort(fileName, pid)) << "FaultLoggerdSystemTest127 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest127: end.";
 }
+
+/**
+* @tc.name: FaultLoggerdSystemTest128
+* @tc.desc: test  crasher application: triSIGPIPE
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest128, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: start.";
+    string cmd = "triSIGPIPE";
+    pid_t pid = ForkAndExecuteCrasher(cmd, CRASHER_CPP);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")";
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    string getHilogCmd = "hilog -x | grep -i c02d11";
+    string result = ExecuteCommands(getHilogCmd);
+    EXPECT_TRUE(result.find("SIGPIPE"));
+    EXPECT_TRUE(result.find("write"));
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest128: end.";
+}
+
+/**
+* @tc.name: FaultLoggerdSystemTest129
+* @tc.desc: test  crasher application: triSocketSIGPIPE
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest129, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest129: start.";
+    string cmd = "triSocketSIGPIPE";
+    pid_t pid = ForkAndExecuteCrasher(cmd, CRASHER_CPP);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")";
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    string getHilogCmd = "hilog -x | grep -i c02d11";
+    string result = ExecuteCommands(getHilogCmd);
+    EXPECT_TRUE(result.find("SIGPIPE"));
+    EXPECT_TRUE(result.find("send"));
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest129: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -1057,16 +1057,14 @@ HWTEST_F(SignalHandlerTest, SetCrashLogConfig003, TestSize.Level2)
     }
 }
 
-#if defined(__aarch64__)
 /**
- * @tc.name: EnableNativeCrashKernelSnapshot Test
- * @tc.desc: add testcase enable NativeCrashKernelSnapshot
+ * @tc.name: DfxNotifyWatchdogThreadStart Test
+ * @tc.desc: add testcase DfxNotifyWatchdogThreadStart
  * @tc.type: FUNC
  */
-HWTEST_F(SignalHandlerTest, EnableNativeCrashKernelSnapshot_001, TestSize.Level2)
+HWTEST_F(SignalHandlerTest, DfxNotifyWatchdogThreadStart001, TestSize.Level2)
 {
-    EXPECT_TRUE(DFX_EnableNativeCrashKernelSnapshot());
+    EXPECT_TRUE(DfxNotifyWatchdogThreadStart() == 0);
 }
-#endif
 } // namespace HiviewDFX
 } // namepsace OHOS

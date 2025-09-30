@@ -697,13 +697,3 @@ void DfxDumpRequest(int signo, struct ProcessDumpRequest *request)
     g_request = request;
     ProcessDump(signo);
 }
-
-bool DFX_EnableNativeCrashKernelSnapshot()
-{
-    if (!DFX_SetDumpableState()) {
-        return false;
-    }
-    SetKernelSnapshot(true);
-    DFX_RestoreDumpableState();
-    return true;
-}
