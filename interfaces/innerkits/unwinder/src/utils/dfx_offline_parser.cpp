@@ -105,6 +105,9 @@ std::shared_ptr<DfxMap> DfxOfflineParser::GetMapForFrame(const DfxFrame& frame)
 
 bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
 {
+    if (dfxMaps_ == nullptr) {
+        return false;
+    }
     auto dfxMap = GetMapForFrame(frame);
     auto dfxHap = dfxMap ? dfxMap->hap : std::make_shared<DfxHap>();
     if (!dfxHap) {
@@ -141,9 +144,12 @@ std::string DfxOfflineParser::GetBundlePath(const std::string& originPath) const
 
 std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
 {
+    if (dfxMaps_ == nullptr) {
+        return nullptr;
+    }
     auto dfxMap = GetMapForFrame(frame);
-    if (dfxMap) {
-        return dfxMap->elf;
+    if (dfxMap && dfxMap->elf) {
+        return dfxMap->elf->IsValid() ? dfxMap->elf : nullptr;
     }
     RegularElfFactory factory(GetBundlePath(frame.mapName));
     auto elf = factory.Create();
@@ -151,14 +157,14 @@ std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
         DFXLOGE("elf is nullptr");
         return nullptr;
     }
-    if (!elf->IsValid()) {
-        DFXLOGE("elf is invalid");
-        return nullptr;
-    }
     dfxMap = std::make_shared<DfxMap>();
     dfxMap->name = frame.mapName;
     dfxMap->elf = elf;
     dfxMaps_->AddMap(dfxMap);
+    if (!elf->IsValid()) {
+        DFXLOGE("elf is invalid");
+        return nullptr;
+    }
     return elf;
 }
 

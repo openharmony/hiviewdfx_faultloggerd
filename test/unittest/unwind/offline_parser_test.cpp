@@ -115,16 +115,18 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxOfflineParserTest005: start.";
     DfxOfflineParser parser("testhap");
-    auto newMap = std::make_shared<DfxMap>();
-    auto elf = std::make_shared<DfxElf>();
-    newMap->elf = elf;
-    newMap->name = "testmap";
-    parser.dfxMaps_->AddMap(newMap);
-
-    DfxFrame frame;
-    frame.mapName = "testmap";
-    auto retElf = parser.GetElfForFrame(frame);
-    EXPECT_EQ(retElf, elf);
+#if defined(__aarch64__)
+    std::string soName = "/system/lib64/chipset-sdk-sp/libunwinder.z.so";
+#else
+    std::string soName = "/system/lib/chipset-sdk-sp/libunwinder.z.so";
+#endif
+    DfxFrame frame1;
+    frame1.mapName = soName;
+    auto elf1 = parser.GetElfForFrame(frame1);
+    DfxFrame frame2;
+    frame2.mapName = soName;
+    auto elf2 = parser.GetElfForFrame(frame2);
+    EXPECT_EQ(elf1, elf2);
     GTEST_LOG_(INFO) << "DfxOfflineParserTest005: end.";
 }
 
@@ -142,6 +144,25 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest006, TestSize.Level2)
     auto elf = parser.GetElfForFrame(frame);
     EXPECT_EQ(elf, nullptr);
     GTEST_LOG_(INFO) << "DfxOfflineParserTest006: end.";
+}
+
+/**
+ * @tc.name: DfxOfflineParserTest007
+ * @tc.desc: test GetElfForFrame with invalid mapname in 10 times
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest007: start.";
+    DfxOfflineParser parser("testhap");
+    DfxFrame frame;
+    frame.mapName = "invalidmapname.so";
+    std::shared_ptr<DfxElf> elf = nullptr;
+    for (int i = 0; i < 10; i++) {
+        elf = parser.GetElfForFrame(frame);
+        EXPECT_EQ(elf, nullptr);
+    }
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest007: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
