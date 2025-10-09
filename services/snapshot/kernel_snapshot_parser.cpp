@@ -271,13 +271,15 @@ CrashMap KernelSnapshotParser::ParseSnapshotUnit(const std::vector<std::string>&
     return output;
 }
 
-void KernelSnapshotParser::ParseSameSeqSnapshot(const std::vector<std::string>& lines, std::vector<CrashMap>& crashMaps)
+void KernelSnapshotParser::ParseSameSeqSnapshot(const std::string& seqNum, const std::vector<std::string>& lines,
+    std::vector<CrashMap>& crashMaps)
 {
     size_t curLineNum = 0;
 
     while (curLineNum < lines.size()) {
         auto cm = ParseSnapshotUnit(lines, curLineNum);
         if (!cm.empty()) {
+            cm[CrashSection::SEQ_NUM] = seqNum;
             crashMaps.emplace_back(cm);
         }
     }
@@ -298,7 +300,7 @@ std::vector<CrashMap> KernelSnapshotParser::ParseSnapshot(std::vector<std::strin
     std::vector<CrashMap> crashMaps;
 
     for (auto &item : kernelSnapshotMap) {
-        ParseSameSeqSnapshot(item.second, crashMaps);
+        ParseSameSeqSnapshot(item.first, item.second, crashMaps);
     }
     return crashMaps;
 }

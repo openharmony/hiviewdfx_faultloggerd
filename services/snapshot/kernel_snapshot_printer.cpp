@@ -24,31 +24,39 @@ namespace {
 constexpr const char * const KBOX_SNAPSHOT_DUMP_PATH = "/data/log/faultlog/temp/";
 }
 
-void KernelSnapshotPrinter::OutputToFile(const std::string& filePath, CrashMap& output)
+bool KernelSnapshotPrinter::OutputToFile(const std::string& filePath, CrashMap& output)
 {
     std::unique_ptr<FILE, decltype(&fclose)> file(fopen(filePath.c_str(), "w"), fclose);
     if (!file) {
         DFXLOGE("open file failed %{public}s errno %{public}d", filePath.c_str(), errno);
-        return;
+        return false;
     }
 
     std::string outputCont = KernelSnapshotContentBuilder(output, true).GenerateSummary();
     if (fwrite(outputCont.c_str(), sizeof(char), outputCont.length(), file.get()) != outputCont.length()) {
         DFXLOGE("write file failed %{public}s errno %{public}d", filePath.c_str(), errno);
+        return false;
     }
+    return true;
 }
 
-void KernelSnapshotPrinter::SaveSnapshot(CrashMap& output)
+bool KernelSnapshotPrinter::SaveSnapshot(CrashMap& output)
 {
+    // kernel dump abort and die_catch will both dump snapshot, so skip the abort snapshot
+    if (output[CrashSection::SEQ_NUM].find("AB") != std::string::npos) {
+        DFXLOGW("no need to save abort snapshot");
+        return false;
+    }
+
     if (output[CrashSection::PID].empty()) {
         DFXLOGE("pid is empty, not save snapshot");
-        return;
+        return false;
     }
 
     std::string filePath = std::string(KBOX_SNAPSHOT_DUMP_PATH) + "cppcrash-" +
                             output[CrashSection::PID] + "-" +
                             output[CrashSection::TIME_STAMP];
-    OutputToFile(filePath, output);
+    return OutputToFile(filePath, output);
 }
 
 void KernelSnapshotPrinter::SaveSnapshots(std::vector<CrashMap>& outputs)

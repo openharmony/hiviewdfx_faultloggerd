@@ -170,7 +170,7 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest003, TestSize.Level2)
 
 /**
  * @tc.name: KernelSnapshotTest004
- * @tc.desc: test snapshot generation
+ * @tc.desc: test processdump unwind fail scenario, snapshot generation
  * @tc.type: FUNC
  */
 HWTEST_F(KernelSnapshotTest, KernelSnapshotTest004, TestSize.Level2)
@@ -187,21 +187,8 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest004, TestSize.Level2)
     }
     waitpid(pid, 0, 0);
 
-    std::string snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 5);
-    std::ifstream snapshotFile(snapshotFilePath);
-    if (snapshotFile.is_open()) {
-        std::string content((std::istreambuf_iterator<char>(snapshotFile)), std::istreambuf_iterator<char>());
-        EXPECT_TRUE(content.find("Build info") != std::string::npos) << "KernelSnapshotTest004 Failed";
-        EXPECT_TRUE(content.find("Timestamp") != std::string::npos) << "KernelSnapshotTest004 Failed";
-        EXPECT_TRUE(content.find("Pid") != std::string::npos) << "KernelSnapshotTest004 Failed";
-        EXPECT_TRUE(content.find("Process name:") != std::string::npos) << "KernelSnapshotTest004 Failed";
-        EXPECT_TRUE(content.find("Reason:") != std::string::npos) << "KernelSnapshotTest004 Failed";
-        EXPECT_TRUE(content.find("#01") != std::string::npos) << "KernelSnapshotTest004 Failed";
-        EXPECT_TRUE(content.find("Registers:") != std::string::npos) << "KernelSnapshotTest004 Failed";
-        EXPECT_TRUE(content.find("Elfs:") != std::string::npos) << "KernelSnapshotTest004 Failed";
-    } else {
-        EXPECT_TRUE(false) << "KernelSnapshotTest004 Failed";
-    }
+    std::string snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 2);
+    EXPECT_TRUE(snapshotFilePath.empty());
 
     std::string recoverProcessdump = "mv /system/bin/processdump.bak /system/bin/processdump";
     system(recoverProcessdump.c_str());
@@ -407,10 +394,12 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest022, TestSize.Level2)
     std::ifstream file(KERNEL_SNAPSHOT_2_EXECPTION_FILE);
     KernelSnapshotParser parser;
     std::vector<std::string> lines;
+    std::string seqNum;
     if (file.is_open()) {
         std::string line;
         while (std::getline(file, line)) {
             parser.PreProcessLine(line);
+            seqNum = line.substr(0, 7);
             lines.push_back(line.substr(7));
         }
         file.close();
@@ -418,7 +407,7 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest022, TestSize.Level2)
         FAIL() << "Failed to open file: " << KERNEL_SNAPSHOT_2_EXECPTION_FILE;
     }
     std::vector<CrashMap> crashMaps;
-    parser.ParseSameSeqSnapshot(lines, crashMaps);
+    parser.ParseSameSeqSnapshot(seqNum, lines, crashMaps);
 
     EXPECT_EQ(crashMaps.size(), 2);
     GTEST_LOG_(INFO) << "KernelSnapshotTest022: end.";
@@ -701,7 +690,7 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest054, TestSize.Level2)
 
 /**
  * @tc.name: KernelSnapshotTest055
- * @tc.desc: test test generate summary local is false
+ * @tc.desc: test generate summary local is false
  * @tc.type: FUNC
  */
 HWTEST_F(KernelSnapshotTest, KernelSnapshotTest055, TestSize.Level2)
@@ -719,5 +708,22 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest055, TestSize.Level2)
 
     GTEST_LOG_(INFO) << "KernelSnapshotTest055: end.";
 }
+
+/**
+ * @tc.name: KernelSnapshotTest056
+ * @tc.desc: test save abort snapshot
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotTest056, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotTest056: start.";
+    KernelSnapshotPrinter printer;
+    CrashMap output = {
+        {CrashSection::SEQ_NUM, "AB_01"}
+    };
+
+    EXPECT_FALSE(printer.SaveSnapshot(output));
+    GTEST_LOG_(INFO) << "KernelSnapshotTest056: end.";
+}
 } // namespace HiviewDFX
-} // namepsace OHOS
+} // namespace OHOS
