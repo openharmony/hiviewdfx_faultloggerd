@@ -213,6 +213,8 @@ static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
             default:
                 return DUMP_TYPE_MEM_LEAK;
         }
+    } else if (signo == SIGPIPE) {
+        return DUMP_TYPE_PIPE;
     } else {
         return DUMP_TYPE_CPP_CRASH;
     }
@@ -480,5 +482,25 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
             errno = EINVAL;
             return -1;
     }
+    return 0;
+}
+
+int DfxNotifyWatchdogThreadStart()
+{
+    char* debuggableEnv = getenv("HAP_DEBUGGABLE");
+    if (debuggableEnv != NULL && strcmp(debuggableEnv, "true") == 0) {
+        struct signal_chain_action sigchain = {
+            .sca_sigaction = DFX_SigchainHandler,
+            .sca_mask = {},
+            .sca_flags = 0,
+        };
+        sigfillset(&sigchain.sca_mask);
+        add_special_handler_at_last(SIGPIPE, &sigchain);
+    }
+    if (!DFX_SetDumpableState()) {
+        return -1;
+    }
+    SetKernelSnapshot(true);
+    DFX_RestoreDumpableState();
     return 0;
 }

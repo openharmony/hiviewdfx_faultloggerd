@@ -181,6 +181,9 @@ void ProcessDumpConfig::LoadDefaultConfig()
     dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_COREDUMP] = {
         KEY_THREAD_DUMP_INFO, REGISTERS, OTHER_THREAD_DUMP_INFO,
     };
+    dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_PIPE] = {
+        KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER,
+    };
 }
 
 const DumpConfig& ProcessDumpConfig::GetConfig() const

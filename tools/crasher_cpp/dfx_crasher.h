@@ -37,6 +37,8 @@ public:
     static int SetLastFatalMessage();
     static int Abort();
     static int Loop();
+    static int TriggerPipeException();
+    static int TriggerSocketException();
 
     void PrintUsage() const;
 

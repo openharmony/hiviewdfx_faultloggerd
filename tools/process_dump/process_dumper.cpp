@@ -594,6 +594,10 @@ int ProcessDumper::GeFaultloggerdRequestType()
 bool ProcessDumper::InitBufferWriter()
 {
     DFX_TRACE_SCOPED("InitBufferWriter");
+    if (request_.type == ProcessDumpType::DUMP_TYPE_PIPE) {
+        DFXLOGW("SIGPIPE need not request buffer fd.");
+        return true;
+    }
     SmartFd bufferFd;
     if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         int pipeWriteFd[] = { -1, -1 };

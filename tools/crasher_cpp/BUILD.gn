@@ -23,6 +23,7 @@ if (defined(ohos_lite)) {
     visibility = [ "*:*" ]
     include_dirs = [
       ".",
+      "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/async_stack/include",
       "$faultloggerd_interfaces_path/innerkits/signal_handler/include",
