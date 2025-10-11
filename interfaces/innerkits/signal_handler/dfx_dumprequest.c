@@ -84,7 +84,7 @@ enum PIPE_FD_TYPE {
 };
 
 enum START_PROCESS_DUMP_RESULT {
-    START_PROCESS_DUMP_SUCESS = 0,
+    START_PROCESS_DUMP_SUCCESS = 0,
     START_PROCESS_DUMP_FAIL,
     START_PROCESS_DUMP_RETRY,
 };
@@ -463,7 +463,7 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
     }
     switch (WaitProcessExitTimeout(pid, WAITPID_TIMEOUT)) {
         case PROCESS_NORMAL_EXIT:
-            return START_PROCESS_DUMP_SUCESS;
+            return START_PROCESS_DUMP_SUCCESS;
         case PROCESS_ABNORMAL_EXIT:
             return START_PROCESS_DUMP_FAIL;
         case PROCESS_ALARM_EXIT:
@@ -672,7 +672,7 @@ static int ProcessDump(int signo)
         int result = StartProcessdump(true, isCrash);
         // not allow non-safe operate and try again
         if (result == START_PROCESS_DUMP_FAIL || (result == START_PROCESS_DUMP_RETRY &&
-                StartProcessdump(false, isCrash) != START_PROCESS_DUMP_SUCESS)) {
+                StartProcessdump(false, isCrash) != START_PROCESS_DUMP_SUCCESS)) {
             DFXLOGE("start processdump fail");
             break;
         }
