@@ -230,7 +230,7 @@ std::shared_ptr<StackItem> StackPrinter::Impl::InsertImpl(std::shared_ptr<StackI
         return nullptr;
     }
 
-    if (curNode->pc == pc) {
+    if (level ==  curNode-> level && curNode->pc == pc) {
         curNode->pcCount += pcCount;
         return curNode;
     }
