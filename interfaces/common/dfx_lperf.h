@@ -23,7 +23,7 @@ namespace {
 constexpr int MIN_SAMPLE_TIDS = 1;
 constexpr int MAX_SAMPLE_TIDS = 10;
 constexpr int MIN_SAMPLE_FREQUENCY = 1;
-constexpr int MAX_SAMPLE_FREQUENCY = 100;
+constexpr int MAX_SAMPLE_FREQUENCY = 200;
 constexpr int MIN_STOP_SECONDS = 1;
 constexpr int MAX_STOP_SECONDS = 10000;
 constexpr int DUMP_LITEPERF_TIMEOUT = 5000;
