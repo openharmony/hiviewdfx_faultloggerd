@@ -97,6 +97,26 @@ public:
         return vmPid_;
     }
 
+    void SetLifeTime(const uint64_t lifeTime)
+    {
+        lifeTime_ = lifeTime;
+    }
+
+    uint64_t GetLifeTime() const
+    {
+        return lifeTime_;
+    }
+
+    void SetRss(const uint64_t rss)
+    {
+        rss_ = rss;
+    }
+
+    uint64_t GetRss() const
+    {
+        return rss_;
+    }
+
     const CrashLogConfig& GetCrashLogConfig()
     {
         return crashLogConfig_;
@@ -132,7 +152,6 @@ public:
 
     void AppendFatalMessage(const std::string &msg);
     const std::string& GetFatalMessage() const;
-    std::string GetProcessLifeCycle();
 private:
     DfxProcessInfo processInfo_;
     CrashLogConfig crashLogConfig_;
@@ -141,6 +160,8 @@ private:
     std::vector<std::shared_ptr<DfxThread>> otherThreads_;
     std::string reason_ = "";
     std::string fatalMsg_ = "";
+    uint64_t rss_{0};
+    uint64_t lifeTime_{0};
     std::map<int, int> kvThreads_;
     std::string crashInfoJson_ = "";
     pid_t vmPid_ = 0;
