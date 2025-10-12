@@ -60,12 +60,17 @@ void DumpInfoHeader::Print(DfxProcess& process, const ProcessDumpRequest& reques
 #endif
     headerInfo += StringPrintf("Process name:%s\n", process.GetProcessInfo().processName.c_str());
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
-        headerInfo += ("Process life time:" + process.GetProcessLifeCycle() + "\n");
-        if (process.GetProcessLifeCycle().empty()) {
+        uint64_t lifeTimeSeconds = 0;
+        int errCode = GetProcessLifeCycle(process.GetProcessInfo().pid, lifeTimeSeconds);
+        process.SetLifeTime(lifeTimeSeconds);
+        headerInfo += ("Process life time:" + std::to_string(lifeTimeSeconds) + "s" + "\n");
+        if (errCode != 0) {
+            DFXLOGE("Get process lifeCycle fail, errCode: %{public}d", errCode);
             ReportCrashException(CrashExceptionCode::CRASH_LOG_EPROCESS_LIFECYCLE);
         }
-        headerInfo += StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n",
-            GetProcRssMemInfo(process.GetProcessInfo().pid));
+        uint64_t rss = GetProcRssMemInfo(process.GetProcessInfo().pid);
+        process.SetRss(rss);
+        headerInfo += StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n", rss);
         headerInfo += ("Reason:" + GetReasonInfo(request, process, *unwinder.GetMaps()));
         process.AppendFatalMessage(GetLastFatalMsg(process, request));
         auto msg = process.GetFatalMessage();

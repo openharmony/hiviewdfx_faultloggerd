@@ -29,6 +29,7 @@
 #include "file_util.h"
 #include "string_printf.h"
 #include "string_util.h"
+#include "unique_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -39,6 +40,9 @@ const char * const NSPID_STR_NAME = "NSpid:";
 const int ARGS_COUNT_ONE = 1;
 const int ARGS_COUNT_TWO = 2;
 const int STATUS_LINE_SIZE = 1024;
+const int PROCESS_ERROR_CLKTCK = -1;
+const int PROCESS_ERROR_TIME = -2;
+const int PROCESS_ERROR_INFO = -3;
 }
 
 static bool GetProcStatusByPath(struct ProcInfo& procInfo, const std::string& path)
@@ -373,6 +377,63 @@ pid_t GetTidByThreadName(pid_t pid, const std::string& threadName)
         }
     }
     return -1;
+}
+
+bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
+{
+    std::string path = "/proc/" + std::to_string(tid);
+    UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
+    if (dirFd == -1) {
+        return false;
+    }
+
+    UniqueFd statFd(openat(dirFd.Get(), "stat", O_RDONLY | O_CLOEXEC));
+    if (statFd == -1) {
+        return false;
+    }
+
+    std::string statStr;
+    if (!ReadFdToString(statFd.Get(), statStr)) {
+        return false;
+    }
+
+    std::string eoc = statStr.substr(statStr.find_last_of(")"));
+    std::istringstream is(eoc);
+    constexpr int startTimePos = 21;
+    constexpr int base = 10;
+    int pos = 0;
+    std::string tmp;
+    while (is >> tmp && pos <= startTimePos) {
+        pos++;
+        if (pos == startTimePos) {
+            startTime = strtoull(tmp.c_str(), nullptr, base);
+            return true;
+        }
+    }
+    return false;
+}
+
+int GetProcessLifeCycle(pid_t pid, uint64_t& lifeTimeSeconds)
+{
+    struct timespec ts;
+    (void)clock_gettime(CLOCK_BOOTTIME, &ts);
+    uint64_t sysUpTime = static_cast<uint64_t>(ts.tv_sec + static_cast<time_t>(ts.tv_nsec != 0 ? 1L : 0L));
+
+    unsigned long long startTime = 0;
+    if (GetProcessStartTime(pid, startTime)) {
+        auto clkTck = sysconf(_SC_CLK_TCK);
+        if (clkTck == -1) {
+            return PROCESS_ERROR_CLKTCK;
+        }
+        uint64_t procUpTime = sysUpTime - startTime / static_cast<uint32_t>(clkTck);
+        constexpr uint64_t invalidTimeLimit = 10 * 365 * 24 * 3600; // 10 year
+        if (procUpTime > invalidTimeLimit) {
+            return PROCESS_ERROR_TIME;
+        }
+        lifeTimeSeconds = procUpTime;
+        return 0;
+    }
+    return PROCESS_ERROR_INFO;
 }
 }   // namespace HiviewDFX
 }   // namespace OHOS

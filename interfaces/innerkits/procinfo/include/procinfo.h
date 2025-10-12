@@ -150,6 +150,15 @@ uint64_t GetProcRssMemInfo(pid_t pid);
  * @return thread id if found, otherwise return -1
 */
 pid_t GetTidByThreadName(pid_t pid, const std::string& threadName);
+
+/**
+ * @brief Get process lifeCycle by process id
+ *
+ * @param pid process id
+ * @param lifeTimeSeconds process lifecycle of process id
+ * @return return 0 if found, otherwise return negative number
+*/
+int GetProcessLifeCycle(pid_t pid, uint64_t& lifeTimeSeconds);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 #endif
