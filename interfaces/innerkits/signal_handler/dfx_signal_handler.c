@@ -196,6 +196,12 @@ static bool IsDumpSignal(int signo)
 {
     return signo == SIGDUMP || signo == SIGLEAK_STACK;
 }
+
+static bool IsPrintLogSignal(int signo)
+{
+    return signo == SIGPIPE;
+}
+
 static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
 {
     if (signo == SIGDUMP) {
@@ -322,7 +328,7 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 
     // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
-    if (!IsDumpSignal(g_prevHandledSignal)) {
+    if (!IsDumpSignal(g_prevHandledSignal) && !IsPrintLogSignal(g_prevHandledSignal)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return IsDumpSignal(signo);
     }
