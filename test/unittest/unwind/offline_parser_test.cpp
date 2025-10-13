@@ -164,5 +164,24 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest007, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "DfxOfflineParserTest007: end.";
 }
+
+#if defined(__aarch64__)
+/**
+ * @tc.name: DfxOfflineParserTest008
+ * @tc.desc: test parse symbol for arkweb so
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest008, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest008: start.";
+    DfxOfflineParser parser("testhap");
+    std::string arkwebSo = "/data/storage/el1/bundle/arkwebcore/libs/arm64/libarkweb_engine.so";
+    DfxFrame frame;
+    frame.mapName = arkwebSo;
+    parser.ParseSymbolWithFrame(frame);
+    ASSERT_FALSE(frame.buildId.empty());
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest008: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS
