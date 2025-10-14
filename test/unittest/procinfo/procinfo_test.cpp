@@ -159,3 +159,19 @@ HWTEST_F(ProcinfoTest, GetTidByThreadName006, TestSize.Level2)
 
     watchdogThread.join();
 }
+
+/**
+ * @tc.name: GetTidByThreadName007
+ * @tc.desc: test GetProcessLifeCycle
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcinfoTest, GetTidByThreadName007, TestSize.Level2)
+{
+    uint64_t lifeTimeSeconds = 0;
+    GetProcessLifeCycle(-1, lifeTimeSeconds);
+    ASSERT_TRUE(lifeTimeSeconds == 0);
+
+    int ret = GetProcessLifeCycle(getpid(), lifeTimeSeconds);
+    ASSERT_EQ(ret, 0);
+    ASSERT_TRUE(lifeTimeSeconds != 0);
+}
