@@ -25,7 +25,7 @@ class CoredumpSessionService {
 public:
     CoredumpSessionService():sessionManager_(CoredumpSessionManager::Instance()) {}
 
-    SessionId CreateSession(const CreateCoredumpRequest& req);
+    SessionId CreateSession(const CreateCoredumpRequest& request);
     bool CancelSession(SessionId sessionId);
     bool UpdateWorkerPid(SessionId sessionId, pid_t workerPid);
     void UpdateReport(SessionId sessionId, const CoredumpCallbackReport& rpt);
