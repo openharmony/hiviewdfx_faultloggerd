@@ -35,7 +35,7 @@ public:
     void SetTargetPid(int32_t targetPid) { targetPid_ = targetPid; }
     char* GetMappedMemory() const { return mappedMemory_; }
     uint64_t GetCoreFileSize() const { return coreFileSize_; }
-    bool RegisterCancelCoredump(const std::string& logPath);
+    bool RegisterCancelCoredump(const std::string& dumpFilePath);
     CoredumpFileManager(const CoredumpFileManager&) = delete;
     CoredumpFileManager& operator=(const CoredumpFileManager&) = delete;
 private:
