@@ -83,6 +83,7 @@ namespace {
 const char *const BLOCK_CRASH_PROCESS = "faultloggerd.priv.block_crash_process.enabled";
 MAYBE_UNUSED const char *const MIXSTACK_ENABLE = "faultloggerd.priv.mixstack.enabled";
 const char * const OTHER_THREAD_DUMP_INFO = "OtherThreadDumpInfo";
+MAYBE_UNUSED constexpr int PROCESSDUMP_REMAIN_TIME = 2500;
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 void SigAlarmCallBack()
@@ -191,6 +192,7 @@ ProcessDumper &ProcessDumper::GetInstance()
 void ProcessDumper::Dump()
 {
     startTime_ = GetTimeMillisec();
+    startAbsTime_ = GetAbsTimeMilliSeconds();
     int resDump = DumpProcess();
     FormatJsonInfoIfNeed();
     WriteDumpResIfNeed(resDump);
@@ -455,9 +457,10 @@ void ProcessDumper::PrintDumpInfo(int& dumpRes)
 int ProcessDumper::ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo)
 {
     uint64_t curTime = GetAbsTimeMilliSeconds();
+    int dumpRes = 0;
+#if defined(__aarch64__)
     uint32_t lessRemainTimeMs =
         static_cast<uint32_t>(ProcessDumpConfig::GetInstance().GetConfig().reservedParseSymbolTime);
-    int dumpRes = 0;
     if (request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH || expectedDumpFinishTime_ == 0) {
         threadDumpInfo->Symbolize(*process_, *unwinder_);
     } else if (expectedDumpFinishTime_ > curTime && expectedDumpFinishTime_ - curTime > lessRemainTimeMs) {
@@ -474,6 +477,26 @@ int ProcessDumper::ParseSymbols(std::shared_ptr<DumpInfo> threadDumpInfo)
         DFXLOGW("do not parse symbol, remain %{public}" PRId64 "ms", expectedDumpFinishTime_ - curTime);
         dumpRes = DumpErrorCode::DUMP_ESYMBOL_NO_PARSE;
     }
+#else
+    uint64_t unwindTime = curTime > startAbsTime_ ? curTime - startAbsTime_ : 0;
+    uint64_t waitTime = (unwindTime > 0 && PROCESSDUMP_REMAIN_TIME > unwindTime) ?
+        PROCESSDUMP_REMAIN_TIME - unwindTime : 0;
+    if (request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+        threadDumpInfo->Symbolize(*process_, *unwinder_);
+    } else if (waitTime > 0) {
+        parseSymbolTask_ = std::async(std::launch::async, [threadDumpInfo, this]() {
+            DFX_TRACE_SCOPED("parse symbol task");
+            threadDumpInfo->Symbolize(*process_, *unwinder_);
+        });
+        if (parseSymbolTask_.wait_for(std::chrono::milliseconds(waitTime)) != std::future_status::ready) {
+            DFXLOGW("Parse symbol timeout");
+            dumpRes = DumpErrorCode::DUMP_ESYMBOL_PARSE_TIMEOUT;
+        }
+    } else {
+        DFXLOGW("do not parse symbol, time not enough!");
+        dumpRes = DumpErrorCode::DUMP_ESYMBOL_NO_PARSE;
+    }
+#endif
     finishParseSymbolTime_ = GetTimeMillisec();
     return dumpRes;
 }
