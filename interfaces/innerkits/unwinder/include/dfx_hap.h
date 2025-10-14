@@ -18,7 +18,11 @@
 #include <cstdint>
 #include <memory>
 #include <unistd.h>
+#if !is_mingw
 #include <sys/mman.h>
+#else
+#include "dfx_nonlinux_define.h"
+#endif
 #include "dfx_ark.h"
 #include "dfx_extractor_utils.h"
 
