@@ -65,7 +65,7 @@ void CppCrashReporter::Report(DfxProcess& process, const ProcessDumpRequest &req
         DFXLOGW("Do not to report to hiview, because hiview is crashed.");
     }
     if (process.GetProcessInfo().processName.find(FOUNDATION_PROCESS_NAME) == std::string::npos) {
-        ReportToAbilityManagerService(process);
+        ReportToAbilityManagerService(process, request);
     } else {
         DFXLOGW("Do not to report to AbilityManagerService, because foundation is crashed.");
     }
@@ -163,7 +163,7 @@ SmartFd CppCrashReporter::TranferCrashInfoToHiview(const std::string& cppCrashIn
     return readFd;
 }
 
-void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process)
+void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request)
 {
     std::shared_ptr<void> handle(dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE), [] (void* handle) {
         if (handle != nullptr) {
@@ -187,7 +187,9 @@ void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process)
 #ifndef HISYSEVENT_DISABLE
     int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
         "PID", process.GetProcessInfo().pid, "PROCESS_NAME", process.GetProcessInfo().processName.c_str(),
-        "MSG", KILL_REASON_CPP_CRASH);
+        "MSG", KILL_REASON_CPP_CRASH,
+        "APP_RUNNING_UNIQUE_ID", request.appRunningUniqueId,
+        "REASON", "CppCrash");
     DFXLOGW("hisysevent write result=%{public}d, send event [FRAMEWORK,PROCESS_KILL], pid=%{public}d,"
         " processName=%{public}s, msg=%{public}s", result, process.GetProcessInfo().pid,
         process.GetProcessInfo().processName.c_str(), KILL_REASON_CPP_CRASH);
