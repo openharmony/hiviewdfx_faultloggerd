@@ -60,37 +60,37 @@ HWTEST_F(ProcessDumpConfigTest, ProcessDumpConfigTest001, TestSize.Level2)
     ASSERT_EQ(config.simplifyVmaPrinting, false);
     ASSERT_EQ(config.reservedParseSymbolTime, 100);
     std::vector<std::string> dumpInfoCppCrash = {
-        "KeyThreadDumpInfo", "DumpInfoHeader", "SubmitterStack",
+        "DumpInfoHeader", "KeyThreadDumpInfo", "SubmitterStack",
         "Registers", "ExtraCrashInfo", "OtherThreadDumpInfo",
         "MemoryNearRegister", "FaultStack", "Maps", "OpenFiles",
     };
     ASSERT_EQ(dumpInfoCppCrash, config.dumpInfo[ProcessDumpType::DUMP_TYPE_CPP_CRASH]);
 
     std::vector<std::string> dumpInfoDumpCatch = {
-        "KeyThreadDumpInfo", "DumpInfoHeader", "OtherThreadDumpInfo",
+        "DumpInfoHeader", "KeyThreadDumpInfo", "OtherThreadDumpInfo",
     };
     ASSERT_EQ(dumpInfoDumpCatch, config.dumpInfo[ProcessDumpType::DUMP_TYPE_DUMP_CATCH]);
 
     std::vector<std::string> dumpInfoMemLeak = {
-        "KeyThreadDumpInfo", "DumpInfoHeader", "Registers",
+        "DumpInfoHeader", "KeyThreadDumpInfo", "Registers",
         "MemoryNearRegister", "FaultStack", "Maps",
     };
     ASSERT_EQ(dumpInfoMemLeak, config.dumpInfo[ProcessDumpType::DUMP_TYPE_MEM_LEAK]);
 
     std::vector<std::string> dumpInfoFdSan = {
-        "KeyThreadDumpInfo", "DumpInfoHeader", "Registers",
+        "DumpInfoHeader", "KeyThreadDumpInfo", "Registers",
         "MemoryNearRegister", "FaultStack", "Maps", "OpenFiles",
     };
     ASSERT_EQ(dumpInfoFdSan, config.dumpInfo[ProcessDumpType::DUMP_TYPE_FDSAN]);
 
     std::vector<std::string> dumpInfoJeMalloc = {
-        "KeyThreadDumpInfo", "DumpInfoHeader", "Registers",
+        "DumpInfoHeader", "KeyThreadDumpInfo", "Registers",
         "MemoryNearRegister", "FaultStack", "Maps",
     };
     ASSERT_EQ(dumpInfoJeMalloc, config.dumpInfo[ProcessDumpType::DUMP_TYPE_JEMALLOC]);
 
     std::vector<std::string> dumpInfoBadFd = {
-        "KeyThreadDumpInfo", "DumpInfoHeader", "Registers",
+        "DumpInfoHeader", "KeyThreadDumpInfo", "Registers",
         "MemoryNearRegister", "FaultStack", "Maps", "OpenFiles",
     };
     ASSERT_EQ(dumpInfoBadFd, config.dumpInfo[ProcessDumpType::DUMP_TYPE_BADFD]);

@@ -365,28 +365,25 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
         return;
     }
     // Create objects using reflection
-    auto threadDumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[0]);
-    auto prevDumpInfo = threadDumpInfo;
-    auto dumpInfo = threadDumpInfo;
+    auto dumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[0]);
+    auto prevDumpInfo = dumpInfo;
     for (size_t index = 1; index < dumpInfoComponent.size(); index++) {
-        auto tempDumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[index]);
-        if (tempDumpInfo == nullptr) {
+        dumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[index]);
+        if (dumpInfo == nullptr) {
             DFXLOGE("Failed to crreate object%{public}s.", dumpInfoComponent[index].c_str());
             continue;
         }
-        dumpInfo = tempDumpInfo;
         dumpInfo->SetDumpInfo(prevDumpInfo);
-        if (dumpInfoComponent[index] == OTHER_THREAD_DUMP_INFO) {
-            threadDumpInfo = dumpInfo;
-        }
         prevDumpInfo = dumpInfo;
     }
-    if (threadDumpInfo != nullptr) {
-        int unwindSuccessCnt = threadDumpInfo->UnwindStack(*process_, request_, *unwinder_);
-        DFXLOGI("unwind success thread count(%{public}d)", unwindSuccessCnt);
-        dumpRes = unwindSuccessCnt > 0 ? ConcurrentSymbolize() : DumpErrorCode::DUMP_ESTOPUNWIND;
+    if (dumpInfo == nullptr) {
+        DFXLOGE("dumpInfo is nullptr.");
+        return;
     }
-    if (dumpInfo != nullptr && !isJsonDump_) { // isJsonDump_ will print after format json
+    int unwindSuccessCnt = dumpInfo->UnwindStack(*process_, request_, *unwinder_);
+    DFXLOGI("unwind success thread count(%{public}d)", unwindSuccessCnt);
+    dumpRes = unwindSuccessCnt > 0 ? ConcurrentSymbolize() : DumpErrorCode::DUMP_ESTOPUNWIND;
+    if (!isJsonDump_) { // isJsonDump_ will print after format json
         dumpInfo->Print(*process_, request_, *unwinder_);
     }
 }
