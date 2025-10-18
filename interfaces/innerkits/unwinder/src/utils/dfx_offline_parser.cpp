@@ -46,7 +46,7 @@ DfxOfflineParser::DfxOfflineParser(const std::string& bundleName) : bundleName_(
 {
     CachedEnableMiniDebugInfo_ = UnwinderConfig::GetEnableMiniDebugInfo();
     CachedEnableLoadSymbolLazily_ = UnwinderConfig::GetEnableLoadSymbolLazily();
-    UnwinderConfig::SetEnableMiniDebugInfo(true);
+    UnwinderConfig::SetEnableMiniDebugInfo(false);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
     dfxMaps_ = std::make_shared<DfxMaps>();
 }
