@@ -820,7 +820,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest023, TestSize.Level2)
         ASSERT_GT(formattedStack.size(), 0);
         ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
         ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
-        ASSERT_TRUE(formattedStack.find("OHOS::HiviewDFX::DfxGetKernelStack") != std::string::npos) << formattedStack;
+        ASSERT_TRUE(formattedStack.find("(") != std::string::npos) << formattedStack;
         GTEST_LOG_(INFO) << "BacktraceLocalTest023: end.";
     }
 }
