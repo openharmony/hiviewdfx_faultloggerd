@@ -428,6 +428,10 @@ static void HookFree(void* ptr)
     return DfxFree(ptr);
 }
 
+static void HookRestrace(unsigned long long mask, void* addr, size_t size, const char* tag, bool isUsing)
+{
+}
+
 void RegisterAllocator(void)
 {
 #ifndef DFX_ALLOCATE_ASAN
@@ -440,6 +444,8 @@ void RegisterAllocator(void)
     g_dfxCustomMallocDispatch.calloc = HookCalloc;
     g_dfxCustomMallocDispatch.realloc = HookRealloc;
     g_dfxCustomMallocDispatch.free = HookFree;
+    // MallocDispatchType add a restrace hook function, so we provide a empty implementation, in case crash
+    g_dfxCustomMallocDispatch.restrace = HookRestrace;
 #ifndef DFX_ALLOCATE_ASAN
     atomic_store_explicit(&ohos_malloc_hook_shared_library, -1, memory_order_seq_cst);
     atomic_store_explicit(&__hook_enable_hook_flag, true, memory_order_seq_cst);
