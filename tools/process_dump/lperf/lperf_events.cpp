@@ -82,7 +82,7 @@ int LperfEvents::StartRecord()
 
 bool LperfEvents::StopRecord()
 {
-    CHECK_TRUE_AND_RET(PerfEventsEnable(false), -1, "LperfEvents StopRecord failed");
+    CHECK_TRUE_AND_RET(PerfEventsEnable(false), false, "LperfEvents StopRecord failed");
     return true;
 }
 
