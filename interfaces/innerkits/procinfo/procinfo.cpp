@@ -379,7 +379,7 @@ pid_t GetTidByThreadName(pid_t pid, const std::string& threadName)
     return -1;
 }
 
-bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
+static bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
 {
     std::string path = "/proc/" + std::to_string(tid);
     UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
@@ -397,7 +397,11 @@ bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
         return false;
     }
 
-    std::string eoc = statStr.substr(statStr.find_last_of(")"));
+    auto lastParenPos = statStr.find_last_of(")");
+    if (lastParenPos == std::string::npos) {
+        return false;
+    }
+    std::string eoc = statStr.substr(lastParenPos);
     std::istringstream is(eoc);
     constexpr int startTimePos = 21;
     constexpr int base = 10;
