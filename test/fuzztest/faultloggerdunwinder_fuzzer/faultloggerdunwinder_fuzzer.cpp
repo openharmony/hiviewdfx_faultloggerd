@@ -170,13 +170,12 @@ void TestSetFromQutMiniRegs(const uint8_t* data, size_t size)
 }
 #endif
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 void TestDfxRegsArm64(const uint8_t* data, size_t size)
 {
     TestSetFromFpMiniRegs(data, size);
     TestSetFromQutMiniRegs(data, size);
 }
-#endif
 
 void TestThreadContext(const uint8_t* data, size_t size)
 {
@@ -192,6 +191,7 @@ void TestThreadContext(const uint8_t* data, size_t size)
     context.GetThreadContext(tid);
     context.ReleaseThread(tid);
 }
+#endif
 
 void TestDfxInstrStatistic(const uint8_t* data, size_t size)
 {
@@ -219,10 +219,10 @@ void FaultloggerdUnwinderTest(const uint8_t* data, size_t size)
 {
     TestDfxArk(data, size);
     TestDfxHap(data, size);
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__loongarch_lp64)
     TestDfxRegsArm64(data, size);
-#endif
     TestThreadContext(data, size);
+#endif
     TestDfxInstrStatistic(data, size);
     sleep(1);
 }

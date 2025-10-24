@@ -40,26 +40,6 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 }
 
-namespace OtherThread {
-int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
-{
-    auto& instance = LocalThreadContextMix::GetInstance();
-    return instance.GetMapByPc(pc, map);
-}
-
-int FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo, void *arg)
-{
-    auto& instance = LocalThreadContextMix::GetInstance();
-    return instance.FindUnwindTable(pc, outTableInfo);
-}
-
-int AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
-{
-    auto& instance = LocalThreadContextMix::GetInstance();
-    return instance.AccessMem(addr, val);
-}
-}
-
 bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
     size_t maxFrameNums, bool enableKernelStack)
 {
@@ -73,12 +53,7 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
     if ((tid == gettid()) || (tid == BACKTRACE_CURRENT_THREAD)) {
         unwinder = std::make_shared<Unwinder>();
     } else {
-        std::shared_ptr<UnwindAccessors> accssors = std::make_shared<UnwindAccessors>();
-        accssors->AccessReg = nullptr;
-        accssors->AccessMem = &OtherThread::AccessMem;
-        accssors->GetMapByPc = &OtherThread::GetMapByPc;
-        accssors->FindUnwindTable = &OtherThread::FindUnwindTable;
-        unwinder = std::make_shared<Unwinder>(accssors, true);
+        unwinder = std::make_shared<Unwinder>(LocalThreadContextMix::CreateAccessors(), true);
     }
     std::vector<DfxFrame> frames{};
     bool ret = false;

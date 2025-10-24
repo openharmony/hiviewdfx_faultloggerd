@@ -47,34 +47,11 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxThreadContext"
 
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 std::mutex g_localMutex;
 std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap {};
+#endif
 constexpr std::chrono::seconds TIME_OUT = std::chrono::seconds(1);
-#ifndef __aarch64__
-constexpr std::chrono::seconds TIME_OUT_IN_COPY_CONTEXT = std::chrono::seconds(3);
-#endif
-
-void CreateContext(std::shared_ptr<ThreadContext>& threadContext)
-{
-#ifndef __aarch64__
-    std::unique_lock<std::mutex> lock(threadContext->mtx);
-    if (threadContext->ctx == nullptr) {
-        threadContext->ctx = new ucontext_t;
-    }
-    (void)memset_s(threadContext->ctx, sizeof(ucontext_t), 0, sizeof(ucontext_t));
-#endif
-}
-
-#ifndef __aarch64__
-void ReleaseContext(std::shared_ptr<ThreadContext> threadContext)
-{
-    std::unique_lock<std::mutex> lock(threadContext->mtx);
-    if (threadContext->ctx != nullptr) {
-        delete threadContext->ctx;
-        threadContext->ctx = nullptr;
-    }
-}
-#endif
 
 void PrintThreadStatus(int32_t tid)
 {
@@ -84,6 +61,7 @@ void PrintThreadStatus(int32_t tid)
     DFXLOGI("%{public}s", content.c_str());
 }
 
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
 {
     auto it = g_contextMap.find(tid);
@@ -91,7 +69,6 @@ std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
         auto threadContext = std::make_shared<ThreadContext>();
         threadContext->tid = tid;
         threadContext->frameSz = 0;
-        CreateContext(threadContext);
         g_contextMap[tid] = threadContext;
         return threadContext;
     }
@@ -99,7 +76,6 @@ std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
     if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
         it->second->tid = tid;
         it->second->frameSz = 0;
-        CreateContext(it->second);
         return it->second;
     }
     DFXLOGE("GetContextLocked nullptr, tid: %{public}d", tid);
@@ -114,15 +90,11 @@ bool RemoveAllContextLocked()
             it = g_contextMap.erase(it);
             continue;
         }
-#ifndef __aarch64__
-        if (it->second->tid == ThreadContextStatus::CONTEXT_UNUSED) {
-            ReleaseContext(it->second);
-        }
-#endif
         it++;
     }
     return true;
 }
+#endif
 
 NO_SANITIZE void CopyContextAndWaitTimeoutMix(int sig, siginfo_t *si, void *context)
 {
@@ -140,6 +112,7 @@ NO_SANITIZE void CopyContextAndWaitTimeoutMix(int sig, siginfo_t *si, void *cont
     instance.CopyStackBuf();
 }
 
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 NO_SANITIZE void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
     if (si == nullptr || si->si_value.sival_ptr == nullptr || context == nullptr) {
@@ -148,7 +121,6 @@ NO_SANITIZE void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context
 
     DFXLOGU("tid(%{public}d) recv sig(%{public}d)", gettid(), sig);
     auto ctxPtr = static_cast<ThreadContext *>(si->si_value.sival_ptr);
-#if defined(__aarch64__)
     uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
     uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
     ctxPtr->firstFrameSp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.sp;
@@ -156,42 +128,25 @@ NO_SANITIZE void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context
     ctxPtr->cv.notify_all();
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
     return;
-#else
-
-    std::unique_lock<std::mutex> lock(ctxPtr->mtx);
-    if (ctxPtr->ctx == nullptr) {
-        ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-        return;
-    }
-    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
-    int tid = gettid();
-    if (memcpy_s(&ctxPtr->ctx->uc_mcontext, sizeof(ucontext->uc_mcontext),
-        &ucontext->uc_mcontext, sizeof(ucontext->uc_mcontext)) != 0) {
-        DFXLOGW("Failed to copy local ucontext with tid(%{public}d)", tid);
-    }
-
-    if (tid != getpid()) {
-        if (!StackUtils::GetSelfStackRange(ctxPtr->stackBottom, ctxPtr->stackTop)) {
-            DFXLOGW("Failed to get stack range with tid(%{public}d)", tid);
-        }
-    }
-
-    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_READY);
-    ctxPtr->cv.notify_all();
-    ctxPtr->cv.wait_for(lock, TIME_OUT_IN_COPY_CONTEXT);
-    ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
-#endif
 }
+#endif
 
 void DfxBacktraceLocalSignalHandler(int sig, siginfo_t *si, void *context)
 {
     if (si == nullptr) {
         return;
     }
-    if (si->si_code == DUMP_TYPE_LOCAL) {
-        CopyContextAndWaitTimeout(sig, si, context);
-    } else if (si->si_code == DUMP_TYPE_LOCAL_MIX) {
-        CopyContextAndWaitTimeoutMix(sig, si, context);
+    switch (si->si_code) {
+#if defined(__aarch64__) || defined(__loongarch_lp64)
+        case DUMP_TYPE_LOCAL:
+            CopyContextAndWaitTimeout(sig, si, context);
+            break;
+#endif
+        case DUMP_TYPE_LOCAL_MIX:
+            CopyContextAndWaitTimeoutMix(sig, si, context);
+            break;
+        default:
+            break;
     }
 }
 
@@ -212,6 +167,7 @@ void InitSignalHandler()
 }
 }
 
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 LocalThreadContext& LocalThreadContext::GetInstance()
 {
     static LocalThreadContext instance;
@@ -279,6 +235,7 @@ bool LocalThreadContext::GetStackRange(int32_t tid, uintptr_t& stackBottom, uint
 
 bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadContext)
 {
+#if defined(__aarch64__) || defined(__loongarch_lp64)
     siginfo_t si {0};
     si.si_signo = SIGLOCAL_DUMP;
     si.si_errno = 0;
@@ -290,7 +247,11 @@ bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadC
         return false;
     }
     return true;
+#else
+    return false;
+#endif
 }
+#endif
 
 NO_SANITIZE LocalThreadContextMix& LocalThreadContextMix::GetInstance()
 {
@@ -468,6 +429,36 @@ int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
 std::shared_ptr<DfxMaps> LocalThreadContextMix::GetMaps() const
 {
     return maps_;
+}
+
+namespace OtherThread {
+int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map, void *arg)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    return instance.GetMapByPc(pc, map);
+}
+
+int FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo, void *arg)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    return instance.FindUnwindTable(pc, outTableInfo);
+}
+
+int AccessMem(uintptr_t addr, uintptr_t *val, void *arg)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    return instance.AccessMem(addr, val);
+}
+}
+
+std::shared_ptr<UnwindAccessors> LocalThreadContextMix::CreateAccessors()
+{
+    std::shared_ptr<UnwindAccessors> accssors = std::make_shared<UnwindAccessors>();
+    accssors->AccessReg = nullptr;
+    accssors->AccessMem = &OtherThread::AccessMem;
+    accssors->GetMapByPc = &OtherThread::GetMapByPc;
+    accssors->FindUnwindTable = &OtherThread::FindUnwindTable;
+    return accssors;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
