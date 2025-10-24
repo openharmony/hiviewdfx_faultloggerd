@@ -150,7 +150,6 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
     return 0;
 }
 
-// todo add lock
 uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, const uintptr_t* pcs, size_t nr)
 {
     if (!Init()) {

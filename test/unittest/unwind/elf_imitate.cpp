@@ -529,8 +529,8 @@ bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
         std::string line {};
         line = GetNextPhdrLine();
         if (line.empty()) {
-            break;
             DFXLOGI("no more program lines");
+            break;
         }
         if (fileType == ElfFileType::ELF64) {
             int status = 0;
@@ -540,8 +540,8 @@ bool ElfImitate::ParseProgramHeaders(ElfFileType fileType)
                 break;
             }
             if (lineAppend.empty()) {
-                break;
                 DFXLOGI("no more program lines");
+                break;
             }
             line += lineAppend;
         }
@@ -588,14 +588,14 @@ bool ElfImitate::ParseSectionHeaders(ElfFileType fileType)
         status = 0;
         line = GetNextShdrLine();
         if (line.empty()) {
-            break;
             DFXLOGI("no more section lines");
+            break;
         }
         if (fileType == ElfFileType::ELF64) {
             std::string lineAppend = GetNextLine(shdrFP_, &status);
             if (lineAppend.empty()) {
-                break;
                 DFXLOGI("no more section lines");
+                break;
             }
             line += lineAppend;
         }
