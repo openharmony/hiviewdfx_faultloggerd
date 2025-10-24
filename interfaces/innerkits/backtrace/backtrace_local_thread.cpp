@@ -83,27 +83,34 @@ const std::vector<DfxFrame>& BacktraceLocalThread::GetFrames() const
     return frames_;
 }
 
+std::string BacktraceLocalThread::GetFormattedStr(int32_t tid,
+                                                  const std::vector<DfxFrame>& frames,
+                                                  bool withThreadName,
+                                                  bool includeThreadInfo)
+{
+    std::string str;
+    if (withThreadName && (tid > 0)) {
+        std::string threadName;
+        // Tid:1676, Name:IPC_3_1676
+        ReadThreadName(tid, threadName);
+        str = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
+    }
+    if (includeThreadInfo) {
+        ThreadInfo info;
+        if (info.ParserThreadInfo(tid)) {
+            str += "ThreadInfo:" + info.ToString() + "\n";
+        }
+    }
+    str += Unwinder::GetFramesStr(frames);
+    return str;
+}
+
 std::string BacktraceLocalThread::GetFormattedStr(bool withThreadName)
 {
     if (frames_.empty()) {
         return "";
     }
-
-    std::string ss;
-    if (withThreadName && (tid_ > 0)) {
-        std::string threadName;
-        // Tid:1676, Name:IPC_3_1676
-        ReadThreadName(tid_, threadName);
-        ss = "Tid:" + std::to_string(tid_) + ", Name:" + threadName + "\n";
-    }
-    if (includeThreadInfo_) {
-        ThreadInfo info;
-        if (info.ParserThreadInfo(tid_)) {
-            ss += "ThreadInfo:" + info.ToString() + "\n";
-        }
-    }
-    ss += Unwinder::GetFramesStr(frames_);
-    return ss;
+    return GetFormattedStr(tid_, frames_, withThreadName, includeThreadInfo_);
 }
 
 bool BacktraceLocalThread::UnwindOtherThreadMix(Unwinder& unwinder, bool fast, size_t maxFrameNum, size_t skipFrameNum)

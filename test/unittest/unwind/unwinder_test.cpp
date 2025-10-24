@@ -469,7 +469,7 @@ HWTEST_F(UnwinderTest, StepTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "StepTest002: end.";
 }
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 /**
  * @tc.name: StepTest003
  * @tc.desc: test unwinder UnwindByFp interface in remote case
@@ -793,16 +793,16 @@ HWTEST_F(UnwinderTest, UnwindLocalWithTidTest001, TestSize.Level2)
     if (g_tid <= 0) {
         FAIL() << "UnwindLocalWithTidTest001: Failed to create child thread.\n";
     }
+#if defined(__aarch64__) || defined(__loongarch_lp64)
     ASSERT_TRUE(unwinder->UnwindLocalWithTid(g_tid));
-#if defined(__aarch64__)
     auto pcs = unwinder->GetPcs();
     std::vector<DfxFrame> frames;
     unwinder->GetFramesByPcs(frames, pcs);
-#else
-    auto frames = unwinder->GetFrames();
-#endif
     ASSERT_GT(frames.size(), 1);
     GTEST_LOG_(INFO) << "UnwindLocalWithTidTest001: frames:\n" << Unwinder::GetFramesStr(frames);
+#else
+    ASSERT_FALSE(unwinder->UnwindLocalWithTid(g_tid));
+#endif
     g_mutex.unlock();
     g_tid = 0;
     if (unwThread.joinable()) {

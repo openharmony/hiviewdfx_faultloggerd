@@ -42,6 +42,8 @@ public:
     const std::vector<DfxFrame>& GetFrames() const;
     void SetFrames(const std::vector<DfxFrame>& frames);
     std::string GetFormattedStr(bool withThreadName = false);
+    static std::string GetFormattedStr(int32_t tid, const std::vector<DfxFrame>& frames,
+        bool withThreadName, bool includeThreadInfo);
 
 private:
     int32_t tid_;
