@@ -57,10 +57,6 @@ void LitePerfTest::TearDown()
 HWTEST_F(LitePerfTest, LitePerfTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest001: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
-
     static bool threadExit = false;
     const int testTimes = 5000;
     auto testThread = [&testTimes] {
@@ -72,14 +68,15 @@ HWTEST_F(LitePerfTest, LitePerfTest001, TestSize.Level2)
         int durationMs = testTimes;
         bool parseMiniDebugInfo = false;
         LitePerf litePerf;
-        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-        EXPECT_EQ(ret, 0);
-        std::string sampleStack;
-        ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
-        EXPECT_EQ(ret, 0);
-        ASSERT_TRUE(sampleStack.size() != 0);
-        ret = litePerf.FinishProcessStackSampling();
-        EXPECT_EQ(ret, 0);
+        if (!IsLinuxKernel()) {
+            int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+            EXPECT_EQ(ret, 0);
+            std::string sampleStack;
+            ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+            EXPECT_EQ(ret, 0);
+            ASSERT_TRUE(sampleStack.size() != 0);
+        }
+        EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
         threadExit = true;
     };
     std::thread th(testThread);
@@ -106,23 +103,21 @@ HWTEST_F(LitePerfTest, LitePerfTest001, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest002: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     std::vector<int> tids;
     int tid = getpid();
     int freq = 100;
     int durationMs = 5000;
     bool parseMiniDebugInfo = false;
     LitePerf litePerf;
-    int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-    EXPECT_EQ(ret, -1);
-    std::string sampleStack;
-    ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
-    EXPECT_EQ(ret, -1);
-    ASSERT_TRUE(sampleStack.size() == 0);
-    ret = litePerf.FinishProcessStackSampling();
-    EXPECT_EQ(ret, 0);
+    if (!IsLinuxKernel()) {
+        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+        EXPECT_EQ(ret, -1);
+        std::string sampleStack;
+        ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+        EXPECT_EQ(ret, -1);
+        ASSERT_TRUE(sampleStack.size() == 0);
+    }
+    EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     GTEST_LOG_(INFO) << "LitePerfTest002: end.";
 }
 
@@ -134,9 +129,6 @@ HWTEST_F(LitePerfTest, LitePerfTest002, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest003: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     std::vector<int> tids;
     int tid = getpid();
     tids.emplace_back(tid);
@@ -144,14 +136,15 @@ HWTEST_F(LitePerfTest, LitePerfTest003, TestSize.Level2)
     int durationMs = 5000;
     bool parseMiniDebugInfo = false;
     LitePerf litePerf;
-    int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-    EXPECT_EQ(ret, -1);
-    std::string sampleStack;
-    ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
-    EXPECT_EQ(ret, -1);
-    ASSERT_TRUE(sampleStack.size() == 0);
-    ret = litePerf.FinishProcessStackSampling();
-    EXPECT_EQ(ret, 0);
+    if (!IsLinuxKernel()) {
+        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+        EXPECT_EQ(ret, -1);
+        std::string sampleStack;
+        ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+        EXPECT_EQ(ret, -1);
+        ASSERT_TRUE(sampleStack.size() == 0);
+    }
+    EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     GTEST_LOG_(INFO) << "LitePerfTest003: end.";
 }
 
@@ -163,9 +156,6 @@ HWTEST_F(LitePerfTest, LitePerfTest003, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest004: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     std::vector<int> tids;
     int tid = getpid();
     tids.emplace_back(tid);
@@ -173,14 +163,15 @@ HWTEST_F(LitePerfTest, LitePerfTest004, TestSize.Level2)
     int durationMs = 5000;
     bool parseMiniDebugInfo = false;
     LitePerf litePerf;
-    int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-    EXPECT_EQ(ret, -1);
-    std::string sampleStack;
-    ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
-    EXPECT_EQ(ret, -1);
-    ASSERT_TRUE(sampleStack.size() == 0);
-    ret = litePerf.FinishProcessStackSampling();
-    EXPECT_EQ(ret, 0);
+    if (!IsLinuxKernel()) {
+        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+        EXPECT_EQ(ret, -1);
+        std::string sampleStack;
+        ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+        EXPECT_EQ(ret, -1);
+        ASSERT_TRUE(sampleStack.size() == 0);
+    }
+    EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     GTEST_LOG_(INFO) << "LitePerfTest004: end.";
 }
 
@@ -192,9 +183,6 @@ HWTEST_F(LitePerfTest, LitePerfTest004, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest005: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     std::vector<int> tids;
     int tid = getpid();
     tids.emplace_back(tid);
@@ -202,14 +190,15 @@ HWTEST_F(LitePerfTest, LitePerfTest005, TestSize.Level2)
     int durationMs = 20000;
     bool parseMiniDebugInfo = false;
     LitePerf litePerf;
-    int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-    EXPECT_EQ(ret, -1);
-    std::string sampleStack;
-    ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
-    EXPECT_EQ(ret, -1);
-    ASSERT_TRUE(sampleStack.size() == 0);
-    ret = litePerf.FinishProcessStackSampling();
-    EXPECT_EQ(ret, 0);
+    if (!IsLinuxKernel()) {
+        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+        EXPECT_EQ(ret, -1);
+        std::string sampleStack;
+        ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+        EXPECT_EQ(ret, -1);
+        ASSERT_TRUE(sampleStack.size() == 0);
+    }
+    EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     GTEST_LOG_(INFO) << "LitePerfTest005: end.";
 }
 
@@ -221,9 +210,6 @@ HWTEST_F(LitePerfTest, LitePerfTest005, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest006: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     std::vector<int> tids;
     int tid = getpid();
     tids.emplace_back(tid);
@@ -231,14 +217,15 @@ HWTEST_F(LitePerfTest, LitePerfTest006, TestSize.Level2)
     int durationMs = -1;
     bool parseMiniDebugInfo = false;
     LitePerf litePerf;
-    int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-    EXPECT_EQ(ret, -1);
-    std::string sampleStack;
-    ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
-    EXPECT_EQ(ret, -1);
-    ASSERT_TRUE(sampleStack.size() == 0);
-    ret = litePerf.FinishProcessStackSampling();
-    EXPECT_EQ(ret, 0);
+    if (!IsLinuxKernel()) {
+        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+        EXPECT_EQ(ret, -1);
+        std::string sampleStack;
+        ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+        EXPECT_EQ(ret, -1);
+        ASSERT_TRUE(sampleStack.size() == 0);
+    }
+    EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     GTEST_LOG_(INFO) << "LitePerfTest006: end.";
 }
 
@@ -250,24 +237,22 @@ HWTEST_F(LitePerfTest, LitePerfTest006, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest007: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     std::vector<int> tids {1, 2, 3, 4, 5};
     int freq = 100;
     int durationMs = 5000;
     bool parseMiniDebugInfo = false;
     LitePerf litePerf;
-    int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-    EXPECT_EQ(ret, -1);
-    for (auto tid : tids) {
-        std::string sampleStack;
-        sampleStack.clear();
-        ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+    if (!IsLinuxKernel()) {
+        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
         EXPECT_EQ(ret, -1);
+        for (auto tid : tids) {
+            std::string sampleStack;
+            sampleStack.clear();
+            ret = litePerf.CollectSampleStackByTid(tid, sampleStack);
+            EXPECT_EQ(ret, -1);
+        }
     }
-    ret = litePerf.FinishProcessStackSampling();
-    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     GTEST_LOG_(INFO) << "LitePerfTest007: end.";
 }
 
@@ -279,10 +264,6 @@ HWTEST_F(LitePerfTest, LitePerfTest007, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest008, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest008: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
-
     int fd[2];
     EXPECT_TRUE(CreatePipeFd(fd));
 
@@ -309,12 +290,13 @@ HWTEST_F(LitePerfTest, LitePerfTest008, TestSize.Level2)
         int durationMs = 5000;
         bool parseMiniDebugInfo = false;
         LitePerf litePerf;
-        int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
-        EXPECT_EQ(ret, 0) << "LitePerfTest008: StartProcessStackSampling Failed.";
-        std::string sampleStack;
-        litePerf.CollectSampleStackByTid(tid, sampleStack);
-        ret = litePerf.FinishProcessStackSampling();
-        EXPECT_EQ(ret, 0);
+        if (!IsLinuxKernel()) {
+            int ret = litePerf.StartProcessStackSampling(tids, freq, durationMs, parseMiniDebugInfo);
+            EXPECT_EQ(ret, 0) << "LitePerfTest008: StartProcessStackSampling Failed.";
+            std::string sampleStack;
+            litePerf.CollectSampleStackByTid(tid, sampleStack);
+        }
+        EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     }
     GTEST_LOG_(INFO) << "LitePerfTest008: end.";
 }
@@ -327,9 +309,6 @@ HWTEST_F(LitePerfTest, LitePerfTest008, TestSize.Level2)
 HWTEST_F(LitePerfTest, LitePerfTest009, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LitePerfTest009: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     pid_t tid = gettid();
 
     LitePerfConfig config{};
@@ -337,15 +316,17 @@ HWTEST_F(LitePerfTest, LitePerfTest009, TestSize.Level2)
     config.durationMs = 1500;
     LitePerf litePerf;
     std::string perfContent;
-    std::thread([&]{
-        litePerf.CollectProcessStackSampling(config, true, perfContent);
-        ASSERT_FALSE(perfContent.empty());
-    }).detach();
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    ASSERT_EQ(litePerf.CollectProcessStackSampling(config, true, perfContent), PerfErrorCode::PERF_SAMPING);
-    LitePerf litePerf2;
-    ASSERT_EQ(litePerf2.CollectProcessStackSampling(config, true, perfContent), PerfErrorCode::PERF_SAMPING);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    if (!IsLinuxKernel()) {
+        std::thread([&]{
+            litePerf.CollectProcessStackSampling(config, true, perfContent);
+        }).detach();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        ASSERT_EQ(litePerf.CollectProcessStackSampling(config, true, perfContent), PerfErrorCode::PERF_SAMPING);
+        LitePerf litePerf2;
+        ASSERT_EQ(litePerf2.CollectProcessStackSampling(config, true, perfContent), PerfErrorCode::PERF_SAMPING);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+    EXPECT_EQ(litePerf.FinishProcessStackSampling(), 0);
     GTEST_LOG_(INFO) << "LitePerfTest009: end.";
 }
 } // namespace HiviewDFX

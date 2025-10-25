@@ -23,6 +23,7 @@
 #include "coredump_dump_generator.h"
 #include "coredump_file_manager.h"
 #include "coredump_generator_factory.h"
+#define private public
 #include "coredump_mapping_manager.h"
 #include "coredump_manager.h"
 
@@ -512,10 +513,12 @@ HWTEST_F(DfxCoreDumpTest, CoredumpManager001, TestSize.Level2)
     manager.ProcessRequest(request);
     manager.TriggerCoredump();
     manager.DumpMemoryForPid(-1);
+    EXPECT_NE(manager.generator_, nullptr);
     request.siginfo.si_signo = 38;
     manager.ProcessRequest(request);
     manager.TriggerCoredump();
     manager.DumpMemoryForPid(getpid());
+    EXPECT_EQ(manager.generator_, nullptr);
     GTEST_LOG_(INFO) << "CoredumpManager001: end.";
 }
 }
