@@ -447,7 +447,9 @@ std::string StackPrinter::Impl::PrintTreeStackBySampledStack(const std::vector<S
         std::string space(sampledFrame.indent, ' ');
         DfxFrame frame;
         frame.index = sampledFrame.level;
-        unwinder->GetFrameByPc(sampledFrame.pc, maps, frame);
+        if (!unwinder->GetFrameByPc(sampledFrame.pc, maps, frame)) {
+            frame.pc = 0;
+        }
         std::string frameStr = DfxFrameFormatter::GetFrameStr(frame);
 
         if (sampledFrame.isLeaf && printTimes) {
