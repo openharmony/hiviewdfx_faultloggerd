@@ -51,9 +51,6 @@ void LperfEventsTest::TearDown()
 HWTEST_F(LperfEventsTest, LperfEventsTestTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LperfEventsTestTest002: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     LperfEvents lperfEvents_;
     lperfEvents_.SetTid({});
     lperfEvents_.SetTimeOut(100);
@@ -70,9 +67,6 @@ HWTEST_F(LperfEventsTest, LperfEventsTestTest002, TestSize.Level2)
 HWTEST_F(LperfEventsTest, LperfEventsTestTest003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LperfEventsTestTest003: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     LperfEvents lperfEvents_;
     lperfEvents_.SetTid({getpid()});
     lperfEvents_.SetTimeOut(2000);
@@ -89,9 +83,6 @@ HWTEST_F(LperfEventsTest, LperfEventsTestTest003, TestSize.Level2)
 HWTEST_F(LperfEventsTest, LperfEventsTestTest004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LperfEventsTestTest004: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     LperfEvents lperfEvents_;
     lperfEvents_.SetTid({getpid()});
     lperfEvents_.SetTimeOut(5000);
@@ -108,9 +99,6 @@ HWTEST_F(LperfEventsTest, LperfEventsTestTest004, TestSize.Level2)
 HWTEST_F(LperfEventsTest, LperfEventsTestTest005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LperfEventsTestTest005: start.";
-    if (IsLinuxKernel()) {
-        return;
-    }
     LperfEvents lperfEvents_;
     lperfEvents_.SetTid({getpid()});
     lperfEvents_.SetTimeOut(20000);
