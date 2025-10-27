@@ -26,6 +26,7 @@ namespace HiviewDFX {
 enum ParseCostType : int32_t {
     PARSE_ALL_FRAME_TIME = 100,
     PARSE_SINGLE_FRAME_TIME = 101,
+    PARSE_ALL_BUILDID_TIME = 102,
     PARSE_ALL_FRAME_TIME_NO_LIMIT = 200, // remove later
 };
 
@@ -38,7 +39,7 @@ struct ReportData {
 };
 class DfxOfflineParser {
 public:
-    DfxOfflineParser(const std::string& bundleName);
+    DfxOfflineParser(const std::string& bundleName, bool onlyParseBuildId = false);
     ~DfxOfflineParser();
     DfxOfflineParser(const DfxOfflineParser&) = delete;
     DfxOfflineParser& operator= (const DfxOfflineParser&) = delete;
@@ -52,8 +53,9 @@ private:
     std::shared_ptr<DfxElf> GetElfForFrame(const DfxFrame& frame);
     std::shared_ptr<DfxMap> GetMapForFrame(const DfxFrame& frame);
     void ReportDumpStats(const DfxFrame& frame, uint32_t costTime);
-    bool CachedEnableMiniDebugInfo_ {false};
-    bool CachedEnableLoadSymbolLazily_ {false};
+    bool onlyParseBuildId_ {false};
+    bool cachedEnableMiniDebugInfo_ {false};
+    bool cachedEnableLoadSymbolLazily_ {false};
     std::string bundleName_ {""};
     std::shared_ptr<DfxMaps> dfxMaps_ {nullptr};
     ElapsedTime counter_;
