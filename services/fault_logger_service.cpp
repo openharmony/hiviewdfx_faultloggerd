@@ -439,12 +439,12 @@ LitePerfPipeService::PerfResourceLimiter::PerfResourceLimiter()
 
 int LitePerfPipeService::PerfResourceLimiter::CheckPerfLimit(int32_t uid)
 {
-    constexpr uint32_t deviceLimit = 50;
+    constexpr int32_t deviceLimit = 50;
     if (devicePerfCount >= deviceLimit) {
         return ResponseCode::RESOURCE_LIMIT;
     }
     auto& perfCount = perfCountsMap_[uid];
-    constexpr uint32_t uidPerfLimit = 20;
+    constexpr int32_t uidPerfLimit = 20;
     if (perfCount >= uidPerfLimit) {
         DFXLOGW("%{public}s :: perf resource is limited for uid %{public}d.", FAULTLOGGERD_SERVICE_TAG, uid);
         return ResponseCode::RESOURCE_LIMIT;
