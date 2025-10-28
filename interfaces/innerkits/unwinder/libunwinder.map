@@ -80,8 +80,6 @@
       OHOS::HiviewDFX::DfxPtrace::Detach*;
       OHOS::HiviewDFX::DfxPtrace::Attach*;
       OHOS::HiviewDFX::DfxMemory::ReadProcMemByPid*;
-      OHOS::HiviewDFX::DfxMemory::DfxMemory*;
-      "vtable for OHOS::HiviewDFX::DfxMemory";
       "vtable for OHOS::HiviewDFX::DfxRegsArm";
       "vtable for OHOS::HiviewDFX::DfxRegsArm64";
       "vtable for OHOS::HiviewDFX::DfxRegsRiscv64";
