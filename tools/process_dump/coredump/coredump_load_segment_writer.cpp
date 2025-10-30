@@ -61,10 +61,10 @@ uint64_t LoadSegmentWriter::WriteMergedSeg(size_t idxBegin, size_t idxEnd, char 
     uint64_t totalSize = 0;
     int count = 0;
     ElapsedTime counter;
-    for (auto seg: mergedSegs) {
-        auto phdr = seg.phdr;
+    for (const auto& seg: mergedSegs) {
+        const auto& phdr = seg.phdr;
         if (oldStart + phdr.p_memsz > bw_.GetBase() + bw_.GetCapacity()) {
-            DFXLOGE("ptrace write buffer overflow");
+            DFXLOGE("buffer no space to write load seg");
             break;
         }
 
