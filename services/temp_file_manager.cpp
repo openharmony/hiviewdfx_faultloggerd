@@ -73,7 +73,11 @@ uint64_t GetTimeFromFileName(const std::string& fileName)
     constexpr int timeStrLen = 13;
     constexpr char timeStrSplit = '-';
     constexpr int decimal = 10;
-    auto timeStr = fileName.substr(fileName.find_last_of(timeStrSplit) + 1, timeStrLen);
+    auto pos = fileName.find_last_of(timeStrSplit);
+    if (pos == std::string::npos) {
+        return 0;
+    }
+    auto timeStr = fileName.substr(pos + 1, timeStrLen);
     errno = 0;
     uint64_t num = strtoull(timeStr.c_str(), nullptr, decimal);
     if (errno == ERANGE) {
