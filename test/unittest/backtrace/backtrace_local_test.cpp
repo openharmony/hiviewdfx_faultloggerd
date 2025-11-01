@@ -194,6 +194,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
         FAIL() << "Failed to create child thread.\n";
     }
 
+#if defined(__aarch64__) || defined(__loongarch_lp64)
     ElapsedTime counter;
     Unwinder unwinder;
     BacktraceLocalThread thread(g_tid);
@@ -204,6 +205,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
     auto backtraceStr = thread.GetFormattedStr(false);
     ASSERT_GT(backtraceStr.size(), 0);
     GTEST_LOG_(INFO) << "backtraceStr:\n" << backtraceStr;
+#endif
 
     std::string str;
     auto ret = GetBacktraceStringByTid(str, g_tid, 0, false);
@@ -495,6 +497,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest013, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest013: end.";
 }
 
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 /**
  * @tc.name: BacktraceLocalTest014
  * @tc.desc: Test async-stacktrace api enable in ffrt backtrace
@@ -529,6 +532,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest014, TestSize.Level2)
     ASSERT_TRUE(ret);
     GTEST_LOG_(INFO) << "BacktraceLocalTest014: end.";
 }
+#endif
 
 /**
 * @tc.name: BacktraceLocalTest015

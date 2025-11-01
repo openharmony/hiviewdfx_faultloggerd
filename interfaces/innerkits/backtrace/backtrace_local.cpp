@@ -31,6 +31,7 @@
 #include "elapsed_time.h"
 #include "procinfo.h"
 #include "unwinder.h"
+#include "thread_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -43,16 +44,25 @@ namespace {
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums)
 {
-    bool isNeedMaps = true;
 #if (defined(__aarch64__) || defined(__loongarch_lp64))
-    isNeedMaps = !fast && tid == BACKTRACE_CURRENT_THREAD;
-#endif
+    bool isNeedMaps = !fast && tid == BACKTRACE_CURRENT_THREAD;
     Unwinder unwinder(isNeedMaps);
     BacktraceLocalThread thread(tid);
     if (tid == BACKTRACE_CURRENT_THREAD) {
         skipFrameNum++;
     }
     bool ret = thread.Unwind(unwinder, fast, maxFrameNums, skipFrameNum);
+#else
+    fast = false;
+    std::shared_ptr<Unwinder> unwinder = nullptr;
+    if ((tid == gettid()) || (tid == BACKTRACE_CURRENT_THREAD)) {
+        unwinder = std::make_shared<Unwinder>();
+    } else {
+        unwinder = std::make_shared<Unwinder>(LocalThreadContextMix::CreateAccessors(), true);
+    }
+    BacktraceLocalThread thread(tid);
+    bool ret = thread.UnwindOtherThreadMix(*unwinder, fast, maxFrameNums, skipFrameNum + 1);
+#endif
     frames = thread.GetFrames();
     return ret;
 }
@@ -146,9 +156,9 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bo
         if (tid <= 0 || tid == gettid()) {
             return false;
         }
-        BacktraceLocalThread thread(tid, includeThreadInfo);
-        if (thread.Unwind(unwinder, false, maxFrameNums, 0)) {
-            ss += thread.GetFormattedStr(true) + "\n";
+        std::vector<DfxFrame> frames;
+        if (GetBacktraceFramesByTid(frames, tid, 0, false, maxFrameNums)) {
+            ss += BacktraceLocalThread::GetFormattedStr(tid, frames, true, true) + "\n";
             return true;
         }
         if (!enableKernelStack) {
@@ -157,8 +167,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bo
         std::string msg = "";
         DfxThreadStack threadStack;
         if (DfxGetKernelStack(tid, msg) == 0 && FormatThreadKernelStack(msg, threadStack)) {
-            thread.SetFrames(threadStack.frames);
-            ss += thread.GetFormattedStr(true) + "\n";
+            ss += BacktraceLocalThread::GetFormattedStr(tid, threadStack.frames, true, true) + "\n";
             DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
             if (IsBetaVersion()) {
                 DFXLOGI("%{public}s", msg.c_str());
