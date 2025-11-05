@@ -36,34 +36,20 @@ enum ThreadContextStatus : int32_t {
     CONTEXT_READY = -2,
 };
 
+#if defined(__aarch64__) || defined(__loongarch_lp64)
 struct ThreadContext {
     std::atomic<int32_t> tid {ThreadContextStatus::CONTEXT_UNUSED};
-    // for protecting ctx, shared between threads
-    std::mutex mtx;
     // the thread should be suspended while unwinding
     // blocked in the signal handler of target thread
     std::condition_variable cv;
-    // store unwind context
-    ucontext_t* ctx {nullptr};
     // stack range
     uintptr_t stackBottom;
     uintptr_t stackTop;
-#if defined(__aarch64__)
     // unwind in signal handler by fp
     uintptr_t pcs[DEFAULT_MAX_LOCAL_FRAME_NUM] {0};
-#endif
     std::atomic<size_t> frameSz {0};
     // first stack pointer
     uintptr_t firstFrameSp;
-
-    ~ThreadContext()
-    {
-        std::unique_lock<std::mutex> lock(mtx);
-        if (ctx != nullptr) {
-            delete ctx;
-            ctx = nullptr;
-        }
-    };
 };
 
 class LocalThreadContext {
@@ -85,6 +71,7 @@ private:
 private:
     std::mutex localMutex_;
 };
+#endif
 
 constexpr int STACK_BUFFER_SIZE = 64 * 1024;
 enum SyncStatus : int32_t {
@@ -112,6 +99,7 @@ public:
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo) const;
     int AccessMem(uintptr_t addr, uintptr_t *val);
     std::shared_ptr<DfxMaps> GetMaps() const;
+    static std::shared_ptr<UnwindAccessors> CreateAccessors();
 
 private:
     LocalThreadContextMix() = default;

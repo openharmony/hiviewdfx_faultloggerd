@@ -110,6 +110,7 @@
       OHOS::HiviewDFX::LocalThreadContextMix::GetMapByPc*;
       OHOS::HiviewDFX::LocalThreadContextMix::FindUnwindTable*;
       OHOS::HiviewDFX::LocalThreadContextMix::AccessMem*;
+      OHOS::HiviewDFX::LocalThreadContextMix::CreateAccessors*;
       OHOS::HiviewDFX::RegularElfFactory::Create*;
       OHOS::HiviewDFX::CompressHapElfFactory::Create*;
       OHOS::HiviewDFX::GetFileSize*;

@@ -114,9 +114,11 @@ public:
             }
         }
 #endif
+#if defined(__aarch64__) || defined(__loongarch_lp64)
         if (pid_ == UNWIND_TYPE_LOCAL) {
             LocalThreadContext::GetInstance().CleanUp();
         }
+#endif
     }
 
     inline void EnableUnwindCache(bool enableCache)
@@ -557,6 +559,7 @@ bool Unwinder::Impl::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 
 bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
 {
+#if defined(__aarch64__) || defined(__loongarch_lp64)
     if (tid < 0 || tid == gettid()) {
         lastErrorData_.SetCode(UNW_ERROR_NOT_SUPPORT);
         DFXLOGE("params is nullptr, tid: %{public}d", tid);
@@ -564,7 +567,6 @@ bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, siz
     }
     DFXLOGD("UnwindLocalWithTid:: tid: %{public}d", tid);
     auto threadContext = LocalThreadContext::GetInstance().CollectThreadContext(tid);
-#if defined(__aarch64__)
     if (threadContext != nullptr && threadContext->frameSz > 0) {
         pcs_.clear();
         for (size_t i = 0; i < threadContext->frameSz; i++) {
@@ -575,41 +577,7 @@ bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, siz
     }
     return false;
 #else
-    if (threadContext == nullptr || threadContext->ctx == nullptr) {
-        DFXLOGW("Failed to get thread context of tid(%{public}d)", tid);
-        LocalThreadContext::GetInstance().ReleaseThread(tid);
-        return false;
-    }
-    if (regs_ == nullptr) {
-        regs_ = DfxRegs::CreateFromUcontext(*(threadContext->ctx));
-    } else {
-        regs_->SetFromUcontext(*(threadContext->ctx));
-    }
-    uintptr_t stackBottom = 1;
-    uintptr_t stackTop = static_cast<uintptr_t>(-1);
-    if (tid == getpid()) {
-        if (!GetMainStackRangeInner(stackBottom, stackTop)) {
-            return false;
-        }
-    } else if (!LocalThreadContext::GetInstance().GetStackRange(tid, stackBottom, stackTop)) {
-        DFXLOGE("Failed to get stack range with tid(%{public}d), err(%{public}d)", tid, errno);
-        return false;
-    }
-    if (stackBottom == 0 || stackTop == 0) {
-        DFXLOGE("Invalid stack range, err(%{public}d)", errno);
-        return false;
-    }
-    DFXLOGU("[%{public}d]: stackBottom: %{public}" PRIx64 ", stackTop: %{public}" PRIx64 "", __LINE__,
-        (uint64_t)stackBottom, (uint64_t)stackTop);
-    context_.pid = UNWIND_TYPE_LOCAL;
-    context_.regs = regs_;
-    context_.maps = maps_;
-    context_.stackCheck = false;
-    context_.stackBottom = stackBottom;
-    context_.stackTop = stackTop;
-    auto ret = Unwind(&context_, maxFrameNum, skipFrameNum);
-    LocalThreadContext::GetInstance().ReleaseThread(tid);
-    return ret;
+    return false;
 #endif
 }
 
