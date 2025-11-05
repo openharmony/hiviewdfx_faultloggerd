@@ -204,7 +204,11 @@ bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
         return false;
     }
 
-    std::string eoc = statStr.substr(statStr.find_last_of(")"));
+    auto lastParenPos = statStr.find_last_of(")");
+    if (lastParenPos == std::string::npos) {
+        return false;
+    }
+    std::string eoc = statStr.substr(lastParenPos);
     std::istringstream is(eoc);
     constexpr int startTimePos = 21;
     constexpr int base = 10;
