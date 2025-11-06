@@ -334,10 +334,12 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
     }
     g_prevHandledSignal = signo;
 
+    int savedErrno = errno;
     if (!FillDumpRequest(signo, si, context)) {
         pthread_mutex_unlock(&g_signalHandlerMutex);
         DFXLOGE("DFX_SigchainHandler :: signal(%{public}d) in %{public}d:%{public}d fill dump request faild.",
             signo, g_request.pid, g_request.tid);
+        errno = savedErrno;
         return IsDumpSignal(signo);
     }
     DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
@@ -345,6 +347,7 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
     DumpRequest(signo);
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
+    errno = savedErrno;
     return IsDumpSignal(signo);
 }
 

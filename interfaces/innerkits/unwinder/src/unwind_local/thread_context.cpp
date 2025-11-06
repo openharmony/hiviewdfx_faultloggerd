@@ -136,6 +136,7 @@ void DfxBacktraceLocalSignalHandler(int sig, siginfo_t *si, void *context)
     if (si == nullptr) {
         return;
     }
+    int savedErrno = errno;
     switch (si->si_code) {
 #if defined(__aarch64__) || defined(__loongarch_lp64)
         case DUMP_TYPE_LOCAL:
@@ -148,6 +149,7 @@ void DfxBacktraceLocalSignalHandler(int sig, siginfo_t *si, void *context)
         default:
             break;
     }
+    errno = savedErrno;
 }
 
 void InitSignalHandler()
