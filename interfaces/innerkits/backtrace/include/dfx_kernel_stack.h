@@ -37,7 +37,7 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack, bool needArkts 
 bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& threadStack,
     DfxOfflineParser *parser = nullptr);
 bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack,
-    bool needParseSymbol = false, const std::string& bundleName = std::string());
+    bool needParseSymbol = false, const std::string& bundleName = std::string(), bool onlyParseBuildId = false);
 }
 }
 #endif

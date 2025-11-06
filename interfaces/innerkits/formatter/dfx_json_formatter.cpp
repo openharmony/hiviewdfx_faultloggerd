@@ -22,12 +22,26 @@
 #include "dfx_frame_formatter.h"
 #include "json/json.h"
 #endif
+#include "dfx_log.h"
+#include <sys/wait.h>
+#include <sys/prctl.h>
+#include <sys/syscall.h>
 
 namespace OHOS {
 namespace HiviewDFX {
 #ifndef is_ohos_lite
 namespace {
+struct ParseSymbolOptions {
+    bool needParseSymbol {false};
+    std::string bundleName {""};
+    bool onlyParseBuildId {false};
+
+    ParseSymbolOptions(bool parseSymbol, const std::string& bundle, bool parseBuildId = false)
+        : needParseSymbol(parseSymbol), bundleName(bundle), onlyParseBuildId(parseBuildId) {}
+};
 const int FRAME_BUF_LEN = 1024;
+MAYBE_UNUSED const int ALARM_TIME = 10;
+MAYBE_UNUSED const int WAITPID_TIMEOUT = 3000;
 static std::string JsonAsString(const Json::Value& val)
 {
     if (val.isConvertibleTo(Json::stringValue)) {
@@ -84,6 +98,79 @@ static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameId
     }
     return true;
 }
+
+#ifdef __aarch64__
+static pid_t ForkBySyscall(void)
+{
+#ifdef SYS_fork
+    return syscall(SYS_fork);
+#else
+    return syscall(SYS_clone, SIGCHLD, 0);
+#endif
+}
+
+static void SafeDelayOneMillSec(void)
+{
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 1000000; // 1000000 : 1ms
+    OHOS_TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
+}
+
+static int WaitProcessExitTimeout(pid_t pid, int timeoutMs)
+{
+    int status = 1; // abnomal exit code
+    while (timeoutMs > 0) {
+        int res = waitpid(pid, &status, WNOHANG);
+        if (res > 0) {
+            break;
+        } else if (res < 0) {
+            DFXLOGE("failed to wait processdump_parser, error(%{public}d)", errno);
+            break;
+        }
+        SafeDelayOneMillSec();
+        timeoutMs--;
+        if (timeoutMs == 0) {
+            DFXLOGI("waitpid %{public}d timeout", pid);
+            kill(pid, SIGKILL);
+            return -1;
+        }
+    }
+    if (WIFSIGNALED(status) && WTERMSIG(status) == SIGALRM) {
+        DFXLOGE("processdump_parser exit with signal(%{public}d)", WTERMSIG(status));
+        return -1;
+    }
+    if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+        DFXLOGI("processdump_parser exit (%{public}d)", WEXITSTATUS(status));
+        return 0;
+    }
+    DFXLOGE("processdump_parser exit with error(%{public}d)", WEXITSTATUS(status));
+    return -1;
+}
+
+static void CleanFd(int *pipeFd)
+{
+    if (*pipeFd != -1) {
+        syscall(SYS_close, *pipeFd);
+        *pipeFd = -1;
+    }
+}
+
+static void CleanPipe(int *pipeFd)
+{
+    CleanFd(&pipeFd[0]);
+    CleanFd(&pipeFd[1]);
+}
+
+static bool InitPipe(int *pipeFd)
+{
+    if (syscall(SYS_pipe2, pipeFd, 0) == -1) {
+        CleanPipe(pipeFd);
+        return false;
+    }
+    return true;
+}
+#endif
 }
 
 bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr)
@@ -202,14 +289,13 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
     formattedStack = Json::FastWriter().write(jsonInfo);
     return true;
 }
-#endif
 
-bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
-    bool needParseSymbol, const std::string& bundleName)
+bool FormatKernelStackImpl(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
+    const ParseSymbolOptions& options)
 {
-#ifdef __aarch64__
     std::vector<DfxThreadStack> processStack;
-    if (!FormatProcessKernelStack(kernelStack, processStack, needParseSymbol, bundleName)) {
+    if (!FormatProcessKernelStack(kernelStack, processStack, options.needParseSymbol, options.bundleName,
+        options.onlyParseBuildId)) {
         return false;
     }
     if (jsonFormat) {
@@ -217,6 +303,60 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
     } else {
         return FormatKernelStackStr(processStack, formattedStack);
     }
+}
+
+bool FormatKernelStackByFork(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
+    ParseSymbolOptions& options)
+{
+    int pipefd[2] = {-1, -1};
+    if (!InitPipe(pipefd)) {
+        DFXLOGE("Create pipe failed. errno:%{public}d", errno);
+        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
+    }
+
+    pid_t pid = ForkBySyscall();
+    if (pid < 0) {
+        DFXLOGE("Fork failed. errno:%{public}d", errno);
+        CleanPipe(pipefd);
+        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
+    } else if (pid == 0) {
+        alarm(ALARM_TIME);
+        prctl(PR_SET_NAME, "processdump_parser");
+        CleanFd(&pipefd[0]);
+        std::string formattedStackNew;
+        options.onlyParseBuildId = false;
+        (void)FormatKernelStackImpl(kernelStack, formattedStackNew, jsonFormat, options);
+        write(pipefd[1], formattedStackNew.c_str(), formattedStackNew.size() + 1);
+        CleanFd(&pipefd[1]);
+        _exit(0);
+    }
+    CleanFd(&pipefd[1]);
+    formattedStack = "";
+    char temp[1024] = {0};
+    ssize_t bytesRead;
+    while ((bytesRead = OHOS_TEMP_FAILURE_RETRY(read(pipefd[0], temp, sizeof(temp) - 1))) > 0) {
+        temp[bytesRead] = '\0';
+        formattedStack += std::string(temp, bytesRead);
+    }
+    CleanFd(&pipefd[0]);
+    int res = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
+    if (res != 0 || formattedStack.empty()) {
+        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
+    }
+    return true;
+}
+#endif
+
+bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
+    bool needParseSymbol, const std::string& bundleName)
+{
+#ifdef __aarch64__
+    ParseSymbolOptions options(needParseSymbol, bundleName);
+    if (needParseSymbol) {
+        options.onlyParseBuildId = true;
+        return FormatKernelStackByFork(kernelStack, formattedStack, jsonFormat, options);
+    }
+    return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
 #else
     return false;
 #endif

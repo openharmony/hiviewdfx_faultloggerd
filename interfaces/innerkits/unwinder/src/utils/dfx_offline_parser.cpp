@@ -42,10 +42,11 @@ const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 MAYBE_UNUSED const char* const SELF_CMDLINE_PATH = "/proc/self/cmdline";
 const int MAX_SINGLE_FRAME_PARSE_TIME = 1000;
 }
-DfxOfflineParser::DfxOfflineParser(const std::string& bundleName) : bundleName_(bundleName)
+DfxOfflineParser::DfxOfflineParser(const std::string& bundleName, bool onlyParseBuildId)
+    : onlyParseBuildId_(onlyParseBuildId), bundleName_(bundleName)
 {
-    CachedEnableMiniDebugInfo_ = UnwinderConfig::GetEnableMiniDebugInfo();
-    CachedEnableLoadSymbolLazily_ = UnwinderConfig::GetEnableLoadSymbolLazily();
+    cachedEnableMiniDebugInfo_ = UnwinderConfig::GetEnableMiniDebugInfo();
+    cachedEnableLoadSymbolLazily_ = UnwinderConfig::GetEnableLoadSymbolLazily();
     UnwinderConfig::SetEnableMiniDebugInfo(false);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
     dfxMaps_ = std::make_shared<DfxMaps>();
@@ -53,8 +54,8 @@ DfxOfflineParser::DfxOfflineParser(const std::string& bundleName) : bundleName_(
 
 DfxOfflineParser::~DfxOfflineParser()
 {
-    UnwinderConfig::SetEnableMiniDebugInfo(CachedEnableMiniDebugInfo_);
-    UnwinderConfig::SetEnableLoadSymbolLazily(CachedEnableLoadSymbolLazily_);
+    UnwinderConfig::SetEnableMiniDebugInfo(cachedEnableMiniDebugInfo_);
+    UnwinderConfig::SetEnableLoadSymbolLazily(cachedEnableLoadSymbolLazily_);
 }
 
 bool DfxOfflineParser::ParseSymbolWithFrame(DfxFrame& frame)
@@ -80,6 +81,9 @@ bool DfxOfflineParser::ParseNativeSymbol(DfxFrame& frame)
         return false;
     }
     frame.buildId = elf->GetBuildId();
+    if (onlyParseBuildId_) {
+        return true;
+    }
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
         DFXLOGU("Failed to get symbol, relPc: %{public}" PRIx64 ", mapName: %{public}s",
             frame.relPc, frame.mapName.c_str());

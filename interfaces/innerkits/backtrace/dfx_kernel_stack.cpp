@@ -112,7 +112,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
 }
 
 bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack,
-    bool needParseSymbol, const std::string& bundleName)
+    bool needParseSymbol, const std::string& bundleName, bool onlyParseBuildId)
 {
 #if !defined(is_ohos_lite) && defined(__aarch64__)
     ElapsedTime counter;
@@ -126,7 +126,7 @@ bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThr
     DfxEnableTraceDlsym(true);
     std::unique_ptr<DfxOfflineParser> parser = nullptr;
     if (needParseSymbol) {
-        parser = std::make_unique<DfxOfflineParser>(bundleName);
+        parser = std::make_unique<DfxOfflineParser>(bundleName, onlyParseBuildId);
     }
     for (const std::string& threadKernelStack : threadKernelStackVec) {
         DfxThreadStack threadStack;
@@ -139,7 +139,8 @@ bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThr
     DFXLOGI("format kernel stack cost time = %{public}" PRId64 " ms", costTime);
     if (needParseSymbol) {
         ReportData reportData;
-        reportData.parseCostType = ParseCostType::PARSE_ALL_FRAME_TIME_NO_LIMIT;
+        reportData.parseCostType = onlyParseBuildId ? ParseCostType::PARSE_ALL_BUILDID_TIME
+            : ParseCostType::PARSE_ALL_FRAME_TIME_NO_LIMIT;
         reportData.bundleName = bundleName;
         reportData.costTime = static_cast<uint32_t>(costTime);
         reportData.threadCount = static_cast<uint32_t>(threadKernelStackVec.size());
