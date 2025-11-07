@@ -100,15 +100,6 @@ static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameId
 }
 
 #ifdef __aarch64__
-static pid_t ForkBySyscall(void)
-{
-#ifdef SYS_fork
-    return syscall(SYS_fork);
-#else
-    return syscall(SYS_clone, SIGCHLD, 0);
-#endif
-}
-
 static void SafeDelayOneMillSec(void)
 {
     struct timespec ts;
@@ -314,7 +305,7 @@ bool FormatKernelStackByFork(const std::string& kernelStack, std::string& format
         return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
     }
 
-    pid_t pid = ForkBySyscall();
+    pid_t pid = fork();
     if (pid < 0) {
         DFXLOGE("Fork failed. errno:%{public}d", errno);
         CleanPipe(pipefd);
