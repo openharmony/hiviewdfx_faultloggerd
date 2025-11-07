@@ -66,6 +66,10 @@ bool ParseUnwindStack(const std::vector<uintptr_t>& stackValues,
         frame.relPc = map->GetRelPc(frame.pc);
         frame.map = map;
         frame.mapName = map->name;
+        auto elf = frame.map->GetElf();
+        if (elf != nullptr) {
+            frame.buildId = elf->GetBuildId();
+        }
         frames.emplace_back(frame);
         hasAddFrame = true;
         constexpr int MAX_VALID_ADDRESS_NUM = 32;
@@ -137,14 +141,14 @@ bool KeyThreadDumpInfo::GetKeyThreadStack(DfxProcess& process, Unwinder& unwinde
     DFX_TRACE_FINISH();
     DFX_TRACE_START("KeyThreadGetFrames:%d", tid);
     thread->SetFrames(unwinder.GetFrames());
-    for (const auto& frame : unwinder.GetFrames()) {
+    ReportUnwinderException(unwinder.GetLastErrorCode());
+    UnwindThreadByParseStackIfNeed(thread, unwinder.GetMaps());
+    for (const auto& frame : thread->GetFrames()) {
         if (!frame.isJsFrame) {
             process.AddNativeFramesTable(std::make_pair(frame.pc, frame));
         }
     }
     DFX_TRACE_FINISH();
-    ReportUnwinderException(unwinder.GetLastErrorCode());
-    UnwindThreadByParseStackIfNeed(thread, unwinder.GetMaps());
 #ifdef PARSE_LOCK_OWNER
     DumpUtils::ParseLockInfo(unwinder, tmpPid, thread->GetThreadInfo().nsTid);
 #endif
