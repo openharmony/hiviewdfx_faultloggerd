@@ -22,7 +22,6 @@
 
 #include "dfx_frame_formatter.h"
 #include "dfx_log.h"
-#include "dfx_signal_handler.h"
 #include "fp_backtrace.h"
 #include "unique_stack_table.h"
 #include "unwinder.h"
@@ -36,6 +35,9 @@ using SetStackIdFn = void(*)(uint64_t stackId);
 using CollectAsyncStackFn = uint64_t(*)();
 using UvSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
 using FFRTSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
+
+typedef uint64_t(*GetStackIdFunc)(void);
+extern "C" void DFX_SetAsyncStackCallback(GetStackIdFunc func) __attribute__((weak));
 
 extern "C" uint64_t DfxCollectAsyncStack(void)
 {
@@ -66,6 +68,9 @@ extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
 void DfxSetAsyncStackCallback(void)
 {
     // set callback for DfxSignalHandler to read stackId
+    if (DFX_SetAsyncStackCallback == nullptr) {
+        return;
+    }
     DFX_SetAsyncStackCallback(DfxGetSubmitterStackId);
     const char* uvSetAsyncStackFnName = "LibuvSetAsyncStackFunc";
     auto uvSetAsyncStackFn = reinterpret_cast<UvSetAsyncStackFn>(dlsym(RTLD_DEFAULT, uvSetAsyncStackFnName));

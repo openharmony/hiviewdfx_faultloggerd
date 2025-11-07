@@ -31,7 +31,6 @@
 #include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_dump_res.h"
-#include "dfx_dumprequest.h"
 #include "dfx_log.h"
 #include "dfx_lperf.h"
 #include "dfx_util.h"
@@ -51,6 +50,10 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "DfxLitePerf"
 }
+
+extern "C" void DFX_RestoreDumpableState(void) __attribute__((weak));
+extern "C" bool DFX_SetDumpableState(void) __attribute__((weak));
+extern "C" int32_t DFX_InheritCapabilities(void) __attribute__((weak));
 
 class LitePerf::Impl {
 public:
@@ -200,6 +203,10 @@ PerfErrorCode LitePerf::Impl::StartProcessStackSampling(const LitePerfConfig& co
 
 void LitePerf::Impl::FinishDump()
 {
+    if (DFX_RestoreDumpableState == nullptr) {
+        DFXLOGE("Failed to restore dumpable state.");
+        return;
+    }
     DFX_RestoreDumpableState();
     int req = RequestLitePerfDelPipeFd();
     if (req != ResponseCode::REQUEST_SUCCESS) {
@@ -335,7 +342,7 @@ bool LitePerf::Impl::InitDumpParam(const std::vector<int>& tids, int freq, int d
     lperf.freq = freq;
     lperf.durationMs = durationMs;
 
-    if (DFX_SetDumpableState() == false) {
+    if (DFX_SetDumpableState == nullptr || DFX_SetDumpableState() == false) {
         DFXLOGE("%{public}s :: Failed to set dumpable.", __func__);
         return false;
     }
@@ -439,7 +446,7 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
     }
     close(pipefd[PIPE_WRITE]);
 
-    if (DFX_InheritCapabilities() != 0) {
+    if (DFX_InheritCapabilities == nullptr || DFX_InheritCapabilities() != 0) {
         DFXLOGE("Failed to inherit Capabilities from parent.");
         return false;
     }

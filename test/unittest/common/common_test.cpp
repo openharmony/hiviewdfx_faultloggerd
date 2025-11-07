@@ -45,9 +45,9 @@ static void getLibPathsBySystemBits(vector<std::string> &filePaths)
     std::vector<std::string> lib64FilePaths = {
         "/system/lib64/libstacktrace_rust.dylib.so",
         "/system/lib64/libpanic_handler.dylib.so",
+        "/system/lib64/platformsdk/libdfx_signalhandler.z.so",
         "/system/lib64/platformsdk/libjson_stack_formatter.z.so",
         "/system/lib64/chipset-sdk/libcrash_exception.z.so",
-        "/system/lib64/chipset-sdk-sp/libdfx_signalhandler.z.so",
         "/system/lib64/chipset-sdk-sp/librustc_demangle.z.so",
         "/system/lib64/chipset-sdk-sp/libasync_stack.z.so",
         "/system/lib64/chipset-sdk-sp/libdfx_dumpcatcher.z.so",
@@ -60,9 +60,9 @@ static void getLibPathsBySystemBits(vector<std::string> &filePaths)
     std::vector<std::string> libFilePaths = {
         "/system/lib/libstacktrace_rust.dylib.so",
         "/system/lib/libpanic_handler.dylib.so",
+        "/system/lib/platformsdk/libdfx_signalhandler.z.so",
         "/system/lib/platformsdk/libjson_stack_formatter.z.so",
         "/system/lib/chipset-sdk/libcrash_exception.z.so",
-        "/system/lib/chipset-sdk-sp/libdfx_signalhandler.z.so",
         "/system/lib/chipset-sdk-sp/librustc_demangle.z.so",
         "/system/lib/chipset-sdk-sp/libasync_stack.z.so",
         "/system/lib/chipset-sdk-sp/libdfx_dumpcatcher.z.so",
