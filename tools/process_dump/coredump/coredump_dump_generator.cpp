@@ -44,6 +44,7 @@ void CoredumpGenerator::DumpMemoryForPid(pid_t vmPid)
     }
     WriteLoadSegment(vmPid);
     WriteSectionHeader();
+    fileMgr_.WriteCoredumpLite();
     auto ret = AdjustCoredumpFile();
     if (!ret) {
         fileMgr_.UnlinkFile(fileMgr_.GetCoredumpFilePath());

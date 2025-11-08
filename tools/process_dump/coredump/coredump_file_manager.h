@@ -36,6 +36,7 @@ public:
     char* GetMappedMemory() const { return mappedMemory_; }
     uint64_t GetCoreFileSize() const { return coreFileSize_; }
     bool RegisterCancelCoredump(const std::string& dumpFilePath);
+    void WriteCoredumpLite();
     CoredumpFileManager(const CoredumpFileManager&) = delete;
     CoredumpFileManager& operator=(const CoredumpFileManager&) = delete;
 private:

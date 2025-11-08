@@ -95,6 +95,15 @@
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 111,
+      "fileNamePrefix": "core",
+      "maxSingleFileSizeInKB": 204800,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 1,
+      "maxFileCount": 1,
+      "fileExistTimeInSecond": 43200
     }
   ]
 }
