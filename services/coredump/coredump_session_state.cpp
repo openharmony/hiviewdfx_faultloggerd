@@ -54,8 +54,8 @@ void PendingState::OnEvent(CoredumpEvent event, CoredumpSession& session)
             session.status = CoredumpStatus::CANCEL_PENDING;
             break;
         case CoredumpEvent::TIMEOUT:
-            sessionService_.WriteTimeout(session.sessionId);
             session.status = CoredumpStatus::CANCEL_TIMEOUT;
+            sessionService_.WriteTimeout(session.sessionId);
             break;
         default:
             DFXLOGW("pending state recevie invalid event");
@@ -67,17 +67,17 @@ void RunningState::OnEvent(CoredumpEvent event, CoredumpSession& session)
 {
     switch (event) {
         case CoredumpEvent::REPORT_SUCCESS:
-            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::SUCCESS;
+            sessionService_.WriteResult(session.sessionId);
             break;
         case CoredumpEvent::REPORT_FAIL:
-            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::FAILED;
+            sessionService_.WriteResult(session.sessionId);
             break;
         case CoredumpEvent::CANCEL:
             signalService_.SendCancelSignal(session.workerPid);
-            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::CANCELED;
+            sessionService_.WriteResult(session.sessionId);
             break;
         default:
             DFXLOGI("running state receive invalid event");
@@ -90,12 +90,12 @@ void CancelPendingState::OnEvent(CoredumpEvent event, CoredumpSession& session)
     switch (event) {
         case CoredumpEvent::UPDATE_DUMPER:
             signalService_.SendCancelSignal(session.workerPid);
-            sessionService_.WriteResult(session.sessionId);
             session.status = CoredumpStatus::CANCELED;
+            sessionService_.WriteResult(session.sessionId);
             break;
         case CoredumpEvent::TIMEOUT:
-            sessionService_.WriteTimeout(session.sessionId);
             session.status = CoredumpStatus::CANCEL_TIMEOUT;
+            sessionService_.WriteTimeout(session.sessionId);
             break;
         default:
             DFXLOGI("cancel pending receive invalid event");
