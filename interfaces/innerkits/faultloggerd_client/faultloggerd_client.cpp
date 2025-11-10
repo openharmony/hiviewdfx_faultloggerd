@@ -343,3 +343,8 @@ int32_t FinishCoredumpCb(int32_t targetPid, std::string& fileName, int32_t ret)
     return ResponseCode::DEFAULT_ERROR_CODE;
 #endif
 }
+
+extern "C" void AppSpawnCoredumpToFileTimeoutTmp(int32_t targetPid, int32_t timeout)
+{
+    SaveCoredumpToFileTimeout(targetPid, timeout);
+}

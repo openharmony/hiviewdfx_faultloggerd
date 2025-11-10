@@ -281,6 +281,10 @@ void TempFileManager::ScanTempFilesOnStart()
             continue;
         }
         int32_t fileType = pair.first->type;
+        if (fileType == FaultLoggerType::COREDUMP_LITE) {
+            RemoveTimeOutFileIfNeed(*pair.first, pair.second);
+            continue;
+        }
         if (fileType <= FaultLoggerType::JS_HEAP_LEAK_LIST && fileType >= FaultLoggerType::JS_HEAP_SNAPSHOT) {
             ClearBigFilesOnStart(isOverLimit, pair.second);
         }
