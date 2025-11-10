@@ -49,6 +49,10 @@ int UnBlockSIGTERM()
 
 void CoredumpFileManager::WriteCoredumpLite()
 {
+    if (!isWriteCoredumpLite_) {
+        DFXLOGI("is write coredump lite is false");
+        return;
+    }
     if (write(fd_, mappedMemory_, coreFileSize_) < 0) {
         DFXLOGE("write coredump lite fail, errno:%{public}d", errno);
     } else {
@@ -106,9 +110,10 @@ bool CoredumpFileManager::MmapForFd()
     if (!AdjustFileSize(coreFileSize_)) {
         return false;
     }
-    if (getuid() == 0) {
+    if (CoredumpMappingManager::isAppSpawn_) {
         mappedMemory_ = static_cast<char *>(mmap(nullptr, coreFileSize_, PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
+        isWriteCoredumpLite_ = true;
     } else {
         mappedMemory_ = static_cast<char *>(mmap(nullptr, coreFileSize_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
     }
@@ -122,7 +127,7 @@ bool CoredumpFileManager::MmapForFd()
 
 bool CoredumpFileManager::CreateFileForCoreDump()
 {
-    if (getuid() == 0) {
+    if (CoredumpMappingManager::isAppSpawn_) {
         bundleName_ = "appspawn";
         fd_ = RequestFileDescriptor(COREDUMP_LITE);
     } else {

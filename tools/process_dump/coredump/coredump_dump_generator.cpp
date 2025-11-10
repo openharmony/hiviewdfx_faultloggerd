@@ -20,12 +20,25 @@
 #include "coredump_note_segment_writer.h"
 #include "dump_utils.h"
 #include "faultloggerd_client.h"
+#include "file_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+namespace {
+void IsAppSpawnInit(pid_t pid)
+{
+    std::string filePath = "/proc/" + std::to_string(pid) + "/cmdline";
+    std::string cmdLine;
+    LoadStringFromFile(filePath, cmdLine);
+    if (cmdLine.find("appspawn") != std::string::npos) {
+        CoredumpMappingManager::isAppSpawn_ = true;
+    }
+}
+}
 bool CoredumpGenerator::TriggerCoredump()
 {
     DFXLOGI("Begin to do coredump pid: %{public}d", request_.pid);
+    IsAppSpawnInit(request_.pid);
     StartCoredumpCb(request_.pid, getpid());
     LoadConfig();
     if (!MmapCoredumpFile()) {
