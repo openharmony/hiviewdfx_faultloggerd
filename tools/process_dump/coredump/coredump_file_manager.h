@@ -45,6 +45,7 @@ private:
     uint64_t coreFileSize_ {0};
     std::string bundleName_;
     char *mappedMemory_ {nullptr};
+    bool isWriteCoredumpLite_ {false};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

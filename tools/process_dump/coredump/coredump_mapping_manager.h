@@ -30,6 +30,7 @@ public:
     bool IsHwAsanProcess();
     uint64_t EstimateFileSize();
     const std::vector<DumpMemoryRegions>& GetMaps() { return maps_; }
+    static bool isAppSpawn_;
 private:
     std::vector<DumpMemoryRegions> maps_;
     void ObtainDumpRegion(std::string &line, DumpMemoryRegions &region);
