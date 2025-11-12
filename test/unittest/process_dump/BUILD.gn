@@ -126,6 +126,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump:process_info_src",
     ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
       "c_utils:utils",

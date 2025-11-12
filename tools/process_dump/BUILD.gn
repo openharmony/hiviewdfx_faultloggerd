@@ -173,6 +173,7 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
       "cJSON:cjson",
@@ -242,6 +243,7 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "bundle_framework:appexecfwk_base",
       "bundle_framework:appexecfwk_core",
       "cJSON:cjson",

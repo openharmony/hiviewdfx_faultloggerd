@@ -60,6 +60,7 @@ if (defined(ohos_lite)) {
     public_configs = [ ":dfx_util_config" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog" ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
       "init:libbegetutil",
@@ -91,6 +92,7 @@ if (defined(ohos_lite)) {
     defines = [ "DFX_NO_PRINT_LOG" ]
     if (is_ohos) {
       external_deps = [
+        "bounds_checking_function:libsec_shared",
         "c_utils:utils",
         "hilog:libhilog",
         "init:libbegetutil",

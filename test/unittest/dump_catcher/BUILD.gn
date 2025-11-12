@@ -98,6 +98,7 @@ if (defined(ohos_lite)) {
     }
     resource_config_file = "$faultloggerd_path/test/resource/ohos_test.xml"
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "googletest:gtest_main",
       "hilog:libhilog",
@@ -125,6 +126,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/test/utils:dfx_test_util",
     ]
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "googletest:gtest_main",
       "hilog:libhilog",
