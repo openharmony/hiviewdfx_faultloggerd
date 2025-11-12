@@ -283,6 +283,7 @@ void TempFileManager::ScanTempFilesOnStart()
         int32_t fileType = pair.first->type;
         if (fileType == FaultLoggerType::COREDUMP_LITE) {
             RemoveTimeOutFileIfNeed(*pair.first, pair.second);
+            GetTargetFileCount(fileType) = static_cast<int32_t>(pair.second.size());
             continue;
         }
         if (fileType <= FaultLoggerType::JS_HEAP_LEAK_LIST && fileType >= FaultLoggerType::JS_HEAP_SNAPSHOT) {

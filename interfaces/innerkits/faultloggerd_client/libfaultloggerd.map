@@ -6,7 +6,6 @@
       CancelCoredump;
       StartCoredumpCb;
       FinishCoredumpCb;
-      AppSpawnCoredumpToFileTimeoutTmp;
     };
     extern "C++" {
       SaveCoredumpToFileTimeout*;
