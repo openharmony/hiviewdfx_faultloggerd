@@ -54,6 +54,7 @@ if (!defined(ohos_lite)) {
 
     external_deps = [
       "benchmark:benchmark",
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
     ]

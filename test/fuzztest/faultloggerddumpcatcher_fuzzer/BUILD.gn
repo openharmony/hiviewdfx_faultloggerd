@@ -38,7 +38,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
     ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "c_utils:utils",
+    ]
   }
 
   group("fuzzDumpCatcherTest") {

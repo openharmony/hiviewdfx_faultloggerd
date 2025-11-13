@@ -34,7 +34,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
 
-    external_deps = [ "c_utils:utils" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "c_utils:utils",
+    ]
 
     defines = []
 
