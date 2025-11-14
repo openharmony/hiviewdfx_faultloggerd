@@ -131,10 +131,10 @@ static bool CheckDebugSignalFaultlog(const string& filePath, pid_t pid, int siCo
     rules.push_back(LineRule(R"(^Registers:$)"));
     rules.push_back(LineRule(R"(^FaultStack:$)"));
     rules.push_back(LineRule(R"(^Maps:$)"));
-    if (siCode != SIGLEAK_STACK_BADFD) {
+    if (abs(siCode) != SIGLEAK_STACK_BADFD) {
         rules.push_back(LineRule(R"(^LastFatalMessage:.*$)"));
     }
-    if (siCode != SIGLEAK_STACK_JEMALLOC) {
+    if (abs(siCode) != SIGLEAK_STACK_JEMALLOC) {
         rules.push_back(LineRule(R"(^OpenFiles:$)"));
         rules.push_back(LineRule(R"(^\d+->.*$)", 5)); // match 5 times
     }
@@ -233,7 +233,7 @@ void TestBadfdThread(int maxCnt)
 {
     for (int i = 0; i < maxCnt; i++) {
         sleep(2); // Delay 2s waiting for the next triggerable cycle
-        SaveDebugMessage(SIGLEAK_STACK_BADFD, 0, nullptr);
+        SaveDebugMessage(-SIGLEAK_STACK_BADFD, 0, nullptr);
     }
 }
 
@@ -703,7 +703,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest017, TestSize.Level2)
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
     } else {
-        bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_FDSAN);
+        bool ret = SendSigTestDebugSignal(-SIGLEAK_STACK_FDSAN);
         ASSERT_TRUE(ret);
     }
 }
@@ -720,7 +720,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest018, TestSize.Level2)
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
     } else {
-        bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_JEMALLOC);
+        bool ret = SendSigTestDebugSignal(-SIGLEAK_STACK_JEMALLOC);
         ASSERT_TRUE(ret);
     }
 }
@@ -737,7 +737,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest019, TestSize.Level2)
     if (linuxKernel) {
         ASSERT_TRUE(linuxKernel);
     } else {
-        bool ret = SendSigTestDebugSignal(SIGLEAK_STACK_BADFD);
+        bool ret = SendSigTestDebugSignal(-SIGLEAK_STACK_BADFD);
         ASSERT_TRUE(ret);
     }
 }
@@ -755,7 +755,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest020, TestSize.Level2)
         ASSERT_TRUE(linuxKernel);
     } else {
         int interestedSiCodeList[] = {
-            SIGLEAK_STACK_FDSAN, SIGLEAK_STACK_JEMALLOC
+            -SIGLEAK_STACK_FDSAN, -SIGLEAK_STACK_JEMALLOC
         };
         for (int siCode : interestedSiCodeList) {
             pid_t pid = fork();
@@ -794,7 +794,7 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest021, TestSize.Level2)
             sleep(5); // 5: wait for stacktrace generating
             _exit(0);
         } else {
-            constexpr int siCode = SIGLEAK_STACK_FDSAN;
+            constexpr int siCode = -SIGLEAK_STACK_FDSAN;
             auto fileName = WaitCreateCrashFile("stacktrace", pid);
             bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
             ASSERT_TRUE(ret);
@@ -818,11 +818,11 @@ HWTEST_F(SignalHandlerTest, SignalHandlerTest022, TestSize.Level2)
         if (pid < 0) {
             GTEST_LOG_(ERROR) << "Failed to fork new test process.";
         } else if (pid == 0) {
-            SaveDebugMessage(SIGLEAK_STACK_BADFD, 0, nullptr);
+            SaveDebugMessage(-SIGLEAK_STACK_BADFD, 0, nullptr);
             sleep(5); // 5: wait for stacktrace generating
             _exit(0);
         } else {
-            constexpr int siCode = SIGLEAK_STACK_BADFD;
+            constexpr int siCode = -SIGLEAK_STACK_BADFD;
             auto fileName = WaitCreateCrashFile("stacktrace", pid);
             bool ret = CheckDebugSignalFaultlog(fileName, pid, siCode);
             ASSERT_TRUE(ret);

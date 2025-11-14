@@ -571,7 +571,7 @@ int ProcessDumper::GeFaultloggerdRequestType()
 {
     switch (request_.siginfo.si_signo) {
         case SIGLEAK_STACK:
-            switch (request_.siginfo.si_code) {
+            switch (abs(request_.siginfo.si_code)) {
                 case SIGLEAK_STACK_FDSAN:
                     FALLTHROUGH_INTENDED;
                 case SIGLEAK_STACK_JEMALLOC:
