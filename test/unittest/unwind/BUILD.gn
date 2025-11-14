@@ -44,6 +44,7 @@ ohos_unittest("test_unwind") {
     "regs_test.cpp",
     "signal_test.cpp",
     "symbols_test.cpp",
+    "thread_context_test.cpp",
     "unwind_entry_parser_test.cpp",
     "unwinder_test.cpp",
   ]

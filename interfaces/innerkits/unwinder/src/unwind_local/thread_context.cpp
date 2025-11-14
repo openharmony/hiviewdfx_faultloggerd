@@ -409,7 +409,12 @@ int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
         return -1;
     }
     *val = 0;
-    if (addr < sp_ || addr + sizeof(uintptr_t) >= sp_ + STACK_BUFFER_SIZE) {
+    uintptr_t result;
+    if (__builtin_add_overflow(addr, sizeof(uintptr_t), &result)) {
+        DFXLOGE("Failed to access addr, the addr is invalid");
+        return -1;
+    }
+    if (addr < sp_ || result > sp_ + STACK_BUFFER_SIZE) {
         std::shared_ptr<DfxMap> map;
         if (!(maps_->FindMapByAddr(addr, map)) || map == nullptr) {
             return -1;
@@ -424,6 +429,10 @@ int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
         return -1;
     }
     size_t stackOffset = addr - sp_;
+    if (stackOffset > stackBuf_.size() - sizeof(uintptr_t)) {
+        DFXLOGE("Failed to access addr, the stackOffset is invalid");
+        return -1;
+    }
     *val = *(reinterpret_cast<uintptr_t *>(&stackBuf_[stackOffset]));
     return 0;
 }
