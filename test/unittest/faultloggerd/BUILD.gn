@@ -52,6 +52,7 @@ if (defined(ohos_lite)) {
         "faultlogger_server_test.cpp",
         "faultloggerd_test.cpp",
         "temp_file_manager_test.cpp",
+        "epoll_manager_test.cpp"
       ]
 
       deps = [
@@ -110,6 +111,7 @@ if (defined(ohos_lite)) {
       "faultloggerd_coredump_test.cpp",
       "faultloggerd_test.cpp",
       "temp_file_manager_test.cpp",
+      "epoll_manager_test.cpp"
     ]
     cflags_cc = [ "-Dprivate=public" ]
     defines = [ "FAULTLOGGERD_TEST" ]

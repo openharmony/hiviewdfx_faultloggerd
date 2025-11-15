@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,8 +33,6 @@ namespace HiviewDFX {
 namespace {
 constexpr const char* const FAULTLOGGERD_SERVER_TAG = "FAULT_LOGGER_SERVER";
 }
-
-SocketServer::SocketServer(EpollManager& epollManager) : epollManager_(epollManager) {}
 
 bool SocketServer::Init()
 {
@@ -78,7 +76,7 @@ bool SocketServer::AddServerListener(const char* socketName)
         return false;
     }
     std::unique_ptr<EpollListener> serverListener(new SocketServerListener(*this, std::move(fd), socketName));
-    return epollManager_.AddListener(std::move(serverListener));
+    return EpollManager::GetInstance().AddListener(std::move(serverListener));
 }
 
 SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer, SmartFd fd, std::string socketName)
@@ -158,7 +156,7 @@ void SocketServer::SocketServerListener::OnEventPoll()
     connectionNum++;
     std::unique_ptr<EpollListener> clientRequestListener(
         new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid));
-    socketServer_.epollManager_.AddListener(std::move(clientRequestListener));
+    EpollManager::GetInstance().AddListener(std::move(clientRequestListener));
 }
 }
 }

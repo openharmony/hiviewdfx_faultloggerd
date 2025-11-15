@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,6 +37,44 @@ namespace HiviewDFX {
 
 namespace {
 constexpr const char *const EPOLL_MANAGER = "EPOLL_MANAGER";
+
+constexpr uint64_t SECONDS_TO_NANOSCONDS = 1000 * 1000 * 1000;
+
+bool SetTimeOptionForTimeFd(int32_t fd, uint64_t delayTimeInNs, uint64_t intervalTimeInNs)
+{
+    if (fd < 0) {
+        return false;
+    }
+    struct itimerspec timeOption{};
+    timeOption.it_value.tv_sec =
+        static_cast<decltype(timeOption.it_value.tv_sec)>(delayTimeInNs / SECONDS_TO_NANOSCONDS);
+    timeOption.it_value.tv_nsec =
+        static_cast<decltype(timeOption.it_value.tv_nsec)>(delayTimeInNs % SECONDS_TO_NANOSCONDS);
+    timeOption.it_interval.tv_sec =
+        static_cast<decltype(timeOption.it_interval.tv_sec)>(intervalTimeInNs / SECONDS_TO_NANOSCONDS);
+    timeOption.it_interval.tv_nsec =
+        static_cast<decltype(timeOption.it_interval.tv_nsec)>(intervalTimeInNs % SECONDS_TO_NANOSCONDS);
+    if (timerfd_settime(fd, 0, &timeOption, nullptr) == -1) {
+        DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
+        return false;
+    }
+    return true;
+}
+
+SmartFd CreateTimeFd()
+{
+    SmartFd timefd{timerfd_create(CLOCK_MONOTONIC, 0)};
+    if (!timefd) {
+        DFXLOGE("%{public}s :: failed to create time fd, errno: %{public}d", EPOLL_MANAGER, errno);
+    }
+    return timefd;
+}
+
+inline uint64_t GetNanoTimeStamp()
+{
+    using namespace std::chrono;
+    return static_cast<uint64_t>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
+}
 }
 
 EpollListener::EpollListener(SmartFd fd, bool persist) : fd_(std::move(fd)), persist_(persist) {}
@@ -49,6 +87,12 @@ bool EpollListener::IsPersist() const
 int32_t EpollListener::GetFd() const
 {
     return fd_.GetFd();
+}
+
+EpollManager &EpollManager::GetInstance()
+{
+    static thread_local EpollManager mainEpollManager;
+    return mainEpollManager;
 }
 
 EpollManager::~EpollManager()
@@ -152,7 +196,7 @@ void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
             }
             const auto listener = GetTargetListener(events[i].data.fd);
             if (listener == nullptr) {
-                RemoveListener(events[i].data.fd);
+                DelEpollEvent(events[i].data.fd);
                 continue;
             }
             // The listener lifecycle is only guaranteed to be valid before the OnEventPoll call.
@@ -176,30 +220,15 @@ void EpollManager::StopEpoll()
     }
 }
 
-SmartFd TimerTask::CreateTimeFd()
-{
-    SmartFd timefd{timerfd_create(CLOCK_MONOTONIC, 0)};
-    if (!timefd) {
-        DFXLOGE("%{public}s :: failed to create time fd, errno: %{public}d", EPOLL_MANAGER, errno);
-    }
-    return timefd;
-}
-
 TimerTask::TimerTask(bool persist) : EpollListener(CreateTimeFd(), persist) {}
 
-bool TimerTask::SetTimeOption(int32_t delayTime, int32_t periodicity)
+bool TimerTask::SetTimeOption(int32_t delayTimeInS, int32_t intervalTimeInS)
 {
-    if (GetFd() < 0 || delayTime < 0 || periodicity < 0) {
+    if (delayTimeInS < 0 || intervalTimeInS < 0) {
         return false;
     }
-    struct itimerspec timeOption{};
-    timeOption.it_value.tv_sec = delayTime;
-    timeOption.it_interval.tv_sec = periodicity;
-    if (timerfd_settime(GetFd(), 0, &timeOption, nullptr) == -1) {
-        DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
-        return false;
-    }
-    return true;
+    return SetTimeOptionForTimeFd(GetFd(), static_cast<uint64_t>(delayTimeInS) * SECONDS_TO_NANOSCONDS,
+        static_cast<uint64_t>(intervalTimeInS) * SECONDS_TO_NANOSCONDS);
 }
 
 void TimerTask::OnEventPoll()
@@ -214,25 +243,91 @@ void TimerTask::OnEventPoll()
 }
 
 std::unique_ptr<TimerTask> TimerTaskAdapter::CreateInstance(std::function<void()> workFunc,
-    int32_t delayTimeInSecond, int32_t periodicityInSecond)
+    int32_t delayTimeInS, int32_t intervalTimeInS)
 {
-    if (delayTimeInSecond < 0 || periodicityInSecond < 0) {
+    if (!workFunc) {
         return nullptr;
     }
-    auto task = std::unique_ptr<TimerTaskAdapter>(new (std::nothrow)TimerTaskAdapter(std::move(workFunc),
-        periodicityInSecond > 0));
-    if (task == nullptr || !task->SetTimeOption(delayTimeInSecond, periodicityInSecond)) {
+    auto task = std::unique_ptr<TimerTaskAdapter>(new (std::nothrow)TimerTaskAdapter(workFunc,
+        intervalTimeInS > 0));
+    if (task == nullptr || !task->SetTimeOption(delayTimeInS, intervalTimeInS)) {
         return nullptr;
     }
     return task;
 }
 
-TimerTaskAdapter::TimerTaskAdapter(std::function<void()> workFunc, bool persist) : TimerTask(persist),
+TimerTaskAdapter::TimerTaskAdapter(std::function<void()>& workFunc, bool persist) : TimerTask(persist),
     work_(std::move(workFunc)) {}
 
 void TimerTaskAdapter::OnTimer()
 {
     work_();
+}
+
+DelayTaskQueue& DelayTaskQueue::GetInstance()
+{
+    static thread_local DelayTaskQueue queue;
+    return queue;
+}
+
+bool DelayTaskQueue::InitExecutor(uint32_t delayTimeInS)
+{
+    auto executor = std::unique_ptr<Executor>(new(std::nothrow) Executor(*this));
+    if (executor == nullptr) {
+        return false;
+    }
+    if (!SetTimeOptionForTimeFd(executor->GetFd(), delayTimeInS * SECONDS_TO_NANOSCONDS, SECONDS_TO_NANOSCONDS)) {
+        return false;
+    }
+    executor_ = executor.get();
+    if (!EpollManager::GetInstance().AddListener(std::move(executor))) {
+        return false;
+    }
+    return true;
+}
+
+bool DelayTaskQueue::AddDelayTask(std::function<void()> workFunc, uint32_t delayTimeInS)
+{
+    if (delayTimeInS == 0 || !workFunc) {
+        return false;
+    }
+    if (executor_ == nullptr && !InitExecutor(delayTimeInS)) {
+        return false;
+    }
+    const auto delayTimeInNanoSeconds =  static_cast<uint64_t>(delayTimeInS) * SECONDS_TO_NANOSCONDS;
+    const auto executeTime = GetNanoTimeStamp() + delayTimeInNanoSeconds;
+    auto insertPos = std::find_if(delayTasks_.begin(), delayTasks_.end(),
+        [executeTime](const std::pair<uint64_t, std::function<void()>>& existingTask) {
+            return existingTask.first > executeTime;
+        });
+    if (insertPos == delayTasks_.begin()) {
+        SetTimeOptionForTimeFd(executor_->GetFd(), delayTimeInNanoSeconds, SECONDS_TO_NANOSCONDS);
+    }
+    delayTasks_.insert(insertPos, std::make_pair(executeTime, std::move(workFunc)));
+    return true;
+}
+
+DelayTaskQueue::Executor::~Executor()
+{
+    /**
+     * Set the executor_ in the outer class to null to indicate that the existing executor has been destroyed.
+     */
+    delayTaskQueue_.executor_ = nullptr;
+}
+
+void DelayTaskQueue::Executor::OnTimer()
+{
+    while (!delayTaskQueue_.delayTasks_.empty()) {
+        auto currentTime = GetNanoTimeStamp();
+        if (delayTaskQueue_.delayTasks_.front().first > currentTime) {
+            auto nextTaskDelayTime = delayTaskQueue_.delayTasks_.front().first - currentTime;
+            SetTimeOptionForTimeFd(GetFd(), nextTaskDelayTime, SECONDS_TO_NANOSCONDS);
+            return;
+        }
+        delayTaskQueue_.delayTasks_.front().second();
+        delayTaskQueue_.delayTasks_.pop_front();
+    }
+    EpollManager::GetInstance().RemoveListener(GetFd());
 }
 }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,6 +17,7 @@
 #define FAULTLOGGERD_TEST_H
 
 #include <cstdint>
+#include <functional>
 
 constexpr const char* const TEST_TEMP_FILE_PATH = "/data/test/faultloggerd/temp/";
 
@@ -32,6 +33,11 @@ void ClearTempFiles();
  */
 uint64_t CountTempFiles();
 
+enum class TestThreadEnum {
+    MAIN,
+    HELPER,
+};
+
 class FaultLoggerdTestServer {
 public:
     static FaultLoggerdTestServer& GetInstance();
@@ -39,6 +45,7 @@ public:
     FaultLoggerdTestServer(FaultLoggerdTestServer &&) = delete;
     FaultLoggerdTestServer &operator=(const FaultLoggerdTestServer &) = delete;
     FaultLoggerdTestServer &operator=(FaultLoggerdTestServer &&) = delete;
+    static bool AddTask(TestThreadEnum type, const std::function<void()>& task);
 private:
     FaultLoggerdTestServer();
     ~FaultLoggerdTestServer() = default;

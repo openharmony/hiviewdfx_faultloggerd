@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +25,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+
 class EpollListener {
 public:
     explicit EpollListener(SmartFd fd, bool persist = false);
@@ -39,8 +40,7 @@ private:
 
 class EpollManager {
 public:
-    EpollManager() = default;
-    ~EpollManager();
+    static EpollManager& GetInstance();
     EpollManager(const EpollManager&) = delete;
     EpollManager& operator=(const EpollManager&) = delete;
     EpollManager(EpollManager&&) noexcept = delete;
@@ -51,6 +51,8 @@ public:
     bool AddListener(std::unique_ptr<EpollListener> epollListener);
     bool RemoveListener(int32_t fd);
 private:
+    EpollManager() = default;
+    ~EpollManager();
     bool AddEpollEvent(EpollListener& epollListener) const;
     bool DelEpollEvent(int32_t fd) const;
     EpollListener* GetTargetListener(int32_t fd);
@@ -66,22 +68,47 @@ public:
     void OnEventPoll() final;
 protected:
     virtual void OnTimer() = 0;
-    bool SetTimeOption(int32_t delayTime, int32_t periodicity);
-private:
-    static SmartFd CreateTimeFd();
+    bool SetTimeOption(int32_t delayTimeInS, int32_t intervalTimeInS);
 };
 
 class TimerTaskAdapter : public TimerTask {
 public:
     static std::unique_ptr<TimerTask> CreateInstance(std::function<void()> workFunc,
-        int32_t delayTimeInSecond, int32_t periodicityInSecond = 0);
+        int32_t delayTimeInS, int32_t intervalTimeInS = 0);
     TimerTaskAdapter(const TimerTaskAdapter&) = delete;
     TimerTaskAdapter& operator=(const TimerTaskAdapter&) = delete;
     ~TimerTaskAdapter() override = default;
     void OnTimer() override;
 private:
-    TimerTaskAdapter(std::function<void()> workFunc, bool persist);
+    TimerTaskAdapter(std::function<void()>& workFunc, bool persist);
     std::function<void()> work_;
+};
+
+class DelayTaskQueue {
+public:
+    static DelayTaskQueue& GetInstance();
+    DelayTaskQueue& operator=(const DelayTaskQueue&) = delete;
+    DelayTaskQueue(const DelayTaskQueue&) = delete;
+    DelayTaskQueue(DelayTaskQueue&&) = delete;
+    DelayTaskQueue& operator=(DelayTaskQueue&&) = delete;
+    bool AddDelayTask(std::function<void()> workFunc, uint32_t delayTimeInS);
+private:
+    class Executor final : public TimerTask {
+    public:
+        explicit Executor(DelayTaskQueue& queue) : TimerTask(true), delayTaskQueue_(queue) {};
+        ~Executor() override;
+    protected:
+        void OnTimer() final;
+        DelayTaskQueue& delayTaskQueue_;
+    };
+    DelayTaskQueue() = default;
+    ~DelayTaskQueue() = default;
+    bool InitExecutor(uint32_t delayTimeInS);
+    /**
+     * Used to check if there is already an executor and retrieve the fd bound to this executor.
+     */
+    const Executor* executor_{};
+    std::list<std::pair<uint64_t, std::function<void()>>> delayTasks_;
 };
 }
 }

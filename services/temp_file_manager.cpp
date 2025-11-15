@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -227,8 +227,6 @@ void GetTempFiles(std::map<const SingleFileConfig*, std::list<std::string>>& tem
 }
 }
 
-TempFileManager::TempFileManager(EpollManager& epollManager) : epollManager_(epollManager) {}
-
 int32_t& TempFileManager::GetTargetFileCount(int32_t type)
 {
     auto iter = std::find_if(fileCounts_.begin(), fileCounts_.end(),
@@ -253,20 +251,22 @@ bool TempFileManager::InitTempFileWatcher()
     if (!tempFileWatcher->AddWatchEvent(config.tempFilePath.c_str(), watchEvent)) {
         return false;
     }
-    return epollManager_.AddListener(std::move(tempFileWatcher));
+    return EpollManager::GetInstance().AddListener(std::move(tempFileWatcher));
 }
 
-void TempFileManager::ClearBigFilesOnStart(bool isSizeOverLimit, std::list<std::string>& files)
+void TempFileManager::RestartDeleteTaskOnStart(int32_t existTimeInSecond, std::list<std::string>& files)
 {
-    auto fileClearTime = FaultLoggerConfig::GetInstance().GetTempFileConfig().fileClearTimeAfterBoot;
-    if (isSizeOverLimit || fileClearTime == 0) {
-        std::for_each(files.begin(), files.end(), RemoveTempFile);
-        files.clear();
-    } else {
-        auto tempFileRemover = TimerTaskAdapter::CreateInstance([files] {
-            std::for_each(files.begin(), files.end(), RemoveTempFile);
-        }, fileClearTime);
-        epollManager_.AddListener(std::move(tempFileRemover));
+    auto fileClearTimeInSecond = FaultLoggerConfig::GetInstance().GetTempFileConfig().fileClearTimeAfterBoot;
+    auto currentTime = GetCurrentTime();
+    for (const auto& file : files) {
+        auto createTime = GetTimeFromFileName(file);
+        auto existDuration = currentTime > createTime ? (currentTime - createTime) / SECONDS_TO_MILLISECONDS : 0;
+        auto existTimeLeft = existTimeInSecond - static_cast<int32_t>(existDuration);
+        auto fileClearTime = existTimeLeft > fileClearTimeInSecond ? existTimeLeft : fileClearTimeInSecond;
+        DelayTaskQueue::GetInstance().AddDelayTask(
+            [file] {
+                RemoveTempFile(file);
+            }, fileClearTime);
     }
 }
 
@@ -281,16 +281,22 @@ void TempFileManager::ScanTempFilesOnStart()
             continue;
         }
         int32_t fileType = pair.first->type;
-        if (fileType == FaultLoggerType::COREDUMP_LITE) {
-            RemoveTimeOutFileIfNeed(*pair.first, pair.second);
-            GetTargetFileCount(fileType) = static_cast<int32_t>(pair.second.size());
+#ifdef FAULTLOGGERD_TEST
+        constexpr uint64_t bigFileLimit = 5 * 1024;
+#else
+        constexpr uint64_t bigFileLimit = 100 * 1024 * 1024;
+#endif
+        if (isOverLimit && pair.first->maxSingleFileSize >= bigFileLimit) {
+            std::for_each(pair.second.begin(), pair.second.end(), RemoveTempFile);
+            pair.second.clear();
+            GetTargetFileCount(fileType) = 0;
             continue;
-        }
-        if (fileType <= FaultLoggerType::JS_HEAP_LEAK_LIST && fileType >= FaultLoggerType::JS_HEAP_SNAPSHOT) {
-            ClearBigFilesOnStart(isOverLimit, pair.second);
         }
         ForceRemoveFileIfNeed(*pair.first, pair.second);
         GetTargetFileCount(fileType) = static_cast<int32_t>(pair.second.size());
+        if (pair.first->overTimeFileDeleteType == OverTimeFileDeleteType::ACTIVE) {
+            RestartDeleteTaskOnStart(pair.first->fileExistTime, pair.second);
+        }
     }
 }
 
@@ -423,6 +429,11 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
     size_t eventPos = 0;
     while (readLen >= eventLen && eventPos < bound) {
         auto *event = reinterpret_cast<inotify_event *>(eventBuf + eventPos);
+#ifdef FAULTLOGGERD_TEST
+        if (event->mask & tempFileManager_.eventMask_) {
+            return;
+        }
+#endif
         if (event->mask & IN_DELETE_SELF) {
             HandleDirRemoved();
             return;
@@ -471,10 +482,10 @@ void TempFileManager::TempFileWatcher::HandleFileCreate(const std::string& fileP
             TEMP_FILE_MANAGER_TAG, filePath.c_str(), currentFileCount, fileConfig.keepFileCount,
             fileConfig.maxFileCount, fileConfig.fileExistTime, fileConfig.overTimeFileDeleteType);
     if (fileConfig.overTimeFileDeleteType == OverTimeFileDeleteType::ACTIVE) {
-        auto tempFileRemover = TimerTaskAdapter::CreateInstance([filePath] {
-            RemoveTempFile(filePath);
-        }, fileConfig.fileExistTime);
-        tempFileManager_.epollManager_.AddListener(std::move(tempFileRemover));
+        DelayTaskQueue::GetInstance().AddDelayTask(
+            [filePath] {
+                RemoveTempFile(filePath);
+            }, fileConfig.fileExistTime);
     }
     if ((fileConfig.keepFileCount >= 0 && currentFileCount > fileConfig.keepFileCount) ||
         (fileConfig.maxFileCount >= 0 && currentFileCount > fileConfig.maxFileCount)) {
@@ -516,7 +527,7 @@ void TempFileManager::TempFileWatcher::HandleDirRemoved()
         "HAPPEN_TIME", timestamp,
         "SUMMARY", summary);
 #endif
-    tempFileManager_.epollManager_.RemoveListener(GetFd());
+    EpollManager::GetInstance().RemoveListener(GetFd());
 }
 }
 }

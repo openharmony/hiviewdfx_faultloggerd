@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,8 +29,6 @@ namespace HiviewDFX {
 
 class TempFileManager {
 public:
-    explicit TempFileManager(EpollManager& epollManager);
-
     bool Init();
 
     static int32_t CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time);
@@ -56,17 +54,24 @@ private:
     };
     bool InitTempFileWatcher();
     void ScanTempFilesOnStart();
-    void ClearBigFilesOnStart(bool isSizeOverLimit, std::list<std::string>& files);
+    static void RestartDeleteTaskOnStart(int32_t existTimeInSecond, std::list<std::string>& files);
 
 #ifndef is_ohos_lite
     static void ClearTimeOutRecords();
 #endif
 
-    EpollManager& epollManager_;
     int32_t& GetTargetFileCount(int32_t type);
     std::vector<std::pair<int32_t, int32_t>> fileCounts_;
 #ifndef is_ohos_lite
     static std::list<std::pair<int32_t, int64_t>> crashFileRecords_;
+#endif
+
+#ifdef FAULTLOGGERD_TEST
+    void SetFileEventMask(uint32_t mask)
+    {
+        eventMask_ = mask;
+    };
+    uint32_t eventMask_;
 #endif
 };
 }

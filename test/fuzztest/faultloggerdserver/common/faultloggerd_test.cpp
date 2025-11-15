@@ -51,8 +51,20 @@ FaultLoggerdTestServer &FaultLoggerdTestServer::GetInstance()
 
 FaultLoggerdTestServer::FaultLoggerdTestServer()
 {
+    constexpr int32_t maxConnection = 30;
+    constexpr int32_t maxEpollEvent = 1024;
     std::thread([] {
-        OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().StartServer();
+        auto& helper = OHOS::HiviewDFX::EpollManager::GetInstance();
+        helper.Init(maxEpollEvent);
+        OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().InitHelperServer();
+        helper.StartEpoll(maxConnection);
+    }).detach();
+    std::thread([] {
+        auto& main = OHOS::HiviewDFX::EpollManager::GetInstance();
+        main.Init(maxEpollEvent);
+        OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().InitMainServer();
+        constexpr auto epollTimeoutInMilliseconds = 3 * 1000;
+        main.StartEpoll(maxConnection, epollTimeoutInMilliseconds);
     }).detach();
     constexpr int32_t faultLoggerdInitTime = 2;
     // Pause for two seconds to wait for the server to initialize.

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -94,7 +94,9 @@ void ParseDirectoryConfig(const cJSON* json, DirectoryConfig& directoryConfig)
                                      0, MAX_NUM_INT32);
     directoryConfig.maxTempFilesSize = static_cast<uint64_t>(maxFileSize) << KB_TO_B;
     int32_t configClearTime = GetInt32ValueFromJson(cJSON_GetObjectItem(json, "fileClearTimeAfterBootInSecond"));
-    directoryConfig.fileClearTimeAfterBoot = std::clamp(configClearTime, 0, MAX_NUM_INT32);
+    constexpr auto minClearTimeAfterBoot = 120;
+    directoryConfig.fileClearTimeAfterBoot =
+        static_cast<uint32_t>(std::clamp(configClearTime, minClearTimeAfterBoot, MAX_NUM_INT32));
     auto* tempFiles = cJSON_GetObjectItem(json, "tempFiles");
     if (tempFiles != nullptr && cJSON_IsArray(tempFiles)) {
         int arraySize = cJSON_GetArraySize(tempFiles);
@@ -111,7 +113,7 @@ void InitFaultloggerTestConfig(DirectoryConfig& directoryConfig)
     directoryConfig.tempFilePath = "/data/test/faultloggerd/temp";
     constexpr uint64_t maxTempFilesSize = 10ull << 10; // 10KB
     directoryConfig.maxTempFilesSize = maxTempFilesSize;
-    constexpr int32_t fileClearTimeAfterBoot = 3; // 3S
+    constexpr uint32_t fileClearTimeAfterBoot = 3; // 3S
     directoryConfig.fileClearTimeAfterBoot = fileClearTimeAfterBoot;
     directoryConfig.singleFileConfigs = {
         {
@@ -172,7 +174,7 @@ FaultLoggerConfig::FaultLoggerConfig()
     directoryConfig_.tempFilePath = "/data/log/faultlog/temp";
     constexpr uint64_t maxTempFilesSize = 2ull << 30; // 2GB
     directoryConfig_.maxTempFilesSize = maxTempFilesSize;
-    constexpr int32_t fileClearTimeAfterBoot = 300; // 300s
+    constexpr uint32_t fileClearTimeAfterBoot = 300; // 300s
     directoryConfig_.fileClearTimeAfterBoot = fileClearTimeAfterBoot;
     directoryConfig_.singleFileConfigs = {
         {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -47,7 +47,7 @@ struct SingleFileConfig {
 struct DirectoryConfig {
     std::string tempFilePath;
     uint64_t maxTempFilesSize = 0;
-    int32_t fileClearTimeAfterBoot = 0;
+    uint32_t fileClearTimeAfterBoot = 0;
     std::vector<SingleFileConfig> singleFileConfigs;
 };
 

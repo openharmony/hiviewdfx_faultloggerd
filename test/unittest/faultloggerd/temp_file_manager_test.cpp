@@ -260,16 +260,12 @@ void ScanCurrentFilesTest::SetUpTestCase()
 {
     FaultLoggerdTestServer::GetInstance();
     ClearTempFiles();
-    for (const auto& listener : tempFileManager.epollManager_.listeners_) {
-        tempFileManager.epollManager_.DelEpollEvent(listener->GetFd());
-    }
+    tempFileManager.SetFileEventMask(0xffffffff);
 }
 
 void ScanCurrentFilesTest::TearDownTestCase()
 {
-    for (const auto& listener : tempFileManager.epollManager_.listeners_) {
-        tempFileManager.epollManager_.AddEpollEvent(*listener);
-    }
+    tempFileManager.SetFileEventMask(0);
 }
 
 /**
@@ -297,9 +293,12 @@ HWTEST_F(ScanCurrentFilesTest, ScanCurrentFilesOnStartTest02, TestSize.Level2)
     ASSERT_TRUE(CreateTestFile(oldFilePath1));
     string oldFilePath2 = GetFileName(JS_HEAP, 1);
     ASSERT_TRUE(CreateTestFile(oldFilePath2));
-    tempFileManager.ScanTempFilesOnStart();
+    FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, []() {
+        tempFileManager.ScanTempFilesOnStart();
+    });
+    this_thread::sleep_for(chrono::milliseconds(1000));
     ASSERT_EQ(tempFileManager.GetTargetFileCount(FaultLoggerType::JS_HEAP_SNAPSHOT), 2);
-    this_thread::sleep_for(chrono::milliseconds(3100));
+    this_thread::sleep_for(chrono::milliseconds(2500));
     ASSERT_FALSE(IsFileExist(oldFilePath1));
     ASSERT_FALSE(IsFileExist(oldFilePath2));
     tempFileManager.fileCounts_.clear();

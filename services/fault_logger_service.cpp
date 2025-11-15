@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -197,7 +197,7 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
             ReportDumpStats(stats);
             RemoveTimeoutDumpStats();
         };
-        StartDelayTask(task, delayTime);
+        DelayTaskQueue::GetInstance().AddDelayTask(std::move(task), delayTime);
     }
     RemoveTimeoutDumpStats();
 #ifdef FAULTLOGGERD_TEST
@@ -205,12 +205,6 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
 #endif
     return ResponseCode::REQUEST_SUCCESS;
-}
-
-void StatsService::StartDelayTask(std::function<void()> workFunc, int32_t delayTime)
-{
-    auto delayTask = TimerTaskAdapter::CreateInstance(workFunc, delayTime);
-    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
 }
 #endif
 
@@ -434,7 +428,7 @@ LitePerfPipeService::PerfResourceLimiter::PerfResourceLimiter()
         perfCountsMap_.clear();
         devicePerfCount = 0;
     }, resetDuration, resetDuration);
-    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(autoResetTask));
+    EpollManager::GetInstance().AddListener(std::move(autoResetTask));
 }
 
 int LitePerfPipeService::PerfResourceLimiter::CheckPerfLimit(int32_t uid)
@@ -483,7 +477,7 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
         auto delayTask = TimerTaskAdapter::CreateInstance([uid] {
             LitePerfPipePair::DelPipePair(uid);
         }, delayTime);
-        FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
+        EpollManager::GetInstance().AddListener(std::move(delayTask));
     } else if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
         LitePerfPipePair* pipePair = LitePerfPipePair::GetPipePair(uid);
         if (pipePair == nullptr) {
