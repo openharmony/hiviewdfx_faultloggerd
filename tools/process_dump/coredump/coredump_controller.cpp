@@ -41,7 +41,7 @@ bool CoredumpController::IsHwasanCoredumpEnabled()
 
 bool CoredumpController::IsCoredumpSignal(const ProcessDumpRequest& request)
 {
-    return request.siginfo.si_signo == SIGLEAK_STACK && request.siginfo.si_code == SIGLEAK_STACK_COREDUMP;
+    return request.siginfo.si_signo == SIGLEAK_STACK && abs(request.siginfo.si_code) == SIGLEAK_STACK_COREDUMP;
 }
 
 bool CoredumpController::VerifyTrustList(const std::string& bundleName)

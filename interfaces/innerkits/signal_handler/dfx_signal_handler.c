@@ -179,7 +179,7 @@ static void FillLastFatalMessageLocked(int32_t signo)
 static bool FillDebugMessageLocked(int32_t signo, siginfo_t *si)
 {
     if (signo != SIGLEAK_STACK || si == NULL ||
-        (si->si_code != SIGLEAK_STACK_FDSAN && si->si_code != SIGLEAK_STACK_JEMALLOC)) {
+        (abs(si->si_code) != SIGLEAK_STACK_FDSAN && abs(si->si_code) != SIGLEAK_STACK_JEMALLOC)) {
         return true;
     }
 
@@ -207,7 +207,7 @@ static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
     if (signo == SIGDUMP) {
         return DUMP_TYPE_DUMP_CATCH;
     } else if (signo == SIGLEAK_STACK) {
-        switch (si->si_code) {
+        switch (abs(si->si_code)) {
             case SIGLEAK_STACK_FDSAN:
                 return DUMP_TYPE_FDSAN;
             case SIGLEAK_STACK_JEMALLOC:
