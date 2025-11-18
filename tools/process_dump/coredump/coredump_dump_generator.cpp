@@ -30,7 +30,7 @@ void IsAppSpawnInit(pid_t pid)
     std::string filePath = "/proc/" + std::to_string(pid) + "/cmdline";
     std::string cmdLine;
     LoadStringFromFile(filePath, cmdLine);
-    if (cmdLine.find("appspawn") != std::string::npos) {
+    if ((cmdLine.find("appspawn") != std::string::npos) && (getuid() == 0)) {
         CoredumpMappingManager::isAppSpawn_ = true;
     }
 }
