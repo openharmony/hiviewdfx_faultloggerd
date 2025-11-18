@@ -219,7 +219,10 @@ void AddrSanitizerReporter::Report(DfxProcess& process, const ProcessDumpRequest
         bool needPrintTid = false;
         summary = process.GetKeyThread()->ToString(needPrintTid);
     }
-    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, "ADDR_SANITIZER",
+    std::string eventName = (reason.find("BADFD") != std::string::npos ||
+                             reason.find("JEMALLOC") != std::string::npos) ?
+                             "ADDR_SANITIZER_WARNING" : "ADDR_SANITIZER";
+    HiSysEventWrite(OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY, eventName,
                     OHOS::HiviewDFX::HiSysEvent::EventType::FAULT,
                     "MODULE", request.processName,
                     "PID", request.pid,
