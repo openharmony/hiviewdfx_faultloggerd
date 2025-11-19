@@ -27,7 +27,6 @@ enum ParseCostType : int32_t {
     PARSE_ALL_FRAME_TIME = 100,
     PARSE_SINGLE_FRAME_TIME = 101,
     PARSE_ALL_BUILDID_TIME = 102,
-    PARSE_ALL_FRAME_TIME_NO_LIMIT = 200, // remove later
 };
 
 struct ReportData {
