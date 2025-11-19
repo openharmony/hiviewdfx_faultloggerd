@@ -75,6 +75,8 @@ void MemoryNearRegister::CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxReg
 #if defined(ENABLE_HWASAN)
         constexpr uintptr_t tbiMask = 0xff00000000000000; // the upper eight bits are TBI
         data &= ~tbiMask;
+#elif defined(__aarch64__)
+        data = StripPac(data, 0xffff000000000000);
 #endif
         index++;
         std::shared_ptr<DfxMap> map;
