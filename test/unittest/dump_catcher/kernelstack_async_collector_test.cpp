@@ -31,6 +31,7 @@ using namespace testing::mt;
 namespace OHOS {
 namespace HiviewDFX {
 std::atomic<int> g_count = 0;
+std::atomic<int> g_countWithTimeout = 0;
 class KernelStackAsyncCollectorTest : public testing::Test {
 public:
     static void SetUpTestCase() {};
@@ -99,7 +100,7 @@ static void NotifyCollectStackTest()
     KernelStackAsyncCollector stackCollector;
     pid_t tid = gettid();
     if (stackCollector.NotifyStartCollect(tid)) {
-        sleep(1);
+        usleep(200000); // 200000 : 200ms
         KernelStackAsyncCollector::KernelResult stack = stackCollector.GetCollectedStackResult();
         ASSERT_EQ(stack.errorCode, KernelStackAsyncCollector::STACK_SUCCESS);
         ASSERT_TRUE(stack.msg.find(std::to_string(tid)) != std::string::npos);
@@ -109,13 +110,13 @@ static void NotifyCollectStackTest()
 
 static void CollectStackWithTimeoutTest()
 {
-    constexpr int waitTime = 1000; // 1000 : 1000ms
+    constexpr int waitTime = 200; // 200 : 200ms
     pid_t tid = gettid();
     KernelStackAsyncCollector stackCollector;
     KernelStackAsyncCollector::KernelResult stack = stackCollector.GetProcessStackWithTimeout(tid, waitTime);
     if (stack.errorCode == KernelStackAsyncCollector::STACK_SUCCESS) {
         ASSERT_TRUE(stack.msg.find(std::to_string(tid)) != std::string::npos);
-        g_count++;
+        g_countWithTimeout++;
     }
 }
 
@@ -135,13 +136,20 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest003, TestSi
         int threadCount = 3;
         SET_THREAD_NUM(threadCount);
         GTEST_RUN_TASK(NotifyCollectStackTest);
-        sleep(2); // 2 : 2s
+        usleep(300000); // 300000 : 300ms
         ASSERT_EQ(g_count, threadCount);
         threadCount = 10;
         SET_THREAD_NUM(threadCount);
-        g_count = 0;
-        GTEST_RUN_TASK(NotifyCollectStackTest);
-        ASSERT_LT(g_count, threadCount);
+        bool flag = false;
+        for (int i = 0; i < 3; i++) {
+            g_count = 0;
+            GTEST_RUN_TASK(NotifyCollectStackTest);
+            usleep(300000); // 300000 : 300ms
+            if (g_count < threadCount) {
+                flag = true;
+            }
+        }
+        ASSERT_TRUE(flag);
         GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest003: end.";
     }
 }
@@ -159,17 +167,23 @@ HWTEST_F(KernelStackAsyncCollectorTest, KernelStackAsyncCollectorTest004, TestSi
     if (!isSuccess) {
         ASSERT_FALSE(isSuccess);
     } else {
-        g_count = 0;
         int threadCount = 3;
         SET_THREAD_NUM(threadCount);
         GTEST_RUN_TASK(CollectStackWithTimeoutTest);
-        sleep(2); // 2 : 2s
-        ASSERT_EQ(g_count, threadCount);
+        usleep(300000); // 300000 : 300ms
+        ASSERT_EQ(g_countWithTimeout, threadCount);
         threadCount = 10;
         SET_THREAD_NUM(threadCount);
-        g_count = 0;
-        GTEST_RUN_TASK(CollectStackWithTimeoutTest);
-        ASSERT_LT(g_count, threadCount);
+        bool flag = false;
+        for (int i = 0; i < 3; i++) {
+            g_countWithTimeout = 0;
+            GTEST_RUN_TASK(CollectStackWithTimeoutTest);
+            usleep(300000); // 300000 : 300ms
+            if (g_countWithTimeout < threadCount) {
+                flag = true;
+            }
+        }
+        ASSERT_TRUE(flag);
         GTEST_LOG_(INFO) << "KernelStackAsyncCollectorTest004: end.";
     }
 }

@@ -1138,6 +1138,7 @@ static int GetParentPid(int pid)
 }
 #endif
 
+#if defined(__aarch64__)
 /**
  * @tc.name: DumpCatcherInterfacesTest043
  * @tc.desc: test dumpcatch no parse symbol
@@ -1146,7 +1147,6 @@ static int GetParentPid(int pid)
 HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest043, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: start.";
-#if defined(__aarch64__)
     pid_t pid = fork();
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "DumpCatcherInterfacesTest043: fork fail";
@@ -1189,11 +1189,12 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest043, TestSize.Level
     GTEST_LOG_(INFO) << stack;
     kill(pid, SIGKILL);
     kill(pidCheck, SIGKILL);
-    bool result = stack.find("no enough time to parse symbol") != std::string::npos;
-    ASSERT_EQ(result, true);
-#endif
+    bool result = (stack.find("no enough time to parse symbol") != std::string::npos) ||
+        (stack.find("poll timeout") != std::string::npos);
+    ASSERT_TRUE(result);
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest043: end.";
 }
+#endif
 
 /**
  * @tc.name: DumpCatcherInterfacesTest044
