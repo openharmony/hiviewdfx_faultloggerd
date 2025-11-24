@@ -33,9 +33,6 @@
 const char* const FOUNDATION_PROCESS_NAME = "foundation";
 const char* const HIVIEW_PROCESS_NAME = "/system/bin/hiview";
 const char* const REGS_KEY_WORD = "Registers:\n";
-#ifndef HISYSEVENT_DISABLE
-const char* const KILL_REASON_CPP_CRASH = "Kill Reason:Cpp Crash";
-#endif
 
 using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
 
@@ -184,16 +181,6 @@ void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process, 
     // defined in interfaces/inner_api/ability_manager/include/ability_state.h
     const int cppCrashExitReason = 2;
     recordAppExitReason(cppCrashExitReason, process.GetReason().c_str());
-#ifndef HISYSEVENT_DISABLE
-    int result = HiSysEventWrite(HiSysEvent::Domain::FRAMEWORK, "PROCESS_KILL", HiSysEvent::EventType::FAULT,
-        "PID", process.GetProcessInfo().pid, "PROCESS_NAME", process.GetProcessInfo().processName.c_str(),
-        "MSG", KILL_REASON_CPP_CRASH,
-        "APP_RUNNING_UNIQUE_ID", request.appRunningUniqueId,
-        "REASON", "CppCrash");
-    DFXLOGW("hisysevent write result=%{public}d, send event [FRAMEWORK,PROCESS_KILL], pid=%{public}d,"
-        " processName=%{public}s, msg=%{public}s", result, process.GetProcessInfo().pid,
-        process.GetProcessInfo().processName.c_str(), KILL_REASON_CPP_CRASH);
-#endif
 }
 
 std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxRegs> regs)
