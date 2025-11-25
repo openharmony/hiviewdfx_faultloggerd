@@ -155,8 +155,10 @@ void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
                 RemoveListener(events[i].data.fd);
                 continue;
             }
+            // The listener lifecycle is only guaranteed to be valid before the OnEventPoll call.
+            bool isPersist = listener->IsPersist();
             listener->OnEventPoll();
-            if (!listener->IsPersist()) {
+            if (!isPersist) {
                 RemoveListener(events[i].data.fd);
             }
         }
