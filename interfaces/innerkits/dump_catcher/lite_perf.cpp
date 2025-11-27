@@ -435,9 +435,9 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
     }
     OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[PIPE_READ], STDOUT_FILENO));
     if (pipefd[PIPE_READ] != STDOUT_FILENO) {
-        close(pipefd[PIPE_READ]);
+        syscall(SYS_close, pipefd[PIPE_READ]);
     }
-    close(pipefd[PIPE_WRITE]);
+    syscall(SYS_close, pipefd[PIPE_WRITE]);
 
     if (DFX_InheritCapabilities() != 0) {
         DFXLOGE("Failed to inherit Capabilities from parent.");
