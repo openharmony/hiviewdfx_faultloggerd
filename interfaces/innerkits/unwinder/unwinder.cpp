@@ -249,6 +249,9 @@ private:
     bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs);
     void UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs);
     bool CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp);
+    bool GetCrashLastFrame(StepFrame& frame);
+    void UpdateCache(uintptr_t pc, bool hasRegLocState, const std::shared_ptr<RegLocState>& rs,
+        const std::shared_ptr<DfxMap>& map);
     bool StepInner(const bool isSigFrame, StepFrame& frame, void *ctx);
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     bool UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc);
@@ -1046,6 +1049,31 @@ bool Unwinder::Impl::CheckFrameValid(const StepFrame& frame, const std::shared_p
     return true;
 }
 
+bool Unwinder::Impl::GetCrashLastFrame(StepFrame& frame)
+{
+    if (isCrash_ && !isFpStep_ && !frames_.empty()) {
+        auto &lastFrame = frames_.back();
+        frame.pc = lastFrame.pc;
+        frame.sp = lastFrame.sp;
+        frame.fp = lastFrame.fp;
+        frame.isJsFrame = lastFrame.isJsFrame;
+        DFXLOGW("Dwarf unwind failed to find map, try fp unwind again");
+        return true;
+    }
+    return false;
+}
+
+void Unwinder::Impl::UpdateCache(uintptr_t pc, bool hasRegLocState, const std::shared_ptr<RegLocState>& rs,
+    const std::shared_ptr<DfxMap>& map)
+{
+    if (hasRegLocState && enableCache_) {
+        StepCache cache;
+        cache.map = map;
+        cache.rs = rs;
+        stepCache_.emplace(pc, cache);
+    }
+}
+
 bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ctx)
 {
     if ((regs_ == nullptr) || (!CheckAndReset(ctx))) {
@@ -1069,16 +1097,10 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
 
         // 2. find map and process frame
         if (!AddFrameMap(frame, map)) {
-            if (isCrash_ && !isFpStep_ && !frames_.empty()) {
-                auto &lastFrame = frames_.back();
-                frame.pc = lastFrame.pc;
-                frame.sp = lastFrame.sp;
-                frame.fp = lastFrame.fp;
-                frame.isJsFrame = lastFrame.isJsFrame;
-                DFXLOGW("Dwarf unwind failed to find map, try fp unwind again");
-                break;
+            if (!GetCrashLastFrame(frame)) {
+                return false;
             }
-            return false;
+            break;
         }
         if (isSigFrame) {
             return true;
@@ -1103,12 +1125,7 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
         // 3. find unwind table and entry, parse instructions and get cache rs
         hasRegLocState = ParseUnwindTable(frame.pc, rs);
         // 4. update rs cache
-        if (hasRegLocState && enableCache_) {
-            StepCache cache;
-            cache.map = map;
-            cache.rs = rs;
-            stepCache_.emplace(frame.pc, cache);
-        }
+        UpdateCache(frame.pc, hasRegLocState, rs, map);
     } while (false);
 
     // 5. update regs and regs state
