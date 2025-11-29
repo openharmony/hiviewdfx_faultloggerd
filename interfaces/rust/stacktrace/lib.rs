@@ -24,14 +24,15 @@ static TRACE_MUTEX : Mutex<i32> = Mutex::new(0);
 
 #[link(name = "backtrace_local")]
 extern "C" {
-    fn PrintTrace(fd : c_int) -> bool;
+    fn PrintTrace(fd : c_int, max_frame_num : c_uint) -> bool;
     fn GetTrace(skip_frame_num : c_uint, max_frame_num : c_uint) -> *const c_char;
 }
 
 /// Print Rust trace into File
 pub fn print_trace(fd : i32) -> bool {
     unsafe {
-        PrintTrace(fd)
+        let max_frame_num = 256;
+        PrintTrace(fd, max_frame_num)
     }
 }
 
