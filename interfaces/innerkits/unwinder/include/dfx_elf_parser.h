@@ -65,14 +65,26 @@ public:
     const GnuDebugDataHdr& GetGnuDebugDataHdr() const;
     std::string GetBuildId();
     static std::string ParseHexBuildId(uint64_t noteAddr, uint64_t noteSize);
+    std::string GetAdltOriginSoNameByRelPc(uint64_t relPc) const;
+    std::string GetNameByNameOffset(uint32_t nameOffset) const;
+    const std::string& GetAdltStrtab() const { return adltStrtab_; }
+    const std::vector<AdltMapInfo>& GetAdltMap() const { return adltMap_; }
+    bool IsAdlt() { return ptAdlt; }
+
 protected:
     size_t MmapSize();
+    void GetAdltStrTabSectionInfo(uint64_t shOffset, uint64_t shSize);
+    void GetAdltMapSectionInfo(uint64_t shOffset, uint64_t shSize);
     template <typename EhdrType, typename PhdrType, typename ShdrType>
     bool ParseAllHeaders();
     template <typename EhdrType>
     bool ParseElfHeaders(const EhdrType& ehdr);
+    template <typename PhdrType>
+    void UpdateVaddrAndOffset(const PhdrType& phdr);
     template <typename EhdrType, typename PhdrType>
     bool ParseProgramHeaders(const EhdrType& ehdr);
+    template <typename ShdrType>
+    void ExtractSymSectionHeadersInfo(const ShdrType& shdr);
     template <typename EhdrType, typename ShdrType>
     bool ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr);
     template <typename EhdrType, typename ShdrType>
@@ -119,6 +131,9 @@ private:
     std::map<std::pair<uint32_t, const std::string>, ShdrInfo> shdrInfoPairs_;
     std::unordered_map<uint64_t, ElfLoadInfo> ptLoads_;
     std::string sectionNames_;
+    bool ptAdlt = false;
+    std::string adltStrtab_;
+    std::vector<AdltMapInfo> adltMap_;
 };
 
 class ElfParser32 : public ElfParser {

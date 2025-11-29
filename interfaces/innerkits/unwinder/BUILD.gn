@@ -35,6 +35,7 @@ dfx_unwinder_sources = [
   "src/registers/dfx_regs_x86_64.cpp",
   "src/registers/getcontext_x86_64.S",
   "src/unwind_local/thread_context.cpp",
+  "src/utils/dfx_frame.cpp",
   "src/utils/dfx_frame_formatter.cpp",
   "src/utils/dfx_instr_statistic.cpp",
   "src/utils/dfx_instructions.cpp",
@@ -362,6 +363,7 @@ if (defined(ohos_lite)) {
       "src/maps/dfx_map.cpp",
       "src/maps/dfx_maps.cpp",
       "src/memory/dfx_memory.cpp",
+      "src/utils/dfx_frame.cpp",
       "src/utils/unwinder_config.cpp",
     ]
     deps = [

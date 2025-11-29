@@ -86,6 +86,7 @@
       "vtable for OHOS::HiviewDFX::DfxRegsLoongArch64";
       "vtable for OHOS::HiviewDFX::RegularElfFactory";
       "vtable for OHOS::HiviewDFX::CompressHapElfFactory";
+      OHOS::HiviewDFX::DfxFrame::ToSymbolString*;
       OHOS::HiviewDFX::DfxFrameFormatter::GetFrameStr*;
       OHOS::HiviewDFX::DfxFrameFormatter::GetFramesStr*;
       OHOS::HiviewDFX::DfxElf::GetStartVaddr*;
@@ -124,6 +125,10 @@
       OHOS::HiviewDFX::DfxJsvm::ParseJsvmFrameInfo*;
       OHOS::HiviewDFX::DfxJsvm::Instance*;
       OHOS::HiviewDFX::DfxOfflineParser*;
+      OHOS::HiviewDFX::DfxElf::GetAdltOriginSoNameByRelPc*;
+      OHOS::HiviewDFX::DfxElf::GetAdltStrtab*;
+      OHOS::HiviewDFX::DfxElf::GetAdltMap*;
+      OHOS::HiviewDFX::DfxElf::IsAdlt*;
     };
   local:
     *;

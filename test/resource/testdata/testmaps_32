@@ -5,6 +5,14 @@
 008d5000-008d7000 rw-p 00000000 00:00 0                                  [anon:init.bss]
 00bdc000-00bdd000 ---p 00000000 00:00 0                                  [heap]
 00bdd000-00be1000 rw-p 00000000 00:00 0                                  [heap]
+9c04b000-9c04d000 r--p 08177000 1ff:01 24                                /system/lib/libadlt_app.so
+9c052000-9c05c000 r--p 05a26000 1ff:01 24                                /system/lib/libadlt_app.so
+9c06b000-9c088000 r--p 05a0a000 1ff:01 24                                /system/lib/libadlt_app.so
+9c088000-9c0b7000 r--p 08179000 1ff:01 24                                /system/lib/libadlt_app.so
+a0400000-a0402000 r--p 00000000 1ff:01 24                                /system/lib/libadlt_app.so
+a0402000-a0827000 r-xp 00001000 1ff:01 24                                /system/lib/libadlt_app.so
+a0827000-a0a02000 r-xp 00425000 1ff:01 24                                /system/lib/libadlt_app.so
+a0a02000-a0db8000 r-xp 005ff000 1ff:01 24                                /system/lib/libadlt_app.so
 f6d80000-f6d81000 r--p 00000000 b3:07 1892                               /system/lib/init/libinit_context.z.so
 f6d81000-f6d83000 r-xp 00000000 b3:07 1892                               /system/lib/init/libinit_context.z.so
 f6d83000-f6d84000 r--p 00001000 b3:07 1892                               /system/lib/init/libinit_context.z.so

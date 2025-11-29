@@ -93,24 +93,14 @@ bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps
     return true;
 }
 
-bool DfxMaps::Parse(const pid_t pid, const std::string& path)
+void DfxMaps::ParseMaps(const pid_t pid, FILE* fp, int& fgetCount)
 {
-    DFX_TRACE_SCOPED_DLSYM("ParseMaps");
-    if ((pid < 0) || (path == "")) {
-        DFXLOGE("param is error");
-        return false;
-    }
-
-    FILE* fp = nullptr;
-    fp = fopen(path.c_str(), "r");
-    if (fp == nullptr) {
-        DFXLOGE("Failed to open %{public}s, err=%{public}d", path.c_str(), errno);
-        return false;
-    }
-
     char mapBuf[PATH_LEN] = {0};
-    int fgetCount = 0;
+    bool adltFound = false;
+    bool adltExecFound = false;
     std::shared_ptr<DfxMap> prevMap = nullptr;
+    std::vector<std::shared_ptr<DfxMap>> adltMaps;
+    uint64_t adltLoadBase = static_cast<uint64_t>(-1);
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
         fgetCount++;
         auto map = std::make_shared<DfxMap>();
@@ -119,7 +109,24 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             continue;
         }
         DfxMap::FormatMapName(pid, map->name);
-        if (map->IsMapExec()) {
+        bool isExec = map->IsMapExec();
+        /* The adlt so is composed of multiple so files, therefore there are multiple text sections.
+         * Different text section has different start address, to get the relPc, the traditional formula
+         * is no longer valid. We should get the file LoadBase, to find the map record which
+         * name start with ADLT_PATH_NAME_START, end with ".so", offset == 0, can not execute
+         */
+        if (StartsWith(map->name, ADLT_PATH_NAME_START) && EndsWith(map->name, ".so")) {
+            adltMaps.push_back(map);
+            if (isExec && !adltExecFound) {
+                adltMapIndex_ = maps_.size();
+                adltExecFound = true;
+            }
+            if (!adltFound && map->offset == 0 && !isExec) {
+                adltLoadBase = map->begin;
+                adltFound = true;
+            }
+        }
+        if (isExec) {
             map->prevMap = prevMap;
         }
         prevMap = map;
@@ -135,7 +142,31 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             AddMap(map, enableMapIndex_);
         }
     }
+    for (auto &iter : adltMaps) {
+        iter->SetAdltLoadBase(adltLoadBase);
+    }
+}
+
+bool DfxMaps::Parse(const pid_t pid, const std::string& path)
+{
+    DFX_TRACE_SCOPED_DLSYM("ParseMaps");
+    if ((pid < 0) || (path == "")) {
+        DFXLOGE("param is error");
+        return false;
+    }
+
+    FILE* fp = nullptr;
+    fp = fopen(path.c_str(), "r");
+    if (fp == nullptr) {
+        DFXLOGE("Failed to open %{public}s, err=%{public}d", path.c_str(), errno);
+        return false;
+    }
+
+    int fgetCount = 0;
+    ParseMaps(pid, fp, fgetCount);
+
     (void)fclose(fp);
+    
     if (fgetCount == 0) {
         DFXLOGE("Failed to get maps(%{public}s), err(%{public}d).", path.c_str(), errno);
         return false;
@@ -224,6 +255,10 @@ int DfxMaps::FindMapIndexByAddr(uintptr_t addr) const
             continue;
         }
         if (addr >= cur->begin && addr < cur->end) {
+            if (StartsWith(cur->name, ADLT_PATH_NAME_START) &&
+                adltMapIndex_ >= 0 && adltMapIndex_ < maps_.size()) {
+                return adltMapIndex_;
+            }
             return index;
         } else if (addr < cur->begin) {
             last = index;

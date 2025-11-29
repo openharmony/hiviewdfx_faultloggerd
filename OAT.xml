@@ -107,6 +107,7 @@ Note:If the text contains special characters, please escape them according to th
                 <filteritem type="filename" name="dwarf_test_aarch64_elf" desc="the binary file for test, the file is self-developed"/>
                 <filteritem type="filename" name="elf32_test" desc="the binary file for test, the file is self-developed"/>
                 <filteritem type="filename" name="elf_test" desc="the binary file for test, the file is self-developed"/>
+                <filteritem type="filename" name="libadlt_test" desc="the binary file for test, the file is self-developed"/>
             </filefilter>
         </filefilterlist>
         <licensematcherlist>

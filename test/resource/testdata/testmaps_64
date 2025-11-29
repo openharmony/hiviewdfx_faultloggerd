@@ -5,6 +5,14 @@
 559331f000-5593321000 rw-p 00000000 00:00 0                              [anon:init.bss]
 55ccdb2000-55ccdb3000 ---p 00000000 00:00 0                              [heap]
 55ccdb3000-55ccdb9000 rw-p 00000000 00:00 0                              [heap]
+5a9c04b000-5a9c04d000 r--p 08177000 1ff:01 24                            /system/lib/libadlt_app.so
+5a9c052000-5a9c05c000 r--p 05a26000 1ff:01 24                            /system/lib/libadlt_app.so
+5a9c06b000-5a9c088000 r--p 05a0a000 1ff:01 24                            /system/lib/libadlt_app.so
+5a9c088000-5a9c0b7000 r--p 08179000 1ff:01 24                            /system/lib/libadlt_app.so
+5aa0400000-5aa0402000 r--p 00000000 1ff:01 24                            /system/lib/libadlt_app.so
+5aa0402000-5aa0827000 r-xp 00001000 1ff:01 24                            /system/lib/libadlt_app.so
+5aa0827000-5aa0a02000 r-xp 00425000 1ff:01 24                            /system/lib/libadlt_app.so
+5aa0a02000-5aa0db8000 r-xp 005ff000 1ff:01 24                            /system/lib/libadlt_app.so
 7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882                           /system/lib64/init/libinit_context.z.so
 7f0ab41000-7f0ab43000 r-xp 00000000 b3:07 1882                           /system/lib64/init/libinit_context.z.so
 7f0ab43000-7f0ab45000 r--p 00001000 b3:07 1882                           /system/lib64/init/libinit_context.z.so

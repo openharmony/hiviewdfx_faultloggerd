@@ -44,6 +44,8 @@ struct DfxSymbol {
     uint64_t offset_ = 0;
     mutable bool matched_ = false; // if some callstack match this
     int32_t hit_ = 0;
+    std::string originSoName_ = "";
+    std::shared_ptr<DfxMap> map = nullptr;
 
     // elf use this
     DfxSymbol(uint64_t vaddr, uint64_t size, const std::string &name, const std::string &demangle,

@@ -172,7 +172,7 @@ DfxFrame* FpBacktraceImpl::SymbolicAddress(void* pc)
         frame = nullptr;
         return nullptr;
     }
-    frame->mapName = frame->map->GetElfName();
+    
     frame->relPc = frame->map->GetRelPc(frame->pc);
     frame->mapOffset = frame->map->offset;
     auto elf = frame->map->GetElf();

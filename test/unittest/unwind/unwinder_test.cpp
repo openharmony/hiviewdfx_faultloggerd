@@ -27,6 +27,7 @@
 #include "dfx_regs_get.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
+#include "elf_factory.h"
 #include "unwinder.h"
 
 #if defined(__x86_64__)
@@ -667,6 +668,48 @@ HWTEST_F(UnwinderTest, FillFrameTest001, TestSize.Level2)
 }
 
 /**
+ * @tc.name: FillFrameTestAdltMap
+ * @tc.desc: test unwinder FillFrame interface
+ *  in local case
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, FillFrameTestAdltMap, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FillFrameTestAdltMap: start.";
+    auto unwinder = std::make_shared<Unwinder>();
+#ifdef __arm__
+    string testMap = "9c04b000-9c04d000 r--p 08177000 1ff:01 24 /data/test/resource/testdata/libadlt_test";
+#else
+    string testMap = "5a9c04b000-5a9c04d000 r--p 08177000 1ff:01 24 /data/test/resource/testdata/libadlt_test";
+#endif
+    auto map = DfxMap::Create(testMap);
+    ASSERT_TRUE(map != nullptr);
+    std::string filePath = "/data/test/resource/testdata/libadlt_test";
+    RegularElfFactory factory(filePath);
+    auto elf = factory.Create();
+    ASSERT_TRUE(elf != nullptr);
+    GTEST_LOG_(INFO) << elf->GetElfName();
+    ASSERT_TRUE(elf->IsValid());
+    ASSERT_TRUE(elf->IsAdlt());
+#ifdef __arm__
+    uint64_t loadBase = 0xa0400000;
+#else
+    uint64_t loadBase = 0x5aa0400000;
+#endif
+    map->SetAdltLoadBase(loadBase);
+    elf->SetLoadBase(map->GetAdltLoadBase());
+    map->elf = elf;
+    
+    DfxFrame frame;
+    frame.map = map;
+    frame.pc = loadBase + 0x37e8;
+    unwinder->FillFrame(frame);
+    GTEST_LOG_(INFO) << frame.mapName;
+    
+    GTEST_LOG_(INFO) << "FillFrameTestAdltMap: end.";
+}
+
+/**
  * @tc.name: FillJsFrameTest001
  * @tc.desc: test unwinder FillJsFrame interface
  *  in local case
@@ -1057,6 +1100,29 @@ HWTEST_F(UnwinderTest, UnwinderTest004, TestSize.Level2)
     frame.mapName = "test";
     std::string str = DfxFrameFormatter::GetFrameStr(frame);
     ASSERT_NE(str, "") << "UnwinderTest004: end.";
+}
+
+/**
+ * @tc.name: UnwinderTest005
+ * @tc.desc: test DfxFrame ToSymbolString
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwinderTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwinderTest005: start.";
+    DfxFrame frame;
+    frame.isJsFrame = true;
+    frame.funcName = "test";
+    frame.packageName = "test";
+    frame.mapName = "/system/lib/libadlt_app.so";
+    frame.mapOffset = 0x140;
+    frame.funcOffset = 0x339a38;
+    frame.pc = 0x5990339B78;
+    frame.originSoName = "lib2d_graphics.z.so";
+    frame.index = 11;
+    std::string str = frame.ToSymbolString();
+    GTEST_LOG_(INFO) << str;
+    ASSERT_NE(str, "") << "UnwinderTest005: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -49,6 +49,7 @@
             <option name="push" value="testdata/syms_from_readelf_64 -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/testmaps_32 -> /data/test/resource/testdata/" src="res"/>
             <option name="push" value="testdata/testmaps_64 -> /data/test/resource/testdata/" src="res"/>
+            <option name="push" value="testdata/libadlt_test -> /data/test/resource/testdata/" src="res"/>
         </preparer>
     </target>
     <target name="test_dwarf">

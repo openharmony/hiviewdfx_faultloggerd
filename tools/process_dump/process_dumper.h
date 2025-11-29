@@ -92,6 +92,7 @@ private:
     std::unique_ptr<CoredumpManager> coredumpManager_;
 #endif
     uint64_t finishParseSymbolTime_ = 0;
+    uint64_t smoParseTime_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
