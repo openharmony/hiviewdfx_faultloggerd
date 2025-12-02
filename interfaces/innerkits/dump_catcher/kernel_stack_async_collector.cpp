@@ -23,6 +23,7 @@
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
 #include "elapsed_time.h"
+#include "proc_util.h"
 #include "procinfo.h"
 
 #ifdef LOG_DOMAIN
@@ -137,11 +138,16 @@ void KernelStackAsyncCollector::CollectKernelStackTask(int pid, std::promise<Ker
         if (tid <= 0) {
             return false;
         }
+        ProcessInfo info;
+        std::string threadStat = "";
+        if (ParseProcInfo(tid, info)) {
+            threadStat = FomatProcessInfoToString(info) + "\n";
+        }
         std::string tidKernelStackInfo;
         int32_t ret = DfxGetKernelStack(tid, tidKernelStackInfo, isMainThread);
         isMainThread = false;
         if (ret == 0) {
-            kernelStackInfo.append(tidKernelStackInfo);
+            kernelStackInfo.append(tidKernelStackInfo).append(threadStat);
         } else if (kernelRet == 0) {
             kernelRet = ret;
         }

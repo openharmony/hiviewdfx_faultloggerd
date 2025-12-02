@@ -93,27 +93,6 @@ void Schedstat::Reset()
     timeslicesNum_ = 0;
 }
 
-bool ThreadInfo::ParserThreadInfo(pid_t tid)
-{
-    std::string schedstatPath = std::string(PROC_SELF_TASK_PATH) + "/" + std::to_string(tid) + "/schedstat";
-    if (!schedstat_.ParseSchedstat(schedstatPath) && tid == getpid()) {
-        schedstatPath = std::string("/proc/self/schedstat");
-        schedstat_.ParseSchedstat(schedstatPath);
-    }
-
-    ProcessInfo info;
-    if (!ParseProcInfo(tid, info)) {
-        DFXLOGE("read %{public}d info failed.", tid);
-        return false;
-    }
-
-    state_ = info.state;
-    utime_ = info.utime;
-    stime_ = info.stime;
-    cutime_ = info.cutime;
-    return true;
-}
-
 std::string ThreadStateToString(ThreadState state)
 {
     switch (state) {
@@ -143,16 +122,6 @@ std::string ThreadStateToString(ThreadState state)
         default:
             return "Unknown";
     }
-}
-
-std::string ThreadInfo::ToString() const
-{
-    // state=SLEEP, utime=1, stime=3, cutime=0, schedstat={178500, 54250, 3}
-    return "state=" + ThreadStateToString(state_) + ", " +
-        "utime=" + std::to_string(utime_) + ", " +
-        "stime=" + std::to_string(stime_) + ", " +
-        "cutime=" + std::to_string(cutime_) + ", " +
-        schedstat_.ToString();
 }
 
 static bool ParseStatSubString(const std::string& statSubStr, ProcessInfo& info)
@@ -250,6 +219,19 @@ bool ParseProcInfo(pid_t pid, ProcessInfo& info)
     return ParseStat(path, info);
 }
 
+std::string FomatProcessInfoToString(const ProcessInfo& info)
+{
+    std::string formatStr;
+    // state=S, utime=1, stime=3, priority=10, nice=-10, clk=100
+    formatStr.append("state=").append(std::string(1, static_cast<char>(info.state)))
+        .append(", utime=").append(std::to_string(info.utime))
+        .append(", stime=").append(std::to_string(info.stime))
+        .append(", priority=").append(std::to_string(info.priority))
+        .append(", nice=").append(std::to_string(info.nice))
+        .append(", clk=").append(std::to_string(GetClkTck()));
+    return formatStr;
+}
+
 bool ParseThreadInfo(pid_t tid, ProcessInfo& info)
 {
     std::string path = "/proc/self/task/" + std::to_string(tid) + "/stat";
@@ -308,6 +290,16 @@ bool IsSigDumpMask(uint64_t sigBlk)
 {
     constexpr uint64_t sigDumpMask = UINT64_C(1) << 34; // 34 : SIGDUMP signal is the 35th bit (0-indexed)
     return (sigBlk & sigDumpMask) != 0;
+}
+
+uint64_t GetClkTck()
+{
+    long clockTicks = sysconf(_SC_CLK_TCK);
+    if (clockTicks <= 0) {
+        DFXLOGE("sysconf(_SC_CLK_TCK) failed. ret is %{public}ld(%{public}d)", clockTicks, errno);
+        return 100; // 100: default tick
+    }
+    return static_cast<uint64_t>(clockTicks);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

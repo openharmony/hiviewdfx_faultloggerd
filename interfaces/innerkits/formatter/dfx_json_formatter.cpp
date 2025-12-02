@@ -20,6 +20,7 @@
 #include "dfx_kernel_stack.h"
 #ifndef is_ohos_lite
 #include "dfx_frame_formatter.h"
+#include "dfx_offline_parser.h"
 #include "json/json.h"
 #endif
 #include "dfx_log.h"
@@ -50,7 +51,23 @@ static std::string JsonAsString(const Json::Value& val)
     return "";
 }
 
-static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
+class StackJsonFormatter {
+public:
+    StackJsonFormatter(const std::string& bundleName, bool onlyParseBuildId)
+        : parser_(bundleName, onlyParseBuildId), onlyParseBuildId_(onlyParseBuildId) {}
+    bool FormatJsonStack(const std::string& jsonStack, std::string& outStackStr);
+
+private:
+    bool FormatJsonThreadStack(Json::Value& thread, std::string& outStackStr);
+    bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr);
+    bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr);
+
+    DfxOfflineParser parser_;
+    bool onlyParseBuildId_;
+};
+
+
+bool StackJsonFormatter::FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
 {
     const int jsIdxLen = 10;
     char buf[jsIdxLen] = { 0 };
@@ -76,30 +93,40 @@ static bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, s
     return true;
 }
 
-static bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
+bool StackJsonFormatter::FormatNativeFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
 {
     char buf[FRAME_BUF_LEN] = {0};
     char format[] = "#%02u pc %s %s";
-    std::string buildId = JsonAsString(frames[frameIdx]["buildId"]);
-    std::string file = JsonAsString(frames[frameIdx]["file"]);
-    std::string offset = JsonAsString(frames[frameIdx]["offset"]);
-    std::string pc = JsonAsString(frames[frameIdx]["pc"]);
-    std::string symbol = JsonAsString(frames[frameIdx]["symbol"]);
+
+    DfxFrame frame;
+    frame.index = frameIdx;
+    auto pc = JsonAsString(frames[frameIdx]["pc"]);
+    constexpr int hexadecimal = 16;
+    frame.relPc = strtoull(pc.c_str(), nullptr, hexadecimal);
+    frame.mapName = JsonAsString(frames[frameIdx]["file"]);
+    frame.buildId = JsonAsString(frames[frameIdx]["buildId"]);
+    if (frames[frameIdx].isMember("offset") && frames[frameIdx]["offset"].isInt()) {
+        frame.funcOffset = frames[frameIdx]["offset"].asInt();
+    }
+    frame.funcName = JsonAsString(frames[frameIdx]["symbol"]);
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frameIdx, pc.c_str(),
-                   file.empty() ? "Unknown" : file.c_str()) <= 0) {
+                   frame.mapName.empty() ? "Unknown" : frame.mapName.c_str()) <= 0) {
         return false;
     }
-    outStr = std::string(buf);
-    if (!symbol.empty()) {
-        outStr.append("(" + symbol + "+" + offset + ")");
+    if ((onlyParseBuildId_ && frame.buildId.empty()) ||
+        (!onlyParseBuildId_ && frame.funcName.empty())) {
+        parser_.ParseSymbolWithFrame(frame);
     }
-    if (!buildId.empty()) {
-        outStr.append("(" + buildId + ")");
+    outStr = std::string(buf);
+    if (!frame.funcName.empty()) {
+        outStr.append("(" + frame.funcName + "+" + std::to_string(frame.funcOffset) + ")");
+    }
+    if (!frame.buildId.empty()) {
+        outStr.append("(" + frame.buildId + ")");
     }
     return true;
 }
 
-#ifdef __aarch64__
 static void SafeDelayOneMillSec(void)
 {
     struct timespec ts;
@@ -161,10 +188,51 @@ static bool InitPipe(int *pipeFd)
     }
     return true;
 }
-#endif
+
+using ChildFuncType = std::function<std::string(void)>;
+
+static std::pair<bool, std::string> ExecuteTaskByFork(ChildFuncType func)
+{
+    auto result = std::make_pair(false, std::string(""));
+    int pipefd[2] = {-1, -1};
+    if (!InitPipe(pipefd)) {
+        DFXLOGE("Create pipe failed. errno:%{public}d", errno);
+        return result;
+    }
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        DFXLOGE("Fork failed. errno:%{public}d", errno);
+        CleanPipe(pipefd);
+        return result;
+    } else if (pid == 0) {
+        alarm(ALARM_TIME);
+        prctl(PR_SET_NAME, "processdump_parser");
+        CleanFd(&pipefd[0]);
+        std::string result = func();
+        write(pipefd[1], result.c_str(), result.size());
+        CleanFd(&pipefd[1]);
+        _exit(0);
+    }
+    CleanFd(&pipefd[1]);
+    std::string formattedStack = "";
+    char temp[1024] = {0};
+    ssize_t bytesRead;
+    while ((bytesRead = OHOS_TEMP_FAILURE_RETRY(read(pipefd[0], temp, sizeof(temp) - 1))) > 0) {
+        temp[bytesRead] = '\0';
+        formattedStack += std::string(temp, bytesRead);
+    }
+    CleanFd(&pipefd[0]);
+    int res = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
+    if (res != 0 || formattedStack.empty()) {
+        return result;
+    }
+    result.first = true;
+    result.second = formattedStack;
+    return result;
 }
 
-bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr)
+bool StackJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr)
 {
     Json::Reader reader;
     Json::Value threads;
@@ -178,40 +246,89 @@ bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string
         return false;
     }
     for (uint32_t i = 0; i < threads.size(); ++i) {
-        std::string ss;
-        Json::Value thread = threads[i];
-        if (thread["tid"].isConvertibleTo(Json::stringValue) &&
-            thread["thread_name"].isConvertibleTo(Json::stringValue)) {
-            ss += "Tid:" + JsonAsString(thread["tid"]) + ", Name:" + JsonAsString(thread["thread_name"]) + "\n";
+        if (!FormatJsonThreadStack(threads[i], outStackStr)) {
+            return false;
         }
-        if (!thread.isMember("frames") || !thread["frames"].isArray()) {
-            continue;
-        }
-        const Json::Value frames = thread["frames"];
-        constexpr int maxFrameNum = 1000;
-        if (frames.size() > maxFrameNum) {
-            continue;
-        }
-        for (uint32_t j = 0; j < frames.size(); ++j) {
-            std::string frameStr = "";
-            bool formatStatus = false;
-            if (JsonAsString(frames[j]["line"]).empty()) {
-                formatStatus = FormatNativeFrame(frames, j, frameStr);
-            } else {
-                formatStatus = FormatJsFrame(frames, j, frameStr);
-            }
-            if (formatStatus) {
-                ss += frameStr + "\n";
-            } else {
-                // Shall we try to print more information?
-                outStackStr.append("Frame info is illegal.");
-                return false;
-            }
-        }
-
-        outStackStr.append(ss);
     }
     return true;
+}
+
+bool StackJsonFormatter::FormatJsonThreadStack(Json::Value& thread, std::string& outStackStr)
+{
+    std::string ss;
+    // Tid:xxx, Name:test
+    if (thread["tid"].isConvertibleTo(Json::stringValue) &&
+            thread["thread_name"].isConvertibleTo(Json::stringValue)) {
+        ss += "Tid:" + JsonAsString(thread["tid"]) + ", Name:" + JsonAsString(thread["thread_name"]) + "\n";
+    }
+    // state=R, utime=5, stime=1, priority=-10, nice=-1, clk=100
+    if (thread["state"].isConvertibleTo(Json::stringValue) &&
+        thread["utime"].isConvertibleTo(Json::stringValue) &&
+        thread["stime"].isConvertibleTo(Json::stringValue) &&
+        thread["priority"].isConvertibleTo(Json::stringValue) &&
+        thread["nice"].isConvertibleTo(Json::stringValue) &&
+        thread["clk"].isConvertibleTo(Json::stringValue)) {
+        ss += "state=" + JsonAsString(thread["state"]) + ", utime=" + JsonAsString(thread["utime"]) +
+            ", stime=" + JsonAsString(thread["stime"]) + ", priority=" + JsonAsString(thread["priority"]) +
+            ", nice=" + JsonAsString(thread["nice"]) + ", clk=" + JsonAsString(thread["clk"]) + "\n";
+    }
+    if (!thread.isMember("frames") || !thread["frames"].isArray()) {
+        return true;
+    }
+    const Json::Value& frames = thread["frames"];
+    constexpr int maxFrameNum = 1000;
+    if (frames.size() > maxFrameNum) {
+        return true;
+    }
+    for (uint32_t j = 0; j < frames.size(); ++j) {
+        std::string frameStr = "";
+        bool formatStatus = false;
+        if (!frames[j].isMember("line")) {
+            formatStatus = FormatNativeFrame(frames, j, frameStr);
+        } else {
+            formatStatus = FormatJsFrame(frames, j, frameStr);
+        }
+        if (formatStatus) {
+            ss += frameStr + "\n";
+        } else {
+            // Shall we try to print more information?
+            outStackStr.append("Frame info is illegal.");
+            return false;
+        }
+    }
+
+    outStackStr.append(ss);
+    return true;
+}
+
+} // end namespace
+
+bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr,
+    bool needParseSymbol, const std::string& bundleName)
+{
+    auto onlyParseBuildIdTask = [&jsonStack, &outStackStr, &bundleName]() {
+        StackJsonFormatter tool(bundleName, true);
+        return tool.FormatJsonStack(jsonStack, outStackStr);
+    };
+    std::function<std::string(void)> parseSymbolTask = [&jsonStack, &bundleName]() {
+        std::string outStackStr;
+        StackJsonFormatter tool(bundleName, false);
+        if (!tool.FormatJsonStack(jsonStack, outStackStr)) {
+            outStackStr = "";
+        }
+        return outStackStr;
+    };
+
+    if (!needParseSymbol) {
+        return onlyParseBuildIdTask();
+    }
+
+    auto ret = ExecuteTaskByFork(parseSymbolTask);
+    if (ret.first) {
+        outStackStr = ret.second;
+        return true;
+    }
+    return onlyParseBuildIdTask();
 }
 
 #ifdef __aarch64__
@@ -224,6 +341,7 @@ static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack
     for (const auto &threadStack : processStack) {
         std::string ss = "Tid:" + std::to_string(threadStack.tid) + ", Name:" + threadStack.threadName + "\n";
         formattedStack.append(ss);
+        formattedStack.append(threadStack.threadStat).append("\n");
         for (size_t frameIdx = 0; frameIdx < threadStack.frames.size(); ++frameIdx) {
             formattedStack.append(DfxFrameFormatter::GetFrameStr(threadStack.frames[frameIdx]));
         }
@@ -268,6 +386,26 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
         Json::Value threadInfo;
         threadInfo["thread_name"] = threadStack.threadName;
         threadInfo["tid"] = threadStack.tid;
+        char state;
+        uint64_t utime;
+        uint64_t stime;
+        int64_t priority;
+        int64_t nice;
+        int64_t clk;
+        int parsed = sscanf_s(threadStack.threadStat.c_str(),
+                "state=%c, utime=%" PRIu64 ", stime=%" PRIu64 ", priority=%" PRIi64 ", nice=%" PRIi64 ", clk=%" PRIi64,
+                &state, 1, &utime, &stime, &priority, &nice, &clk);
+        constexpr int fieldCnt = 6;
+        if (parsed != fieldCnt) {
+            DFXLOGE("parser tid %{public}ld field failed, cnt %{public}d", threadStack.tid, parsed);
+            continue;
+        }
+        threadInfo["state"] = std::string(1, state);
+        threadInfo["utime"] = utime;
+        threadInfo["stime"] = stime;
+        threadInfo["priority"] = priority;
+        threadInfo["nice"] = nice;
+        threadInfo["clk"] = clk;
         Json::Value frames(Json::arrayValue);
         for (const auto& frame : threadStack.frames) {
             Json::Value frameJson;
@@ -296,46 +434,6 @@ bool FormatKernelStackImpl(const std::string& kernelStack, std::string& formatte
     }
 }
 
-bool FormatKernelStackByFork(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
-    ParseSymbolOptions& options)
-{
-    int pipefd[2] = {-1, -1};
-    if (!InitPipe(pipefd)) {
-        DFXLOGE("Create pipe failed. errno:%{public}d", errno);
-        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
-    }
-
-    pid_t pid = fork();
-    if (pid < 0) {
-        DFXLOGE("Fork failed. errno:%{public}d", errno);
-        CleanPipe(pipefd);
-        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
-    } else if (pid == 0) {
-        alarm(ALARM_TIME);
-        prctl(PR_SET_NAME, "processdump_parser");
-        CleanFd(&pipefd[0]);
-        std::string formattedStackNew;
-        options.onlyParseBuildId = false;
-        (void)FormatKernelStackImpl(kernelStack, formattedStackNew, jsonFormat, options);
-        write(pipefd[1], formattedStackNew.c_str(), formattedStackNew.size() + 1);
-        CleanFd(&pipefd[1]);
-        _exit(0);
-    }
-    CleanFd(&pipefd[1]);
-    formattedStack = "";
-    char temp[1024] = {0};
-    ssize_t bytesRead;
-    while ((bytesRead = OHOS_TEMP_FAILURE_RETRY(read(pipefd[0], temp, sizeof(temp) - 1))) > 0) {
-        temp[bytesRead] = '\0';
-        formattedStack += std::string(temp, bytesRead);
-    }
-    CleanFd(&pipefd[0]);
-    int res = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
-    if (res != 0 || formattedStack.empty()) {
-        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
-    }
-    return true;
-}
 #endif
 
 bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
@@ -343,9 +441,21 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
 {
 #ifdef __aarch64__
     ParseSymbolOptions options(needParseSymbol, bundleName);
-    if (needParseSymbol) {
-        options.onlyParseBuildId = true;
-        return FormatKernelStackByFork(kernelStack, formattedStack, jsonFormat, options);
+    if (!needParseSymbol) {
+        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
+    }
+
+    std::function<std::string(void)> func = [&kernelStack, &jsonFormat, options]() mutable {
+            std::string formattedStack;
+            options.onlyParseBuildId = false;
+            (void)FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
+            return formattedStack;
+        };
+
+    auto ret = ExecuteTaskByFork(func);
+    if (ret.first) {
+        formattedStack = ret.second;
+        return true;
     }
     return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
 #else

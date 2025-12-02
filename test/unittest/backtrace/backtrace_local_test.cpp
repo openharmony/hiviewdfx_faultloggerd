@@ -441,6 +441,9 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest011, TestSize.Level2)
         ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
         ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
 
+        ProcessInfo info;
+        ASSERT_TRUE(ParseProcInfo(gettid(), info));
+        kernelStack += FomatProcessInfoToString(info);
         ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, true));
         ASSERT_TRUE(formattedStack.find("\"tid\":") != std::string::npos) << formattedStack;
         ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;

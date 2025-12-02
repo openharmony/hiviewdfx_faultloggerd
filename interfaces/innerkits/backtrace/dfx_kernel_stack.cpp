@@ -25,6 +25,7 @@
 #include "dfx_log.h"
 #include "dfx_trace_dlsym.h"
 #include "elapsed_time.h"
+#include "proc_util.h"
 #include "smart_fd.h"
 
 #define LOGGER_GET_STACK    _IO(0xAB, 9)
@@ -87,6 +88,13 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
     if (pos == std::string::npos) {
         return false;
     }
+    std::regex threadStatReg(
+        R"(state=.{0,16}, utime=\d{0,64}, stime=\d{0,64}, priority=[0-9-]{0,64}, nice=[0-9-]{0,64}, clk=\d{0,64})");
+    if (regex_search(kernelStack, result, threadStatReg)) {
+        threadStack.threadStat = result[0].str();
+    } else {
+        DFXLOGW("search thread stat failed");
+    }
     size_t index = 0;
     std::regex framePattern(R"(\[(\w{16})\]\<[\w\?+/]{1,1024}\> \(([\w\-./]{1,1024})\))");
     for (std::sregex_iterator it = std::sregex_iterator(kernelStack.begin() + pos, kernelStack.end(), framePattern);
@@ -100,7 +108,6 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
         frame.relPc = strtoull((*it)[1].str().c_str(), nullptr, base);
         frame.mapName = (*it)[2].str(); // 2 : second of searched element is map name
         if (parser) {
-            DFX_TRACE_SCOPED_DLSYM("ParseSymbolWithFrame:%s", frame.mapName.c_str());
             parser->ParseSymbolWithFrame(frame);
         }
         threadStack.frames.emplace_back(frame);

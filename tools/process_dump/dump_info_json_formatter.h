@@ -41,6 +41,7 @@ private:
     bool FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo) const;
     void FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
     void FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
+    static void FillThreadstatInfo(Json::Value& jsonInfo, const std::shared_ptr<ProcessInfo> info);
 #endif
 };
 } // namespace HiviewDFX

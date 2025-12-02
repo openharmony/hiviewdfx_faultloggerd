@@ -72,7 +72,13 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest003, TestSize.Level0)
     int threadID[1] = {1};
     pthread_create(&childThread, NULL, SleepThread, &threadID[0]);
     pthread_detach(childThread);
-    auto ret = process.InitOtherThreads(gettid());
+    ProcessDumpRequest request = {
+        .type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH,
+        .tid = gettid(),
+        .pid = getpid(),
+        .nsPid = getpid(),
+    };
+    auto ret = process.InitOtherThreads(request);
     EXPECT_EQ(true, ret) << "DfxProcessTest003 Failed";
     auto threads = process.GetOtherThreads();
     EXPECT_GT(threads.size(), 0) << "DfxProcessTest003 Failed";
@@ -92,7 +98,13 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest004, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxProcessTest004: start.";
     DfxProcess process;
     process.InitProcessInfo(getpid(), getpid(), getuid(), "");
-    auto ret = process.InitOtherThreads(gettid());
+    ProcessDumpRequest request = {
+        .type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH,
+        .tid = gettid(),
+        .pid = getpid(),
+        .nsPid = getpid(),
+    };
+    auto ret = process.InitOtherThreads(request);
     EXPECT_EQ(true, ret) << "DfxProcessTest004 Failed";
     process.Attach();
     process.Detach();

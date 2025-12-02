@@ -31,9 +31,12 @@ public:
      *
      * @param jsonStack input the json string
      * @param outStackStr output the stack string
+     * @param needParseSymbol input set whether to resolve function symbol
+     * @param bundleName app package name
      * @return bool
      */
-    static bool FormatJsonStack(const std::string& jsonStack, std::string& outStackStr);
+    static bool FormatJsonStack(const std::string& jsonStack, std::string& outStackStr,
+        bool needParseSymbol = false, const std::string& bundleName = "");
 
     /**
      * @brief Format kernel stack
@@ -41,6 +44,8 @@ public:
      * @param kernelStack kernel stack
      * @param formattedStack formatted stack, eg #00 pc xxxx xxxxx.so
      * @param jsonFormat whether return json format stack, default false
+     * @param needParseSymbol input set whether to resolve function symbol
+     * @param bundleName app package name
      * @return if succeed return true, otherwise return false
      */
     static bool FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat = false,

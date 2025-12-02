@@ -36,6 +36,7 @@ ohos_fuzztest("FileManagerFuzzTest") {
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "ffrt:libffrt",
+    "hilog:libhilog",
     "hilog:libhilog_base",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",

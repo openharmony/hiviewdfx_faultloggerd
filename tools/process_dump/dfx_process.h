@@ -45,7 +45,7 @@ public:
     void Attach(bool hasKey = false);
     void Detach();
     bool InitKeyThread(const ProcessDumpRequest& request);
-    bool InitOtherThreads(pid_t requestTid);
+    bool InitOtherThreads(const ProcessDumpRequest& request);
     std::vector<std::shared_ptr<DfxThread>>& GetOtherThreads();
     std::shared_ptr<DfxThread>& GetKeyThread()
     {

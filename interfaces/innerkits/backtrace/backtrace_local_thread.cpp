@@ -96,9 +96,9 @@ std::string BacktraceLocalThread::GetFormattedStr(int32_t tid,
         str = "Tid:" + std::to_string(tid) + ", Name:" + threadName + "\n";
     }
     if (includeThreadInfo) {
-        ThreadInfo info;
-        if (info.ParserThreadInfo(tid)) {
-            str += "ThreadInfo:" + info.ToString() + "\n";
+        ProcessInfo info;
+        if (ParseProcInfo(tid, info)) {
+            str += FomatProcessInfoToString(info) + "\n";
         }
     }
     str += Unwinder::GetFramesStr(frames);

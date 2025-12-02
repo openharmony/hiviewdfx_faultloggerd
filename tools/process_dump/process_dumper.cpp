@@ -531,7 +531,7 @@ bool ProcessDumper::InitDfxProcess()
     DumpUtils::NotifyOperateResult(request_, OPE_SUCCESS);
     auto dumpInfoComp = FindDumpInfoByType(request_.type);
     if (std::find(dumpInfoComp.begin(), dumpInfoComp.end(), OTHER_THREAD_DUMP_INFO) != dumpInfoComp.end()) {
-        process_->InitOtherThreads(request_.tid);
+        process_->InitOtherThreads(request_);
     }
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__) && !defined(is_ohos_lite)
