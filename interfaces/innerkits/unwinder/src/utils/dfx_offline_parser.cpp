@@ -100,7 +100,7 @@ std::shared_ptr<DfxMap> DfxOfflineParser::GetMapForFrame(const DfxFrame& frame)
     }
     auto maps = dfxMaps_->GetMaps();
     auto it = std::find_if(maps.begin(), maps.end(), [&](const std::shared_ptr<DfxMap>& map) {
-        return map->name == frame.mapName;
+        return map->name == GetBundlePath(frame.mapName);
     });
     if (it != maps.end() && *it) {
         return *it;
@@ -164,7 +164,7 @@ std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
         return nullptr;
     }
     dfxMap = std::make_shared<DfxMap>();
-    dfxMap->name = frame.mapName;
+    dfxMap->name = GetBundlePath(frame.mapName);
     dfxMap->elf = elf;
     dfxMaps_->AddMap(dfxMap);
     if (!elf->IsValid()) {
