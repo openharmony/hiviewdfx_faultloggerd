@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,27 +24,19 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-
-enum class EpollManagerType {
-    MAIN_SERVER,
-    HELPER_SERVER,
-};
 class FaultLoggerDaemon {
 public:
     FaultLoggerDaemon(const FaultLoggerDaemon&) = delete;
     FaultLoggerDaemon(FaultLoggerDaemon&&) = delete;
-
     FaultLoggerDaemon &operator=(const FaultLoggerDaemon&) = delete;
     FaultLoggerDaemon &operator=(FaultLoggerDaemon&&) = delete;
 
     static FaultLoggerDaemon& GetInstance();
-    int32_t StartServer();
-    static EpollManager& GetEpollManager(EpollManagerType type);
+    bool InitMainServer();
+    bool InitHelperServer();
 private:
-    FaultLoggerDaemon();
-    ~FaultLoggerDaemon();
-    EpollManager mainEpollManager_;
-    EpollManager secondaryEpollManager_;
+    FaultLoggerDaemon() = default;
+    ~FaultLoggerDaemon() = default;
     SocketServer mainServer_;
     TempFileManager tempFileManager_;
 };

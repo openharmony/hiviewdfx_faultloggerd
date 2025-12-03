@@ -42,7 +42,7 @@ void CoredumpTaskScheduler::ScheduleCancelTime(SessionId sessionId, int timeoutM
     auto delayTask = TimerTaskAdapter::CreateInstance(removeTask, delaySec);
     if (delayTask) {
         session->timerFd = delayTask->GetFd();
-        FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).AddListener(std::move(delayTask));
+        EpollManager::GetInstance().AddListener(std::move(delayTask));
     }
 }
 
@@ -53,7 +53,7 @@ void CoredumpTaskScheduler::CancelTimeout(SessionId sessionId)
         return;
     }
 
-    FaultLoggerDaemon::GetEpollManager(EpollManagerType::MAIN_SERVER).RemoveListener(session->timerFd);
+    EpollManager::GetInstance().RemoveListener(session->timerFd);
 }
 }
 }

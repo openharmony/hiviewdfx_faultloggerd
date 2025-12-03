@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <thread>
 
 #include "fault_logger_daemon.h"
 
@@ -37,7 +39,18 @@ int main(int argc, char *argv[])
     DFX_GetCrashFdFunc(DoGetCrashFd);
     DFX_InstallLocalSignalHandler();
 #endif
-    auto& faultLoggerDaemon = OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance();
-    faultLoggerDaemon.StartServer();
+    constexpr int32_t maxConnection = 30;
+    constexpr int32_t maxEpollEvent = 1024;
+    std::thread([] {
+        auto& helper = OHOS::HiviewDFX::EpollManager::GetInstance();
+        helper.Init(maxEpollEvent);
+        OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().InitHelperServer();
+        helper.StartEpoll(maxConnection);
+    }).detach();
+    auto& main = OHOS::HiviewDFX::EpollManager::GetInstance();
+    main.Init(maxEpollEvent);
+    OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().InitMainServer();
+    constexpr auto epollTimeoutInMilliseconds = 20 * 1000;
+    main.StartEpoll(maxConnection, epollTimeoutInMilliseconds);
     return 0;
 }

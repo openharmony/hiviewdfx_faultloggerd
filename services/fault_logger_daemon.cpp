@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,8 +33,6 @@ namespace HiviewDFX {
 
 namespace {
 constexpr const char* const FAULTLOGGERD_DAEMON_TAG = "FAULT_LOGGER_DAEMON";
-constexpr int32_t MAX_CONNECTION = 30;
-constexpr int32_t MAX_EPOLL_EVENT = 1024;
 }
 
 FaultLoggerDaemon& FaultLoggerDaemon::GetInstance()
@@ -43,62 +41,32 @@ FaultLoggerDaemon& FaultLoggerDaemon::GetInstance()
     return faultLoggerDaemon;
 }
 
-FaultLoggerDaemon::FaultLoggerDaemon() : mainServer_(mainEpollManager_), tempFileManager_(secondaryEpollManager_)
+bool FaultLoggerDaemon::InitMainServer()
 {
-    if (!mainEpollManager_.Init(MAX_EPOLL_EVENT)) {
-        DFXLOGE("%{public}s :: Failed to init main epollManager", FAULTLOGGERD_DAEMON_TAG);
-        return;
-    }
-    if (!secondaryEpollManager_.Init(MAX_EPOLL_EVENT)) {
-        DFXLOGE("%{public}s :: Failed to init secondary epollManager", FAULTLOGGERD_DAEMON_TAG);
-        return;
-    }
     if (!mainServer_.Init()) {
         DFXLOGE("%{public}s :: Failed to init Faultloggerd Server", FAULTLOGGERD_DAEMON_TAG);
-        return;
+        return false;
     }
-    if (!tempFileManager_.Init()) {
-        DFXLOGE("%{public}s :: Failed to init tempFileManager", FAULTLOGGERD_DAEMON_TAG);
-        return;
-    }
-#ifndef is_ohos_lite
-    if (OHOS::HiviewDFX::IsBetaVersion()) {
-        secondaryEpollManager_.AddListener(std::make_unique<ReadKernelSnapshotTask>());
-    }
-#endif
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR || signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
         DFXLOGE("%{public}s :: Failed to signal SIGCHLD or SIGPIPE, errno: %{public}d",
             FAULTLOGGERD_DAEMON_TAG, errno);
     }
+    return true;
 }
 
-FaultLoggerDaemon::~FaultLoggerDaemon()
+bool FaultLoggerDaemon::InitHelperServer()
 {
-    mainEpollManager_.StopEpoll();
-    secondaryEpollManager_.StopEpoll();
-}
-
-int32_t FaultLoggerDaemon::StartServer()
-{
-    std::thread([this] {
-        pthread_setname_np(pthread_self(), "HelperServer");
-        secondaryEpollManager_.StartEpoll(MAX_CONNECTION);
-    }).detach();
-#ifdef FAULTLOGGERD_TEST
-    constexpr auto epollTimeoutInMilliseconds = 3 * 1000;
-#else
-    constexpr auto epollTimeoutInMilliseconds = 20 * 1000;
-#endif
-    mainEpollManager_.StartEpoll(MAX_CONNECTION, epollTimeoutInMilliseconds);
-    return 0;
-}
-
-EpollManager& FaultLoggerDaemon::GetEpollManager(EpollManagerType type)
-{
-    if (type == EpollManagerType::MAIN_SERVER) {
-        return GetInstance().mainEpollManager_;
+    pthread_setname_np(pthread_self(), "HelperServer");
+    if (!tempFileManager_.Init()) {
+        DFXLOGE("%{public}s :: Failed to init tempFileManager", FAULTLOGGERD_DAEMON_TAG);
+        return false;
     }
-    return GetInstance().secondaryEpollManager_;
+#ifndef is_ohos_lite
+    if (OHOS::HiviewDFX::IsBetaVersion()) {
+        EpollManager::GetInstance().AddListener(std::make_unique<ReadKernelSnapshotTask>());
+    }
+#endif
+    return true;
 }
 }
 }

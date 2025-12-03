@@ -103,7 +103,8 @@
       "overFileSizeAction": "DELETE",
       "keepFileCount": 1,
       "maxFileCount": 1,
-      "fileExistTimeInSecond": 1296000
+      "fileExistTimeInSecond": 1296000,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }
