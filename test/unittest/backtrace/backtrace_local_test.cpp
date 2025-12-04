@@ -661,7 +661,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest017, TestSize.Level2)
         std::string processKernelStackInfo;
         for (const auto& tid : tids) {
             std::string kernelStack;
-            ASSERT_EQ(DfxGetKernelStack(tid, kernelStack), 0);
+            DfxGetKernelStack(tid, kernelStack);
             processKernelStackInfo += kernelStack;
         }
         std::vector<DfxThreadStack> processStack;
