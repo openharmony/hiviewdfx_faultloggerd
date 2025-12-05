@@ -253,6 +253,7 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
     size_t  leftSize = size;
     while (leftSize > 0) {
         if (currentAddr >= UINTPTR_MAX) {
+            DFXLOGE("currentAddr is over the max uintptr_t value");
             break;
         }
         uintptr_t misalign = currentAddr & static_cast<uint64_t>(getpagesize() - 1);
@@ -262,6 +263,7 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
             .iov_len = iovLen,
         };
         if (__builtin_add_overflow(currentAddr, iovLen, &currentAddr)) {
+            DFXLOGE("currentAddr is overflowed");
             break;
         }
         remoteIovs.emplace_back(remoteIov);
@@ -271,6 +273,7 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
             dataIov.iov_len = size - totalReadSize;
             ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], IOV_MAX, 0);
             if (readCount == -1) {
+                DFXLOGE("process_vm_readv failed, pid(%{public}d), errno(%{public}d)", pid, errno);
                 return totalReadSize;
             }
             totalReadSize += static_cast<size_t>(readCount);

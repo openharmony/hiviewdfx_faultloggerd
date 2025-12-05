@@ -215,8 +215,8 @@ bool DfxHap::ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map)
     abcDataPtr_ = std::make_unique<uint8_t[]>(abcDataSize_);
     auto size = ReadProcMemByPid(pid, map->begin, abcDataPtr_.get(), abcDataSize_);
     if (size != abcDataSize_) {
-        DFXLOGW("ReadProcMemByPid(%{public}d) return size(%{public}zu), real size(%{public}zu)",
-            pid, size, abcDataSize_);
+        DFXLOGW("ReadProcMemByPid(%{public}d) return size(%{public}zu), real size(%{public}zu), name:%{public}s",
+            pid, size, abcDataSize_, map->name.c_str());
         abcDataPtr_ = nullptr;
         return false;
     }
