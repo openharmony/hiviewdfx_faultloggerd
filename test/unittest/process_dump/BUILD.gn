@@ -87,7 +87,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump/lperf/lperf_events.cpp",
       "dfx_processdump_test.cpp",
       "dump_info_header_test.cpp",
-      "dump_utils_test.cpp",
       "fault_stack_test.cpp",
       "lperf_event_record_test.cpp",
       "lperf_events_test.cpp",
@@ -100,6 +99,9 @@ if (defined(ohos_lite)) {
       "registers_test.cpp",
       "thread_dump_info_test.cpp",
     ]
+    if (processdump_parse_lock_owner_enable) {
+      sources += [ "dump_utils_test.cpp" ]
+    }
 
     if (target_cpu == "arm64") {
       sources += [
