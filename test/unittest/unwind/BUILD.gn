@@ -187,7 +187,7 @@ ohos_unittest("test_dwarf") {
 
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
-    "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_base",
   ]
 
