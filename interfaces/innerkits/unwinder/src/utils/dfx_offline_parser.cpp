@@ -19,6 +19,7 @@
 #include "dfx_hap.h"
 #include "dfx_log.h"
 #include "dfx_symbols.h"
+#include "dfx_trace_dlsym.h"
 #include "elf_factory.h"
 #include "string_util.h"
 #include "unwinder_config.h"
@@ -60,6 +61,7 @@ DfxOfflineParser::~DfxOfflineParser()
 
 bool DfxOfflineParser::ParseSymbolWithFrame(DfxFrame& frame)
 {
+    DFX_TRACE_SCOPED_DLSYM("ParseSymbolWithFrame:%s", frame.mapName.c_str());
     counter_.Reset();
     bool result = IsJsFrame(frame) ? ParseJsSymbol(frame) : ParseNativeSymbol(frame);
     auto costTime = counter_.Elapsed<std::chrono::milliseconds>();

@@ -57,6 +57,11 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
     }
     std::vector<DfxFrame> frames{};
     bool ret = false;
+    ProcessInfo info;
+    std::string processInfoStr = "";
+    if (ParseProcInfo(tid, info)) {
+        processInfoStr = FomatProcessInfoToString(info) + "\n";
+    }
     if (unwinder) {
         BacktraceLocalThread thread(tid);
         ret = thread.UnwindOtherThreadMix(*unwinder, fast, maxFrameNums, skipFrameNum + 1);
@@ -76,7 +81,7 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
     }
     if (ret) {
         std::string threadHead = GetThreadHead(tid);
-        out = threadHead + Unwinder::GetFramesStr(frames);
+        out = threadHead + processInfoStr + Unwinder::GetFramesStr(frames);
     }
     return ret;
 #endif

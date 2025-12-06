@@ -16,6 +16,7 @@
 #ifndef PROC_UTIL_H
 #define PROC_UTIL_H
 
+#include <cstdint>
 #include <string>
 
 namespace OHOS {
@@ -48,18 +49,6 @@ enum class ThreadState : char {
     IDLE = 'I', // Idle (Linux 4.14 onward)
 };
 
-class ThreadInfo {
-public:
-    bool ParserThreadInfo(pid_t tid);
-    std::string ToString() const;
-
-    ThreadState state_{ThreadState::UNKNOWM};
-    uint64_t utime_{0};
-    uint64_t stime_{0};
-    int64_t cutime_{0};
-    Schedstat schedstat_;
-};
-
 constexpr int TASK_COMM_LEN = 16;
 
 struct ProcessInfo {
@@ -86,9 +75,11 @@ std::string ThreadStateToString(ThreadState state);
 bool ParseStat(const std::string& statPath, ProcessInfo& info);
 bool ParseProcInfo(pid_t pid, ProcessInfo& info);
 bool ParseThreadInfo(pid_t tid, ProcessInfo& info);
+std::string FomatProcessInfoToString(const ProcessInfo& info);
 std::string GetFirstNumberSeq(const std::string& cont);
 bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk);
 bool IsSigDumpMask(uint64_t sigBlk);
+uint64_t GetClkTck();
 } // namespace Dfx
 } // namespace OHOS
 #endif // PROC_UTIL_H

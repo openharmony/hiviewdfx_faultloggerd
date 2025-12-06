@@ -26,10 +26,13 @@
 #include "dfx_define.h"
 #include "dfx_dump_catcher.h"
 #include "dfx_json_formatter.h"
+#include "dfx_kernel_stack.h"
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
+#include "json/json.h"
 #include "kernel_stack_async_collector.h"
+#include "proc_util.h"
 #include "procinfo.h"
 
 using namespace testing;
@@ -135,6 +138,82 @@ static void ForkMultiThreadProcess(void)
         g_processId = pid;
         GTEST_LOG_(INFO) << "ForkMultiThreadProcess success, pid: " << pid;
     }
+}
+
+static std::string RemoveJsonStackSymbol(const std::string& jsonStack)
+{
+    Json::Reader reader;
+    Json::Value threads;
+    if (!(reader.parse(jsonStack, threads))) {
+        GTEST_LOG_(ERROR) << "Failed to parse json stack info.";
+        return "";
+    }
+    for (uint32_t i = 0; i < threads.size(); ++i) {
+        Json::Value& thread = threads[i];
+        EXPECT_TRUE(thread["state"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["utime"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["stime"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["priority"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["nice"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread.isMember("frames"));
+        EXPECT_TRUE(thread["frames"].isArray());
+
+        Json::Value& frames = thread["frames"];
+        for (uint32_t j = 0; j < frames.size(); ++j) {
+            std::string frameStr = "";
+            if (frames[j].isMember("line")) {
+                continue;
+            }
+            frames[j]["buildId"] = "";
+            frames[j]["symbol"] = "";
+        }
+    }
+
+    Json::FastWriter writer;
+    return writer.write(threads);
+}
+
+static std::string JsonAsString(const Json::Value& val)
+{
+    if (val.isConvertibleTo(Json::stringValue)) {
+        return val.asString();
+    }
+    return "";
+}
+
+static bool CheckJsonStackSymbol(const std::string& jsonStack)
+{
+    Json::Reader reader;
+    Json::Value threads;
+    if (!(reader.parse(jsonStack, threads))) {
+        GTEST_LOG_(ERROR) << "Failed to parse json stack info.";
+        return false;
+    }
+    for (uint32_t i = 0; i < threads.size(); ++i) {
+        Json::Value& thread = threads[i];
+        EXPECT_TRUE(thread["state"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["utime"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["stime"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["priority"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread["nice"].isConvertibleTo(Json::stringValue));
+        EXPECT_TRUE(thread.isMember("frames"));
+        EXPECT_TRUE(thread["frames"].isArray());
+
+        const Json::Value& frames = thread["frames"];
+        for (uint32_t j = 0; j < frames.size(); ++j) {
+            std::string frameStr = "";
+            if (frames[j].isMember("line")) {
+                continue;
+            }
+            auto buildId = JsonAsString(frames[j]["buildId"]);
+            auto funcName = JsonAsString(frames[j]["symbol"]);
+            if (!buildId.empty() || !funcName.empty()) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -740,15 +819,53 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest030, TestSize.Level
     string stackMsg = "";
     bool formatRet = format.FormatJsonStack(jsonMsg, stackMsg);
     EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
-    size_t pos = msg.find("Process name:");
-    if (pos != std::string::npos) {
-        msg = msg.erase(0, pos);
-        msg = msg.erase(0, msg.find("\n") + 1);
-    } else {
-        msg = msg.erase(0, msg.find("\n") + 1);
-    }
+    size_t pos = msg.find("#00");
+    ASSERT_TRUE(pos != std::string::npos);
+    msg = msg.erase(0, pos);
+    pos = stackMsg.find("#00");
+    ASSERT_TRUE(pos != std::string::npos);
+    stackMsg = stackMsg.erase(0, pos);
     EXPECT_EQ(stackMsg == msg, true) << "stackMsg: " << stackMsg << "msg: " << msg << "stackMsg != msg";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest030: end.";
+}
+
+/**
+ * @tc.name: DumpCatcherInterfacesTest031
+ * @tc.desc: test FormatJsonStack API
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: start.";
+    int fd[2];
+    EXPECT_TRUE(CreatePipeFd(fd));
+    pid_t pid = fork();
+    if (pid == 0) {
+        NotifyProcStart(fd);
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        _exit(0);
+    }
+    WaitProcStart(fd);
+    GTEST_LOG_(INFO) << "dump remote process, "  << " pid:" << pid << ", tid:" << 0;
+    DfxDumpCatcher dumplog;
+    string msg = "";
+    bool ret = dumplog.DumpCatch(pid, 0, msg);
+    EXPECT_TRUE(ret) << "DumpCatch remote msg Failed.";
+    string jsonMsg = "";
+    bool jsonRet = dumplog.DumpCatch(pid, 0, jsonMsg, DEFAULT_MAX_FRAME_NUM, true);
+    std::cout << jsonMsg << std::endl;
+    EXPECT_TRUE(jsonRet) << "DumpCatch remote json Failed.";
+
+    auto jsonStack = RemoveJsonStackSymbol(jsonMsg);
+    EXPECT_TRUE(!jsonStack.empty());
+    ASSERT_FALSE(CheckJsonStackSymbol(jsonStack));
+
+    string stackMsg = "";
+    DfxJsonFormatter format;
+    bool formatRet = format.FormatJsonStack(jsonStack, stackMsg, true, "");
+    EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: stackMsg : " << stackMsg;
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
 }
 #endif
 
@@ -1075,6 +1192,28 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
 #if defined(__aarch64__)
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+
+    // get kernel stack
+    ASSERT_EQ(DfxGetKernelStack(gettid(), msg), 0);
+
+    // not thread stat
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
+    GTEST_LOG_(INFO) << "formattedStack is not json :\n" << formattedStack;
+    ASSERT_FALSE(formattedStack.empty());
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+    GTEST_LOG_(INFO) << "formattedStack is json :\n" << formattedStack;
+    ASSERT_EQ(formattedStack, std::string("null\n"));
+
+    // get thread stat
+    ProcessInfo info;
+    ASSERT_TRUE(ParseProcInfo(gettid(), info));
+    msg.append(FomatProcessInfoToString(info)).append("\n");
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
+    GTEST_LOG_(INFO) << "formattedStack is not json :\n" << formattedStack;
+    ASSERT_FALSE(formattedStack.empty());
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+    GTEST_LOG_(INFO) << "formattedStack is json :\n" << formattedStack;
+    ASSERT_FALSE(formattedStack.empty());
 #endif
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: end.";
 }

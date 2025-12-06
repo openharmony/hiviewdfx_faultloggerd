@@ -29,18 +29,25 @@
 #include "dfx_ptrace.h"
 #include "dfx_util.h"
 #include "dump_utils.h"
+#include "proc_util.h"
 #include "procinfo.h"
 namespace OHOS {
 namespace HiviewDFX {
-std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid)
+std::shared_ptr<DfxThread> DfxThread::Create(pid_t pid, pid_t tid, pid_t nsTid, bool readStat)
 {
-    auto thread = std::make_shared<DfxThread>(pid, tid, nsTid);
+    auto thread = std::make_shared<DfxThread>(pid, tid, nsTid, readStat);
     return thread;
 }
 
-DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid) : regs_(nullptr)
+DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, bool readStat) : regs_(nullptr)
 {
     InitThreadInfo(pid, tid, nsTid);
+
+    if (readStat) {
+        std::string path = "/proc/" + std::to_string(tid) + "/stat";
+        processInfo_ = std::make_shared<ProcessInfo>();
+        ParseStat(path, *processInfo_);
+    }
 }
 
 void DfxThread::InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid)
@@ -90,6 +97,9 @@ std::string DfxThread::ToString(bool needPrintTid) const
         dumpThreadInfo += "Thread name:" + threadInfo_.threadName + "\n";
     }
 
+    if (processInfo_) {
+        dumpThreadInfo += FomatProcessInfoToString(*processInfo_) + "\n";
+    }
     dumpThreadInfo += DumpUtils::GetStackTrace(frames_);
 
     if (!submitterFrames_.empty()) {

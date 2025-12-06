@@ -250,7 +250,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest004, TestSize.Level2)
     DfxProcess process;
     process.InitProcessInfo(pid, nsPid, getuid(), "");
     process.SetVmPid(pid);
-    process.InitOtherThreads(0);
+    process.InitOtherThreads(request);
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     OtherThreadDumpInfo dumpInfo;
@@ -292,7 +292,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest005, TestSize.Level2)
     DfxProcess process;
     process.InitProcessInfo(pid, nsPid, getuid(), "");
     process.SetVmPid(pid);
-    process.InitOtherThreads(0);
+    process.InitOtherThreads(request);
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     OtherThreadDumpInfo dumpInfo;
@@ -334,7 +334,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest006, TestSize.Level2)
     process.InitKeyThread(request);
     process.SetVmPid(pid);
     process.GetKeyThread()->SetThreadRegs(DfxRegs::CreateRemoteRegs(pid)); // can not get context, so create regs self
-    process.InitOtherThreads(pid);
+    process.InitOtherThreads(request);
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     std::shared_ptr<DumpInfo> keyThreadDumpInfo = std::make_shared<KeyThreadDumpInfo>();

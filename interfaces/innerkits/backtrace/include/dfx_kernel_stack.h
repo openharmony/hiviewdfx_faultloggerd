@@ -24,6 +24,7 @@ namespace OHOS {
 namespace HiviewDFX {
 struct DfxThreadStack {
     std::string threadName = "";
+    std::string threadStat = "";
     long int tid = 0;
     std::vector<DfxFrame> frames;
 };

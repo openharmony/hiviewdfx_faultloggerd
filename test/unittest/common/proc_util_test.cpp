@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <unistd.h>
 #include "csignal"
 #include "proc_util.h"
 
@@ -310,6 +311,44 @@ HWTEST(ProcUtilTest, ParsePidStatus013, TestSize.Level2)
     EXPECT_TRUE(sigBlk ==  (1 << (SIGQUIT -1)));
 
     sigprocmask(SIG_UNBLOCK, &sigSet, nullptr);
+}
+
+/**
+ * @tc.name: GetClkTckTest001
+ * @tc.desc: check GetClkTck.
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, GetClkTckTest001, TestSize.Level2)
+{
+    ASSERT_GT(GetClkTck(), 0);
+}
+
+/**
+ * @tc.name: FomatProcessInfoToStringTest001
+ * @tc.desc: check FomatProcessInfoToString.
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, FomatProcessInfoToStringTest001, TestSize.Level2)
+{
+    ProcessInfo info = {
+        .state = ThreadState::RUNNING,
+        .utime = 12345,
+        .stime = 1234,
+        .priority = -1,
+        .nice = 20,
+    };
+    auto result = FomatProcessInfoToString(info);
+    ASSERT_FALSE(result.empty());
+    std::string expect("state=R, utime=12345, stime=1234, priority=-1, nice=20, clk=");
+    ASSERT_EQ(result.compare(0, expect.length(), expect), 0);
+
+    info.state = ThreadState::SLEEP;
+    info.priority = 10;
+    info.nice = -10;
+    result = FomatProcessInfoToString(info);
+    ASSERT_FALSE(result.empty());
+    expect = "state=S, utime=12345, stime=1234, priority=10, nice=-10, clk=";
+    ASSERT_EQ(result.compare(0, expect.length(), expect), 0);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

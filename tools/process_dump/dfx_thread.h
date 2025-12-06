@@ -25,6 +25,7 @@
 #include "dfx_frame.h"
 #include "dfx_maps.h"
 #include "dfx_regs.h"
+#include "proc_util.h"
 #include "unwinder.h"
 
 namespace OHOS {
@@ -39,8 +40,8 @@ struct DfxThreadInfo {
 
 class DfxThread {
 public:
-    static std::shared_ptr<DfxThread> Create(pid_t pid, pid_t tid, pid_t nsTid);
-    DfxThread(pid_t pid, pid_t tid, pid_t nsTid);
+    static std::shared_ptr<DfxThread> Create(pid_t pid, pid_t tid, pid_t nsTid, bool readStat = false);
+    DfxThread(pid_t pid, pid_t tid, pid_t nsTid, bool readStat = false);
     virtual ~DfxThread();
 
     std::shared_ptr<DfxRegs> GetThreadRegs() const;
@@ -66,6 +67,11 @@ public:
     void Detach();
     bool Attach(int timeout = PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
     void SetParseSymbolNecessity(bool needParseSymbol);
+    const std::shared_ptr<ProcessInfo> GetProcessInfo() const
+    {
+        return processInfo_;
+    }
+
 private:
     enum class ThreadStatus {
         THREAD_STATUS_INVALID = -1,
@@ -81,6 +87,7 @@ private:
     std::vector<DfxFrame> frames_;
     std::vector<DfxFrame> submitterFrames_;
     bool needParseSymbol_ = true;
+    std::shared_ptr<ProcessInfo> processInfo_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

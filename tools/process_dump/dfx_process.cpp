@@ -50,7 +50,7 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request)
 {
     pid_t nsTid = request.tid;
     pid_t tid = ChangeTid(nsTid, true);
-    keyThread_ = DfxThread::Create(processInfo_.pid, tid, nsTid);
+    keyThread_ = DfxThread::Create(processInfo_.pid, tid, nsTid, request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
     if (!keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
         DFXLOGE("Failed to attach key thread(%{public}d).", nsTid);
         ReportCrashException(CrashExceptionCode::CRASH_DUMP_EATTACH);
@@ -68,7 +68,7 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request)
         DFXLOGE("dumpCatchTargetTid(%{public}d).", dumpCatchTargetTid);
         if (dumpCatchTargetTid != tid) {
             otherThreads_.emplace_back(keyThread_);
-            keyThread_ = DfxThread::Create(processInfo_.pid, dumpCatchTargetTid, dumpCatchTargetTid);
+            keyThread_ = DfxThread::Create(processInfo_.pid, dumpCatchTargetTid, dumpCatchTargetTid, true);
             if (keyThread_ != nullptr && keyThread_->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
                 keyThread_->SetThreadRegs(DfxRegs::CreateRemoteRegs(dumpCatchTargetTid));
             }
@@ -77,7 +77,7 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request)
     return true;
 }
 
-bool DfxProcess::InitOtherThreads(pid_t requestTid)
+bool DfxProcess::InitOtherThreads(const ProcessDumpRequest& request)
 {
     std::vector<int> tids;
     std::vector<int> nstids;
@@ -90,10 +90,11 @@ bool DfxProcess::InitOtherThreads(pid_t requestTid)
     }
     for (size_t i = 0; i < nstids.size(); ++i) {
         // KeyThread and requestThread have been initialized, skip directly
-        if ((nstids[i] == keyThreadNsTid) || nstids[i] == requestTid) {
+        if ((nstids[i] == keyThreadNsTid) || nstids[i] == request.tid) {
             continue;
         }
-        auto thread = DfxThread::Create(processInfo_.pid, tids[i], nstids[i]);
+        auto thread = DfxThread::Create(processInfo_.pid, tids[i], nstids[i],
+            request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
         if (thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
             thread->SetThreadRegs(DfxRegs::CreateRemoteRegs(thread->GetThreadInfo().nsTid));
         }

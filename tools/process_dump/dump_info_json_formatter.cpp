@@ -105,6 +105,7 @@ void DumpInfoJsonFormatter::GetDumpJsonFormatInfo(DfxProcess& process, Json::Val
     } else {
         thread["thread_name"] = process.GetKeyThread()->GetThreadInfo().threadName;
         thread["tid"] = process.GetKeyThread()->GetThreadInfo().tid;
+        FillThreadstatInfo(thread, process.GetKeyThread()->GetProcessInfo());
         FillFramesJson(process.GetKeyThread()->GetFrames(), frames);
     }
     thread["frames"] = frames;
@@ -125,6 +126,7 @@ void DumpInfoJsonFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxT
             Json::Value threadJson;
             threadJson["thread_name"] = oneThread->GetThreadInfo().threadName;
             threadJson["tid"] = oneThread->GetThreadInfo().tid;
+            FillThreadstatInfo(threadJson, oneThread->GetProcessInfo());
             Json::Value framesJson(Json::arrayValue);
             FillFramesJson(oneThread->GetFrames(), framesJson);
             threadJson["frames"] = framesJson;
@@ -179,6 +181,19 @@ void DumpInfoJsonFormatter::FillNativeFrameJson(const DfxFrame& frame, Json::Val
     frameJson["file"] = strippedMapName;
     frameJson["buildId"] = frame.buildId;
     jsonInfo.append(frameJson);
+}
+
+void DumpInfoJsonFormatter::FillThreadstatInfo(Json::Value& jsonInfo, const std::shared_ptr<ProcessInfo> info)
+{
+    if (info == nullptr) {
+        return;
+    }
+    jsonInfo["state"] = std::string(1, static_cast<char>(info->state));
+    jsonInfo["utime"] = info->utime;
+    jsonInfo["stime"] = info->stime;
+    jsonInfo["priority"] = info->priority;
+    jsonInfo["nice"] = info->nice;
+    jsonInfo["clk"] = GetClkTck();
 }
 #endif
 } // namespace HiviewDFX
