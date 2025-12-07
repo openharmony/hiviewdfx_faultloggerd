@@ -24,6 +24,17 @@
 extern "C" {
 #endif
 
+static const char* const FAULTLOGGERD_SOCK_BASE_PATH = "/dev/unix/socket/";
+#ifdef FAULTLOGGERD_TEST
+static const char* const SERVER_SOCKET_NAME = "test.faultloggerd.server";
+static const char* const SERVER_CRASH_SOCKET_NAME = "test.faultloggerd.crash.server";
+static const char* const SERVER_SDKDUMP_SOCKET_NAME = "test.faultloggerd.sdkdump.server";
+#else
+static const char* const SERVER_SOCKET_NAME = "faultloggerd.server";
+static const char* const SERVER_CRASH_SOCKET_NAME = "faultloggerd.crash.server";
+static const char* const SERVER_SDKDUMP_SOCKET_NAME = "faultloggerd.sdkdump.server";
+#endif
+
 /**
  * @brief  type of request
  *
@@ -80,6 +91,10 @@ typedef enum FaultLoggerClientType : int8_t {
     COREDUMP_PROCESS_DUMP_CLIENT,
     /** For request liteperf file descriptor of pipe */
     PIPE_FD_LITEPERF_CLIENT,
+    /** For request to exec limited processdump */
+    LIMITED_PROCESS_DUMP_CLIENT,
+    /** For request limited process file descriptor of pipe */
+    PIPE_FD_LIMITED_CLIENT,
 } FaultLoggerClientType;
 
 typedef struct RequestDataHead {

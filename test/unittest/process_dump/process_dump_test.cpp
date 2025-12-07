@@ -29,6 +29,7 @@
 #include "process_dumper.h"
 #include "dfx_util.h"
 #include "dfx_test_util.h"
+#include "lite_process_dumper.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -36,12 +37,22 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
+int g_pipeFd[] = {-1, -1};
 class ProcessDumpTest : public testing::Test {
 public:
     static void SetUpTestCase(void) {}
     static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
+    void SetUp()
+    {
+        pipe(g_pipeFd);
+        int newSize = 1024 * 1024; // 1MB
+        fcntl(g_pipeFd[PIPE_WRITE], F_SETPIPE_SZ, newSize);
+    }
+    void TearDown()
+    {
+        ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+        ClosePipeFd(g_pipeFd[PIPE_READ]);
+    }
 };
 } // namespace HiviewDFX
 } // namespace OHOS
@@ -205,4 +216,116 @@ HWTEST_F (ProcessDumpTest, DfxThreadTest002, TestSize.Level2)
     EXPECT_EQ(true, inputrefs == outputrefs) << "DfxThreadTest002 Failed";
     GTEST_LOG_(INFO) << "DfxThreadTest002: end.";
 }
+
+#if defined(__aarch64__)
+/**
+ * @tc.name: LiteProcessDumpTest001
+ * @tc.desc: test DfxThread GetThreadRegs
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest001: start.";
+    LiteProcessDumper liteDumper;
+    liteDumper.Dump(0);
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest001: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest002
+ * @tc.desc: test ReadRequest
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest002: start.";
+    LiteProcessDumper liteDumper;
+    ProcessDumpRequest request;
+    request.pid = 9999;
+    write(g_pipeFd[PIPE_WRITE], &request, sizeof(request));
+    liteDumper.ReadRequest(g_pipeFd[PIPE_READ]);
+    EXPECT_EQ(liteDumper.request_.pid, 9999);
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest002: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest003
+ * @tc.desc: test LiteDump ReadStat
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest003: start.";
+    LiteProcessDumper liteDumper;
+    char stat[PROC_STAT_BUF_SIZE] = "3197 (ohos.sceneboard) S 631 1 1 0 0 0 287275 287275 286258 286258 30159 0 0 0"
+                        " -14 -10 30 0 "
+                        "1278 39994892288 147148 0 0 0 545876298272 0 0 0 0 0 0 0 9 0 0 1 13 1 0 0 0 368254310288 "
+                        "368254317648 383078469632 545876298954 545876299229 545876299229 545876299728 0 0";
+    EXPECT_TRUE(g_pipeFd[PIPE_WRITE] > 0 && g_pipeFd[PIPE_READ] > 0);
+    EXPECT_EQ(write(g_pipeFd[PIPE_WRITE], stat, sizeof(stat)), sizeof(stat));
+    liteDumper.ReadStat(g_pipeFd[PIPE_READ]);
+    EXPECT_EQ(liteDumper.stat_, std::string(stat));
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest003: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest004
+ * @tc.desc: test LiteDump ReadStatm
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest004: start.";
+    LiteProcessDumper liteDumper;
+    char statm[PROC_STATM_BUF_SIZE] = "9765969 146791 69282 17 0 141771 0";
+    write(g_pipeFd[PIPE_WRITE], statm, sizeof(statm));
+    liteDumper.ReadStatm(g_pipeFd[PIPE_READ]);
+    EXPECT_EQ(liteDumper.statm_, std::string(statm));
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest004: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest005
+ * @tc.desc: test liteDump ReadStack
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest005: start.";
+    LiteProcessDumper liteDumper;
+    std::string str = "test stack buf";
+    write(g_pipeFd[PIPE_WRITE], str.c_str(), str.length() + 1);
+    liteDumper.ReadStack(g_pipeFd[PIPE_READ]);
+    std::string s(liteDumper.stackBuf_.begin(), liteDumper.stackBuf_.end());
+    EXPECT_EQ(s.substr(0, str.length()), str);
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest005: end.";
+}
+/**
+ * @tc.name: LiteProcessDumpTest006
+ * @tc.desc: test LiteDump ReadMemory
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest006: start.";
+    LiteProcessDumper liteDumper;
+    constexpr int totalSize = 32 * 31 * 8 + 64 * 2 * 8;
+    char tmpStr[totalSize] = "test memory buf";
+    write(g_pipeFd[PIPE_WRITE], tmpStr, 50);
+    EXPECT_EQ(write(g_pipeFd[PIPE_WRITE], tmpStr, totalSize), totalSize);
+    write(g_pipeFd[PIPE_WRITE], tmpStr, 50);
+    ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+    ProcessDumpRequest request {};
+    liteDumper.ReadMemoryNearRegister(g_pipeFd[PIPE_READ], request);
+    auto& ins = MemoryNearRegisterUtil::GetInstance();
+    auto info = ins.blocksInfo_.front().content;
+
+    std::string s(info.begin(), info.end());
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest006: info" << s;
+
+    liteDumper.Unwind();
+    liteDumper.InitProcess();
+    liteDumper.PrintAll();
+}
+#endif
 }

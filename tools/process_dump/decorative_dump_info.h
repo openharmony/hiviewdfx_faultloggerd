@@ -125,11 +125,14 @@ public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<MemoryNearRegister>(); }
     void GetMemoryValues(std::set<uintptr_t>& memoryValues) override;
+    void SetLiteType(bool isLite) { isLite_ = isLite; }
 private:
     void CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxRegs> regs,
         std::shared_ptr<DfxMaps> maps, bool extendPcLrPrinting);
     void CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo) const;
+    void UpdateContentByLite(MemoryBlockInfo& blockInfo, int pos);
     std::vector<MemoryBlockInfo> registerBlocks_;
+    bool isLite_ {false};
 };
 
 class FaultStack : public DecorativeDumpInfo {
@@ -139,6 +142,7 @@ public:
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<FaultStack>(); }
     const std::vector<uintptr_t>& GetStackValues();
     void GetMemoryValues(std::set<uintptr_t>& memoryValues) override;
+    void SetLiteType(bool isLite) { isLite_ = isLite; }
 private:
     bool CreateBlockForCorruptedStack(pid_t tid, const std::vector<DfxFrame>& frames,
                                       uintptr_t prevEndAddr, uintptr_t size);
@@ -148,6 +152,7 @@ private:
     void CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo) const;
     std::vector<MemoryBlockInfo> blocks_;
     std::vector<uintptr_t> stackValues_;
+    bool isLite_ {false};
 };
 
 class Maps : public DecorativeDumpInfo {

@@ -20,17 +20,6 @@
 #include "smart_fd.h"
 namespace OHOS {
 namespace HiviewDFX {
-const char* const FAULTLOGGERD_SOCK_BASE_PATH = "/dev/unix/socket/";
-
-#ifdef FAULTLOGGERD_TEST
-const char* const SERVER_SOCKET_NAME = "test.faultloggerd.server";
-const char* const SERVER_CRASH_SOCKET_NAME = "test.faultloggerd.crash.server";
-const char* const SERVER_SDKDUMP_SOCKET_NAME = "test.faultloggerd.sdkdump.server";
-#else
-const char* const SERVER_SOCKET_NAME = "faultloggerd.server";
-const char* const SERVER_CRASH_SOCKET_NAME = "faultloggerd.crash.server";
-const char* const SERVER_SDKDUMP_SOCKET_NAME = "faultloggerd.sdkdump.server";
-#endif
 
 SmartFd StartListen(const char* name, uint32_t listenCnt);
 bool SendFileDescriptorToSocket(int32_t sockFd, const int32_t* fds, uint32_t nFds);

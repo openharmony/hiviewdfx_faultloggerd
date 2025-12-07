@@ -27,10 +27,10 @@ public:
     SafeReader(const SafeReader&) = delete;
     SafeReader& operator=(const SafeReader&) = delete;
 
-    NO_SANITIZE size_t CopyReadbaleBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen);
+    NO_SANITIZE size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen);
 
 private:
-    NO_SANITIZE bool IsReadbaleAddr(uintptr_t addr);
+    NO_SANITIZE bool IsReadableAddr(uintptr_t addr);
     static uintptr_t GetCurrentPageEndAddr(uintptr_t addr);
 
     int pfd_[PIPE_NUM_SZ] = {-1, -1};

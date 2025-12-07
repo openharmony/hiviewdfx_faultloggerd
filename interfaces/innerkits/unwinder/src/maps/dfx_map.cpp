@@ -39,6 +39,9 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxMap"
 
+const char* const MAP_ARKWEB_CORE_PREFIX = "/data/storage/el1/bundle/arkwebcore/";
+const char* const ARKWEB_CORE_REAL_PATH = "/data/app/el1/bundle/public/com.huawei.hmos.arkwebcore/";
+
 #if defined(is_ohos) && is_ohos
 AT_ALWAYS_INLINE const char* SkipWhiteSpace(const char *cp)
 {
@@ -400,6 +403,13 @@ void DfxMap::FormatMapName(pid_t pid, std::string& mapName)
     if (pid <= 0 || pid == getpid()) {
         return;
     }
+
+    // arkwebcore process get real path
+    if (StartsWith(mapName, MAP_ARKWEB_CORE_PREFIX)) {
+        mapName = ARKWEB_CORE_REAL_PATH + mapName.substr(strlen(MAP_ARKWEB_CORE_PREFIX));
+        return;
+    }
+
     // format sandbox file path, add '/proc/xxx/root' prefix
     if (StartsWith(mapName, "/data/storage/")) {
         mapName = "/proc/" + std::to_string(pid) + "/root" + mapName;

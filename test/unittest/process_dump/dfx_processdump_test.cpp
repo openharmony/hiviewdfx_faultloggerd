@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <vector>
 
+#include "dfx_buffer_writer.h"
 #include "dfx_define.h"
 #include "dfx_test_util.h"
 #include "dfx_util.h"
@@ -407,18 +408,19 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
 HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest018, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest018: start.";
-    ProcessDumper& ins = ProcessDumper::GetInstance();
-    ins.request_.type = ProcessDumpType::DUMP_TYPE_MEM_LEAK;
-    ASSERT_TRUE(ins.InitBufferWriter());
+    DfxBufferWriter& ins = DfxBufferWriter::GetInstance();
+    ProcessDumpRequest request {};
+    request.type = ProcessDumpType::DUMP_TYPE_MEM_LEAK;
+    ASSERT_TRUE(ins.InitBufferWriter(request));
 
-    ins.request_.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
-    ASSERT_TRUE(ins.InitBufferWriter());
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    ASSERT_TRUE(ins.InitBufferWriter(request));
 
-    ins.request_.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
-    ASSERT_FALSE(ins.InitBufferWriter());
+    request.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
+    ASSERT_FALSE(ins.InitBufferWriter(request));
 
-    ins.request_.type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
-    ins.WriteDumpResIfNeed(DumpErrorCode::DUMP_ESUCCESS);
+    auto& dumperIns = ProcessDumper::GetInstance();
+    dumperIns.WriteDumpResIfNeed(DumpErrorCode::DUMP_ESUCCESS);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest018: end.";
 }
 

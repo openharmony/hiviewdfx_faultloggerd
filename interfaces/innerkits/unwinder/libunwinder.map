@@ -10,6 +10,7 @@
       OHOS::HiviewDFX::Unwinder::IgnoreMixstack*;
       OHOS::HiviewDFX::Unwinder::SetRegs*;
       OHOS::HiviewDFX::Unwinder::GetRegs*;
+      OHOS::HiviewDFX::Unwinder::SetMaps*;
       OHOS::HiviewDFX::Unwinder::GetMaps*;
       OHOS::HiviewDFX::Unwinder::GetLastErrorCode*;
       OHOS::HiviewDFX::Unwinder::GetLastErrorAddr*;
@@ -111,6 +112,7 @@
       OHOS::HiviewDFX::LocalThreadContextMix::FindUnwindTable*;
       OHOS::HiviewDFX::LocalThreadContextMix::AccessMem*;
       OHOS::HiviewDFX::LocalThreadContextMix::CreateAccessors*;
+      OHOS::HiviewDFX::LocalThreadContextMix::CopyRegister*;
       OHOS::HiviewDFX::RegularElfFactory::Create*;
       OHOS::HiviewDFX::CompressHapElfFactory::Create*;
       OHOS::HiviewDFX::GetFileSize*;

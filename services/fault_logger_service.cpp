@@ -47,6 +47,8 @@ namespace HiviewDFX {
 
 namespace {
 constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULT_LOGGER_SERVICE";
+constexpr int ARKWEB_MIN_UID = 1000001;
+constexpr int ARKWEB_MAX_UID = 1099999;
 bool CheckCallerUID(uint32_t callerUid)
 {
     const uint32_t whitelist[] = {
@@ -495,6 +497,115 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
     }
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     SendFileDescriptorToSocket(connectionFd, fds, PIPE_NUM_SZ);
+    return responseData;
+}
+
+bool LiteProcDumperPipeService::Filter(const std::string &socketName, int32_t connectionFd,
+    const LitePerfFdRequestData &requestData)
+{
+    if (requestData.pipeType > FaultLoggerPipeType::PIPE_FD_DELETE ||
+        requestData.pipeType < FaultLoggerPipeType::PIPE_FD_READ) {
+        return false;
+    }
+    struct ucred creds{};
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return false;
+    }
+
+    constexpr uint32_t faultloggerdUid = 1202;
+    if (creds.uid == faultloggerdUid || (creds.uid >= ARKWEB_MIN_UID && creds.uid <= ARKWEB_MAX_UID)) {
+        return true;
+    }
+    DFXLOGW("Lite pipe failed to check request credential request:%{public}d, cred:%{public}d, fd:%{public}d",
+            requestData.uid, creds.uid, connectionFd);
+    return false;
+}
+
+int32_t LiteProcDumperPipeService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const LitePerfFdRequestData& requestData)
+{
+    DFX_TRACE_SCOPED("LimitedPipeServiceOnRequest");
+    if (!Filter(socketName, connectionFd, requestData)) {
+        return ResponseCode::REQUEST_REJECT;
+    }
+    int uid = static_cast<int>(requestData.uid);
+    int32_t responseData = ResponseCode::REQUEST_SUCCESS;
+    if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_DELETE) {
+        LimitedPipePair::DelPipePair(uid);
+        SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+        return responseData;
+    }
+
+    int32_t fd = {0};
+    if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
+        if (LimitedPipePair::CheckDumpRecord(uid)) {
+            DFXLOGE("%{public}s :: uid(%{public}d) is dumping.", FAULTLOGGERD_SERVICE_TAG, uid);
+            return ResponseCode::SDK_DUMP_REPEAT;
+        }
+        auto& pipePair = LimitedPipePair::CreatePipePair(uid);
+        fd = pipePair.GetPipeFd(FaultLoggerPipeType::PIPE_FD_WRITE);
+    } else if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
+        auto& pipePair = LimitedPipePair::CreatePipePair(uid);
+        fd = pipePair.GetPipeFd(FaultLoggerPipeType::PIPE_FD_READ);
+    }
+    if (fd < 0) {
+        DFXLOGE("%{public}s :: failed to get fd for pipeType(%{public}d).", FAULTLOGGERD_SERVICE_TAG,
+            requestData.pipeType);
+        return ResponseCode::ABNORMAL_SERVICE;
+    }
+    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+    SendFileDescriptorToSocket(connectionFd, &fd, 1);  //  Failed to send message, errno(9)
+    return responseData;
+}
+
+bool LiteProcDumperService::Filter(const std::string& socketName, int32_t connectionFd,
+    const FaultLoggerdRequest& requestData)
+{
+    struct ucred creds{};
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return false;
+    }
+
+    if (creds.uid < ARKWEB_MIN_UID || creds.uid > ARKWEB_MAX_UID) {
+        DFXLOGW("Lite dumper failed check request credential cred:%{public}d, fd:%{public}d", creds.uid, connectionFd);
+        return false;
+    }
+    return true;
+}
+
+void LaunchProcessDump(int uid)
+{
+    pid_t pid = fork();
+    if (pid == 0) {
+        pid_t childPid = fork();
+        if (childPid == 0) {
+            DFXLOGI("start launch processdump");
+            char uidStr[32]; // 32 : uid buf len
+            int ret = snprintf_s(uidStr, sizeof(uidStr), sizeof(uidStr) - 1, "%d", uid);
+            if (ret < 0) {
+                DFXLOGE("fill uid fail, not launch processdump %{public}d", ret);
+                _exit(0);
+            }
+            execl(PROCESSDUMP_PATH, "processdump", "-render", uidStr, NULL);
+        }
+        _exit(0);
+    }
+    waitpid(pid, nullptr, 0);
+}
+
+int32_t LiteProcDumperService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const FaultLoggerdRequest& requestData)
+{
+    DFXLOGI("onRequest receive start processdump");
+    DFX_TRACE_SCOPED("LimitedDumpServiceOnRequest");
+
+    if (!Filter(socketName, connectionFd, requestData)) {
+        return ResponseCode::REQUEST_REJECT;
+    }
+
+    LaunchProcessDump(requestData.pid); // notice real value is uid
+    int32_t responseData = ResponseCode::REQUEST_SUCCESS;
+    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     return responseData;
 }
 #endif

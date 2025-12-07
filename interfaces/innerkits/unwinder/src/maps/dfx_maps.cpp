@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cstring>
 #include <securec.h>
+#include <sstream>
 #include <unistd.h>
 #if is_mingw
 #include "dfx_nonlinux_define.h"
@@ -45,7 +46,7 @@ inline const std::string GetMapsFile(pid_t pid)
     if ((pid == 0) || (pid == getpid())) {
         path = std::string(PROC_SELF_MAPS_PATH);
     } else if (pid > 0) {
-        path = StringPrintf("/proc/%d/maps", (int)pid);
+        path = StringPrintf("/proc/%d/maps", static_cast<int>(pid));
     }
     return path;
 }
@@ -68,10 +69,19 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, bool crash)
     return nullptr;
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(const pid_t pid, const std::string& path)
+std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, const std::string& path)
 {
     auto dfxMaps = std::make_shared<DfxMaps>();
     if (dfxMaps->Parse(pid, path)) {
+        return dfxMaps;
+    }
+    return nullptr;
+}
+
+std::shared_ptr<DfxMaps> DfxMaps::CreateByBuffer(const pid_t pid, std::string& buffer)
+{
+    auto dfxMaps = std::make_shared<DfxMaps>();
+    if (dfxMaps->ParseByBuffer(pid, buffer)) {
         return dfxMaps;
     }
     return nullptr;
@@ -113,9 +123,8 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     std::shared_ptr<DfxMap> prevMap = nullptr;
     while (fgets(mapBuf, sizeof(mapBuf), fp) != nullptr) {
         fgetCount++;
-        auto map = std::make_shared<DfxMap>();
-        if (!map->Parse(mapBuf, sizeof(mapBuf))) {
-            DFXLOGU("Failed to parse map: %{public}s", mapBuf);
+        auto map = ParseMap(mapBuf, sizeof(mapBuf));
+        if (map == nullptr) {
             continue;
         }
         DfxMap::FormatMapName(pid, map->name);
@@ -123,17 +132,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
             map->prevMap = prevMap;
         }
         prevMap = map;
-        if (IsArkHapMapItem(map->name) || IsArkCodeMapItem(map->name)) {
-            AddMap(map, enableMapIndex_);
-            continue;
-        }
-        HandleSpecialMap(map);
-        if (onlyExec_ && !map->IsMapExec()) {
-            continue;
-        }
-        if ((!enableMapIndex_) || IsLegalMapItem(map->name, false)) {
-            AddMap(map, enableMapIndex_);
-        }
+        HandleMap(map);
     }
     (void)fclose(fp);
     if (fgetCount == 0) {
@@ -144,6 +143,66 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     DFXLOGU("parse maps(%{public}s) completed, map size: (%{public}zu), count: (%{public}d)",
         path.c_str(), mapsSize, fgetCount);
     return mapsSize > 0;
+}
+
+bool DfxMaps::ParseByBuffer(const pid_t pid, std::string& buffer)
+{
+    DFX_TRACE_SCOPED_DLSYM("ParseMaps buffer");
+    if (buffer == "") {
+        return false;
+    }
+    std::istringstream iss(buffer);
+    std::string line;
+    int fgetCount = 0;
+    while (std::getline(iss, line)) {
+        if (line == "OpenFiles:") {
+            DFXLOGI("find open file start, end prase_maps");
+            std::string rest;
+            rest.assign(std::istreambuf_iterator<char>(iss),
+                        std::istreambuf_iterator<char>());
+            buffer = rest;
+            break;
+        }
+        fgetCount++;
+        auto map = ParseMap(line.c_str(), line.size());
+        if (map == nullptr) {
+            continue;
+        }
+        DfxMap::FormatMapName(pid, map->name);
+        HandleMap(map);
+    }
+    if (fgetCount == 0) {
+        DFXLOGE("Failed to get maps(%{public}s), err(%{public}d).", buffer.c_str(), errno);
+        return false;
+    }
+    size_t mapsSize = GetMapsSize();
+    DFXLOGU("parse maps completed, map size: (%{public}zu), count: (%{public}d)", mapsSize, fgetCount);
+    return mapsSize > 0;
+}
+
+std::shared_ptr<DfxMap> DfxMaps::ParseMap(const char* buf, size_t size)
+{
+    auto map = std::make_shared<DfxMap>();
+    if (!map->Parse(buf, size)) {
+        DFXLOGU("Failed to parse map: %{public}s", buf);
+        return nullptr;
+    }
+    return map;
+}
+
+void DfxMaps::HandleMap(const std::shared_ptr<DfxMap>& map)
+{
+    if (IsArkHapMapItem(map->name) || IsArkCodeMapItem(map->name)) {
+        AddMap(map, enableMapIndex_);
+        return;
+    }
+    HandleSpecialMap(map);
+    if (onlyExec_ && !map->IsMapExec()) {
+        return;
+    }
+    if ((!enableMapIndex_) || IsLegalMapItem(map->name, false)) {
+        AddMap(map, enableMapIndex_);
+    }
 }
 
 void DfxMaps::HandleSpecialMap(const std::shared_ptr<DfxMap>& map)

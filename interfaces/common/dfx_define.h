@@ -17,6 +17,7 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #define SIGDUMP 35
 #define SIGLOCAL_DUMP 38
@@ -60,6 +61,16 @@ static const int DEFAULT_MAX_LOCAL_FRAME_NUM = 32;
 static const int PIPE_NUM_SZ = 2;
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
+
+static const int COMMON_REG_MEM_FORWARD_SIZE = 2;
+static const int SPECIAL_REG_MEM_FORWARD_SIZE = 31;
+static const int COMMON_REG_MEM_SIZE = 32;
+static const int SPECIAL_REG_MEM_SIZE = 64;
+
+static const int PROC_STAT_BUF_SIZE = 512;
+static const int PROC_STATM_BUF_SIZE = 512;
+static const int PRIV_STACK_FORWARD_BUF_SIZE = 32 * 8;  // 32 for print fault stack
+static const int PRIV_COPY_STACK_BUFFER_SIZE = 64 * 1024 + PRIV_STACK_FORWARD_BUF_SIZE;  // 64k for unwind stack
 
 static const char* const PROC_SELF_STATUS_PATH = "/proc/self/status";
 static const char* const PROC_SELF_TASK_PATH = "/proc/self/task";

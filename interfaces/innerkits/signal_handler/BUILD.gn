@@ -70,11 +70,15 @@ if (defined(ohos_lite)) {
       "dfx_dumprequest.c",
       "dfx_signal_handler.c",
       "dfx_signalhandler_exception.c",
+      "safe_reader.c",
+      "dfx_lite_dump_request.c",
     ]
 
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
+      "$faultloggerd_frameworks_path/limited:dfx_limited_src",
+      "$faultloggerd_frameworks_path/allocator:dfx_allocator_src",
     ]
 
     external_deps = [

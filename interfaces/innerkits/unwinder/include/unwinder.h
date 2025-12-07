@@ -52,6 +52,7 @@ public:
     void IgnoreMixstack(bool ignoreMixstack);
 
     void SetRegs(std::shared_ptr<DfxRegs> regs);
+    void SetMaps(std::shared_ptr<DfxMaps> maps);
     const std::shared_ptr<DfxRegs>& GetRegs() const;
 
     const std::shared_ptr<DfxMaps>& GetMaps() const;
