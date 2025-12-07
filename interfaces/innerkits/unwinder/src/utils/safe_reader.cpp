@@ -44,7 +44,7 @@ SafeReader::~SafeReader()
     }
 }
 
-NO_SANITIZE bool SafeReader::IsReadbaleAddr(uintptr_t addr)
+NO_SANITIZE bool SafeReader::IsReadableAddr(uintptr_t addr)
 {
     if (pfd_[PIPE_WRITE] < 0) {
         return false;
@@ -57,7 +57,7 @@ NO_SANITIZE bool SafeReader::IsReadbaleAddr(uintptr_t addr)
     return true;
 }
 
-NO_SANITIZE size_t SafeReader::CopyReadbaleBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen)
+NO_SANITIZE size_t SafeReader::CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen)
 {
     size_t copeSize = std::min(destLen, srcLen);
     uintptr_t currentPtr = srcPtr;
@@ -66,7 +66,7 @@ NO_SANITIZE size_t SafeReader::CopyReadbaleBufSafe(uintptr_t destPtr, size_t des
     while (currentPtr < srcEndPtr) {
         uintptr_t pageEndPtr = GetCurrentPageEndAddr(currentPtr);
         pageEndPtr = std::min(pageEndPtr, srcEndPtr);
-        if (!IsReadbaleAddr(currentPtr) || !IsReadbaleAddr(pageEndPtr - 1)) {
+        if (!IsReadableAddr(currentPtr) || !IsReadableAddr(pageEndPtr - 1)) {
             break;
         }
         while (currentPtr < pageEndPtr) {

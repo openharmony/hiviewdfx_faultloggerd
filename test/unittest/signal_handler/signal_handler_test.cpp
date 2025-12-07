@@ -36,6 +36,7 @@
 #include "dfx_signalhandler_exception.h"
 #include "dfx_test_util.h"
 #include "info/fatal_message.h"
+#include "dfx_lite_dump_request.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -43,6 +44,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
+int g_pipeFd[] = {-1, -1};
 class SignalHandlerTest : public testing::Test {
 public:
     static void SetUpTestCase();
@@ -51,17 +53,22 @@ public:
     void TearDown();
 };
 
-void SignalHandlerTest::SetUpTestCase()
-{}
+void SignalHandlerTest::SetUpTestCase() {}
 
-void SignalHandlerTest::TearDownTestCase()
-{}
+void SignalHandlerTest::TearDownTestCase() {}
 
 void SignalHandlerTest::SetUp()
-{}
+{
+    pipe(g_pipeFd);
+    int newSize = 1024 * 1024; // 1MB
+    fcntl(g_pipeFd[PIPE_WRITE], F_SETPIPE_SZ, newSize);
+}
 
 void SignalHandlerTest::TearDown()
-{}
+{
+    ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+    ClosePipeFd(g_pipeFd[PIPE_READ]);
+}
 
 static bool CheckCallbackCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {
@@ -1065,6 +1072,105 @@ HWTEST_F(SignalHandlerTest, SetCrashLogConfig003, TestSize.Level2)
 HWTEST_F(SignalHandlerTest, DfxNotifyWatchdogThreadStart001, TestSize.Level2)
 {
     EXPECT_TRUE(DfxNotifyWatchdogThreadStart() == 0);
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest001
+ * @tc.desc: add testcase liteDump mmap success
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest001, TestSize.Level2)
+{
+    EXPECT_GT(GetRealPid(), 0);
+    EXPECT_FALSE(IsNoNewPriv());
+    EXPECT_TRUE(MMapMemoryOnce());
+    ProcessDumpRequest request {};
+    UpdateSanBoxProcess(&request);
+    request.pid = getpid();
+    EXPECT_TRUE(CollectStat(&request));
+    EXPECT_TRUE(CollectStatm(&request));
+    EXPECT_TRUE(CollectStack(&request));
+    UnmapMemoryOnce();
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest002
+ * @tc.desc: add testcase liteDump not map
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest002, TestSize.Level2)
+{
+    ProcessDumpRequest request {};
+    UpdateSanBoxProcess(&request);
+    request.pid = getpid();
+    EXPECT_FALSE(CollectStat(&request));
+    EXPECT_FALSE(CollectStatm(&request));
+    EXPECT_FALSE(CollectStack(&request));
+    UnmapMemoryOnce();
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest003
+ * @tc.desc: add testcase liteDump lite carsh handler
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest003, TestSize.Level2)
+{
+    ProcessDumpRequest request {};
+    request.pid = getpid();
+    request.uid = 20000000;
+    EXPECT_FALSE(LiteCrashHandler(&request));
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest004
+ * @tc.desc: add test case liteDump NearRegisters
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest004, TestSize.Level2)
+{
+    ProcessDumpRequest request {};
+    request.pid = getpid();
+    EXPECT_TRUE(CollectMemoryNearRegisters(g_pipeFd[PIPE_WRITE], &request.context));
+    ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+    constexpr int totalSize = 50 * 2 + 32 * 31 * 8 + 64 * 2 * 8;
+    std::vector<uint8_t> vec(totalSize);
+    EXPECT_EQ(read(g_pipeFd[PIPE_READ], vec.data(), vec.size()), totalSize);
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest005
+ * @tc.desc: add test case liteDump maps
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest005, TestSize.Level2)
+{
+    EXPECT_TRUE(CollectMaps(g_pipeFd[PIPE_WRITE], PROC_SELF_MAPS_PATH)); // not contain MapsTag
+    ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+    std::string str;
+    char buf[LINE_BUF_SIZE];
+    while (read(g_pipeFd[PIPE_READ], buf, sizeof(buf)) > 0) {
+        str += buf;
+    }
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest006
+ * @tc.desc: add test case liteDump open files
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest006, TestSize.Level2)
+{
+    ProcessDumpRequest request {};
+    request.pid = getpid();
+    char buf[LINE_BUF_SIZE];
+    CollectOpenFiles(g_pipeFd[PIPE_WRITE], (uint64_t)fdsan_get_fd_table(), request.pid);
+    ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+    std::string str;
+    while (read(g_pipeFd[PIPE_READ], buf, sizeof(buf)) > 0) {
+        str += buf;
+    }
+    EXPECT_TRUE(str.find("OpenFiles") != std::string::npos);
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

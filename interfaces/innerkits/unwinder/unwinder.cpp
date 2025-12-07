@@ -155,6 +155,14 @@ public:
         firstFrameSp_ = regs_->GetSp();
     }
 
+    inline void SetMaps(const std::shared_ptr<DfxMaps> &maps)
+    {
+        if (maps == nullptr) {
+            return;
+        }
+        maps_ = maps;
+    }
+
     inline const std::shared_ptr<DfxRegs>& GetRegs() const
     {
         return regs_;
@@ -353,6 +361,11 @@ void Unwinder::IgnoreMixstack(bool ignoreMixstack)
 void Unwinder::SetRegs(std::shared_ptr<DfxRegs> regs)
 {
     impl_->SetRegs(regs);
+}
+
+void Unwinder::SetMaps(std::shared_ptr<DfxMaps> maps)
+{
+    impl_->SetMaps(maps);
 }
 
 const std::shared_ptr<DfxRegs>& Unwinder::GetRegs() const

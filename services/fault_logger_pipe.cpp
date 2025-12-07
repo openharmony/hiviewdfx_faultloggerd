@@ -23,7 +23,6 @@
 #include <fcntl.h>
 #include <securec.h>
 #include <unistd.h>
-
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -74,6 +73,7 @@ int FaultLoggerPipe::GetWriteFd()
 
 std::list<FaultLoggerPipePair> FaultLoggerPipePair::sdkDumpPipes_{};
 std::list<LitePerfPipePair> LitePerfPipePair::pipes_{};
+std::list<LimitedPipePair> LimitedPipePair::pipes_{};
 
 FaultLoggerPipePair::FaultLoggerPipePair(int32_t pid, uint64_t requestTime) : pid_(pid), requestTime_(requestTime) {}
 
@@ -184,6 +184,53 @@ LitePerfPipePair* LitePerfPipePair::GetPipePair(int uid)
 void LitePerfPipePair::DelPipePair(int uid)
 {
     pipes_.remove_if([uid](const LitePerfPipePair& pipePair) {
+        return pipePair.uid_ == uid;
+    });
+}
+
+LimitedPipePair::LimitedPipePair(int32_t uid) : uid_(uid) {}
+
+int32_t LimitedPipePair::GetPipeFd(FaultLoggerPipeType pipeType)
+{
+    if (pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
+        return faultLoggerPipeBuf_.GetReadFd();
+    }
+    if (pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
+        return faultLoggerPipeBuf_.GetWriteFd();
+    }
+    return -1;
+}
+
+LimitedPipePair& LimitedPipePair::CreatePipePair(int uid)
+{
+    auto pipePair = GetPipePair(uid);
+    if (pipePair != nullptr) {
+        return *pipePair;
+    }
+    return pipes_.emplace_back(uid);
+}
+
+bool LimitedPipePair::CheckDumpRecord(int uid)
+{
+    auto iter = std::find_if(pipes_.begin(), pipes_.end(),
+        [uid](const LimitedPipePair& pipePair) {
+            return pipePair.uid_ == uid;
+        });
+    return iter != pipes_.end();
+}
+
+LimitedPipePair* LimitedPipePair::GetPipePair(int uid)
+{
+    auto iter = std::find_if(pipes_.begin(), pipes_.end(),
+        [uid](const LimitedPipePair& pipePair) {
+            return pipePair.uid_ == uid;
+        });
+    return iter == pipes_.end() ? nullptr : &(*iter);
+}
+
+void LimitedPipePair::DelPipePair(int uid)
+{
+    pipes_.remove_if([uid](const LimitedPipePair& pipePair) {
         return pipePair.uid_ == uid;
     });
 }

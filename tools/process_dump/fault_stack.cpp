@@ -26,6 +26,7 @@
 #include "dfx_util.h"
 #include "dump_utils.h"
 #include "process_dump_config.h"
+#include "thread_context.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -191,7 +192,13 @@ void FaultStack::CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo) const
     uintptr_t targetAddr = blockInfo.startAddr;
     for (uint64_t i = 0; i < static_cast<uint64_t>(blockInfo.size); i++) {
         uintptr_t value = 0;
-        if (DumpUtils::ReadTargetMemory(tid, targetAddr, value)) {
+        bool ret = false;
+        if (isLite_) {
+            ret = LocalThreadContextMix::GetInstance().AccessMem(targetAddr, &value) == 0;
+        } else {
+            ret = DumpUtils::ReadTargetMemory(tid, targetAddr, value);
+        }
+        if (ret) {
             blockInfo.content.push_back(value);
         } else {
             blockInfo.content.push_back(-1);

@@ -456,6 +456,14 @@ bool CreatePipeFd(int (&fd)[2])
     return true;
 }
 
+void ClosePipeFd(int& fd)
+{
+    if (fd > 0) {
+        close(fd);
+        fd = -1;
+    }
+}
+
 void NotifyProcStart(int (&fd)[2])
 {
     close(fd[0]);

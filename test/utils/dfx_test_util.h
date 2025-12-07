@@ -109,6 +109,7 @@ void CheckResourceUsage(uint32_t fdCount, uint32_t mapsCount, uint64_t memCount)
 std::string WaitCreateCrashFile(const std::string& prefix, pid_t pid, int retryCnt = 3);
 std::string WaitCreateFile(const std::string& folder, std::regex& reg, time_t timeOut = 10);
 bool CreatePipeFd(int (&fd)[2]);
+void ClosePipeFd(int& fd);
 void NotifyProcStart(int (&fd)[2]);
 void WaitProcStart(int (&fd)[2]);
 void CheckAndExit(bool hasFailure);

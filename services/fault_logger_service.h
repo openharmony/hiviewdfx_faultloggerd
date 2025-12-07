@@ -122,6 +122,22 @@ private:
     };
 };
 
+class LiteProcDumperService : public FaultLoggerService<FaultLoggerdRequest> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const FaultLoggerdRequest& requestData) override;
+private:
+    static bool Filter(const std::string& socketName, int32_t connectionFd, const FaultLoggerdRequest& requestData);
+};
+
+class LiteProcDumperPipeService : public FaultLoggerService<LitePerfFdRequestData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const LitePerfFdRequestData& requestData) override;
+private:
+    static bool Filter(const std::string& socketName, int32_t connectionFd, const LitePerfFdRequestData& requestData);
+};
+
 class PipeService : public FaultLoggerService<PipFdRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,

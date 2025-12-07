@@ -73,11 +73,6 @@ bool GetProcessName(char* buffer, size_t bufferSz)
     return ReadStringFromFile(PROC_SELF_CMDLINE_PATH, buffer, bufferSz);
 }
 
-pid_t GetRealPid(void)
-{
-    return syscall(SYS_getpid);
-}
-
 uint64_t GetTimeMilliseconds(void)
 {
     struct timespec ts;

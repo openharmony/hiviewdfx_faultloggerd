@@ -48,7 +48,6 @@ HWTEST_F(CommonCutilTest, DfxCutilTest001, TestSize.Level2)
     ASSERT_TRUE(GetThreadName(threadName, sizeof(threadName)));
     ASSERT_TRUE(GetThreadNameByTid(gettid(), threadName, sizeof(threadName)));
     ASSERT_TRUE(GetProcessName(processName, sizeof(processName)));
-    ASSERT_GT(GetRealPid(), 0);
     GTEST_LOG_(INFO) << "DfxCutilTest001: end.";
 }
 
@@ -129,13 +128,13 @@ HWTEST_F(CommonCutilTest, ParseSiValueTest001, TestSize.Level0)
     } else {
         ASSERT_EQ(tid, 0);
         ASSERT_EQ(timeout, 100);
-    
+
         data = 0xFFFFFFFAAAAAAAA;
         si.si_value.sival_ptr = (void*)(data);
         ParseSiValue(&si, &timeout, &tid);
         ASSERT_EQ(tid, 0XAAAAAAAA);
         ASSERT_EQ(timeout, 0);
-    
+
         data |= 1ULL << flagOffset;
         si.si_value.sival_ptr = (void*)(data);
         ParseSiValue(&si, &timeout, &tid);

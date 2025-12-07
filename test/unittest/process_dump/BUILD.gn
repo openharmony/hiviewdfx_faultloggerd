@@ -98,6 +98,7 @@ if (defined(ohos_lite)) {
       "process_dump_test.cpp",
       "registers_test.cpp",
       "thread_dump_info_test.cpp",
+      "$faultloggerd_path/tools/process_dump/reporter.cpp",
     ]
     if (processdump_parse_lock_owner_enable) {
       sources += [ "dump_utils_test.cpp" ]
@@ -135,6 +136,7 @@ if (defined(ohos_lite)) {
       "googletest:gmock_main",
       "googletest:gtest_main",
       "hilog:libhilog",
+      "hisysevent:libhisysevent",
       "hitrace:libhitracechain",
       "ipc:ipc_core",
       "jsoncpp:jsoncpp",

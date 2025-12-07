@@ -318,22 +318,11 @@ void ReadThreadWchan(std::string& result, const int tid, bool withThreadName)
     result = ss;
 }
 
-uint64_t GetProcRssMemInfo(pid_t pid)
+uint64_t GetProcRssMemInfo(std::string statContent)
 {
-    if (pid <= 0) {
-        return 0;
-    }
-
     constexpr int tokenNum = 2;
     constexpr int decimalBase = 10;
-    std::string statmPath = "/proc/" + std::to_string(pid) + "/statm";
-    std::string readContent;
-
-    if (!LoadStringFromFile(statmPath, readContent)) {
-        return 0;
-    }
-
-    std::istringstream iss(readContent);
+    std::istringstream iss(statContent);
     std::vector<std::string> tokens;
     for (int i = 0; i < tokenNum; i++) {
         std::string token;
@@ -359,6 +348,21 @@ uint64_t GetProcRssMemInfo(pid_t pid)
     return rss;
 }
 
+uint64_t GetProcRssMemInfo(pid_t pid)
+{
+    if (pid <= 0) {
+        return 0;
+    }
+
+    std::string statmPath = "/proc/" + std::to_string(pid) + "/statm";
+    std::string readContent;
+
+    if (!LoadStringFromFile(statmPath, readContent)) {
+        return 0;
+    }
+    return GetProcRssMemInfo(readContent);
+}
+
 pid_t GetTidByThreadName(pid_t pid, const std::string& threadName)
 {
     if (pid <= 0) {
@@ -379,24 +383,8 @@ pid_t GetTidByThreadName(pid_t pid, const std::string& threadName)
     return -1;
 }
 
-static bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
+static bool GetProcessStartTime(std::string statStr, unsigned long long &startTime)
 {
-    std::string path = "/proc/" + std::to_string(tid);
-    UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
-    if (dirFd == -1) {
-        return false;
-    }
-
-    UniqueFd statFd(openat(dirFd.Get(), "stat", O_RDONLY | O_CLOEXEC));
-    if (statFd == -1) {
-        return false;
-    }
-
-    std::string statStr;
-    if (!ReadFdToString(statFd.Get(), statStr)) {
-        return false;
-    }
-
     auto lastParenPos = statStr.find_last_of(")");
     if (lastParenPos == std::string::npos) {
         return false;
@@ -417,25 +405,60 @@ static bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
     return false;
 }
 
-int GetProcessLifeCycle(pid_t pid, uint64_t& lifeTimeSeconds)
+static bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
+{
+    std::string path = "/proc/" + std::to_string(tid);
+    UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
+    if (dirFd == -1) {
+        return false;
+    }
+
+    UniqueFd statFd(openat(dirFd.Get(), "stat", O_RDONLY | O_CLOEXEC));
+    if (statFd == -1) {
+        return false;
+    }
+
+    std::string statStr;
+    if (!ReadFdToString(statFd.Get(), statStr)) {
+        return false;
+    }
+
+    return GetProcessStartTime(statStr, startTime);
+}
+
+int GetProcessLifeCycleImpl(unsigned long long startTime, uint64_t& lifeTimeSeconds)
 {
     struct timespec ts;
     (void)clock_gettime(CLOCK_BOOTTIME, &ts);
     uint64_t sysUpTime = static_cast<uint64_t>(ts.tv_sec + static_cast<time_t>(ts.tv_nsec != 0 ? 1L : 0L));
 
+    auto clkTck = sysconf(_SC_CLK_TCK);
+    if (clkTck == -1) {
+        return PROCESS_ERROR_CLKTCK;
+    }
+    uint64_t procUpTime = sysUpTime - startTime / static_cast<uint32_t>(clkTck);
+    constexpr uint64_t invalidTimeLimit = 10 * 365 * 24 * 3600; // 10 year
+    if (procUpTime > invalidTimeLimit) {
+        return PROCESS_ERROR_TIME;
+    }
+    lifeTimeSeconds = procUpTime;
+    return 0;
+}
+
+int GetProcessLifeCycle(pid_t pid, uint64_t& lifeTimeSeconds)
+{
     unsigned long long startTime = 0;
     if (GetProcessStartTime(pid, startTime)) {
-        auto clkTck = sysconf(_SC_CLK_TCK);
-        if (clkTck == -1) {
-            return PROCESS_ERROR_CLKTCK;
-        }
-        uint64_t procUpTime = sysUpTime - startTime / static_cast<uint32_t>(clkTck);
-        constexpr uint64_t invalidTimeLimit = 10 * 365 * 24 * 3600; // 10 year
-        if (procUpTime > invalidTimeLimit) {
-            return PROCESS_ERROR_TIME;
-        }
-        lifeTimeSeconds = procUpTime;
-        return 0;
+        return GetProcessLifeCycleImpl(startTime, lifeTimeSeconds);
+    }
+    return PROCESS_ERROR_INFO;
+}
+
+int GetProcessLifeCycle(std::string statStr, uint64_t& lifeTimeSeconds)
+{
+    unsigned long long startTime = 0;
+    if (GetProcessStartTime(statStr, startTime)) {
+        return GetProcessLifeCycleImpl(startTime, lifeTimeSeconds);
     }
     return PROCESS_ERROR_INFO;
 }

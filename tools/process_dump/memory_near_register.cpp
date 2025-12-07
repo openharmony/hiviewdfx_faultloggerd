@@ -20,6 +20,8 @@
 #include "process_dump_config.h"
 #include "string_printf.h"
 #include "dump_utils.h"
+#include "lite_process_dumper.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -106,7 +108,11 @@ void MemoryNearRegister::CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxReg
             .size = count,
             .name = name,
         };
-        CreateMemoryBlock(tid, blockInfo);
+        if (isLite_) {
+            UpdateContentByLite(blockInfo, index -1);
+        } else {
+            CreateMemoryBlock(tid, blockInfo);
+        }
         registerBlocks_.push_back(blockInfo);
     }
 }
@@ -123,6 +129,15 @@ void MemoryNearRegister::CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo
         }
         targetAddr += STEP;
     }
+}
+
+void MemoryNearRegister::UpdateContentByLite(MemoryBlockInfo& blockInfo, int pos)
+{
+    auto& blockInfos = MemoryNearRegisterUtil::GetInstance().blocksInfo_;
+    if (pos >= blockInfos.size()) {
+        return;
+    }
+    blockInfo.content = blockInfos[pos].content;
 }
 }
 }

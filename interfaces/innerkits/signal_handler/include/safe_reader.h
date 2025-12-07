@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,10 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef DFX_COMMON_CUTIL_H
-#define DFX_COMMON_CUTIL_H
+#ifndef DFX_SAFE_READER_H
+#define DFX_SAFE_READER_H
 
-#include <signal.h>
 #include <stdint.h>
 #include <unistd.h>
 #include "dfx_define.h"
@@ -24,17 +23,8 @@
 extern "C" {
 #endif
 
-AT_SYMBOL_HIDDEN bool GetThreadName(char* buffer, size_t bufferSz);
-
-AT_SYMBOL_HIDDEN bool GetThreadNameByTid(int32_t tid, char* buffer, size_t bufferSz);
-
-AT_SYMBOL_HIDDEN bool GetProcessName(char* buffer, size_t bufferSz);
-
-AT_SYMBOL_HIDDEN uint64_t GetTimeMilliseconds(void);
-
-AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSecondsCInterce(void);
-
-AT_SYMBOL_HIDDEN void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* tid);
+AT_SYMBOL_HIDDEN size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen);
+AT_SYMBOL_HIDDEN void DeinitPipe();
 
 #ifdef __cplusplus
 }

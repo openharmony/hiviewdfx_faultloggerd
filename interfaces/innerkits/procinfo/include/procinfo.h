@@ -143,6 +143,8 @@ std::string GetStacktraceHeader();
 */
 uint64_t GetProcRssMemInfo(pid_t pid);
 
+uint64_t GetProcRssMemInfo(std::string statContent);
+
 /**
  * @brief Get process thread id by thread name
  *
@@ -159,6 +161,8 @@ pid_t GetTidByThreadName(pid_t pid, const std::string& threadName);
  * @return return 0 if found, otherwise return negative number
 */
 int GetProcessLifeCycle(pid_t pid, uint64_t& lifeTimeSeconds);
+
+int GetProcessLifeCycle(std::string statStr, uint64_t& lifeTimeSeconds);
 } // nameapace HiviewDFX
 } // nameapace OHOS
 #endif

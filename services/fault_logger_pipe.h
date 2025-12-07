@@ -87,6 +87,25 @@ private:
     FaultLoggerPipe faultLoggerPipeRes_;
     static std::list<LitePerfPipePair> pipes_;
 };
+
+class LimitedPipePair {
+public:
+    int32_t GetPipeFd(FaultLoggerPipeType pipeType);
+    explicit LimitedPipePair(int32_t uid);
+    LimitedPipePair(LimitedPipePair&&) noexcept = default;
+    LimitedPipePair& operator=(LimitedPipePair&&) noexcept = default;
+
+    static LimitedPipePair& CreatePipePair(int uid);
+    static bool CheckDumpRecord(int uid);
+    static LimitedPipePair* GetPipePair(int uid);
+    static void DelPipePair(int uid);
+private:
+    LimitedPipePair(const LimitedPipePair&) = delete;
+    LimitedPipePair& operator=(const LimitedPipePair&) = delete;
+    int32_t uid_;
+    FaultLoggerPipe faultLoggerPipeBuf_;
+    static std::list<LimitedPipePair> pipes_;
+};
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif // FAULT_LOGGER_PIPE_H

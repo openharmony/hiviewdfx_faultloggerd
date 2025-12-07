@@ -46,12 +46,12 @@ void DfxProcess::InitProcessInfo(pid_t pid, pid_t nsPid, uid_t uid, const std::s
     processInfo_.processName = processName;
 }
 
-bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request)
+bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request, bool isAttatch)
 {
     pid_t nsTid = request.tid;
     pid_t tid = ChangeTid(nsTid, true);
     keyThread_ = DfxThread::Create(processInfo_.pid, tid, nsTid, request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
-    if (!keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
+    if (isAttatch && !keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
         DFXLOGE("Failed to attach key thread(%{public}d).", nsTid);
         ReportCrashException(CrashExceptionCode::CRASH_DUMP_EATTACH);
         if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {

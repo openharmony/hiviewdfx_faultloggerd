@@ -168,7 +168,7 @@ std::future<DumpErrorCode> ProcessDumper::AsyncInitialization()
             return dumpRes;
         }
         initFinish.set_value();
-        if (!InitBufferWriter()) {
+        if (!DfxBufferWriter::GetInstance().InitBufferWriter(request_)) {
             DFXLOGE("Failed to init buffer writer.");
             return DumpErrorCode::DUMP_EGETFD;
         }
@@ -565,107 +565,6 @@ int ProcessDumper::ReadVmPid()
     process_->SetVmPid(vmPid);
     DFXLOGI("processdump get vm pid is %{public}d", vmPid);
     return vmPid;
-}
-
-int ProcessDumper::GeFaultloggerdRequestType()
-{
-    switch (request_.siginfo.si_signo) {
-        case SIGLEAK_STACK:
-            switch (abs(request_.siginfo.si_code)) {
-                case SIGLEAK_STACK_FDSAN:
-                    FALLTHROUGH_INTENDED;
-                case SIGLEAK_STACK_JEMALLOC:
-                    FALLTHROUGH_INTENDED;
-                case SIGLEAK_STACK_BADFD:
-                    return FaultLoggerType::CPP_STACKTRACE;
-                default:
-                    return FaultLoggerType::LEAK_STACKTRACE;
-            }
-        case SIGDUMP:
-            return FaultLoggerType::CPP_STACKTRACE;
-        default:
-            return FaultLoggerType::CPP_CRASH;
-    }
-}
-
-bool ProcessDumper::InitBufferWriter()
-{
-    DFX_TRACE_SCOPED("InitBufferWriter");
-    if (request_.type == ProcessDumpType::DUMP_TYPE_PIPE) {
-        DFXLOGW("SIGPIPE need not request buffer fd.");
-        return true;
-    }
-    SmartFd bufferFd;
-    if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
-        int pipeWriteFd[] = { -1, -1 };
-        if (RequestPipeFd(request_.pid, FaultLoggerPipeType::PIPE_FD_WRITE, pipeWriteFd) == 0) {
-            bufferFd = SmartFd{pipeWriteFd[PIPE_BUF_INDEX]};
-            DfxBufferWriter::GetInstance().SetWriteResFd(SmartFd{pipeWriteFd[PIPE_RES_INDEX]});
-        }
-    } else {
-        struct FaultLoggerdRequest faultloggerdRequest{
-            .pid = request_.pid,
-            .type = GeFaultloggerdRequestType(),
-            .tid = request_.tid,
-            .time = request_.timeStamp
-        };
-        bufferFd = SmartFd {RequestFileDescriptorEx(&faultloggerdRequest)};
-        if (!bufferFd) {
-            DFXLOGW("Failed to request_ fd from faultloggerd.");
-            ReportCrashException(CrashExceptionCode::CRASH_DUMP_EWRITEFD);
-            bufferFd = SmartFd {CreateFileForCrash(request_.pid, request_.timeStamp)};
-        }
-    }
-
-    bool rst{bufferFd};
-    DfxBufferWriter::GetInstance().SetWriteBufFd(std::move(bufferFd));
-    return rst;
-}
-
-int32_t ProcessDumper::CreateFileForCrash(int32_t pid, uint64_t time) const
-{
-    const std::string dirPath = "/log/crash";
-    const std::string logFileType = "cppcrash";
-    const int32_t logcrashFileProp = 0644; // 0640:-rw-r--r--
-    if (access(dirPath.c_str(), F_OK) != 0) {
-        DFXLOGE("%{public}s is not exist.", dirPath.c_str());
-        return INVALID_FD;
-    }
-    RemoveFileIfNeed(dirPath);
-    std::string logPath = dirPath + "/" + logFileType + "-" + std::to_string(pid) + "-" + std::to_string(time);
-    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT, logcrashFileProp));
-    if (fd == INVALID_FD) {
-        DFXLOGE("create %{public}s failed, errno=%{public}d", logPath.c_str(), errno);
-    } else {
-        DFXLOGI("create crash path %{public}s succ.", logPath.c_str());
-    }
-    return fd;
-}
-
-void ProcessDumper::RemoveFileIfNeed(const std::string& dirPath) const
-{
-    const int maxFileCount = 5;
-    std::vector<std::string> files;
-    OHOS::GetDirFiles(dirPath, files);
-    if (files.size() < maxFileCount) {
-        return;
-    }
-
-    std::sort(files.begin(), files.end(),
-        [](const std::string& lhs, const std::string& rhs) {
-        auto lhsSplitPos = lhs.find_last_of("-");
-        auto rhsSplitPos = rhs.find_last_of("-");
-        if (lhsSplitPos == std::string::npos || rhsSplitPos == std::string::npos) {
-            return lhs.compare(rhs) < 0;
-        }
-        return lhs.substr(lhsSplitPos).compare(rhs.substr(rhsSplitPos)) < 0;
-    });
-
-    int deleteNum = static_cast<int>(files.size()) - (maxFileCount - 1);
-    for (int index = 0; index < deleteNum; index++) {
-        DFXLOGI("Now we delete file(%{public}s) due to exceed file max count.", files[index].c_str());
-        OHOS::RemoveFile(files[index]);
-    }
 }
 
 void ProcessDumper::ReportSigDumpStats()

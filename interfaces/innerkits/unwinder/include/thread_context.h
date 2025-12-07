@@ -101,6 +101,10 @@ public:
     std::shared_ptr<DfxMaps> GetMaps() const;
     static std::shared_ptr<UnwindAccessors> CreateAccessors();
 
+    void SetMaps(std::shared_ptr<DfxMaps> maps) { maps_ = maps; }
+    void SetStackBuf(std::vector<uint8_t> stackBuf) { stackBuf_ = stackBuf; }
+    void SetStackForward(int forward) { stackForward_ = forward; }
+
 private:
     LocalThreadContextMix() = default;
     ~LocalThreadContextMix() = default;
@@ -120,6 +124,7 @@ private:
     int32_t tid_ = -1;
     int status_ = SyncStatus::INIT;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
+    int stackForward_ {0};
 };
 } // namespace Dfx
 } // namespace OHOS

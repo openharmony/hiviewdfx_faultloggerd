@@ -24,6 +24,7 @@
 #include "dfx_buffer_writer.h"
 #include "nocopyable.h"
 #include "smart_fd.h"
+#include "dfx_dump_request.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -46,6 +47,11 @@ public:
 
     void AppendBriefDumpInfo(const std::string& info);
     void PrintBriefDumpInfo();
+
+    int GeFaultloggerdRequestType();
+    bool InitBufferWriter(const ProcessDumpRequest& request);
+    int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
+    void RemoveFileIfNeed(const std::string& dirPath) const;
 private:
     static int DefaultWrite(int32_t fd, const char *buf, const size_t len);
 
@@ -56,6 +62,7 @@ private:
     SmartFd bufFd_;
     SmartFd resFd_;
     std::string briefDumpInfo_;
+    ProcessDumpRequest request_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

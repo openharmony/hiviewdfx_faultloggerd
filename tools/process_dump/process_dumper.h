@@ -54,10 +54,8 @@ private:
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     DumpErrorCode DumpProcess();
     DumpErrorCode ReadRequestAndCheck();
-    bool InitBufferWriter();
     bool InitDfxProcess();
     bool InitUnwinder(DumpErrorCode &dumpRes);
-    int GeFaultloggerdRequestType();
     void UnwindWriteJit();
     void FormatJsonInfoIfNeed();
     void UpdateConfigByRequest();
@@ -65,8 +63,6 @@ private:
     void PrintDumpInfo(DumpErrorCode& dumpRes);
     DumpErrorCode WaitParseSymbols();
     std::vector<std::string> FindDumpInfoByType(const ProcessDumpType& dumpType);
-    int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
-    void RemoveFileIfNeed(const std::string& dirPath) const;
     int ReadVmPid();
     std::future<DumpErrorCode> AsyncInitialization();
     DumpErrorCode ConcurrentSymbolize();

@@ -49,6 +49,7 @@
 #include <securec.h>
 #include "dfx_log.h"
 #include "dfx_dumprequest.h"
+#include "dfx_lite_dump_request.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -230,7 +231,7 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
 {
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = GetDumpType(signo, si);
-    g_request.pid = GetRealPid();
+    g_request.pid = syscall(SYS_getpid);
     g_request.nsPid = syscall(SYS_getpid);
     g_request.tid = syscall(SYS_gettid);
     g_request.uid = getuid();
@@ -308,6 +309,11 @@ static void DumpRequest(int signo)
     DfxDumpRequest(signo, &g_request);
 }
 
+static void DumpPrviRequest(int signo)
+{
+    DumpPrviProcess(signo, &g_request);
+}
+
 static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 {
     int pid = syscall(SYS_getpid);
@@ -342,9 +348,18 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
         errno = savedErrno;
         return IsDumpSignal(signo);
     }
+
     DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
         "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
-    DumpRequest(signo);
+#ifndef is_ohos_lite
+    if (IsNoNewPriv()) {
+        DumpPrviRequest(signo);
+    } else {
+#endif
+        DumpRequest(signo);
+#ifndef is_ohos_lite
+    }
+#endif
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
     errno = savedErrno;

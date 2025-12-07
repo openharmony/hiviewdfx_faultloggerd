@@ -17,6 +17,7 @@
 #endif
 
 #include "dfx_dumprequest.h"
+#include "dfx_lite_dump_request.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -696,4 +697,31 @@ void DfxDumpRequest(int signo, struct ProcessDumpRequest *request)
     }
     g_request = request;
     ProcessDump(signo);
+}
+
+void DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
+{
+    DFXLOGI("start lite process dump");
+#ifndef is_ohos_lite
+    if (request == NULL) {
+        DFXLOGE("Failed to DumpRequest because of error parameters!");
+        return;
+    }
+    UpdateSanBoxProcess(request);
+    if (!MMapMemoryOnce()) {
+        DFXLOGE("Failed mmap memory to lite dump");
+        return;
+    }
+    CollectStat(request);
+    CollectStatm(request);
+    CollectStack(request);
+    pid_t pid = ForkBySyscall();
+    if (pid == 0) {
+        LiteCrashHandler(request);
+        _exit(0);
+    }
+    int ret = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
+    UnmapMemoryOnce();
+#endif
+    DFXLOGI("lite process exit code %{public}d", ret);
 }

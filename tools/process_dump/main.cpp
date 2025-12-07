@@ -24,6 +24,8 @@
 #include "lite_perf_dumper.h"
 #include "process_dumper.h"
 
+#include "lite_process_dumper.h"
+
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
 #endif
@@ -32,12 +34,14 @@ static const int DUMP_ARG_ONE = 1;
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
+int g_uid = 0;
+
 static void PrintCommandHelp()
 {
     printf("%s\nplease use dumpcatcher\n", DUMP_STACK_TAG_USAGE.c_str());
 }
 
-static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &isLitePerf)
+static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &isLitePerf, bool &isRender)
 {
     if (argc <= DUMP_ARG_ONE) {
         return false;
@@ -49,6 +53,10 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
         return true;
     } else if (!strcmp("-liteperf", argv[DUMP_ARG_ONE])) {
         isLitePerf = true;
+        return true;
+    } else if (!strcmp("-render", argv[DUMP_ARG_ONE])) {
+        g_uid = std::atoi(argv[2]); // 2 : the index of uid
+        isRender = true;
         return true;
     }
     return false;
@@ -66,10 +74,11 @@ int main(int argc, char *argv[])
 
     bool isSignalHdlr = false;
     bool isLitePerf = false;
+    bool isRender = false;
 
     setsid();
 
-    if (!ParseParameters(argc, argv, isSignalHdlr, isLitePerf)) {
+    if (!ParseParameters(argc, argv, isSignalHdlr, isLitePerf, isRender)) {
         PrintCommandHelp();
         return 0;
     }
@@ -81,6 +90,12 @@ int main(int argc, char *argv[])
 #ifdef DFX_ENABLE_LPERF
         OHOS::HiviewDFX::LitePerfDumper::GetInstance().Perf();
 #endif
+    } else if (isRender) {
+        DFXLOGI("xulong %{public}s %{public}d", __func__, __LINE__);
+        OHOS::HiviewDFX::LiteProcessDumper liteProcessDumper;
+        liteProcessDumper.Dump(g_uid);
+    } else {
+        DFXLOGI("invalid param");
     }
 #ifndef CLANG_COVERAGE
     _exit(0);

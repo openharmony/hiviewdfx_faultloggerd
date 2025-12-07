@@ -29,6 +29,7 @@ processdump_sources = [
   "process_dump_config.cpp",
   "process_dumper.cpp",
   "registers.cpp",
+  "lite_process_dumper.cpp",
   "submitter_stack.cpp",
   "utils/dump_utils.cpp",
   "utils/thread_pool.cpp",
