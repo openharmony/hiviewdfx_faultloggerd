@@ -1122,6 +1122,7 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest003, TestSize.Level2)
     EXPECT_FALSE(LiteCrashHandler(&request));
 }
 
+#if defined(__aarch64__)
 /**
  * @tc.name: DfxLiteDumperTest004
  * @tc.desc: add test case liteDump NearRegisters
@@ -1137,6 +1138,7 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest004, TestSize.Level2)
     std::vector<uint8_t> vec(totalSize);
     EXPECT_EQ(read(g_pipeFd[PIPE_READ], vec.data(), vec.size()), totalSize);
 }
+#endif
 
 /**
  * @tc.name: DfxLiteDumperTest005
