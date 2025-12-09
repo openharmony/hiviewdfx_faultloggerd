@@ -95,7 +95,8 @@ void DumpUtils::GetThreadKernelStack(DfxThread& thread)
     std::string threadKernelStack;
     pid_t tid = thread.GetThreadInfo().nsTid;
     DfxThreadStack threadStack;
-    if (DfxGetKernelStack(tid, threadKernelStack) == 0 && FormatThreadKernelStack(threadKernelStack, threadStack)) {
+    if (DfxGetKernelStack(tid, threadKernelStack, true) == 0 &&
+        FormatThreadKernelStack(threadKernelStack, threadStack)) {
         DFXLOGW("Failed to get tid(%{public}d) user stack, try kernel", tid);
         if (IsBetaVersion()) {
             DFXLOGI("%{public}s", threadKernelStack.c_str());
