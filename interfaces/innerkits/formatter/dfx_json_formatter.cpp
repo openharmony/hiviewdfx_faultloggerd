@@ -43,6 +43,7 @@ struct ParseSymbolOptions {
 const int FRAME_BUF_LEN = 1024;
 MAYBE_UNUSED const int ALARM_TIME = 10;
 MAYBE_UNUSED const int WAITPID_TIMEOUT = 3000;
+constexpr const char* CONNECTION_STACK = ", out stack string:";
 static std::string JsonAsString(const Json::Value& val)
 {
     if (val.isConvertibleTo(Json::stringValue)) {
@@ -55,11 +56,11 @@ class StackJsonFormatter {
 public:
     StackJsonFormatter(const std::string& bundleName, bool onlyParseBuildId)
         : parser_(bundleName, onlyParseBuildId), onlyParseBuildId_(onlyParseBuildId) {}
-    bool FormatJsonStack(const std::string& jsonStack, std::string& outStackStr);
+    bool FormatJsonStack(Json::Value& threads, std::string& outStackStr, std::string& outStackJson);
 
 private:
     bool FormatJsonThreadStack(Json::Value& thread, std::string& outStackStr);
-    bool FormatNativeFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr);
+    bool FormatNativeFrame(Json::Value& frames, const uint32_t& frameIdx, std::string& outStr);
     bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr);
 
     DfxOfflineParser parser_;
@@ -93,7 +94,7 @@ bool StackJsonFormatter::FormatJsFrame(const Json::Value& frames, const uint32_t
     return true;
 }
 
-bool StackJsonFormatter::FormatNativeFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
+bool StackJsonFormatter::FormatNativeFrame(Json::Value& frames, const uint32_t& frameIdx, std::string& outStr)
 {
     char buf[FRAME_BUF_LEN] = {0};
     char format[] = "#%02u pc %s %s";
@@ -115,7 +116,11 @@ bool StackJsonFormatter::FormatNativeFrame(const Json::Value& frames, const uint
     }
     if ((onlyParseBuildId_ && frame.buildId.empty()) ||
         (!onlyParseBuildId_ && frame.funcName.empty())) {
-        parser_.ParseSymbolWithFrame(frame);
+        if (parser_.ParseSymbolWithFrame(frame)) {
+            frames[frameIdx]["buildId"] = frame.buildId;
+            frames[frameIdx]["offset"] = frame.funcOffset;
+            frames[frameIdx]["symbol"] = frame.funcName;
+        }
     }
     outStr = std::string(buf);
     if (!frame.funcName.empty()) {
@@ -232,14 +237,8 @@ static std::pair<bool, std::string> ExecuteTaskByFork(ChildFuncType func)
     return result;
 }
 
-bool StackJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr)
+bool StackJsonFormatter::FormatJsonStack(Json::Value& threads, std::string& outStackStr, std::string& outStackJson)
 {
-    Json::Reader reader;
-    Json::Value threads;
-    if (!(reader.parse(jsonStack, threads))) {
-        outStackStr.append("Failed to parse json stack info.");
-        return false;
-    }
     constexpr int maxThreadCount = 10000;
     if (threads.size() > maxThreadCount) {
         outStackStr.append("Thread count exceeds limit(10000).");
@@ -250,6 +249,7 @@ bool StackJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::stri
             return false;
         }
     }
+    outStackJson = Json::FastWriter().write(threads);
     return true;
 }
 
@@ -275,7 +275,7 @@ bool StackJsonFormatter::FormatJsonThreadStack(Json::Value& thread, std::string&
     if (!thread.isMember("frames") || !thread["frames"].isArray()) {
         return true;
     }
-    const Json::Value& frames = thread["frames"];
+    Json::Value& frames = thread["frames"];
     constexpr int maxFrameNum = 1000;
     if (frames.size() > maxFrameNum) {
         return true;
@@ -301,32 +301,85 @@ bool StackJsonFormatter::FormatJsonThreadStack(Json::Value& thread, std::string&
     return true;
 }
 
+static bool ParseJsonStack(std::string& jsonStack, int& dumpResult, Json::Value& threads)
+{
+    Json::Reader reader;
+    Json::Value jsonObj;
+    if (!(reader.parse(jsonStack, jsonObj))) {
+        DFXLOGE("json stack parse failed");
+        jsonStack = "";
+        return false;
+    }
+
+    if (jsonObj.isArray()) {
+        dumpResult = 0;
+        threads = jsonObj;
+        return true;
+    }
+
+    if (!(jsonObj.isMember("dump_result") && jsonObj["dump_result"].isInt()) || !jsonObj.isMember("dump_threads")) {
+        DFXLOGE("json stack not dump_result or dump_threads");
+        jsonStack = "";
+        return false;
+    }
+
+    dumpResult = jsonObj["dump_result"].asInt();
+    threads = jsonObj["dump_threads"];
+
+    if (!threads.isArray()) {
+        DFXLOGE("json stack dump_result is not array");
+        jsonStack = "";
+        return false;
+    }
+
+    jsonStack = Json::FastWriter().write(threads);
+    return true;
+}
 } // end namespace
 
-bool DfxJsonFormatter::FormatJsonStack(const std::string& jsonStack, std::string& outStackStr,
+bool DfxJsonFormatter::FormatJsonStack(std::string& jsonStack, std::string& outStackStr,
     bool needParseSymbol, const std::string& bundleName)
 {
-    auto onlyParseBuildIdTask = [&jsonStack, &outStackStr, &bundleName]() {
-        StackJsonFormatter tool(bundleName, true);
-        return tool.FormatJsonStack(jsonStack, outStackStr);
-    };
-    std::function<std::string(void)> parseSymbolTask = [&jsonStack, &bundleName]() {
-        std::string outStackStr;
-        StackJsonFormatter tool(bundleName, false);
-        if (!tool.FormatJsonStack(jsonStack, outStackStr)) {
-            outStackStr = "";
-        }
-        return outStackStr;
-    };
+    int dumpResult = 0;
+    Json::Value threads;
+    if (!ParseJsonStack(jsonStack, dumpResult, threads)) {
+        outStackStr.append("Failed to parse json stack info.");
+        jsonStack = "";
+        return false;
+    }
 
-    if (!needParseSymbol) {
+    auto onlyParseBuildIdTask = [&jsonStack, &threads, &outStackStr, &bundleName]() {
+        std::string outStackJson;
+        StackJsonFormatter tool(bundleName, true);
+        if (tool.FormatJsonStack(threads, outStackStr, outStackJson)) {
+            jsonStack = Json::FastWriter().write(threads);
+            return true;
+        }
+        return false;
+    };
+    if (!(needParseSymbol && (dumpResult > 0))) {
         return onlyParseBuildIdTask();
     }
 
+    std::function<std::string(void)> parseSymbolTask = [&threads, &bundleName]() {
+        std::string outStackStr;
+        std::string outStackJson;
+        StackJsonFormatter tool(bundleName, false);
+        if (!tool.FormatJsonStack(threads, outStackStr, outStackJson)) {
+            outStackStr = "";
+            outStackJson = "";
+        }
+        return outStackJson + CONNECTION_STACK + outStackStr;
+    };
+
     auto ret = ExecuteTaskByFork(parseSymbolTask);
     if (ret.first) {
-        outStackStr = ret.second;
-        return true;
+        auto pos = ret.second.find(CONNECTION_STACK);
+        if (pos != std::string::npos) {
+            jsonStack  = ret.second.substr(0, pos);
+            outStackStr = ret.second.substr(pos + strlen(CONNECTION_STACK));
+            return true;
+        }
     }
     return onlyParseBuildIdTask();
 }

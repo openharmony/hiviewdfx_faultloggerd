@@ -102,7 +102,7 @@ void ProcessDumper::Dump()
     if (resDump == DumpErrorCode::DUMP_COREDUMP) {
         return;
     }
-    FormatJsonInfoIfNeed();
+    FormatJsonInfoIfNeed(resDump);
     WriteDumpResIfNeed(resDump);
     finishTime_ = GetTimeMillisec();
 
@@ -250,7 +250,7 @@ void ProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
     }
 }
 
-void ProcessDumper::FormatJsonInfoIfNeed()
+void ProcessDumper::FormatJsonInfoIfNeed(const DumpErrorCode& resDump)
 {
     if (!isJsonDump_ && request_.type != ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         return;
@@ -260,7 +260,20 @@ void ProcessDumper::FormatJsonInfoIfNeed()
     }
     std::string jsonInfo;
     DumpInfoJsonFormatter stackInfoFormatter;
-    stackInfoFormatter.GetJsonFormatInfo(request_, *process_, jsonInfo);
+    int dumpError = 0;
+    switch (resDump) {
+        case DUMP_ESUCCESS:
+            dumpError = 0;
+            break;
+        case DUMP_ESYMBOL_NO_PARSE:
+        case DUMP_ESYMBOL_PARSE_TIMEOUT:
+            dumpError = 1;
+            break;
+        default:
+            dumpError = -1;
+            break;
+    }
+    stackInfoFormatter.GetJsonFormatInfo(request_, *process_, jsonInfo, dumpError);
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         process_->SetCrashInfoJson(jsonInfo);
     } else if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {

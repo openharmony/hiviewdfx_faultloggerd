@@ -31,7 +31,7 @@ namespace HiviewDFX {
 class DumpInfoJsonFormatter {
 public:
     bool GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
-        std::string& jsonStringInfo);
+        std::string& jsonStringInfo, int dumpError);
 
 private:
 #ifndef is_ohos_lite

@@ -32,16 +32,19 @@ namespace OHOS {
 namespace HiviewDFX {
 
 bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
-    std::string& jsonStringInfo)
+    std::string& jsonStringInfo, int dumpError)
 {
 #ifndef is_ohos_lite
     Json::Value jsonInfo;
+    Json::Value thread;
     switch (request.type) {
         case ProcessDumpType::DUMP_TYPE_CPP_CRASH:
             GetCrashJsonFormatInfo(request, process, jsonInfo);
             break;
         case ProcessDumpType::DUMP_TYPE_DUMP_CATCH:
-            GetDumpJsonFormatInfo(process, jsonInfo);
+            jsonInfo["dump_result"] = dumpError;
+            GetDumpJsonFormatInfo(process, thread);
+            jsonInfo["dump_threads"] = thread;
             break;
         default:
             break;

@@ -29,13 +29,13 @@ public:
     /**
      * @brief Format Json string to stack string
      *
-     * @param jsonStack input the json string
+     * @param jsonStack input the json string. When needParseSymbol is true, it will parse and update stack information.
      * @param outStackStr output the stack string
      * @param needParseSymbol input set whether to resolve function symbol
      * @param bundleName app package name
      * @return bool
      */
-    static bool FormatJsonStack(const std::string& jsonStack, std::string& outStackStr,
+    static bool FormatJsonStack(std::string& jsonStack, std::string& outStackStr,
         bool needParseSymbol = false, const std::string& bundleName = "");
 
     /**

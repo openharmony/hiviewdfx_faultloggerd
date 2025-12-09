@@ -143,11 +143,13 @@ static void ForkMultiThreadProcess(void)
 static std::string RemoveJsonStackSymbol(const std::string& jsonStack)
 {
     Json::Reader reader;
-    Json::Value threads;
-    if (!(reader.parse(jsonStack, threads))) {
+    Json::Value jsonObj;
+    if (!(reader.parse(jsonStack, jsonObj))) {
         GTEST_LOG_(ERROR) << "Failed to parse json stack info.";
         return "";
     }
+    jsonObj["dump_result"] = 1;
+    Json::Value& threads = jsonObj["dump_threads"];
     for (uint32_t i = 0; i < threads.size(); ++i) {
         Json::Value& thread = threads[i];
         EXPECT_TRUE(thread["state"].isConvertibleTo(Json::stringValue));
@@ -170,7 +172,7 @@ static std::string RemoveJsonStackSymbol(const std::string& jsonStack)
     }
 
     Json::FastWriter writer;
-    return writer.write(threads);
+    return writer.write(jsonObj);
 }
 
 static std::string JsonAsString(const Json::Value& val)
@@ -184,11 +186,12 @@ static std::string JsonAsString(const Json::Value& val)
 static bool CheckJsonStackSymbol(const std::string& jsonStack)
 {
     Json::Reader reader;
-    Json::Value threads;
-    if (!(reader.parse(jsonStack, threads))) {
+    Json::Value jsonObj;
+    if (!(reader.parse(jsonStack, jsonObj))) {
         GTEST_LOG_(ERROR) << "Failed to parse json stack info.";
         return false;
     }
+    Json::Value& threads = jsonObj["dump_threads"];
     for (uint32_t i = 0; i < threads.size(); ++i) {
         Json::Value& thread = threads[i];
         EXPECT_TRUE(thread["state"].isConvertibleTo(Json::stringValue));
@@ -853,16 +856,15 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest031, TestSize.Level
     EXPECT_TRUE(ret) << "DumpCatch remote msg Failed.";
     string jsonMsg = "";
     bool jsonRet = dumplog.DumpCatch(pid, 0, jsonMsg, DEFAULT_MAX_FRAME_NUM, true);
-    std::cout << jsonMsg << std::endl;
     EXPECT_TRUE(jsonRet) << "DumpCatch remote json Failed.";
 
     auto jsonStack = RemoveJsonStackSymbol(jsonMsg);
+    GTEST_LOG_(INFO) << "RemoveJsonStackSymbol: jsonStack : "  << jsonStack;
     EXPECT_TRUE(!jsonStack.empty());
     ASSERT_FALSE(CheckJsonStackSymbol(jsonStack));
 
     string stackMsg = "";
-    DfxJsonFormatter format;
-    bool formatRet = format.FormatJsonStack(jsonStack, stackMsg, true, "");
+    bool formatRet = DfxJsonFormatter::FormatJsonStack(jsonStack, stackMsg, true, "");
     EXPECT_TRUE(formatRet) << "FormatJsonStack Failed.";
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: stackMsg : " << stackMsg;
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest031: end.";
@@ -1352,5 +1354,65 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest044, TestSize.Level
     EXPECT_TRUE(result.first == 0);
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest044: end.";
 }
+
+#ifndef is_ohos_lite
+/**
+ * @tc.name: FormatJsonStackTest001
+ * @tc.desc: test input is not json
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, FormatJsonStackTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FormatJsonStackTest001: start.";
+    string outStackStr = "";
+    string errorJsonMsg = "test str, is not json";
+    bool formatRet = DfxJsonFormatter::FormatJsonStack(errorJsonMsg, outStackStr);
+    EXPECT_FALSE(formatRet);
+    EXPECT_EQ(outStackStr, "Failed to parse json stack info.");
+    EXPECT_TRUE(errorJsonMsg.empty());
+
+    GTEST_LOG_(INFO) << "FormatJsonStackTest001: end.";
+}
+
+/**
+ * @tc.name: FormatJsonStackTest002
+ * @tc.desc: test input is json, but not as expected
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpCatcherInterfacesTest, FormatJsonStackTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FormatJsonStackTest002: start.";
+    string outStackStr = "";
+    string errorJsonMsg = R"({"test":123})";
+    bool formatRet = DfxJsonFormatter::FormatJsonStack(errorJsonMsg, outStackStr);
+    EXPECT_FALSE(formatRet);
+    EXPECT_EQ(outStackStr, "Failed to parse json stack info.");
+    outStackStr = "";
+    EXPECT_TRUE(errorJsonMsg.empty());
+
+    errorJsonMsg = R"({"dump_result":123})";
+    formatRet = DfxJsonFormatter::FormatJsonStack(errorJsonMsg, outStackStr);
+    EXPECT_FALSE(formatRet);
+    EXPECT_EQ(outStackStr, "Failed to parse json stack info.");
+    outStackStr = "";
+    EXPECT_TRUE(errorJsonMsg.empty());
+
+    errorJsonMsg = R"({"dump_threads":123})";
+    formatRet = DfxJsonFormatter::FormatJsonStack(errorJsonMsg, outStackStr);
+    EXPECT_FALSE(formatRet);
+    EXPECT_EQ(outStackStr, "Failed to parse json stack info.");
+    outStackStr = "";
+    EXPECT_TRUE(errorJsonMsg.empty());
+
+    errorJsonMsg = R"({"dump_threads":123, "dump_threads": "is not array"})";
+    formatRet = DfxJsonFormatter::FormatJsonStack(errorJsonMsg, outStackStr);
+    EXPECT_FALSE(formatRet);
+    EXPECT_EQ(outStackStr, "Failed to parse json stack info.");
+    outStackStr = "";
+    EXPECT_TRUE(errorJsonMsg.empty());
+
+    GTEST_LOG_(INFO) << "FormatJsonStackTest002: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namepsace OHOS
