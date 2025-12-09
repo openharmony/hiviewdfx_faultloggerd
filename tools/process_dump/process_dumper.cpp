@@ -438,9 +438,18 @@ DumpErrorCode ProcessDumper::ConcurrentSymbolize()
     auto addTask = [this] (mapIterator left, mapIterator right) {
         threadPool_.AddTask([this, left, right] () mutable {
             DFX_TRACE_SCOPED("ParseSymbol:%s", left->second.mapName.c_str());
+            bool smoFlag = false;
+            uint64_t start = 0;
+            if (StartsWith(left->second.mapName, ADLT_PATH_NAME_START)) {
+                smoFlag = true;
+                start = GetTimeMillisec();
+            }
             while (left != right) {
                 unwinder_->ParseFrameSymbol(left->second);
                 left++;
+            }
+            if (smoFlag) {
+                smoParseTime_ += GetTimeMillisec() - start;
             }
         });
     };
@@ -581,6 +590,7 @@ void ProcessDumper::ReportSigDumpStats()
     stat->processdumpStartTime = startTime_;
     stat->processdumpFinishTime = finishTime_ == 0 ? GetTimeMillisec() : finishTime_;
     stat->writeDumpInfoCost = finishParseSymbolTime_ > 0 ? stat->processdumpFinishTime - finishParseSymbolTime_ : 0;
+    stat->smoParseTime = smoParseTime_;
     if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
         request_.processName, sizeof(request_.processName)) != 0) {
         DFXLOGE("Failed to copy target processName (%{public}d)", errno);

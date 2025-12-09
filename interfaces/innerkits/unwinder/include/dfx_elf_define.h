@@ -37,6 +37,8 @@ static const std::string SYMTAB = ".symtab";
 static const std::string DYNSYM = ".dynsym";
 static const std::string DYNSTR = ".dynstr";
 static const std::string PLT = ".plt";
+constexpr auto ADLTSTRTAB = ".adlt.strtab";
+constexpr auto ADLTMAP = ".adlt.map";
 
 struct ElfLoadInfo {
     uint64_t offset = 0;
@@ -78,6 +80,13 @@ struct ShdrInfo {
     uint64_t entSize = 0;
     uint64_t offset = 0;
     uint64_t size = 0;
+};
+
+struct AdltMapInfo {
+    uint32_t pcBegin;
+    uint32_t pcEnd;
+    uint32_t psodIndex;     // so merging order index
+    uint32_t nameOffset;    // so name offset int .adlt.strtab
 };
 
 struct __attribute__((packed)) DwarfEhFrameHdr {

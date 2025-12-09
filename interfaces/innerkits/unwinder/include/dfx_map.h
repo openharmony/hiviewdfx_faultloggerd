@@ -52,6 +52,8 @@ public:
     std::string GetElfName();
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString() const;
+    void SetAdltLoadBase(uint64_t loadBase) { adltLoadBase_ = loadBase; }
+    uint64_t GetAdltLoadBase() const { return adltLoadBase_; }
 
     uint64_t begin = 0;
     uint64_t end = 0;
@@ -69,6 +71,8 @@ public:
     uint64_t elfOffset = 0;
     uint64_t elfStartOffset = 0;
     int32_t symbolFileIndex = -1; // symbols file index
+    uint64_t adltLoadBase_ = static_cast<uint64_t>(-1);
+
     // use for find
     inline bool operator==(const std::string &sname) const
     {

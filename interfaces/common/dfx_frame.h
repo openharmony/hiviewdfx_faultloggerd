@@ -91,6 +91,7 @@ struct DfxFrame {
     int32_t column {0};
     /** Js frame package name */
     std::string packageName;
+    std::string originSoName {""};
     /** state of parse symbol */
     ParseSymbolState parseSymbolState;
 
@@ -118,20 +119,7 @@ struct DfxFrame {
         return StringPrintf("pc: 0x%08llx, sp: 0x%08llx", pc, sp);
 #endif
     }
-    std::string ToSymbolString() const
-    {
-        std::string output = StringPrintf("0x%016" PRIx64 " : ", pc);
-        output.append(funcName);
-        if (funcOffset != 0) {
-            output += StringPrintf("[0x%016" PRIx64 ":0x%016" PRIx64 "][+0x%" PRIx64 "]",
-                pc - mapOffset, funcOffset, mapOffset);
-        }
-        output.append("@");
-        output.append(mapName);
-        output.append(":");
-        output.append(std::to_string(index));
-        return output;
-    }
+    std::string ToSymbolString() const;
 #endif
 };
 } // namespace HiviewDFX

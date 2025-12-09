@@ -145,6 +145,104 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
 }
 
 /**
+ * @tc.name: DfxElfTestAdltStrTabSection
+ * @tc.desc: test DfxElf adlt.strtab section
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTestAdltStrTabSection, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxElfTestAdltStrTabSection: start.";
+    std::string filePath = "/data/test/resource/testdata/libadlt_test";
+    RegularElfFactory factory(filePath);
+    auto elf = factory.Create();
+    ASSERT_TRUE(elf != nullptr);
+    GTEST_LOG_(INFO) << elf->GetElfName();
+    ASSERT_TRUE(elf->IsValid());
+    ASSERT_TRUE(elf->IsAdlt());
+ 
+    // check .adlt.strtab section
+    std::string strTab = elf->GetAdltStrtab();
+    EXPECT_EQ(strTab.size(), 0x67);
+    ShdrInfo shdr;
+    std::string secName = ".adlt.strtab";
+    GTEST_LOG_(INFO) << secName;
+    ASSERT_TRUE(elf->GetSectionInfo(shdr, secName));
+    EXPECT_EQ(shdr.size, strTab.size());
+ 
+    GTEST_LOG_(INFO) << "DfxElfTestAdltStrTabSection: end.";
+}
+
+/**
+ * @tc.name: DfxElfTestAdltMapSection
+ * @tc.desc: test DfxElf adlt.map section
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTestAdltMapSection, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxElfTestAdltMapSection: start.";
+    std::string filePath = "/data/test/resource/testdata/libadlt_test";
+    RegularElfFactory factory(filePath);
+    auto elf = factory.Create();
+    ASSERT_TRUE(elf != nullptr);
+    GTEST_LOG_(INFO) << elf->GetElfName();
+    ASSERT_TRUE(elf->IsValid());
+    ASSERT_TRUE(elf->IsAdlt());
+
+    // check .adlt.map section
+    std::vector<AdltMapInfo> adltMap = elf->GetAdltMap();
+    std::string secName = ".adlt.map";
+    GTEST_LOG_(INFO) << secName;
+    ShdrInfo shdr;
+    ASSERT_TRUE(elf->GetSectionInfo(shdr, secName));
+    EXPECT_GT(shdr.size, 0);
+    EXPECT_EQ(shdr.size, adltMap.size() * sizeof(AdltMapInfo));
+    EXPECT_EQ(shdr.size % sizeof(AdltMapInfo), 0);
+    std::vector<uint8_t> buf(shdr.size);
+    ASSERT_TRUE(elf->GetSectionData(buf.data(), shdr.size, secName));
+    EXPECT_EQ(shdr.size, buf.size());
+
+    GTEST_LOG_(INFO) << "DfxElfTestAdltMapSection: end.";
+}
+
+/**
+ * @tc.name: DfxElfTestAdltGetOriginSoFunc
+ * @tc.desc: test DfxElf Get Origin So Func
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxElfTest, DfxElfTestAdltGetOriginSoFunc, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxElfTestAdltGetOriginSoFunc: start.";
+    std::string filePath = "/data/test/resource/testdata/libadlt_test";
+    RegularElfFactory factory(filePath);
+    auto elf = factory.Create();
+    ASSERT_TRUE(elf != nullptr);
+    GTEST_LOG_(INFO) << elf->GetElfName();
+    ASSERT_TRUE(elf->IsValid());
+ 
+    // get .adlt.map section
+    std::string secName = ".adlt.map";
+    ShdrInfo shdr;
+    ASSERT_TRUE(elf->GetSectionInfo(shdr, secName));
+    EXPECT_GT(shdr.size, 0);
+    std::vector<uint8_t> buf(shdr.size);
+    ASSERT_TRUE(elf->GetSectionData(buf.data(), shdr.size, secName));
+    EXPECT_EQ(shdr.size, buf.size());
+ 
+    // check func: GetAdltOriginSoNameByRelPc
+    // legal relPc
+    AdltMapInfo* mapInfo = reinterpret_cast<AdltMapInfo*>(buf.data());
+    uint32_t relPc = mapInfo[0].pcBegin;
+    std::string originSoName = elf->GetAdltOriginSoNameByRelPc(relPc);
+    EXPECT_GT(originSoName.size(), 0);
+    // illegal relPc
+    relPc = mapInfo[0].pcEnd;
+    originSoName = elf->GetAdltOriginSoNameByRelPc(relPc);
+    ASSERT_TRUE(originSoName.empty());
+ 
+    GTEST_LOG_(INFO) << "DfxElfTestAdltGetOriginSoFunc: end.";
+}
+
+/**
  * @tc.name: DfxElfTest003
  * @tc.desc: test DfxElf functions with using error
  * @tc.type: FUNC
@@ -250,6 +348,8 @@ HWTEST_F(DfxElfTest, DfxElfTest008, TestSize.Level2)
     ElfSymbol elfSymbol;
     elfParse->GetFuncSymbolByAddr(addr, elfSymbol);
     ASSERT_EQ(buildId, "");
+    // illegal size
+    elfParse->GetAdltMapSectionInfo(0, 13);
 }
 
 /**

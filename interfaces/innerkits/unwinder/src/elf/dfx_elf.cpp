@@ -296,6 +296,26 @@ bool DfxElf::GetSectionData(unsigned char* buf, uint64_t size, std::string secNa
     return elfParse_->GetSectionData(buf, size, secName);
 }
 
+std::string DfxElf::GetAdltOriginSoNameByRelPc(uint64_t relPc) const
+{
+    return elfParse_->GetAdltOriginSoNameByRelPc(relPc);
+}
+
+const std::string& DfxElf::GetAdltStrtab() const
+{
+    return elfParse_->GetAdltStrtab();
+}
+
+const std::vector<AdltMapInfo>& DfxElf::GetAdltMap() const
+{
+    return elfParse_->GetAdltMap();
+}
+
+bool DfxElf::IsAdlt()
+{
+    return elfParse_->IsAdlt();
+}
+
 GnuDebugDataHdr DfxElf::GetGnuDebugDataHdr()
 {
     if (!IsValid()) {

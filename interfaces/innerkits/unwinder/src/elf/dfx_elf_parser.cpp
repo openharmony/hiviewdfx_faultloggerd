@@ -43,6 +43,7 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxElfParser"
+#define PT_ADLT 0x6788FC61
 }
 
 bool ElfParser::Read(uintptr_t pos, void *buf, size_t size)
@@ -115,6 +116,20 @@ bool ElfParser::ParseElfHeaders(const EhdrType& ehdr)
     return true;
 }
 
+template <typename PhdrType>
+void ElfParser::UpdateVaddrAndOffset(const PhdrType& phdr)
+{
+    if (static_cast<uint64_t>(phdr.p_vaddr) < static_cast<uint64_t>(startVaddr_)) {
+        startVaddr_ = static_cast<uint64_t>(phdr.p_vaddr);
+        startOffset_ = static_cast<uint64_t>(phdr.p_offset);
+    }
+    if (static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz) > static_cast<uint64_t>(endVaddr_)) {
+        endVaddr_ = static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz);
+    }
+    DFXLOGU("Elf startVaddr: %{public}" PRIx64 ", endVaddr: %{public}" PRIx64 "",
+        startVaddr_, endVaddr_);
+}
+
 template <typename EhdrType, typename PhdrType>
 bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
 {
@@ -148,17 +163,12 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
                 }
                 firstLoadHeader = false;
 
-                if (static_cast<uint64_t>(phdr.p_vaddr) < static_cast<uint64_t>(startVaddr_)) {
-                    startVaddr_ = static_cast<uint64_t>(phdr.p_vaddr);
-                    startOffset_ = static_cast<uint64_t>(phdr.p_offset);
-                }
-                if (static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz) > static_cast<uint64_t>(endVaddr_)) {
-                    endVaddr_ = static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz);
-                }
-                DFXLOGU("Elf startVaddr: %{public}" PRIx64 ", endVaddr: %{public}" PRIx64 "",
-                    startVaddr_, endVaddr_);
+                UpdateVaddrAndOffset(phdr);
                 break;
             }
+            case PT_ADLT:
+                ptAdlt = true;
+                break;
             case PT_DYNAMIC: {
                 dynamicOffset_ = phdr.p_offset;
                 break;
@@ -173,6 +183,48 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
 const GnuDebugDataHdr& ElfParser::GetGnuDebugDataHdr() const
 {
     return gnuDebugDataHdr_;
+}
+
+void ElfParser::GetAdltStrTabSectionInfo(uint64_t shOffset, uint64_t shSize)
+{
+    std::vector<char> tabBuf(shSize, 0);
+    if (!Read(shOffset, tabBuf.data(), shSize)) {
+        DFXLOGE("Get .adlt.strtab failed, offset: 0x%{public}" PRIx64 ", size: 0x%{public}" PRIx64, shOffset, shSize);
+    } else {
+        adltStrtab_ = std::string(tabBuf.begin(), tabBuf.begin() + shSize);
+        DFXLOGI("Get adlt.strtab success, len: %{public}" PRIuPTR, adltStrtab_.length());
+    }
+}
+
+void ElfParser::GetAdltMapSectionInfo(uint64_t shOffset, uint64_t shSize)
+{
+    if (shSize % sizeof(AdltMapInfo) != 0) {
+        DFXLOGE("Invalid .adlt.map section size, offset: 0x%{public}" PRIx64 ", size: 0x%{public}" PRIx64,
+            shOffset, shSize);
+        return;
+    }
+    uint64_t mapNum = shSize / sizeof(AdltMapInfo);
+    std::vector<AdltMapInfo> buf(mapNum);
+    if (Read(shOffset, buf.data(), shSize)) {
+        adltMap_ = std::move(buf);
+    }
+}
+
+template <typename ShdrType>
+void ElfParser::ExtractSymSectionHeadersInfo(const ShdrType& shdr)
+{
+    ElfShdr elfShdr;
+    elfShdr.name = static_cast<uint32_t>(shdr.sh_name);
+    elfShdr.type = static_cast<uint32_t>(shdr.sh_type);
+    elfShdr.flags = static_cast<uint64_t>(shdr.sh_flags);
+    elfShdr.addr = static_cast<uint64_t>(shdr.sh_addr);
+    elfShdr.offset = static_cast<uint64_t>(shdr.sh_offset);
+    elfShdr.size = static_cast<uint64_t>(shdr.sh_size);
+    elfShdr.link = static_cast<uint32_t>(shdr.sh_link);
+    elfShdr.info = static_cast<uint32_t>(shdr.sh_info);
+    elfShdr.addrAlign = static_cast<uint64_t>(shdr.sh_addralign);
+    elfShdr.entSize = static_cast<uint64_t>(shdr.sh_entsize);
+    symShdrs_.emplace_back(elfShdr);
 }
 
 template <typename EhdrType, typename ShdrType>
@@ -194,6 +246,14 @@ bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
             continue;
         }
 
+        if (shdr.sh_size > 0) {
+            if (secName == ADLTSTRTAB) { // .adlt.strtab
+                GetAdltStrTabSectionInfo(shdr.sh_offset, shdr.sh_size);
+            } else if (secName == ADLTMAP) { // .adlt.map
+                GetAdltMapSectionInfo(shdr.sh_offset, shdr.sh_size);
+            }
+        }
+        
         if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
             gnuDebugDataHdr_.address = reinterpret_cast<uintptr_t>(shdr.sh_offset +
                 static_cast<uint8_t *>(mmap_->Get()));
@@ -211,18 +271,7 @@ bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
             if (shdr.sh_link >= ehdr.e_shnum) {
                 continue;
             }
-            ElfShdr elfShdr;
-            elfShdr.name = static_cast<uint32_t>(shdr.sh_name);
-            elfShdr.type = static_cast<uint32_t>(shdr.sh_type);
-            elfShdr.flags = static_cast<uint64_t>(shdr.sh_flags);
-            elfShdr.addr = static_cast<uint64_t>(shdr.sh_addr);
-            elfShdr.offset = static_cast<uint64_t>(shdr.sh_offset);
-            elfShdr.size = static_cast<uint64_t>(shdr.sh_size);
-            elfShdr.link = static_cast<uint32_t>(shdr.sh_link);
-            elfShdr.info = static_cast<uint32_t>(shdr.sh_info);
-            elfShdr.addrAlign = static_cast<uint64_t>(shdr.sh_addralign);
-            elfShdr.entSize = static_cast<uint64_t>(shdr.sh_entsize);
-            symShdrs_.emplace_back(elfShdr);
+            ExtractSymSectionHeadersInfo(shdr);
         }
     }
     return true;
@@ -563,6 +612,36 @@ std::string ElfParser::ToReadableBuildId(const std::string& buildIdHex)
         buildId[i * hexExpandParam + 1] = hexTable[n % hexLength];
     }
     return buildId;
+}
+
+std::string ElfParser::GetNameByNameOffset(uint32_t nameOffset) const
+{
+    if (nameOffset < adltStrtab_.length()) {
+        size_t endPos = adltStrtab_.find('\0', nameOffset);
+        if (endPos != std::string::npos) {
+            return adltStrtab_.substr(nameOffset, endPos - nameOffset);
+        }
+    }
+    DFXLOGE("get elf name from .adlt.strtab fail, nameOffset: %{public}" PRIu32 ", adltstrtab.size: %{public}" PRIuPTR,
+        nameOffset, adltStrtab_.length());
+    return "";
+}
+
+std::string ElfParser::GetAdltOriginSoNameByRelPc(uint64_t relPc) const
+{
+    auto it = std::lower_bound(
+        adltMap_.begin(),
+        adltMap_.end(),
+        relPc,
+        [](const AdltMapInfo& info, uint64_t pc) {
+            return info.pcEnd <= pc;
+        });
+    if (it != adltMap_.end() && relPc >= it->pcBegin && relPc < it->pcEnd) {
+        return GetNameByNameOffset(it->nameOffset);
+    }
+    DFXLOGE("get elf nameOffset fail, relPc: 0x%{public}" PRIx64 ", mapSize: %{public}" PRIuPTR,
+        relPc, adltMap_.size());
+    return "";
 }
 
 bool ElfParser32::InitHeaders()

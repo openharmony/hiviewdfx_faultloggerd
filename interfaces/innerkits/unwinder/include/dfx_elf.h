@@ -69,6 +69,10 @@ public:
     bool GetSectionData(unsigned char* buf, uint64_t size, std::string secName);
     int FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struct UnwindTableInfo& uti);
     static int FindUnwindTableLocal(uintptr_t pc, struct UnwindTableInfo& uti);
+    bool IsAdlt();
+    const std::vector<AdltMapInfo>& GetAdltMap() const;
+    const std::string& GetAdltStrtab() const;
+    std::string GetAdltOriginSoNameByRelPc(uint64_t relPc) const;
 
 protected:
     void Init();

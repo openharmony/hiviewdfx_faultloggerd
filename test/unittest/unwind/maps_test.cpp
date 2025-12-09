@@ -27,6 +27,7 @@ namespace OHOS {
 namespace HiviewDFX {
 namespace {
 const string INVALID_MAP_NAME = "/system/lib64/init/libinit_context111.z.so";
+const string ADLT_MAP_NAME = "/system/lib/libadlt_app.so";
 #ifdef __arm__
 const string MAPS_FILE = "/data/test/resource/testdata/testmaps_32";
 const string VALID_MAP_NAME = "/system/lib/init/libinit_context.z.so";
@@ -35,6 +36,7 @@ const string INVALID_MAP_ITEM = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /sys
 const string VDSO_MAP_ITEM = "f7c21000-f7c22000 r-xp 00000000 00:00 0                                  [vdso]";
 const string ARK_HAP_MAP_NAME = "/system/app/SceneBoard/SceneBoard.hap";
 const string ARK_CODE_MAP_NAME = "[anon:ArkTS Code:libdialog.z.so/Dialog.js]";
+#define ADLT_MAP_LOAD_BASE 0xa0400000
 #else
 const string MAPS_FILE = "/data/test/resource/testdata/testmaps_64";
 const string VALID_MAP_NAME = "/system/lib64/init/libinit_context.z.so";
@@ -44,6 +46,7 @@ const string INVALID_MAP_ITEM = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 
 const string VDSO_MAP_ITEM = "7f8b9df000-7f8b9e0000 r-xp 00000000 00:00 0                              [vdso]";
 const string ARK_HAP_MAP_NAME = "/system/app/SceneBoard/SceneBoard.hap";
 const string ARK_CODE_MAP_NAME = "[anon:ArkTS Code:libdialog.z.so/Dialog.js]";
+#define ADLT_MAP_LOAD_BASE 0x5aa0400000
 #endif
 }
 
@@ -200,6 +203,47 @@ HWTEST_F(MapsTest, CreateMapsTest, TestSize.Level2)
         std::cout << map->ToString();
     }
     GTEST_LOG_(INFO) << "CreateMapsTest: end.";
+}
+
+/**
+ * @tc.name: AdltMapLoadBaseTest
+ * @tc.desc: test adlt map loadbase
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, AdltMapLoadBaseTest, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AdltMapLoadBaseTest: start.";
+    std::vector<std::shared_ptr<DfxMap>> mapsV;
+    EXPECT_EQ(true, maps_->FindMapsByName(ADLT_MAP_NAME, mapsV));
+    for (auto map : mapsV) {
+        EXPECT_EQ(ADLT_MAP_LOAD_BASE, map->GetAdltLoadBase());
+    }
+    GTEST_LOG_(INFO) << "invalid pid or path test.";
+    std::string invalidPath = "";
+    ASSERT_TRUE(DfxMaps::Create(-1, invalidPath) == nullptr);
+    ASSERT_TRUE(DfxMaps::Create(getpid(), invalidPath) == nullptr);
+    invalidPath = "/data/xxxx";
+    ASSERT_TRUE(DfxMaps::Create(getpid(), invalidPath) == nullptr);
+    GTEST_LOG_(INFO) << "AdltMapLoadBaseTest: end.";
+}
+
+/**
+ * @tc.name: AdltMapIndexTest
+ * @tc.desc: test adlt map index
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, AdltMapIndexTest, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AdltMapIndexTest: start.";
+    std::vector<std::shared_ptr<DfxMap>> mapsV;
+    ASSERT_TRUE(maps_->adltMapIndex_ >= 0);
+    ASSERT_TRUE(maps_->adltMapIndex_ < maps_->maps_.size());
+    EXPECT_EQ(true, maps_->FindMapsByName(ADLT_MAP_NAME, mapsV));
+    for (auto map : mapsV) {
+        EXPECT_EQ(maps_->adltMapIndex_, maps_->FindMapIndexByAddr(map->begin));
+    }
+    
+    GTEST_LOG_(INFO) << "AdltMapIndexTest: end.";
 }
 
 /**

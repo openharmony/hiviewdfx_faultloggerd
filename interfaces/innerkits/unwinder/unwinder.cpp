@@ -1269,8 +1269,8 @@ void Unwinder::Impl::ParseFrameSymbol(DfxFrame& frame)
         return;
     }
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
-        DFXLOGU("Failed to get symbol, relPc: %{public}" PRIx64 ", mapName: %{public}s",
-            frame.relPc, frame.mapName.c_str());
+        DFXLOGU("Failed to get symbol, relPc: 0x%{public}" PRIx64 ", pc: 0x%{public}" PRIx64 ", mapName: %{public}s",
+            frame.relPc, frame.pc, frame.mapName.c_str());
     }
     frame.parseSymbolState.SetParseSymbolState(true);
 }
@@ -1283,18 +1283,27 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame, bool needSymParse)
         DFXLOGU("Current frame is not mapped.");
         return;
     }
-    frame.mapName = frame.map->GetElfName();
+    std::string mapName = frame.map->GetElfName();
+    frame.mapName = mapName;
     DFX_TRACE_SCOPED_DLSYM("FillFrame:%s", frame.mapName.c_str());
     frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapOffset = frame.map->offset;
-    if (frame.map->GetElf() == nullptr) {
+    auto elf = frame.map->GetElf();
+    if (elf == nullptr) {
         return;
     }
-    frame.buildId = frame.map->GetElf()->GetBuildId();
-    DFXLOGU("mapName: %{public}s, mapOffset: %{public}" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
+    frame.buildId = elf->GetBuildId();
     if (needSymParse) {
         ParseFrameSymbol(frame);
     }
+    if (elf->IsAdlt()) {
+        std::string originSoName = elf->GetAdltOriginSoNameByRelPc(frame.relPc);
+        if (!originSoName.empty()) {
+            mapName.append(":" + originSoName);
+        }
+    }
+    frame.mapName = mapName;
+    DFXLOGU("mapName: %{public}s, mapOffset: %{public}" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
 }
 
 void Unwinder::Impl::FillJsFrame(DfxFrame& frame)

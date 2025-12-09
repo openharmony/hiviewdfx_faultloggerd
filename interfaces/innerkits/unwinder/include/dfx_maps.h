@@ -56,6 +56,7 @@ public:
     bool IsArkExecutedMap(uintptr_t addr);
     uint32_t filePathId_ {0}; // for maps item filePath id
 private:
+    void ParseMaps(const pid_t pid, FILE* fp, int& fgetCount);
     bool Parse(const pid_t pid, const std::string& path);
     bool ParseByBuffer(const pid_t pid, std::string& buffer);
     std::shared_ptr<DfxMap> ParseMap(const char* buf, size_t size);
@@ -73,6 +74,7 @@ private:
     uintptr_t stackTop_ = 0;
     uintptr_t ArkStackStart_ = 0;
     uintptr_t ArkStackEnd_ = 0;
+    uint32_t adltMapIndex_ = -1;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

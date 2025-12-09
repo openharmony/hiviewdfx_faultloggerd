@@ -381,6 +381,10 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
         if (elf != nullptr && !elf->IsValid()) {
             elf = nullptr;
         }
+        // adlt need update lodeBase
+        if (elf != nullptr && elf->IsAdlt()) {
+            elf->SetLoadBase(GetAdltLoadBase());
+        }
         DFXLOGU("GetElf name: %{public}s", name.c_str());
     }
     return elf;
