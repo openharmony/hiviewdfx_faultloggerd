@@ -321,6 +321,24 @@ static bool CheckTestGetCrashObjMemory(const string& filePath, const pid_t& pid)
     int expectNum = sizeof(log) / sizeof(log[0]);
     return CheckKeyWords(filePath, log, expectNum, minRegIdx) == expectNum;
 }
+
+static bool CheckTestGetCrashObjNKB(const string& filePath, const pid_t& pid, size_t nKB)
+{
+    std::vector<std::string> log = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "LastFatalMessage:",
+        "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:", "Maps:", "/crasher"
+    };
+    constexpr const size_t belowTheBoundary = 63;
+    constexpr const size_t aboveTheBoundary = 65;
+    if (nKB >= belowTheBoundary && nKB <= aboveTheBoundary) {
+        constexpr const int oneKb = 1024;
+        char buff[oneKb];
+        (void)snprintf_s(buff, sizeof(buff), sizeof(buff) - 1, "%01023lu\n", nKB);
+        log.push_back(std::string(buff));
+    }
+    int minRegIdx = 8; // 8 : index of first REGISTERS - 1
+    return CheckKeyWords(filePath, log, minRegIdx);
+}
 #endif
 
 static void RequestMemory(char* msg)
@@ -1827,5 +1845,48 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest129, TestSize.Level2)
     EXPECT_TRUE(result.find("send"));
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest129: end.";
 }
+
+#if defined(__aarch64__)
+/**
+* @tc.name: FaultLoggerdSystemTest130
+* @tc.desc: Test get crash object
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest130, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest130: start.";
+    string cmd = "TestGetCrashObj63Kb";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test " << cmd << " pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    // 63:The boundary value is 64, and the test is below the boundary value
+    EXPECT_TRUE(CheckTestGetCrashObjNKB(fileName, pid, 63));
+
+    cmd = "TestGetCrashObj64Kb";
+    pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test " << cmd << " pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    // 64: The boundary value is 64, test the boundary value
+    EXPECT_TRUE(CheckTestGetCrashObjNKB(fileName, pid, 64));
+
+    cmd = "TestGetCrashObj65Kb";
+    pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test " << cmd << " pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    // 65: The boundary value is 64, and the test is higher than the boundary value
+    EXPECT_TRUE(CheckTestGetCrashObjNKB(fileName, pid, 65));
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest130: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS

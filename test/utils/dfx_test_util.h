@@ -97,6 +97,7 @@ void UninstallTestHap(const std::string& bundleName);
 int CountLines(const std::string& fileName);
 bool CheckProcessComm(int pid, const std::string& name);
 int CheckKeyWords(const std::string& filePath, std::string *keywords, int length, int minRegIdx);
+int CheckKeyWords(const std::string& filePath, std::vector<std::string>& keywords, int minRegIdx);
 bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist);
 int GetKeywordsNum(const std::string& msg, std::string *keywords, int length);
 int GetKeywordCount(const std::string& msg, const std::string& keyword);

@@ -147,8 +147,10 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
 std::string DumpInfoHeader::GetLastFatalMsg(DfxProcess& process, const ProcessDumpRequest& request)
 {
     std::string lastFatalMsg = "";
-    if (request.msg.type == MESSAGE_FATAL || request.msg.type == MESSAGE_CALLBACK) {
-        lastFatalMsg += request.msg.body;
+    if ((request.msg.type == MESSAGE_FATAL || request.msg.type == MESSAGE_CALLBACK) &&
+         request.msg.addr != 0) {
+        size_t len = request.msg.type == MESSAGE_FATAL ? MAX_FATAL_MSG_SIZE : MAX_CALLBACK_MSG_SIZE;
+        lastFatalMsg += DumpUtils::ReadStringByPtrace(process.GetVmPid(), request.msg.addr, len);
     }
     lastFatalMsg += UpdateFatalMessageWhenDebugSignal(process, request);
     lastFatalMsg += ReadCrashObjString(request);
@@ -165,11 +167,9 @@ std::string DumpInfoHeader::ReadCrashObjString(const ProcessDumpRequest& request
     }
     uintptr_t type = request.crashObj >> 56; // 56 :: Move 56 bit to the right
     uintptr_t addr = request.crashObj & 0xffffffffffffff;
-    std::vector<size_t> memorylengthTable = {0, 64, 256, 1024, 2048, 4096};
     if (type == 0) {
         DFXLOGI("Start read string type of crashObj.");
-        constexpr int bufLen = 256;
-        content = DumpUtils::ReadStringByPtrace(request.nsPid, addr, sizeof(long) * bufLen);
+        content = DumpUtils::ReadStringByPtrace(request.nsPid, addr, MAX_FATAL_MSG_SIZE);
     }
 #endif
     return content;

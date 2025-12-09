@@ -105,6 +105,16 @@ void DumpUtils::GetThreadKernelStack(DfxThread& thread)
     }
 }
 
+static inline bool HasNul(long val)
+{
+    char* ch = reinterpret_cast<char*>(&val);
+    for (size_t i = 0; i < sizeof(long); i++) {
+        if (ch[i] == '\0') {
+            return true;
+        }
+    }
+    return false;
+}
 std::string DumpUtils::ReadStringByPtrace(pid_t tid, uintptr_t startAddr, size_t maxLen)
 {
     constexpr size_t maxReadLen = 1024 * 1024 * 1; // 1M
@@ -121,7 +131,7 @@ std::string DumpUtils::ReadStringByPtrace(pid_t tid, uintptr_t startAddr, size_t
             break;
         }
         buffer[i] = ret;
-        if (ret == 0) {
+        if (HasNul(ret)) {
             break;
         }
     }

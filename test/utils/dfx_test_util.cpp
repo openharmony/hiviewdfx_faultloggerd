@@ -180,6 +180,21 @@ int CheckKeyWords(const std::string& filePath, std::string *keywords, int length
     return count;
 }
 
+int CheckKeyWords(const std::string& filePath, std::vector<std::string>& keywords, int minRegIdx)
+{
+    if (keywords.size() == 0) {
+        return true;
+    }
+    std::unique_ptr<std::string[]> keywordsArray(new std::string[keywords.size()]);
+
+    for (size_t i = 0; i < keywords.size(); ++i) {
+        keywordsArray[i] = keywords[i];
+    }
+
+    int length = sizeof(keywordsArray) / sizeof(keywordsArray[0]);
+    return CheckKeyWords(filePath, keywordsArray.get(), length, minRegIdx);
+}
+
 bool CheckLineMatch(const std::string& filePath, std::list<LineRule>& rules)
 {
     std::ifstream logFile(filePath);
