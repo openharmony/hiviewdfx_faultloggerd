@@ -31,6 +31,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "epoll_manager.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -135,7 +136,7 @@ void FaultLoggerPipePair::DelSdkDumpPipePair(int pid)
     });
 }
 
-LitePerfPipePair::LitePerfPipePair(int32_t uid) : uid_(uid) {}
+LitePerfPipePair::LitePerfPipePair(int32_t uid, uint64_t timeOutTime) : uid_(uid), timeOutTime_(timeOutTime) {}
 
 int32_t LitePerfPipePair::GetPipeFd(PipeFdUsage usage, FaultLoggerPipeType pipeType)
 {
@@ -149,13 +150,13 @@ int32_t LitePerfPipePair::GetPipeFd(PipeFdUsage usage, FaultLoggerPipeType pipeT
     return -1;
 }
 
-LitePerfPipePair& LitePerfPipePair::CreatePipePair(int uid)
+LitePerfPipePair& LitePerfPipePair::CreatePipePair(int uid, uint64_t timeOutTime)
 {
     auto pipePair = GetPipePair(uid);
     if (pipePair != nullptr) {
         return *pipePair;
     }
-    return pipes_.emplace_back(uid);
+    return pipes_.emplace_back(uid, timeOutTime);
 }
 
 bool LitePerfPipePair::CheckDumpMax()
@@ -185,6 +186,14 @@ void LitePerfPipePair::DelPipePair(int uid)
 {
     pipes_.remove_if([uid](const LitePerfPipePair& pipePair) {
         return pipePair.uid_ == uid;
+    });
+}
+
+void LitePerfPipePair::ClearTimeOutPairs()
+{
+    auto currentTime = GetElapsedNanoSecondsSinceBoot();
+    pipes_.remove_if([currentTime](const LitePerfPipePair& pipePair) {
+        return pipePair.timeOutTime_ <= currentTime;
     });
 }
 

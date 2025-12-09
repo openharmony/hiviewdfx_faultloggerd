@@ -61,6 +61,8 @@ private:
     std::mutex epollMutex_;
 };
 
+uint64_t GetElapsedNanoSecondsSinceBoot();
+
 class TimerTask : public EpollListener {
 public:
     explicit TimerTask(bool persist);

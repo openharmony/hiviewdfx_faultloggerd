@@ -473,15 +473,15 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
         if (responseData != ResponseCode::REQUEST_SUCCESS) {
             return responseData;
         }
-        auto& pipePair = LitePerfPipePair::CreatePipePair(uid);
-        fds[PIPE_BUF_INDEX] = pipePair.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ);
-        fds[PIPE_RES_INDEX] = pipePair.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ);
+        auto currentTime = GetElapsedNanoSecondsSinceBoot();
+        constexpr uint64_t secondToNano = 1000 * 1000 * 1000;
         constexpr int maxPerfTimeout = (MAX_STOP_SECONDS + DUMP_LITEPERF_TIMEOUT) / 1000;
         int32_t delayTime = std::min(requestData.timeout, maxPerfTimeout);
-        auto delayTask = TimerTaskAdapter::CreateInstance([uid] {
-            LitePerfPipePair::DelPipePair(uid);
-        }, delayTime);
-        EpollManager::GetInstance().AddListener(std::move(delayTask));
+        uint64_t timeOutTime = currentTime + static_cast<uint64_t>(delayTime) * secondToNano;
+        auto& pipePair = LitePerfPipePair::CreatePipePair(uid, timeOutTime);
+        fds[PIPE_BUF_INDEX] = pipePair.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ);
+        fds[PIPE_RES_INDEX] = pipePair.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ);
+        DelayTaskQueue::GetInstance().AddDelayTask(LitePerfPipePair::ClearTimeOutPairs, delayTime);
     } else if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
         LitePerfPipePair* pipePair = LitePerfPipePair::GetPipePair(uid);
         if (pipePair == nullptr) {

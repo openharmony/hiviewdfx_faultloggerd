@@ -70,19 +70,21 @@ private:
 class LitePerfPipePair {
 public:
     int32_t GetPipeFd(PipeFdUsage usage, FaultLoggerPipeType pipeType);
-    explicit LitePerfPipePair(int32_t uid);
+    LitePerfPipePair(int32_t uid, uint64_t timeOutTime);
     LitePerfPipePair(LitePerfPipePair&&) noexcept = default;
     LitePerfPipePair& operator=(LitePerfPipePair&&) noexcept = default;
 
-    static LitePerfPipePair& CreatePipePair(int uid);
+    static LitePerfPipePair& CreatePipePair(int uid, uint64_t timeOutTime);
     static bool CheckDumpRecord(int uid);
     static bool CheckDumpMax();
     static LitePerfPipePair* GetPipePair(int uid);
     static void DelPipePair(int uid);
+    static void ClearTimeOutPairs();
 private:
     LitePerfPipePair(const LitePerfPipePair&) = delete;
     LitePerfPipePair& operator=(const LitePerfPipePair&) = delete;
     int32_t uid_;
+    int64_t timeOutTime_;
     FaultLoggerPipe faultLoggerPipeBuf_;
     FaultLoggerPipe faultLoggerPipeRes_;
     static std::list<LitePerfPipePair> pipes_;
