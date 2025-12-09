@@ -116,7 +116,7 @@ int LitePerf::FinishProcessStackSampling()
 inline uint64_t GetThreadCpuTimes(pid_t tid)
 {
     ProcessInfo process{};
-    if (ParseThreadInfo(tid, process)) {
+    if (ParseProcInfo(tid, process)) {
         return process.utime + process.stime;
     }
     return 0;
