@@ -69,12 +69,17 @@ SmartFd CreateTimeFd()
     }
     return timefd;
 }
-
-inline uint64_t GetNanoTimeStamp()
-{
-    using namespace std::chrono;
-    return static_cast<uint64_t>(duration_cast<nanoseconds>(system_clock::now().time_since_epoch()).count());
 }
+
+uint64_t GetElapsedNanoSecondsSinceBoot()
+{
+    struct timespec times{};
+    if (clock_gettime(CLOCK_BOOTTIME, &times) == -1) {
+        DFXLOGE("%{public}s :: failed get time for %{public}d", EPOLL_MANAGER, errno);
+        return 0;
+    }
+    constexpr int64_t secondToNanosecond = 1 * 1000 * 1000 * 1000;
+    return static_cast<uint64_t>(times.tv_sec * secondToNanosecond + times.tv_nsec);
 }
 
 EpollListener::EpollListener(SmartFd fd, bool persist) : fd_(std::move(fd)), persist_(persist) {}
@@ -295,7 +300,10 @@ bool DelayTaskQueue::AddDelayTask(std::function<void()> workFunc, uint32_t delay
         return false;
     }
     const auto delayTimeInNanoSeconds =  static_cast<uint64_t>(delayTimeInS) * SECONDS_TO_NANOSCONDS;
-    const auto executeTime = GetNanoTimeStamp() + delayTimeInNanoSeconds;
+    if (GetElapsedNanoSecondsSinceBoot() == 0) {
+        return false;
+    }
+    const auto executeTime = GetElapsedNanoSecondsSinceBoot() + delayTimeInNanoSeconds;
     auto insertPos = std::find_if(delayTasks_.begin(), delayTasks_.end(),
         [executeTime](const std::pair<uint64_t, std::function<void()>>& existingTask) {
             return existingTask.first > executeTime;
@@ -318,7 +326,7 @@ DelayTaskQueue::Executor::~Executor()
 void DelayTaskQueue::Executor::OnTimer()
 {
     while (!delayTaskQueue_.delayTasks_.empty()) {
-        auto currentTime = GetNanoTimeStamp();
+        auto currentTime = GetElapsedNanoSecondsSinceBoot();
         if (delayTaskQueue_.delayTasks_.front().first > currentTime) {
             auto nextTaskDelayTime = delayTaskQueue_.delayTasks_.front().first - currentTime;
             SetTimeOptionForTimeFd(GetFd(), nextTaskDelayTime, SECONDS_TO_NANOSCONDS);
