@@ -44,6 +44,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxElfParser"
 #define PT_ADLT 0x6788FC61
+static constexpr int MAX_SYMBOL_NAME_LENGTH = 512;
 }
 
 bool ElfParser::Read(uintptr_t pos, void *buf, size_t size)
@@ -253,7 +254,7 @@ bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
                 GetAdltMapSectionInfo(shdr.sh_offset, shdr.sh_size);
             }
         }
-        
+
         if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
             gnuDebugDataHdr_.address = reinterpret_cast<uintptr_t>(shdr.sh_offset +
                 static_cast<uint8_t *>(mmap_->Get()));
@@ -422,7 +423,7 @@ bool ElfParser::ParseFuncSymbolName(const ShdrInfo& linkShdr, SymType sym, std::
         return false;
     }
     uintptr_t nameOffset = static_cast<uintptr_t>(linkShdr.offset + sym.st_name);
-    nameStr = std::string(static_cast<char*>(mmap_->Get()) + nameOffset);
+    nameStr = std::string(static_cast<char*>(mmap_->Get()) + nameOffset, MAX_SYMBOL_NAME_LENGTH);
     return true;
 }
 
