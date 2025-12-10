@@ -473,11 +473,11 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
         if (responseData != ResponseCode::REQUEST_SUCCESS) {
             return responseData;
         }
-        auto currentTime = GetElapsedNanoSecondsSinceBoot();
-        constexpr uint64_t secondToNano = 1000 * 1000 * 1000;
-        constexpr int maxPerfTimeout = (MAX_STOP_SECONDS + DUMP_LITEPERF_TIMEOUT) / 1000;
+        auto currentTime = GetMicroSecondsSinceBoot();
+        constexpr int maxPerfTimeout = (MAX_STOP_SECONDS + DUMP_LITEPERF_TIMEOUT) / MS_PER_S;
         int32_t delayTime = std::min(requestData.timeout, maxPerfTimeout);
-        uint64_t timeOutTime = currentTime + static_cast<uint64_t>(delayTime) * secondToNano;
+        constexpr auto usPerS = MS_PER_S * US_PER_MS;
+        uint64_t timeOutTime = currentTime + static_cast<uint64_t>(delayTime) * usPerS;
         auto& pipePair = LitePerfPipePair::CreatePipePair(uid, timeOutTime);
         fds[PIPE_BUF_INDEX] = pipePair.GetPipeFd(PipeFdUsage::BUFFER_FD, FaultLoggerPipeType::PIPE_FD_READ);
         fds[PIPE_RES_INDEX] = pipePair.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ);

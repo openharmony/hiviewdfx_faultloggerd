@@ -66,7 +66,7 @@ struct CoredumpSession {
     int clientFd {-1};
     uint64_t startTime {0};
     uint64_t endTime {0};
-    int32_t timerFd {0};
+    uint64_t delayTaskId {0};
 
     static std::string StatusToString(CoredumpStatus coredumpStatus)
     {

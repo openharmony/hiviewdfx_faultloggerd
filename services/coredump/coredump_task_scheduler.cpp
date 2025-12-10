@@ -38,12 +38,7 @@ void CoredumpTaskScheduler::ScheduleCancelTime(SessionId sessionId, int timeoutM
     auto curTime = GetAbsTimeMilliSeconds();
     int32_t delaySec = endTime > curTime ? static_cast<int32_t>((endTime - curTime) / 1000) : 0;
     delaySec = std::min(delaySec, maxDelaySec);
-
-    auto delayTask = TimerTaskAdapter::CreateInstance(removeTask, delaySec);
-    if (delayTask) {
-        session->timerFd = delayTask->GetFd();
-        EpollManager::GetInstance().AddListener(std::move(delayTask));
-    }
+    session->delayTaskId = DelayTaskQueue::GetInstance().AddDelayTask(removeTask, delaySec);
 }
 
 void CoredumpTaskScheduler::CancelTimeout(SessionId sessionId)
@@ -52,8 +47,7 @@ void CoredumpTaskScheduler::CancelTimeout(SessionId sessionId)
     if (!session) {
         return;
     }
-
-    EpollManager::GetInstance().RemoveListener(session->timerFd);
+    DelayTaskQueue::GetInstance().RemoveDelayTask(session->delayTaskId);
 }
 }
 }

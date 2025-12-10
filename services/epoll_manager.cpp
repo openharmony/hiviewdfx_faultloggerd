@@ -16,6 +16,7 @@
 #include "epoll_manager.h"
 
 #include <algorithm>
+#include <atomic>
 #include <thread>
 #include <vector>
 
@@ -38,7 +39,11 @@ namespace HiviewDFX {
 namespace {
 constexpr const char *const EPOLL_MANAGER = "EPOLL_MANAGER";
 
-constexpr uint64_t SECONDS_TO_NANOSCONDS = 1000 * 1000 * 1000;
+constexpr uint64_t NS_PER_S = MS_PER_S * US_PER_MS * NS_PER_US;
+constexpr uint64_t US_PER_S = MS_PER_S * US_PER_MS;
+constexpr uint8_t TIMESTAMP_BITS = 60;
+constexpr uint64_t TIMESTAMP_MASK = (static_cast<uint64_t>(1) << TIMESTAMP_BITS) - 1;
+constexpr uint8_t SEQUENCE_START_BIT = TIMESTAMP_BITS;
 
 bool SetTimeOptionForTimeFd(int32_t fd, uint64_t delayTimeInNs, uint64_t intervalTimeInNs)
 {
@@ -47,13 +52,13 @@ bool SetTimeOptionForTimeFd(int32_t fd, uint64_t delayTimeInNs, uint64_t interva
     }
     struct itimerspec timeOption{};
     timeOption.it_value.tv_sec =
-        static_cast<decltype(timeOption.it_value.tv_sec)>(delayTimeInNs / SECONDS_TO_NANOSCONDS);
+        static_cast<decltype(timeOption.it_value.tv_sec)>(delayTimeInNs / NS_PER_S);
     timeOption.it_value.tv_nsec =
-        static_cast<decltype(timeOption.it_value.tv_nsec)>(delayTimeInNs % SECONDS_TO_NANOSCONDS);
+        static_cast<decltype(timeOption.it_value.tv_nsec)>(delayTimeInNs % NS_PER_S);
     timeOption.it_interval.tv_sec =
-        static_cast<decltype(timeOption.it_interval.tv_sec)>(intervalTimeInNs / SECONDS_TO_NANOSCONDS);
+        static_cast<decltype(timeOption.it_interval.tv_sec)>(intervalTimeInNs / NS_PER_S);
     timeOption.it_interval.tv_nsec =
-        static_cast<decltype(timeOption.it_interval.tv_nsec)>(intervalTimeInNs % SECONDS_TO_NANOSCONDS);
+        static_cast<decltype(timeOption.it_interval.tv_nsec)>(intervalTimeInNs % NS_PER_S);
     if (timerfd_settime(fd, 0, &timeOption, nullptr) == -1) {
         DFXLOGE("%{public}s :: failed to set delay time for fd, errno: %{public}d.", EPOLL_MANAGER, errno);
         return false;
@@ -69,17 +74,32 @@ SmartFd CreateTimeFd()
     }
     return timefd;
 }
+
+/**
+ * @brief Combined uint64_t value with dual-field encoding
+ * @details Bit allocation for the 64-bit unsigned integer:
+ *          - Bits 60-63 (4 high-order bits): Sequence number (range: 0~15, for batch/instance identification)
+ *          - Bits 0-59 (60 low-order bits): microSecond-level timestamp (unsigned 60-bit value)
+ *          - Timestamp range: 0 to ~36500 years (max value: 2^60 - 1 us ≈ 1.15×10^18 us = 36534 years)
+ * @note To parse:
+ *       - Sequence number = (value >> 60) & 0x0F;
+ *       - Timestamp (us) = value & TIMESTAMP_MASK; (mask for 60 low bits)
+ */
+inline uint64_t CalculateDelayTaskId(uint64_t executeTimeInMicroSecond)
+{
+    static std::atomic<uint8_t> delaySequence{0};
+    return (static_cast<uint64_t>(delaySequence.fetch_add(1)) << SEQUENCE_START_BIT) | executeTimeInMicroSecond;
+}
 }
 
-uint64_t GetElapsedNanoSecondsSinceBoot()
+uint64_t GetMicroSecondsSinceBoot()
 {
     struct timespec times{};
     if (clock_gettime(CLOCK_BOOTTIME, &times) == -1) {
         DFXLOGE("%{public}s :: failed get time for %{public}d", EPOLL_MANAGER, errno);
         return 0;
     }
-    constexpr int64_t secondToNanosecond = 1 * 1000 * 1000 * 1000;
-    return static_cast<uint64_t>(times.tv_sec * secondToNanosecond + times.tv_nsec);
+    return static_cast<uint64_t>(times.tv_sec * US_PER_S + times.tv_nsec / NS_PER_US);
 }
 
 EpollListener::EpollListener(SmartFd fd, bool persist) : fd_(std::move(fd)), persist_(persist) {}
@@ -232,8 +252,8 @@ bool TimerTask::SetTimeOption(int32_t delayTimeInS, int32_t intervalTimeInS)
     if (delayTimeInS < 0 || intervalTimeInS < 0) {
         return false;
     }
-    return SetTimeOptionForTimeFd(GetFd(), static_cast<uint64_t>(delayTimeInS) * SECONDS_TO_NANOSCONDS,
-        static_cast<uint64_t>(intervalTimeInS) * SECONDS_TO_NANOSCONDS);
+    return SetTimeOptionForTimeFd(GetFd(), static_cast<uint64_t>(delayTimeInS) * NS_PER_S,
+        static_cast<uint64_t>(intervalTimeInS) * NS_PER_S);
 }
 
 void TimerTask::OnEventPoll()
@@ -281,7 +301,7 @@ bool DelayTaskQueue::InitExecutor(uint32_t delayTimeInS)
     if (executor == nullptr) {
         return false;
     }
-    if (!SetTimeOptionForTimeFd(executor->GetFd(), delayTimeInS * SECONDS_TO_NANOSCONDS, SECONDS_TO_NANOSCONDS)) {
+    if (!SetTimeOptionForTimeFd(executor->GetFd(), delayTimeInS * NS_PER_S, NS_PER_S)) {
         return false;
     }
     executor_ = executor.get();
@@ -291,27 +311,45 @@ bool DelayTaskQueue::InitExecutor(uint32_t delayTimeInS)
     return true;
 }
 
-bool DelayTaskQueue::AddDelayTask(std::function<void()> workFunc, uint32_t delayTimeInS)
+uint64_t DelayTaskQueue::AddDelayTask(std::function<void()> workFunc, uint32_t delayTimeInS)
 {
     if (delayTimeInS == 0 || !workFunc) {
-        return false;
+        return 0;
     }
     if (executor_ == nullptr && !InitExecutor(delayTimeInS)) {
-        return false;
+        return 0;
     }
-    const auto delayTimeInNanoSeconds =  static_cast<uint64_t>(delayTimeInS) * SECONDS_TO_NANOSCONDS;
-    if (GetElapsedNanoSecondsSinceBoot() == 0) {
-        return false;
+    const auto delayTimeInMicroSeconds =  static_cast<uint64_t>(delayTimeInS) * MS_PER_S * US_PER_MS;
+    if (GetMicroSecondsSinceBoot() == 0) {
+        return 0;
     }
-    const auto executeTime = GetElapsedNanoSecondsSinceBoot() + delayTimeInNanoSeconds;
+    const auto executeTimeInMicroSecond = GetMicroSecondsSinceBoot() + delayTimeInMicroSeconds;
     auto insertPos = std::find_if(delayTasks_.begin(), delayTasks_.end(),
-        [executeTime](const std::pair<uint64_t, std::function<void()>>& existingTask) {
-            return existingTask.first > executeTime;
+        [executeTimeInMicroSecond](const std::pair<uint64_t, std::function<void()>>& existingTask) {
+            return (existingTask.first & TIMESTAMP_MASK) > executeTimeInMicroSecond;
         });
     if (insertPos == delayTasks_.begin()) {
-        SetTimeOptionForTimeFd(executor_->GetFd(), delayTimeInNanoSeconds, SECONDS_TO_NANOSCONDS);
+        SetTimeOptionForTimeFd(executor_->GetFd(), delayTimeInMicroSeconds * NS_PER_US, NS_PER_S);
     }
-    delayTasks_.insert(insertPos, std::make_pair(executeTime, std::move(workFunc)));
+    auto delayTaskId = CalculateDelayTaskId(executeTimeInMicroSecond);
+    delayTasks_.insert(insertPos, std::make_pair(delayTaskId, std::move(workFunc)));
+    return delayTaskId;
+}
+
+bool DelayTaskQueue::RemoveDelayTask(uint64_t delayTaskId)
+{
+    auto it = std::find_if(delayTasks_.begin(), delayTasks_.end(),
+        [&](const std::pair<uint64_t, std::function<void()>>& item) {
+            return item.first == delayTaskId;
+        });
+    if (it == delayTasks_.end()) {
+        return false;
+    }
+    bool isBegin = (it == delayTasks_.begin());
+    delayTasks_.erase(it);
+    if (isBegin && executor_ != nullptr && delayTasks_.empty()) {
+        SetTimeOptionForTimeFd(executor_->GetFd(), 1, NS_PER_S);
+    }
     return true;
 }
 
@@ -326,14 +364,16 @@ DelayTaskQueue::Executor::~Executor()
 void DelayTaskQueue::Executor::OnTimer()
 {
     while (!delayTaskQueue_.delayTasks_.empty()) {
-        auto currentTime = GetElapsedNanoSecondsSinceBoot();
-        if (delayTaskQueue_.delayTasks_.front().first > currentTime) {
-            auto nextTaskDelayTime = delayTaskQueue_.delayTasks_.front().first - currentTime;
-            SetTimeOptionForTimeFd(GetFd(), nextTaskDelayTime, SECONDS_TO_NANOSCONDS);
+        auto currentTimeInMicroSecond = GetMicroSecondsSinceBoot();
+        auto delayTaskId = delayTaskQueue_.delayTasks_.front().first;
+        auto firstTaskExecuteTime = delayTaskId & TIMESTAMP_MASK;
+        if (firstTaskExecuteTime > currentTimeInMicroSecond) {
+            auto nextTaskDelayTime = firstTaskExecuteTime - currentTimeInMicroSecond;
+            SetTimeOptionForTimeFd(GetFd(), nextTaskDelayTime * NS_PER_US, NS_PER_S);
             return;
         }
         delayTaskQueue_.delayTasks_.front().second();
-        delayTaskQueue_.delayTasks_.pop_front();
+        delayTaskQueue_.RemoveDelayTask(delayTaskId);
     }
     EpollManager::GetInstance().RemoveListener(GetFd());
 }
