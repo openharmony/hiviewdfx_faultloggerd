@@ -120,7 +120,15 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
         }
         constexpr auto pcBound = 0x1000;
         if (registerState[pcIndex] <= pcBound) {
-            break;
+            if (index != 0) {
+                break;
+            }
+            // when fp back trace first frame failed, use the ark interface try again
+            registerState[fpIndex] = reinterpret_cast<uintptr_t>(startFp);
+            ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame);
+            DfxArk::Instance().StepArkFrame(&memoryReader, [](void* memoryReader, uintptr_t addr, uintptr_t* val) {
+                return reinterpret_cast<MemoryReader*>(memoryReader)->ReadMemory(addr, val, sizeof(uintptr_t));
+            }, &arkParam);
         }
         auto realPc = reinterpret_cast<void *>(StripPac(registerState[pcIndex], 0));
         if (realPc != nullptr) {
