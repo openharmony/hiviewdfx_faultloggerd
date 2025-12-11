@@ -61,7 +61,11 @@ private:
     std::mutex epollMutex_;
 };
 
-uint64_t GetElapsedNanoSecondsSinceBoot();
+constexpr uint64_t MS_PER_S = 1000;
+constexpr uint64_t US_PER_MS = 1000;
+constexpr uint64_t NS_PER_US = 1000;
+
+uint64_t GetMicroSecondsSinceBoot();
 
 class TimerTask : public EpollListener {
 public:
@@ -93,7 +97,8 @@ public:
     DelayTaskQueue(const DelayTaskQueue&) = delete;
     DelayTaskQueue(DelayTaskQueue&&) = delete;
     DelayTaskQueue& operator=(DelayTaskQueue&&) = delete;
-    bool AddDelayTask(std::function<void()> workFunc, uint32_t delayTimeInS);
+    uint64_t AddDelayTask(std::function<void()> workFunc, uint32_t delayTimeInS);
+    bool RemoveDelayTask(uint64_t delayTaskId);
 private:
     class Executor final : public TimerTask {
     public:

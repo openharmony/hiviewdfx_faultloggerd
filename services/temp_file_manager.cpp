@@ -256,17 +256,19 @@ bool TempFileManager::InitTempFileWatcher()
 
 void TempFileManager::RestartDeleteTaskOnStart(int32_t existTimeInSecond, std::list<std::string>& files)
 {
-    auto fileClearTimeInSecond = FaultLoggerConfig::GetInstance().GetTempFileConfig().fileClearTimeAfterBoot;
-    auto currentTime = GetCurrentTime();
+    uint32_t fileClearTimeInSecond = FaultLoggerConfig::GetInstance().GetTempFileConfig().fileClearTimeAfterBoot;
+    uint64_t currentTime = GetCurrentTime();
     for (const auto& file : files) {
-        auto createTime = GetTimeFromFileName(file);
-        auto existDuration = currentTime > createTime ? (currentTime - createTime) / SECONDS_TO_MILLISECONDS : 0;
-        auto existTimeLeft = existTimeInSecond - static_cast<int32_t>(existDuration);
-        auto fileClearTime = existTimeLeft > fileClearTimeInSecond ? existTimeLeft : fileClearTimeInSecond;
+        uint64_t createTime = GetTimeFromFileName(file);
+        int32_t existDuration = currentTime > createTime ?
+            static_cast<int32_t>((currentTime - createTime) / SECONDS_TO_MILLISECONDS) : 0;
+        int32_t existTimeLeft = existTimeInSecond > existDuration ? existTimeInSecond - existDuration : 0;
+        int32_t fileClearTime = existTimeLeft > static_cast<int32_t>(fileClearTimeInSecond) ?
+            existTimeLeft : static_cast<int32_t>(fileClearTimeInSecond);
         DelayTaskQueue::GetInstance().AddDelayTask(
             [file] {
                 RemoveTempFile(file);
-            }, fileClearTime);
+            }, static_cast<uint32_t>(fileClearTime));
     }
 }
 

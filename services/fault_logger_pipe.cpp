@@ -191,7 +191,7 @@ void LitePerfPipePair::DelPipePair(int uid)
 
 void LitePerfPipePair::ClearTimeOutPairs()
 {
-    auto currentTime = GetElapsedNanoSecondsSinceBoot();
+    auto currentTime = GetMicroSecondsSinceBoot();
     pipes_.remove_if([currentTime](const LitePerfPipePair& pipePair) {
         return pipePair.timeOutTime_ <= currentTime;
     });

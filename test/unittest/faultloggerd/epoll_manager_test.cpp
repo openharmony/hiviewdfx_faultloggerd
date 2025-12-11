@@ -40,7 +40,7 @@ void EpollManagerTest::SetUpTestCase()
 
 /**
  * @tc.name: DelayTaskTest01
- * @tc.desc: request a pip fd.
+ * @tc.desc: Check the execution order of tasks.
  * @tc.type: FUNC
  */
 HWTEST_F(EpollManagerTest, DelayTaskTest01, TestSize.Level2)
@@ -53,10 +53,10 @@ HWTEST_F(EpollManagerTest, DelayTaskTest01, TestSize.Level2)
             auto ret = DelayTaskQueue::GetInstance().AddDelayTask([&taskExecuteRecord, delayTime] {
                         taskExecuteRecord.emplace_back(delayTime);
                     }, delayTime);
-            ASSERT_TRUE(ret);
+            ASSERT_GT(ret, 0);
         };
         std::this_thread::sleep_for(std::chrono::microseconds(100));
-        ASSERT_TRUE(FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, task));
+        ASSERT_GT(FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, task), 0);
     }
     constexpr uint64_t waitTime = 4;
     std::this_thread::sleep_for(std::chrono::seconds(waitTime));
@@ -67,15 +67,38 @@ HWTEST_F(EpollManagerTest, DelayTaskTest01, TestSize.Level2)
 }
 
 /**
- * @tc.name: DelayTaskTest01
- * @tc.desc: request a pip fd.
+ * @tc.name: DelayTaskTest02
+ * @tc.desc: Check invalid params.
  * @tc.type: FUNC
  */
 HWTEST_F(EpollManagerTest, DelayTaskTest02, TestSize.Level2)
 {
     auto task = [] {
-        ASSERT_FALSE(DelayTaskQueue::GetInstance().AddDelayTask(nullptr, 0));
-        ASSERT_FALSE(DelayTaskQueue::GetInstance().AddDelayTask([] {}, 0));
+        ASSERT_EQ(DelayTaskQueue::GetInstance().AddDelayTask(nullptr, 0), 0);
+        ASSERT_EQ(DelayTaskQueue::GetInstance().AddDelayTask([] {}, 0), 0);
+    };
+    auto ret = FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, task);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    ASSERT_TRUE(ret);
+}
+
+/**
+ * @tc.name: DelayTaskTest03
+ * @tc.desc: Check the cancellation of delayed tasks.
+ * @tc.type: FUNC
+ */
+HWTEST_F(EpollManagerTest, DelayTaskTest03, TestSize.Level2)
+{
+    auto task = [] {
+        constexpr uint64_t waitTime = 10;
+        ASSERT_FALSE(DelayTaskQueue::GetInstance().RemoveDelayTask(0));
+        auto delayTaskId1 = DelayTaskQueue::GetInstance().AddDelayTask([] {}, waitTime);
+        ASSERT_GT(delayTaskId1, 0);
+        auto delayTaskId2 = DelayTaskQueue::GetInstance().AddDelayTask([] {}, waitTime);
+        ASSERT_GT(delayTaskId2, 0);
+        ASSERT_NE(delayTaskId1, delayTaskId2);
+        ASSERT_TRUE(DelayTaskQueue::GetInstance().RemoveDelayTask(delayTaskId1));
+        ASSERT_TRUE(DelayTaskQueue::GetInstance().RemoveDelayTask(delayTaskId2));
     };
     auto ret = FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, task);
     std::this_thread::sleep_for(std::chrono::seconds(1));
