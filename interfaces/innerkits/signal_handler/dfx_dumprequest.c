@@ -50,6 +50,9 @@
 #include "dfx_dump_request.h"
 #include "dfx_log.h"
 #include "dfx_signalhandler_exception.h"
+#ifndef is_ohos_lite
+#include "hilog_snapshot/log_snapshot.h"
+#endif
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN

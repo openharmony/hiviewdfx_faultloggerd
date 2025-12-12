@@ -58,13 +58,13 @@ FaultLoggerPipe::FaultLoggerPipe()
 
 int FaultLoggerPipe::GetReadFd() const
 {
-    DFXLOGD("%{public}s :: pipe read fd: %{public}d", __func__, readFd_);
+    DFXLOGD("%{public}s :: pipe read fd: %{public}d", __func__, readFd_.GetFd());
     return readFd_.GetFd();
 }
 
 int FaultLoggerPipe::GetWriteFd()
 {
-    DFXLOGD("%{public}s :: pipe write fd: %{public}d", __func__, writeFd_);
+    DFXLOGD("%{public}s :: pipe write fd: %{public}d", __func__, writeFd_.GetFd());
     if (!write_) {
         write_ = true;
         return writeFd_.GetFd();

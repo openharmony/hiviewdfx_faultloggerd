@@ -18,7 +18,6 @@ dfx_allocator_sources = [ "dfx_allocator.c" ]
 if (!defined(ohos_lite)) {
   config("dfx_allocator_config") {
     visibility = [ "*:*" ]
-    defines = [ "DFX_LOG_HILOG_BASE" ]
     include_dirs = [
       "include",
       "$faultloggerd_interfaces_path/common",
@@ -28,19 +27,19 @@ if (!defined(ohos_lite)) {
   }
   ohos_source_set("dfx_allocator_src") {
     public_configs = [ ":dfx_allocator_config" ]
+    include_dirs = [ "$faultloggerd_common_path/dfxlog" ]
     sources = dfx_allocator_sources
 
+    defines = [ "DFX_LOG_HILOG_BASE" ]
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     ]
     if (is_asan) {
-      defines = [ "DFX_ALLOCATE_ASAN" ]
+      defines += [ "DFX_ALLOCATE_ASAN" ]
     }
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "hilog:libhilog_base",
     ]
 
     part_name = "faultloggerd"
