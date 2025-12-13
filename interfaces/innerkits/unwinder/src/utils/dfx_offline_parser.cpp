@@ -39,6 +39,7 @@ namespace {
 
 const char* const SANDBOX_PATH_PREFIX = "/data/storage/el1/bundle/";
 const char* const ARKWEBCORE_SANDBOX_PATH_PREFIX = "/data/storage/el1/bundle/arkwebcore/";
+const char* const ARKWEBCORE_PATH_PREFIX = "/data/app/el1/bundle/public/com.huawei.hmos.arkwebcore/";
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 MAYBE_UNUSED const char* const SELF_CMDLINE_PATH = "/proc/self/cmdline";
 const int MAX_SINGLE_FRAME_PARSE_TIME = 1000;
@@ -143,8 +144,10 @@ bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
 
 std::string DfxOfflineParser::GetBundlePath(const std::string& originPath) const
 {
-    if (bundleName_.empty() || !StartsWith(originPath, SANDBOX_PATH_PREFIX) ||
-        StartsWith(originPath, ARKWEBCORE_SANDBOX_PATH_PREFIX)) {
+    if (StartsWith(originPath, ARKWEBCORE_SANDBOX_PATH_PREFIX)) {
+        return ARKWEBCORE_PATH_PREFIX + originPath.substr(std::strlen(ARKWEBCORE_SANDBOX_PATH_PREFIX));
+    }
+    if (bundleName_.empty() || !StartsWith(originPath, SANDBOX_PATH_PREFIX)) {
         return originPath;
     }
     return BUNDLE_PATH_PREFIX + bundleName_ + "/" + originPath.substr(std::strlen(SANDBOX_PATH_PREFIX));
