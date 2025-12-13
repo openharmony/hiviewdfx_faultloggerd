@@ -131,5 +131,72 @@ HWTEST_F(AsyncStackTest, AsyncStackTest002, TestSize.Level2)
 
     GTEST_LOG_(INFO) << "AsyncStackTest002: end.";
 }
+
+/**
+ * @tc.name: AsyncStackTest003
+ * @tc.desc: test DfxInitProfilerAsyncStack
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest003: start.";
+    size_t size = 1024;
+    void* buffer = malloc(size);
+    bool initOnce = DfxInitProfilerAsyncStack(buffer, size);
+    GTEST_LOG_(INFO) << "initOnce: " << initOnce;
+    bool initSecond = DfxInitProfilerAsyncStack(buffer, size);
+    GTEST_LOG_(INFO) << "initSecond: " << initSecond;
+#if defined(__aarch64__)
+    ASSERT_TRUE(initOnce);
+    ASSERT_FALSE(initSecond);
+#endif
+    DfxInitProfilerAsyncStack(nullptr, 0);
+    free(buffer);
+    GTEST_LOG_(INFO) << "AsyncStackTest003: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest004
+ * @tc.desc: test DfxSetAsyncStackType
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest004: start.";
+#if defined(__aarch64__)
+    uint64_t oldType = DfxSetAsyncStackType(ASYNC_TYPE_LIBUV_TIMER);
+    GTEST_LOG_(INFO) << "oldType: " << oldType;
+    uint64_t defaultAsyncType = ASYNC_TYPE_LIBUV_QUEUE | ASYNC_TYPE_LIBUV_TIMER |
+                                ASYNC_TYPE_FFRT_QUEUE | ASYNC_TYPE_FFRT_POOL;
+    ASSERT_EQ(oldType, defaultAsyncType);
+    DfxSetAsyncStackType(oldType);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest004: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest005
+ * @tc.desc: test DfxCollectStackWithDepth
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest005: start.";
+#if defined(__aarch64__)
+    size_t depth = 10;
+    bool res = DfxInitAsyncStack();
+    GTEST_LOG_(INFO) << "res: " << res;
+    ASSERT_TRUE(res);
+    uint64_t stackIdNotTragetType = DfxCollectStackWithDepth(ASYNC_TYPE_CUSTOMIZE, depth);
+    GTEST_LOG_(INFO) << "stackIdNotTragetType: " << stackIdNotTragetType;
+    uint64_t oldType = DfxSetAsyncStackType(ASYNC_TYPE_FFRT_POOL);
+    uint64_t stackIdTragetType = DfxCollectStackWithDepth(ASYNC_TYPE_FFRT_POOL, depth);
+    GTEST_LOG_(INFO) << "stackIdTragetType: " << stackIdTragetType;
+    ASSERT_EQ(stackIdNotTragetType, 0);
+    ASSERT_NE(stackIdTragetType, 0);
+    DfxSetAsyncStackType(oldType);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest005: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

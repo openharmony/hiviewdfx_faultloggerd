@@ -132,5 +132,22 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
     process.Detach();
     GTEST_LOG_(INFO) << "SubmitterStackTest001: end.";
 }
+/**
+ * @tc.name: SubmitterStackTest002
+ * @tc.desc: test set submitter stackId
+ * @tc.type: FUNC
+ */
+HWTEST_F(SubmitterStackTest, SubmitterStackTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SubmitterStackTest002: start.";
+#if defined(__aarch64__)
+    DfxInitAsyncStack();
+    uint64_t testId = 0x123456789ABCDEF0;
+    DfxSetSubmitterStackId(testId);
+    uint64_t storedValue = DfxGetSubmitterStackId();
+    ASSERT_EQ(storedValue, testId);
+#endif
+    GTEST_LOG_(INFO) << "SubmitterStackTest002: end.";
+}
 }
  

@@ -19,6 +19,8 @@
 #include <pthread.h>
 #include <securec.h>
 #include <threads.h>
+#include <mutex>
+#include <atomic>
 
 #include "dfx_frame_formatter.h"
 #include "dfx_log.h"
@@ -29,32 +31,62 @@
 using namespace OHOS::HiviewDFX;
 static bool g_init = false;
 #if defined(__aarch64__)
+// Filter out illegal requests
+static std::atomic<uint64_t> g_enabledAsyncType(ASYNC_TYPE_LIBUV_QUEUE | ASYNC_TYPE_LIBUV_TIMER |
+                                               ASYNC_TYPE_FFRT_QUEUE | ASYNC_TYPE_FFRT_POOL);
 static pthread_key_t g_stackidKey;
 static OHOS::HiviewDFX::FpBacktrace* g_fpBacktrace = nullptr;
 using SetStackIdFn = void(*)(uint64_t stackId);
-using CollectAsyncStackFn = uint64_t(*)();
+using CollectAsyncStackFn = uint64_t(*)(uint64_t type);
 using UvSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
 using FFRTSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
 
 typedef uint64_t(*GetStackIdFunc)(void);
 extern "C" void DFX_SetAsyncStackCallback(GetStackIdFunc func) __attribute__((weak));
 
-extern "C" uint64_t DfxCollectAsyncStack(void)
+uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
 {
-    if (!g_init) {
-        return 0;
-    }
-    const uint32_t maxSize = 16;
-    void* pcArray[maxSize] = {0};
-    if (g_fpBacktrace == nullptr) {
-        return 0;
-    }
-    size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, maxSize);
+    size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, depth);
     uint64_t stackId = 0;
-    auto stackIdPtr = reinterpret_cast<OHOS::HiviewDFX::StackId*>(&stackId);
+    auto stackIdPtr = reinterpret_cast<StackId*>(&stackId);
     uintptr_t* pcs = reinterpret_cast<uintptr_t*>(pcArray);
-    OHOS::HiviewDFX::UniqueStackTable::Instance()->PutPcsInTable(stackIdPtr, pcs, size);
+    UniqueStackTable::Instance()->PutPcsInTable(stackIdPtr, pcs, size);
     return stackId;
+}
+
+extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
+{
+    if (!g_init || g_fpBacktrace == nullptr) {
+        return 0;
+    }
+    uint64_t isTargetType = type & g_enabledAsyncType;
+    if (isTargetType == 0) {
+        return 0;
+    }
+    const uint32_t depth = 16;
+    void* pcArray[depth] = {0};
+    return CollectStackByFp(pcArray, depth);
+}
+
+extern "C" uint64_t DfxCollectStackWithDepth(uint64_t type, size_t depth)
+{
+    if (!g_init || g_fpBacktrace == nullptr) {
+        return 0;
+    }
+    uint64_t isTargetType = type & g_enabledAsyncType;
+    if (isTargetType == 0) {
+        return 0;
+    }
+    // Maximum collection of 256 frames
+    const uint32_t maxSize = 256;
+    const uint32_t realDepth = depth > maxSize ? maxSize : static_cast<uint32_t>(depth);
+    void* pcArray[maxSize] = {0};
+    return CollectStackByFp(pcArray, realDepth);
+}
+
+extern "C" uint64_t DfxSetAsyncStackType(uint64_t asyncType)
+{
+    return g_enabledAsyncType.exchange(asyncType);
 }
 
 extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
@@ -95,6 +127,30 @@ bool DfxInitAsyncStack()
         return false;
     }
 
+    if (pthread_key_create(&g_stackidKey, nullptr) != 0) {
+        DFXLOGE("failed to create key for stackId.");
+        return false;
+    }
+    g_fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
+    DfxSetAsyncStackCallback();
+    g_init = true;
+#endif
+    return g_init;
+}
+
+extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
+{
+#if defined(__aarch64__)
+    // init unique stack table
+    static std::mutex profilerInitMutex;
+    std::lock_guard<std::mutex> guard(profilerInitMutex);
+    if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->SwitchExternalBuffer(buffer, size)) {
+        DFXLOGE("failed to init unique stack table?.");
+        return false;
+    }
+    if (g_init) {
+        return g_init;
+    }
     if (pthread_key_create(&g_stackidKey, nullptr) != 0) {
         DFXLOGE("failed to create key for stackId.");
         return false;
