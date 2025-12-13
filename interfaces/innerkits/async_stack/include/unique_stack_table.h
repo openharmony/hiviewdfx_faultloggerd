@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
 
 #include <sys/mman.h>
 
@@ -76,6 +77,17 @@ static_assert(sizeof(Node) == 8, "Node size must be 8 byte");
 
 class UniqueStackTable {
 public:
+    struct StackTable {
+        void* tableBufMMap = nullptr;
+        uint32_t tableSize = INITIAL_TABLE_SIZE;
+        std::vector<uint32_t> usedSlots;
+        uint32_t totalNodes = 0;
+        uint32_t availableNodes = 0; // current available node count, include index 0
+        uint32_t hashModulus = 0;
+        uint32_t availableIndex = 1; // 0 for reserved, start from 1
+        uint64_t hashStep = 0; // for de-conflict
+        bool releaseBuffer = true;
+    };
     bool Init();
     static UniqueStackTable* Instance();
 
@@ -85,24 +97,28 @@ public:
     {
     }
 
-    UniqueStackTable(pid_t pid, uint32_t size) : pid_(pid), tableSize_(size)
+    UniqueStackTable(pid_t pid, uint32_t size) : pid_(pid)
     {
+        stackTable_.tableSize = size;
     }
 
     UniqueStackTable(void* buf, uint32_t size, bool releaseBuffer = true)
-        : tableBufMMap_(buf), tableSize_(size), releaseBuffer_(releaseBuffer)
     {
-        totalNodes_ = ((tableSize_ / sizeof(Node)) >> 1) << 1;
+        stackTable_.tableBufMMap = buf;
+        stackTable_.tableSize = size;
+        stackTable_.releaseBuffer = releaseBuffer;
+        stackTable_.totalNodes = ((stackTable_.tableSize / sizeof(Node)) >> 1) << 1;
     }
 
     ~UniqueStackTable()
     {
-        if (tableBufMMap_ != nullptr && releaseBuffer_) {
-            munmap(tableBufMMap_, tableSize_);
-            tableBufMMap_ = nullptr;
+        if (stackTable_.tableBufMMap != nullptr && stackTable_.releaseBuffer) {
+            munmap(stackTable_.tableBufMMap, stackTable_.tableSize);
+            stackTable_.tableBufMMap = nullptr;
         }
     }
-
+    bool SwitchExternalBuffer(void* buffer, size_t size);
+    bool InitWithExternalBuffer(void* buffer, size_t size);
     uint64_t PutPcsInTable(StackId *stackId, const uintptr_t *pcs, size_t nr);
     bool GetPcsByStackId(const StackId stackId, std::vector<uintptr_t>& pcs);
     bool ImportNode(uint32_t index, const Node& node);
@@ -117,37 +133,27 @@ public:
 
     uint32_t GetTabelSize()
     {
-        return tableSize_;
+        return stackTable_.tableSize;
     }
 
     std::vector<uint32_t>& GetUsedIndexes()
     {
-        return usedSlots_;
+        return stackTable_.usedSlots;
     }
 
     Node* GetHeadNode()
     {
-        return reinterpret_cast<Node *>(tableBufMMap_);
+        return reinterpret_cast<Node *>(stackTable_.tableBufMMap);
     }
 
 private:
     Node* GetFrame(uint64_t stackId);
     uint64_t PutPcInSlot(uint64_t thisPc, uint64_t prevIdx);
     int32_t pid_ = 0;
-    void* tableBufMMap_ = nullptr;
-    uint32_t tableSize_ = INITIAL_TABLE_SIZE;
-    std::vector<uint32_t> usedSlots_;
-    uint32_t totalNodes_ = 0;
-    // current available node count, include index 0
-    uint32_t availableNodes_ = 0;
-    uint32_t hashModulus_ = 0;
-    // 0 for reserved, start from 1
-    uint32_t availableIndex_ = 1;
-    // for de-conflict
-    uint64_t hashStep_ = 0;
     uint8_t deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
     std::mutex stackTableMutex_;
-    bool releaseBuffer_ = true;
+    StackTable stackTable_;
+    std::unique_ptr<StackTable> snapshot_;
 };
 }
 }

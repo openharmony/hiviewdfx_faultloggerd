@@ -7,6 +7,10 @@
       DfxInitAsyncStack;
       DfxGetSubmitterStackLocal;
       DfxGetSubmitterStackId;
+      DfxSetSubmitterStackId;
+      DfxInitProfilerAsyncStack;
+      DfxSetAsyncStackType;
+      DfxCollectStackWithDepth;
     };
   local:
     *;
