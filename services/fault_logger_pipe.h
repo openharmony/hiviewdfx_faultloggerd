@@ -84,7 +84,7 @@ private:
     LitePerfPipePair(const LitePerfPipePair&) = delete;
     LitePerfPipePair& operator=(const LitePerfPipePair&) = delete;
     int32_t uid_;
-    int64_t timeOutTime_;
+    uint64_t timeOutTime_;
     FaultLoggerPipe faultLoggerPipeBuf_;
     FaultLoggerPipe faultLoggerPipeRes_;
     static std::list<LitePerfPipePair> pipes_;
