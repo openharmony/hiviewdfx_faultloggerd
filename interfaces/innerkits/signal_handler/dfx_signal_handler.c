@@ -83,6 +83,7 @@ void __attribute__((constructor)) InitHandler(void)
 }
 
 static struct ProcessDumpRequest g_request;
+static char g_callbackMsg[MAX_CALLBACK_MSG_SIZE];
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_key_t g_crashObjKey;
 static uint64_t g_crashLogConfig = 0;
@@ -172,9 +173,7 @@ static void FillLastFatalMessageLocked(int32_t signo)
     }
 
     g_request.msg.type = MESSAGE_FATAL;
-    if (strcpy_s(g_request.msg.body, sizeof(g_request.msg.body), lastFatalMessage) != EOK) {
-        DFXLOGE("Last message strcpy fail");
-    }
+    g_request.msg.addr = (uintptr_t)lastFatalMessage;
 }
 
 static bool FillDebugMessageLocked(int32_t signo, siginfo_t *si)
@@ -264,7 +263,8 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
             if (callback != NULL) {
                 DFXLOGI("Start collect crash thread info.");
                 g_request.msg.type = MESSAGE_CALLBACK;
-                callback(g_request.msg.body, sizeof(g_request.msg.body), context);
+                callback(g_callbackMsg, sizeof(g_callbackMsg), context);
+                g_request.msg.addr = (uintptr_t)g_callbackMsg;
                 DFXLOGI("Finish collect crash thread info.");
             }
             break;

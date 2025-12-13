@@ -55,7 +55,7 @@ typedef enum {
 
 typedef struct {
     MessageType type;
-    char body[MAX_FATAL_MSG_SIZE];
+    uintptr_t addr;
 } Message;
 
 #ifndef is_ohos_lite

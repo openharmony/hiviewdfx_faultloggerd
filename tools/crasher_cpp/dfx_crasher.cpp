@@ -18,6 +18,7 @@
 #include <cerrno>
 #include <cinttypes>
 #include <csignal>
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -146,6 +147,12 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
         &DfxCrasher::PrintFatalMessageInLibc},
     {"TestGetCrashObj", "Test get object when crash",
         &DfxCrasher::TestGetCrashObj},
+    {"TestGetCrashObj63Kb", "Test get object when crash, msg is 63 Kb",
+        &DfxCrasher::TestGetCrashObj63Kb},
+    {"TestGetCrashObj64Kb", "Test get object when crash, msg is 64 Kb",
+        &DfxCrasher::TestGetCrashObj64Kb},
+    {"TestGetCrashObj65Kb", "Test get object when crash, msg is 65 Kb",
+        &DfxCrasher::TestGetCrashObj65Kb},
     {"TestGetCrashObjMemory", "Test get memory info when crash",
         &DfxCrasher::TestGetCrashObjMemory},
     {"Deadlock", "Test deadlock and parse lock owner",
@@ -641,6 +648,48 @@ NOINLINE int DfxCrasher::TestGetCrashObj()
     return 0;
 }
 
+static std::string CreateString(size_t nKb)
+{
+    std::string str;
+    constexpr int oneKb = 1024;
+    char buff[oneKb + 1];
+    for (size_t i = 0; i < nKb; i++) {
+        if (snprintf_s(buff, sizeof(buff), sizeof(buff) - 1, "%01023lu\n", i) <= 0) {
+            std::cout << "snprintf_s failed. errno " << errno << std::endl;
+            return str;
+        }
+        str += std::string(buff);
+    }
+    return str;
+}
+
+NOINLINE int DfxCrasher::TestGetCrashObj63Kb()
+{
+    constexpr size_t msgLen = 63;
+    std::string msg = CreateString(msgLen);
+    UniqueCrashObj obj(OBJ_STRING, reinterpret_cast<uintptr_t>(msg.c_str()));
+    raise(SIGSEGV);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::TestGetCrashObj64Kb()
+{
+    constexpr size_t msgLen = 64;
+    std::string msg = CreateString(msgLen);
+    UniqueCrashObj obj(OBJ_STRING, reinterpret_cast<uintptr_t>(msg.c_str()));
+    raise(SIGSEGV);
+    return 0;
+}
+
+NOINLINE int DfxCrasher::TestGetCrashObj65Kb()
+{
+    constexpr size_t msgLen = 65;
+    std::string msg = CreateString(msgLen);
+    UniqueCrashObj obj(OBJ_STRING, reinterpret_cast<uintptr_t>(msg.c_str()));
+    raise(SIGSEGV);
+    return 0;
+}
+
 NOINLINE static void TestGetCrashObjMemoryInner()
 {
     constexpr size_t bufSize = 4096;
@@ -852,12 +901,16 @@ NOINLINE int TestFunc70()
 
 int main(int argc, char *argv[])
 {
-    DfxCrasher::GetInstance().PrintUsage();
     if (argc <= 1) {
         std::cout << "wrong usage!";
         DfxCrasher::GetInstance().PrintUsage();
         return 0;
     }
+    std::cout << "run ";
+    for (int i = 0; i < argc; i++) {
+        std::cout << " " << argv[i];
+    }
+    std::cout << std::endl;
 
     std::cout << "ParseAndDoCrash done:" << DfxCrasher::GetInstance().ParseAndDoCrash(argv[1]) << "!\n";
     return 0;
