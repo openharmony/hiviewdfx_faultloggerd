@@ -176,6 +176,21 @@ HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
     GTEST_LOG_(INFO) << "GetRelPcTest: end.";
 }
 
+HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "GetRelPcTest: start.";
+#ifdef __arm__
+    uint64_t pc = 0xf6d83001;
+    const uint64_t invalidOffset = 0x1001;
+#else
+    uint64_t pc = 0x7f0ab40016;
+    const uint64_t invalidOffset = 0x16;
+#endif
+    shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAP_ITEM);
+    EXPECT_EQ(true, ((map->GetElfLongLong() == nullptr) && (map->GetRelPc(pc) == invalidOffset)));
+    GTEST_LOG_(INFO) << "GetRelPcTest: end.";
+}
+
 /**
  * @tc.name: ToStringTest
  * @tc.desc: test ToString
