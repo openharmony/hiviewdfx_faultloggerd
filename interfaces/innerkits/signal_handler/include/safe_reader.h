@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 AT_SYMBOL_HIDDEN size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen);
-AT_SYMBOL_HIDDEN void DeinitPipe();
+AT_SYMBOL_HIDDEN void DeInitPipe();
 
 #ifdef __cplusplus
 }

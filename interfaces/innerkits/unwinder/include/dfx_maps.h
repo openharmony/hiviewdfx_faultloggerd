@@ -30,7 +30,7 @@ public:
     DfxMaps() = default;
     ~DfxMaps() = default;
 
-    static std::shared_ptr<DfxMaps> CreateByBuffer(const pid_t pid, std::string& buffer);
+    static std::shared_ptr<DfxMaps> CreateByBuffer(const std::string& bundleName, std::string& buffer);
     static std::shared_ptr<DfxMaps> Create(pid_t pid = 0, bool crash = true);
     static std::shared_ptr<DfxMaps> Create(pid_t pid, const std::string& path);
     static bool Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
@@ -58,7 +58,7 @@ public:
 private:
     void ParseMaps(const pid_t pid, FILE* fp, int& fgetCount);
     bool Parse(const pid_t pid, const std::string& path);
-    bool ParseByBuffer(const pid_t pid, std::string& buffer);
+    bool ParseByBuffer(const std::string& bundleName, std::string& buffer);
     std::shared_ptr<DfxMap> ParseMap(const char* buf, size_t size);
     void HandleMap(const std::shared_ptr<DfxMap>& map);
     void HandleSpecialMap(const std::shared_ptr<DfxMap>& map);

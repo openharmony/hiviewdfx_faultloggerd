@@ -41,6 +41,8 @@ namespace {
 
 const char* const MAP_ARKWEB_CORE_PREFIX = "/data/storage/el1/bundle/arkwebcore/";
 const char* const ARKWEB_CORE_REAL_PATH = "/data/app/el1/bundle/public/com.huawei.hmos.arkwebcore/";
+const char* const SANDBOX_PATH_PREFIX = "/data/storage/el1/bundle/";
+const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 
 #if defined(is_ohos) && is_ohos
 AT_ALWAYS_INLINE const char* SkipWhiteSpace(const char *cp)
@@ -402,15 +404,24 @@ std::string DfxMap::GetElfName()
     return soName;
 }
 
-void DfxMap::FormatMapName(pid_t pid, std::string& mapName)
+void DfxMap::FormatMapName(const std::string& bundleName, std::string& mapName)
 {
-    if (pid <= 0 || pid == getpid()) {
+    if (mapName.empty()) {
         return;
     }
-
     // arkwebcore process get real path
     if (StartsWith(mapName, MAP_ARKWEB_CORE_PREFIX)) {
         mapName = ARKWEB_CORE_REAL_PATH + mapName.substr(strlen(MAP_ARKWEB_CORE_PREFIX));
+        return;
+    }
+    if (StartsWith(mapName, SANDBOX_PATH_PREFIX)) {
+        mapName = BUNDLE_PATH_PREFIX + bundleName + "/" + mapName.substr(strlen(SANDBOX_PATH_PREFIX));
+    }
+}
+
+void DfxMap::FormatMapName(pid_t pid, std::string& mapName)
+{
+    if (pid <= 0 || pid == getpid()) {
         return;
     }
 

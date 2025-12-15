@@ -31,8 +31,9 @@
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
-#include "faultlogger_client_msg.h"
-#include "faultloggerd_client.h"
+#ifndef is_ohos_lite
+#include "faultlog_client.h"
+#endif
 #include "procinfo.h"
 #include "reporter.h"
 #include "thread_context.h"
@@ -63,6 +64,7 @@ void LiteProcessDumper::ReadStat(int pipeReadFd)
         DFXLOGI("failed to read stat %{public}d", errno);
         return;
     }
+    buf[PROC_STAT_BUF_SIZE - 1] = '\0';
     stat_ = buf;
     DFXLOGI("stat %{public}s", stat_.c_str());
 }
@@ -74,6 +76,7 @@ void LiteProcessDumper::ReadStatm(int pipeReadFd)
         DFXLOGI("failed to read statm %{public}d", errno);
         return;
     }
+    buf[PROC_STATM_BUF_SIZE - 1] = '\0';
     statm_ = buf;
     DFXLOGI("statm %{public}s", statm_.c_str());
 }
@@ -84,7 +87,7 @@ void LiteProcessDumper::ReadStack(int pipeReadFd)
     read(pipeReadFd, stackBuf_.data(), PRIV_COPY_STACK_BUFFER_SIZE);
 }
 
-MemoryBlockInfo ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr, int count, int forward)
+MemoryBlockInfo ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr, unsigned int count, unsigned int forward)
 {
     std::vector<uintptr_t> bk(count);
     if (static_cast<unsigned long>(read(pipeReadFd, bk.data(), bk.size() * sizeof(uintptr_t))) !=
@@ -129,7 +132,9 @@ bool LiteProcessDumper::ReadPipeData(int uid)
     DFXLOGI("start read pipe data");
     int pipeReadFd = -1;
     constexpr int timeoutMs = 3000;
-    RequestLimitedPipeFd(0, pipeReadFd, timeoutMs, uid);
+#ifndef is_ohos_lite
+    RequestLimitedPipeFd(0, &pipeReadFd, timeoutMs, uid);
+#endif
     if (pipeReadFd <= 0) {
         return false;
     }
@@ -146,7 +151,9 @@ bool LiteProcessDumper::ReadPipeData(int uid)
         rawData_ += std::string(data, n);
     }
     DFXLOGI("finish read pipe data");
+#ifndef is_ohos_lite
     RequestLimitedDelPipeFd(uid);
+#endif
     return true;
 }
 
@@ -188,7 +195,9 @@ void LiteProcessDumper::Dump(int uid)
         DFXLOGE("Failed to init buffer writer.");
     }
     regs_ = DfxRegs::CreateFromUcontext(request_.context);
-    dfxMaps_ = DfxMaps::CreateByBuffer(request_.pid, rawData_);
+    std::string bundleName = request_.processName;
+    bundleName = bundleName.substr(0, bundleName.find_first_of(':'));
+    dfxMaps_ = DfxMaps::CreateByBuffer(bundleName, rawData_);
     InitProcess();
     Unwind();
     PrintAll();
@@ -309,7 +318,10 @@ void LiteProcessDumper::PrintOpenFiles()
     while (std::getline(iss, line)) {
         auto pos =  line.find_first_of('-');
         if (pos != std::string::npos) {
-            int fd = std::stoi(line.substr(0, pos));
+            long fd;
+            if (!SafeStrtol(line.substr(0, pos), fd, DECIMAL_BASE)) {
+                continue;
+            }
             line += "\n";
             fdFiles.emplace(fd, line);
         }

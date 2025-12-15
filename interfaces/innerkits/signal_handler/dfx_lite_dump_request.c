@@ -77,19 +77,19 @@ const char PID_STR_NAME[] = "Pid:";
 
 bool IsNoNewPriv(void)
 {
-    char statusPath[] = "proc/self/status";
-    int fd = open(statusPath, O_RDONLY);
+    int fd = open(PROC_SELF_STATUS_PATH, O_RDONLY);
     if (fd < 0) {
-        DFXLOGE("fail to open %{public}s %{public}d", statusPath, errno);
+        DFXLOGE("fail to open %{public}s %{public}d", PROC_SELF_STATUS_PATH, errno);
         return false;
     }
     char buf[LINE_BUF_SIZE];
     ssize_t n = read(fd, buf, sizeof(buf) - 1);
     if (n <= 0) {
-        DFXLOGE("fail to read %{public}s %{public}d", statusPath, errno);
+        DFXLOGE("fail to read %{public}s %{public}d", PROC_SELF_STATUS_PATH, errno);
         close(fd);
         return false;
     }
+    buf[sizeof(buf) - 1] = '\0';
     close(fd);
 
     const char key[] = "NoNewPrivs";
@@ -181,10 +181,14 @@ bool CollectStack(struct ProcessDumpRequest *request)
         return false;
     }
 #if defined(__aarch64__)
+    if (g_mmapPos + PRIV_COPY_STACK_BUFFER_SIZE > TOTAL_MEMORY_SIZE) {
+        DFXLOGE("collect statck mmap space is over flow");
+        return false;
+    }
     char* destPtr = (char*)g_mmapSpace + g_mmapPos;
     uintptr_t srcPtr =  ((ucontext_t)request->context).uc_mcontext.sp - PRIV_STACK_FORWARD_BUF_SIZE;
     CopyReadableBufSafe((uintptr_t)destPtr, PRIV_COPY_STACK_BUFFER_SIZE, srcPtr, PRIV_COPY_STACK_BUFFER_SIZE);
-    DeinitPipe();
+    DeInitPipe();
 #endif
     g_mmapPos += PRIV_COPY_STACK_BUFFER_SIZE;
     DFXLOGI("finish collect process stack");
@@ -211,6 +215,10 @@ bool CollectStat(struct ProcessDumpRequest *request)
         return false;
     }
 
+    if (g_mmapPos  + PROC_STAT_BUF_SIZE > TOTAL_MEMORY_SIZE) {
+        DFXLOGE("collect stat memory size over flow");
+        return false;
+    }
     char* stat = (char*)g_mmapSpace + g_mmapPos;
     stat[PROC_STAT_BUF_SIZE - 1] = '\0';
     ssize_t n = read(fd, stat, PROC_STAT_BUF_SIZE - 1);
@@ -240,6 +248,10 @@ bool CollectStatm(struct ProcessDumpRequest *request)
     if (fd < 0) {
         DFXLOGI("failed to open %{public}s errno %{public}d", path, errno);
         g_mmapPos += PROC_STATM_BUF_SIZE;
+        return false;
+    }
+    if (g_mmapPos + PROC_STATM_BUF_SIZE > TOTAL_MEMORY_SIZE) {
+        DFXLOGE("collect statm mmap space is over flow");
         return false;
     }
 
@@ -282,11 +294,8 @@ NO_SANITIZE bool CreateMemoryBlock(const int fd, const RegInfo info, int regIdx)
     uintptr_t targetAddr = info.regAddr;
     targetAddr = targetAddr & ~(size - 1);
     targetAddr -= (forwardSize * size);
-
     char *p = (char*)mptr;
-    for (size_t i = 0; i < mmapSize; i++) {
-        p[i] = -1;
-    }
+    (void)memset_s(p, mmapSize, -1, mmapSize);
 
     CopyReadableBufSafe((uintptr_t)mptr, mmapSize, targetAddr, mmapSize);
     write(fd, mptr, mmapSize);
@@ -390,7 +399,7 @@ static void FillFdsaninfo(FdTableEntry *fdEntries, FdTableEntry *overflowEntries
         return;
     }
 
-    DFXLOGI("xulong %{public}s %{public}d %{public}zu", __func__, __LINE__, overflowLength);
+    DFXLOGI("%{public}s overflow length %{public}zu", __func__, overflowLength);
     overflowEntries->entryCount = overflowLength;
     mmapSize = overflowEntries->entryCount * sizeof(FdEntry);
     overflowEntries->entries = mmap(NULL, mmapSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -479,13 +488,14 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr, pid_t pid)
     char openFiles[] = "OpenFiles:\n";
     write(pipeWriteFd, openFiles, strlen(openFiles));
 
-    FdTableEntry fdEntries;
-    FdTableEntry overflowEntries;
+    FdTableEntry fdEntries = {0};
+    FdTableEntry overflowEntries = {0};
     FillFdsaninfo(&fdEntries, &overflowEntries, fdTableAddr);
 
     size_t mmapSize = (fdEntries.entryCount + overflowEntries.entryCount) * sizeof(uint64_t);
     uint64_t* fdsanOwners = mmap(NULL, mmapSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (fdsanOwners == MAP_FAILED) {
+        closedir(dir);
         DFXLOGE("mmap fdsanOwners failed!");
         return false;
     }
@@ -499,9 +509,9 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
 {
     DFXLOGI("start enter %{public}s", __func__);
     RegisterAllocator();
-    RequestLimitedProcessDump();
+    RequestLimitedProcessDump(request->uid);
     int pipeWriteFd = -1;
-    RequestLimitedPipeFd(1, 3000, &pipeWriteFd); // 3000 : request pipe timeout
+    RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, 3000, request->uid); // 3000 : request pipe timeout
     if (pipeWriteFd < 0) {
         DFXLOGE("lite dump failed to request pipe %{public}d", errno);
         return false;
@@ -539,4 +549,9 @@ void UpdateSanBoxProcess(struct ProcessDumpRequest *request)
     request->pid = GetRealPid();
     request->tid = getproctid();
     GetThreadNameByTid(request->tid, request->threadName, sizeof(request->threadName));
+}
+
+void ResetLiteDump()
+{
+    g_mmapPos = 0;
 }

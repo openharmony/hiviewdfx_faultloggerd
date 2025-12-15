@@ -130,7 +130,7 @@ private:
     void CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxRegs> regs,
         std::shared_ptr<DfxMaps> maps, bool extendPcLrPrinting);
     void CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo) const;
-    void UpdateContentByLite(MemoryBlockInfo& blockInfo, int pos);
+    void UpdateContentByLite(MemoryBlockInfo& blockInfo, unsigned int pos);
     std::vector<MemoryBlockInfo> registerBlocks_;
     bool isLite_ {false};
 };

@@ -37,6 +37,7 @@
 #include "dfx_test_util.h"
 #include "info/fatal_message.h"
 #include "dfx_lite_dump_request.h"
+#include "safe_reader.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -1083,12 +1084,19 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest001, TestSize.Level2)
 {
     EXPECT_GT(GetRealPid(), 0);
     EXPECT_FALSE(IsNoNewPriv());
+    UpdateSanBoxProcess(nullptr);
     EXPECT_TRUE(MMapMemoryOnce());
     ProcessDumpRequest request {};
     UpdateSanBoxProcess(&request);
     request.pid = getpid();
     EXPECT_TRUE(CollectStat(&request));
     EXPECT_TRUE(CollectStatm(&request));
+    EXPECT_TRUE(CollectStack(&request));
+
+    ResetLiteDump();
+    request.pid = 99999;
+    EXPECT_FALSE(CollectStat(&request));
+    EXPECT_FALSE(CollectStatm(&request));
     EXPECT_TRUE(CollectStack(&request));
     UnmapMemoryOnce();
 }
@@ -1118,8 +1126,8 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest003, TestSize.Level2)
 {
     ProcessDumpRequest request {};
     request.pid = getpid();
-    request.uid = 20000000;
-    EXPECT_FALSE(LiteCrashHandler(&request));
+    request.uid = 200000;
+    EXPECT_TRUE(LiteCrashHandler(&request));
 }
 
 #if defined(__aarch64__)
@@ -1147,6 +1155,9 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest004, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, DfxLiteDumperTest005, TestSize.Level2)
 {
+    EXPECT_FALSE(CollectMaps(-1, PROC_SELF_MAPS_PATH));
+    EXPECT_FALSE(CollectMaps(-1, nullptr));
+    EXPECT_FALSE(CollectMaps(g_pipeFd[PIPE_WRITE], "/proc/99999/maps"));
     EXPECT_TRUE(CollectMaps(g_pipeFd[PIPE_WRITE], PROC_SELF_MAPS_PATH)); // not contain MapsTag
     ClosePipeFd(g_pipeFd[PIPE_WRITE]);
     std::string str;
@@ -1173,6 +1184,7 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest006, TestSize.Level2)
         str += buf;
     }
     EXPECT_TRUE(str.find("OpenFiles") != std::string::npos);
+    DeInitPipe();
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -168,43 +168,6 @@ int32_t RequestLitePerfDelPipeFd()
 #endif
 }
 
-int32_t RequestLimitedPipeFd(int32_t pipeType, int& pipeFd, int timeout, int uid)
-{
-#ifndef is_ohos_lite
-    if (pipeType < FaultLoggerPipeType::PIPE_FD_READ || pipeType > FaultLoggerPipeType::PIPE_FD_DELETE) {
-        DFXLOGE("%{public}s.%{public}s :: pipeType: %{public}d failed.", FAULTLOGGERD_CLIENT_TAG, __func__, pipeType);
-        return ResponseCode::DEFAULT_ERROR_CODE;
-    }
-    DFXLOGI("%{public}s.%{public}s :: pipeType: %{public}d.", FAULTLOGGERD_CLIENT_TAG, __func__, pipeType);
-    LitePerfFdRequestData request{};
-    FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_LIMITED_CLIENT);
-    request.pipeType = static_cast<int8_t>(pipeType);
-    request.pid = getpid(); // no use
-    request.uid = uid;
-    request.timeout = timeout;
-    SocketRequestData socketRequestData = {&request, sizeof(request)};
-    SocketFdData socketFdData = {&pipeFd, 1};
-    DFXLOGI("xulong %{public}s %{public}d", __func__, __LINE__);
-    return SendRequestToServer(GetSocketName().c_str(), socketRequestData, CRASHDUMP_SOCKET_TIMEOUT, &socketFdData);
-#else
-    return ResponseCode::DEFAULT_ERROR_CODE;
-#endif
-}
-
-int32_t RequestLimitedDelPipeFd(int uid)
-{
-#ifndef is_ohos_lite
-    LitePerfFdRequestData request{};
-    FillRequestHeadData(request.head, FaultLoggerClientType::PIPE_FD_LIMITED_CLIENT);
-    request.pipeType = FaultLoggerPipeType::PIPE_FD_DELETE;
-    request.pid = getpid();
-    request.uid = uid;
-    return SendRequestToServer(GetSocketName().c_str(), {&request, sizeof(request)}, CRASHDUMP_SOCKET_TIMEOUT);
-#else
-    return ResponseCode::DEFAULT_ERROR_CODE;
-#endif
-}
-
 int32_t RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2])
 {
 #ifndef is_ohos_lite

@@ -19,6 +19,8 @@
 #include <memory>
 #include <sys/types.h>
 
+#include "file_util.h"
+
 using namespace OHOS::HiviewDFX;
 using namespace std;
 using namespace testing::ext;
@@ -242,7 +244,7 @@ HWTEST_F(MapsTest, AdltMapIndexTest, TestSize.Level2)
     for (auto map : mapsV) {
         EXPECT_EQ(maps_->adltMapIndex_, maps_->FindMapIndexByAddr(map->begin));
     }
-    
+
     GTEST_LOG_(INFO) << "AdltMapIndexTest: end.";
 }
 
@@ -321,6 +323,45 @@ HWTEST_F(MapsTest, IsLegalMapItemTest, TestSize.Level2)
     ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:ARKWEB_JIT]"));
     ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:v8]"));
     GTEST_LOG_(INFO) << "IsLegalMapItemTest: end.";
+}
+
+/**
+ * @tc.name: CreateByBuffer001
+ * @tc.desc: test create by buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, CreateByBuffer001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CreateByBuffer001: start.";
+    std::string mapsPath = "/proc/self/maps";
+    std::string content;
+    std::string bundleName = "root";
+    EXPECT_TRUE(DfxMaps::CreateByBuffer(bundleName, content) == nullptr);
+    LoadStringFromFile(mapsPath, content);
+    EXPECT_TRUE(DfxMaps::CreateByBuffer(bundleName, content) != nullptr);
+    GTEST_LOG_(INFO) << "CreateByBuffer001: end.";
+}
+
+/**
+ * @tc.name: CreateByBuffer002
+ * @tc.desc: test create by buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, CreateByBuffer002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CreateByBuffer002: start.";
+    std::string mapsPath = "/proc/self/maps";
+    std::string content =  "7ef9f8b000-7efa1f1000 r--s 038ca000 1ff:02 62203520                      "
+                            "/system/app/SceneBoard/SceneBoard.hap\nOpenFiles:\n"
+                            "0->/dev/null native object of unknown type 0\n"
+                            "1->/dev/null native object of unknown type 0\n"
+                            "2->/dev/null native object of unknown type 0\n"
+                            "3->socket:[1293] native object of unknown type 218115328\n"
+                            "4->anon_inode:[eventpoll] FILE* 4\n"
+                            "5->socket:[1295] native object of unknown type 0\n";
+    std::string bundleName = "root";
+    EXPECT_TRUE(DfxMaps::CreateByBuffer(bundleName, content) != nullptr);
+    GTEST_LOG_(INFO) << "CreateByBuffer002: end.";
 }
 }
 } // namespace HiviewDFX

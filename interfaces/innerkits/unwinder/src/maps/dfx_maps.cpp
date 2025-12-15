@@ -78,10 +78,10 @@ std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, const std::string& path)
     return nullptr;
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::CreateByBuffer(const pid_t pid, std::string& buffer)
+std::shared_ptr<DfxMaps> DfxMaps::CreateByBuffer(const std::string& bundleName, std::string& buffer)
 {
     auto dfxMaps = std::make_shared<DfxMaps>();
-    if (dfxMaps->ParseByBuffer(pid, buffer)) {
+    if (dfxMaps->ParseByBuffer(bundleName, buffer)) {
         return dfxMaps;
     }
     return nullptr;
@@ -176,10 +176,10 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     return mapsSize > 0;
 }
 
-bool DfxMaps::ParseByBuffer(const pid_t pid, std::string& buffer)
+bool DfxMaps::ParseByBuffer(const std::string& bundleName, std::string& buffer)
 {
     DFX_TRACE_SCOPED_DLSYM("ParseMaps buffer");
-    if (buffer == "") {
+    if (buffer.empty()) {
         return false;
     }
     std::istringstream iss(buffer);
@@ -199,7 +199,7 @@ bool DfxMaps::ParseByBuffer(const pid_t pid, std::string& buffer)
         if (map == nullptr) {
             continue;
         }
-        DfxMap::FormatMapName(pid, map->name);
+        DfxMap::FormatMapName(bundleName, map->name);
         HandleMap(map);
     }
     if (fgetCount == 0) {

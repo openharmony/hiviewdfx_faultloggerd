@@ -33,6 +33,7 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request);
 bool CollectMemoryNearRegisters(int fd, ucontext_t *context);
 bool CollectMaps(const int pipeFd, const char* path);
 bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr, pid_t pid);
+void ResetLiteDump();
 #ifdef __cplusplus
 }
 #endif
