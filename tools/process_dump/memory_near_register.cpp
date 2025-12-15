@@ -131,7 +131,7 @@ void MemoryNearRegister::CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo
     }
 }
 
-void MemoryNearRegister::UpdateContentByLite(MemoryBlockInfo& blockInfo, int pos)
+void MemoryNearRegister::UpdateContentByLite(MemoryBlockInfo& blockInfo, unsigned int pos)
 {
     auto& blockInfos = MemoryNearRegisterUtil::GetInstance().blocksInfo_;
     if (pos >= blockInfos.size()) {

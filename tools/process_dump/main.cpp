@@ -21,6 +21,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include "lite_perf_dumper.h"
 #include "process_dumper.h"
 
@@ -34,7 +35,7 @@ static const int DUMP_ARG_ONE = 1;
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
-int g_uid = 0;
+long g_uid = 0;
 
 static void PrintCommandHelp()
 {
@@ -55,7 +56,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
         isLitePerf = true;
         return true;
     } else if (!strcmp("-render", argv[DUMP_ARG_ONE])) {
-        g_uid = std::atoi(argv[2]); // 2 : the index of uid
+        OHOS::HiviewDFX::SafeStrtol(argv[2], g_uid, DECIMAL_BASE); // 2 : the index of uid
         isRender = true;
         return true;
     }
@@ -91,9 +92,9 @@ int main(int argc, char *argv[])
         OHOS::HiviewDFX::LitePerfDumper::GetInstance().Perf();
 #endif
     } else if (isRender) {
-        DFXLOGI("xulong %{public}s %{public}d", __func__, __LINE__);
+        DFXLOGI("start lite processdump");
         OHOS::HiviewDFX::LiteProcessDumper liteProcessDumper;
-        liteProcessDumper.Dump(g_uid);
+        liteProcessDumper.Dump(static_cast<int>(g_uid));
     } else {
         DFXLOGI("invalid param");
     }

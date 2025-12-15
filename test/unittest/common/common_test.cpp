@@ -263,6 +263,31 @@ HWTEST_F(CommonTest, ROMBaselineTest001, TestSize.Level2)
     EXPECT_LT(totalSize, static_cast<long long>(baseline * 1.05));
     GTEST_LOG_(INFO) << "ROMBaselineTest001: end.";
 }
+
+/**
+ * @tc.name: SafeStrtol001
+ * @tc.desc: test StartsWith functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, SafeStrtol001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SafeStrtol001: start.";
+    std::string numStr;
+    long num = 0;
+    EXPECT_FALSE(SafeStrtol(numStr, num, DECIMAL_BASE));
+    numStr = "0";
+    EXPECT_TRUE(SafeStrtol(numStr, num, DECIMAL_BASE));
+    numStr = "abc";
+    EXPECT_FALSE(SafeStrtol(numStr, num, DECIMAL_BASE));
+    numStr = "abc123";
+    EXPECT_FALSE(SafeStrtol(numStr, num, DECIMAL_BASE));
+    numStr = "123abc";
+    EXPECT_FALSE(SafeStrtol(numStr, num, DECIMAL_BASE));
+    numStr = "123";
+    EXPECT_TRUE(SafeStrtol(numStr, num, DECIMAL_BASE));
+    EXPECT_EQ(num, 123);
+    GTEST_LOG_(INFO) << "SafeStrtol001: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

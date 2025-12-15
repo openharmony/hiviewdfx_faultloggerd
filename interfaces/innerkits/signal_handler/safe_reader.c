@@ -49,7 +49,7 @@ static bool InitPipe()
     return true;
 }
 
-void DeinitPipe()
+void DeInitPipe()
 {
     if (g_pipeFd[PIPE_READ] > 0) {
         syscall(SYS_close, g_pipeFd[PIPE_READ]);

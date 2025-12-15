@@ -63,10 +63,13 @@ static const int PIPE_NUM_SZ = 2;
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;
 
-static const int COMMON_REG_MEM_FORWARD_SIZE = 2;
-static const int SPECIAL_REG_MEM_FORWARD_SIZE = 31;
-static const int COMMON_REG_MEM_SIZE = 32;
-static const int SPECIAL_REG_MEM_SIZE = 64;
+static const unsigned int COMMON_REG_MEM_FORWARD_SIZE = 2;
+static const unsigned int SPECIAL_REG_MEM_FORWARD_SIZE = 31;
+static const unsigned int COMMON_REG_MEM_SIZE = 32;
+static const unsigned int SPECIAL_REG_MEM_SIZE = 64;
+
+static const int DECIMAL_BASE = 10;
+static const int HEX_BASE = 16;
 
 static const int PROC_STAT_BUF_SIZE = 512;
 static const int PROC_STATM_BUF_SIZE = 512;

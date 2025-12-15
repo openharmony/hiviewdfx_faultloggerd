@@ -29,6 +29,7 @@
 #include "process_dumper.h"
 #include "dfx_util.h"
 #include "dfx_test_util.h"
+#include "dfx_socket_request.h"
 #include "lite_process_dumper.h"
 
 using namespace OHOS::HiviewDFX;
@@ -326,6 +327,51 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest006, TestSize.Level2)
     liteDumper.Unwind();
     liteDumper.InitProcess();
     liteDumper.PrintAll();
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest006: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest008
+ * @tc.desc: test liteDump ReadStack
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest008, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest008: start.";
+    auto& writer = DfxBufferWriter::GetInstance();
+    auto pids = {1, 2, 3, 4, 5, 6, 7};
+    auto time = GetAbsTimeMilliSeconds();
+    for (auto pid : pids) {
+        EXPECT_TRUE(writer.CreateFileForCrash(pid, time) > 0);
+    }
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest008: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest009
+ * @tc.desc: test liteDump ReadStack
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest009: start.";
+    auto& writer = DfxBufferWriter::GetInstance();
+    writer.request_ = {};
+    writer.request_.siginfo.si_signo = SIGLEAK_STACK;
+    writer.request_.siginfo.si_code = -SIGLEAK_STACK_FDSAN;
+    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    writer.request_.siginfo.si_code = -SIGLEAK_STACK_JEMALLOC;
+    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    writer.request_.siginfo.si_code = -SIGLEAK_STACK_BADFD;
+    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    writer.request_.siginfo.si_code = -99;
+    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::LEAK_STACKTRACE);
+
+    writer.request_.siginfo.si_signo = SIGDUMP;
+    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    writer.request_.siginfo.si_signo = SIGILL;
+    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_CRASH);
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest009: end.";
 }
 #endif
 }

@@ -1124,6 +1124,23 @@ HWTEST_F(UnwinderTest, UnwinderTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << str;
     ASSERT_NE(str, "") << "UnwinderTest005: end.";
 }
+
+/**
+ * @tc.name: UnwindTest0016
+ * @tc.desc: test unwinder unwind interface set maps
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindTest0016, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindTest0016: start.";
+    std::shared_ptr<DfxMaps> maps;
+    auto unwinder = std::make_shared<Unwinder>();
+    unwinder->SetMaps(maps);
+    maps = std::make_shared<DfxMaps>();
+    unwinder->SetMaps(maps);
+    EXPECT_TRUE(maps != nullptr);
+    GTEST_LOG_(INFO) << "UnwindTest0016: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
 

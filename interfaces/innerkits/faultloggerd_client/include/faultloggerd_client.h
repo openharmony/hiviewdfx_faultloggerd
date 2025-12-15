@@ -71,21 +71,6 @@ int32_t RequestLitePerfPipeFd(int32_t pipeType, int (&pipeFd)[2], int timeout, b
 int32_t RequestLitePerfDelPipeFd();
 
 /**
- * @brief request limited process pipe file descriptor
- * @param pipeType type of request about pipe
- * @param pipeFd pipeFd to transfer message
- * @param timeout timeout ms
- * @return if succeed return 0, otherwise return the error code
-*/
-int32_t RequestLimitedPipeFd(int32_t pipeType, int& pipeFd, int timeout, int uid);
-
-/**
- * @brief request delete limited process file descriptor
- * @return if succeed return 0, otherwise return the error code
-*/
-int32_t RequestLimitedDelPipeFd(int uid);
-
-/**
  * @brief request dump stack about process
  * @param pid process id
  * @param tid thread id, if equal 0 means dump all the threads in a process.

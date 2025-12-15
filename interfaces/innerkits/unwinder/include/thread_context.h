@@ -73,7 +73,7 @@ private:
 };
 #endif
 
-constexpr int STACK_BUFFER_SIZE = 64 * 1024;
+constexpr unsigned int STACK_BUFFER_SIZE = 64 * 1024;
 enum SyncStatus : int32_t {
     INIT = -1,
     WAIT_CTX = 0,
@@ -124,7 +124,7 @@ private:
     int32_t tid_ = -1;
     int status_ = SyncStatus::INIT;
     std::shared_ptr<DfxMaps> maps_ = nullptr;
-    int stackForward_ {0};
+    unsigned int stackForward_ {0};
 };
 } // namespace Dfx
 } // namespace OHOS

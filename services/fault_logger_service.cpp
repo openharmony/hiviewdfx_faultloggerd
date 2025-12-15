@@ -49,6 +49,7 @@ namespace {
 constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULT_LOGGER_SERVICE";
 constexpr int ARKWEB_MIN_UID = 1000001;
 constexpr int ARKWEB_MAX_UID = 1099999;
+constexpr int ROOT_UID = 0;
 bool CheckCallerUID(uint32_t callerUid)
 {
     const uint32_t whitelist[] = {
@@ -515,7 +516,8 @@ bool LiteProcDumperPipeService::Filter(const std::string &socketName, int32_t co
     }
 
     constexpr uint32_t faultloggerdUid = 1202;
-    if (creds.uid == faultloggerdUid || (creds.uid >= ARKWEB_MIN_UID && creds.uid <= ARKWEB_MAX_UID)) {
+    if (creds.uid == faultloggerdUid || creds.uid == ROOT_UID ||
+        (creds.uid >= ARKWEB_MIN_UID && creds.uid <= ARKWEB_MAX_UID)) {
         return true;
     }
     DFXLOGW("Lite pipe failed to check request credential request:%{public}d, cred:%{public}d, fd:%{public}d",
@@ -568,7 +570,7 @@ bool LiteProcDumperService::Filter(const std::string& socketName, int32_t connec
         return false;
     }
 
-    if (creds.uid < ARKWEB_MIN_UID || creds.uid > ARKWEB_MAX_UID) {
+    if (creds.uid != ROOT_UID && (creds.uid < ARKWEB_MIN_UID || creds.uid > ARKWEB_MAX_UID)) {
         DFXLOGW("Lite dumper failed check request credential cred:%{public}d, fd:%{public}d", creds.uid, connectionFd);
         return false;
     }

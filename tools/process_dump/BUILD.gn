@@ -61,6 +61,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "$faultloggerd_frameworks_path/limited/include",
       "$hilog_lite_include_path",
     ]
   }
@@ -117,6 +118,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
       "$faultloggerd_interfaces_path/innerkits/signal_handler",
       "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "$faultloggerd_frameworks_path/limited/include",
       "$faultloggerd_path/common",
     ]
 
@@ -171,6 +173,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+      "$faultloggerd_frameworks_path/limited:dfx_limited_src",
     ]
 
     external_deps = [
@@ -241,6 +244,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/stack_printer:libstack_printer",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+      "$faultloggerd_frameworks_path/limited:dfx_limited_src",
     ]
 
     external_deps = [
