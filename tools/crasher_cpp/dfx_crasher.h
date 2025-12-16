@@ -39,6 +39,7 @@ public:
     static int Loop();
     static int TriggerPipeException();
     static int TriggerSocketException();
+    static int SignalHandlerCrash();
 
     void PrintUsage() const;
 
