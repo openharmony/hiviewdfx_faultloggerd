@@ -57,7 +57,7 @@ private:
     bool InitDfxProcess();
     bool InitUnwinder(DumpErrorCode &dumpRes);
     void UnwindWriteJit();
-    void FormatJsonInfoIfNeed();
+    void FormatJsonInfoIfNeed(const DumpErrorCode& resDump);
     void UpdateConfigByRequest();
     void WriteDumpResIfNeed(const DumpErrorCode& resDump);
     void PrintDumpInfo(DumpErrorCode& dumpRes);
