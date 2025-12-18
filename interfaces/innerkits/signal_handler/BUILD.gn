@@ -76,7 +76,6 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
       "$faultloggerd_frameworks_path/limited:dfx_limited_src",
       "$faultloggerd_frameworks_path/allocator:dfx_allocator_src",
     ]
@@ -84,7 +83,7 @@ if (defined(ohos_lite)) {
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "hilog:libhilog_base",
+      "hilog:libhilog_snapshot",
     ]
 
     innerapi_tags = [

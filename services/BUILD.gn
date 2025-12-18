@@ -158,10 +158,7 @@ if (defined(ohos_lite)) {
     sources += [ "main.cpp" ]
     cflags = [ "-fstack-protector-strong" ]
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
-    defines = [
-      "DFX_LOG_HILOG_BASE",
-      "DFX_ENABLE_TRACE",
-    ]
+    defines = [ "DFX_ENABLE_TRACE" ]
 
     deps = [
       ":faultlogger.conf",
@@ -171,7 +168,6 @@ if (defined(ohos_lite)) {
       ":fault_coredump.json",
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/common/trace:dfx_trace",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
@@ -187,7 +183,7 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "cJSON:cjson",
       "c_utils:utils",
-      "hilog:libhilog_base",
+      "hilog:libhilog",
       "hisysevent:libhisysevent",
       "hitrace:hitrace_meter",
       "init:libbegetutil",
@@ -211,7 +207,6 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/common/trace:dfx_trace",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
@@ -221,7 +216,7 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "cJSON:cjson",
       "c_utils:utils",
-      "hilog:libhilog_base",
+      "hilog:libhilog",
       "hisysevent:libhisysevent",
       "hitrace:hitrace_meter",
       "init:libbegetutil",

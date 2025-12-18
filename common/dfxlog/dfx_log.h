@@ -18,7 +18,7 @@
 
 #ifndef DFX_NO_PRINT_LOG
 #ifdef DFX_LOG_HILOG_BASE
-#include <hilog_base/log_base.h>
+#include <log_base.h>
 #else
 #include <hilog/log.h>
 #endif

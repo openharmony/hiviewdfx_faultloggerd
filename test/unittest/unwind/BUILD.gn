@@ -175,6 +175,7 @@ ohos_unittest("test_dwarf") {
     "DFX_LOG_HILOG_BASE",
   ]
   include_dirs = [
+    "$faultloggerd_common_path/dfxlog",
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_interfaces_path/innerkits/unwinder/include",
   ]
@@ -186,7 +187,6 @@ ohos_unittest("test_dwarf") {
   cflags_cc = [ "-Dprivate=public" ]
 
   deps = [
-    "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     "$faultloggerd_common_path/dfxutil:dfx_util_static",
     "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_base",
   ]
@@ -196,7 +196,6 @@ ohos_unittest("test_dwarf") {
     "bounds_checking_function:libsec_shared",
     "c_utils:utils",
     "googletest:gtest_main",
-    "hilog:libhilog_base",
   ]
 }
 

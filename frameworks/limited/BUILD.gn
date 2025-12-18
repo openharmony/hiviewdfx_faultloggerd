@@ -16,9 +16,9 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 if (!defined(ohos_lite)) {
   config("dfx_limited_config") {
     visibility = [ "*:*" ]
-    defines = [ "DFX_LOG_HILOG_BASE" ]
     include_dirs = [
       "include",
+      "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_interfaces_path/common",
     ]
   }
@@ -28,14 +28,13 @@ if (!defined(ohos_lite)) {
     sources = [
       "faultlog_client.c",
     ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
-      "$faultloggerd_common_path/dfxlog:dfx_hilog_base",
     ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "hilog:libhilog_base",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

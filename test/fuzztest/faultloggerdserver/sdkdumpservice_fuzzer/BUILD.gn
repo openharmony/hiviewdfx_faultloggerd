@@ -27,7 +27,6 @@ ohos_fuzztest("SdkDumpServiceFuzzTest") {
   deps = [
     "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
     "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-    "$faultloggerd_path/common/dfxlog:dfx_hilog_base",
     "$faultloggerd_path/common/dfxutil:dfx_util",
     "$faultloggerd_path/common/trace:dfx_trace",
     "$faultloggerd_path/services:faultloggerd_test_src",
@@ -37,13 +36,13 @@ ohos_fuzztest("SdkDumpServiceFuzzTest") {
     "c_utils:utils",
     "ffrt:libffrt",
     "hilog:libhilog",
-    "hilog:libhilog_base",
     "hisysevent:libhisysevent",
     "hitrace:hitrace_meter",
     "init:libbegetutil",
     "jsoncpp:jsoncpp",
   ]
   include_dirs = [
+    "$faultloggerd_common_path/dfxlog",
     "$faultloggerd_interfaces_path/common",
     "$faultloggerd_interfaces_path/innerkits/faultloggerd_client",
     "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
@@ -53,5 +52,8 @@ ohos_fuzztest("SdkDumpServiceFuzzTest") {
     "$faultloggerd_path/test/fuzztest/faultloggerdserver/common/include",
     "$faultloggerd_path/test/utils",
   ]
-  defines = [ "FAULTLOGGERD_TEST" ]
+  defines = [
+    "DFX_LOG_HILOG_BASE",
+    "FAULTLOGGERD_TEST",
+  ]
 }

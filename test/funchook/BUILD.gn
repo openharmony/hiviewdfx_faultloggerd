@@ -31,17 +31,15 @@ if (!defined(ohos_lite)) {
       ":dfx_sighook_config",
       "$faultloggerd_path/common/build:coverage_flags",
     ]
+    include_dirs = [ "$faultloggerd_common_path/dfxlog" ]
     install_enable = true
     defines = [ "DFX_LOG_HILOG_BASE" ]
 
     sources = [ "dfx_signal_hook.c" ]
 
-    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
-
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "hilog:libhilog_base",
     ]
 
     part_name = "faultloggerd"
@@ -53,17 +51,13 @@ if (!defined(ohos_lite)) {
       ":dfx_sighook_config",
       "$faultloggerd_path/common/build:coverage_flags",
     ]
+    include_dirs = [ "$faultloggerd_common_path/dfxlog" ]
     install_enable = true
     defines = [ "DFX_LOG_HILOG_BASE" ]
 
     sources = [ "dfx_exit_hook.c" ]
 
-    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_base" ]
-
-    external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog_base",
-    ]
+    external_deps = [ "c_utils:utils" ]
 
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

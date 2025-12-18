@@ -43,6 +43,7 @@ if (defined(ohos_lite)) {
       ":module_test_signal_config",
       "$faultloggerd_path/common/build:coverage_flags",
     ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
 
     cflags_cc = [ "-Wno-free-nonheap-object" ]
     sources = [ "signal_handler_test.cpp" ]
@@ -64,7 +65,6 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "googletest:gtest_main",
-      "hilog:libhilog_base",
     ]
   }
 

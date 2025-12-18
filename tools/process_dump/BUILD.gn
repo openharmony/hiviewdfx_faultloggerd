@@ -218,10 +218,7 @@ if (defined(ohos_lite)) {
       "reporter.cpp",
     ]
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
-    defines = [
-      "DFX_LOG_HILOG_BASE",
-      "DFX_ENABLE_TRACE",
-    ]
+    defines = [ "DFX_ENABLE_TRACE" ]
     if (is_asan) {
       defines += [ "DFX_ALLOCATE_ASAN" ]
     }
