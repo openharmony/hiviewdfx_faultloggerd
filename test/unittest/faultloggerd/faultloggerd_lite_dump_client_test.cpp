@@ -14,11 +14,15 @@
  */
 
 #include <fcntl.h>
-#include <filesystem>
 #include <gtest/gtest.h>
 #include "faultlog_client.h"
 #include "faultloggerd_test.h"
 #include <thread>
+
+#include <sys/prctl.h>
+#include <unistd.h>
+
+#include "dfx_cutil.h"
 #include "dfx_socket_request.h"
 
 #if defined(HAS_LIB_SELINUX)
@@ -55,13 +59,30 @@ void FaultloggerdLiteDumpClientTest::SetUpTestCase()
  HWTEST_F(FaultloggerdLiteDumpClientTest, RequestLiteProcessDump001, TestSize.Level2)
  {
     GTEST_LOG_(INFO) << "RequestLiteProcessDump001: start.";
-    auto ret = RequestLimitedProcessDump(getuid());
+    auto ret = prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+    ret = RequestLimitedProcessDump(getpid());
     EXPECT_EQ(ret, REQUEST_SUCCESS);
 
     ret = RequestLimitedProcessDump(999999);
-    EXPECT_EQ(ret, REQUEST_SUCCESS);
-
+    EXPECT_EQ(ret, REQUEST_REJECT);
     GTEST_LOG_(INFO) << "RequestLiteProcessDump001: end.";
+}
+
+/**
+ * @tc.name: RequestLiteProcessDump002
+ * @tc.desc: Test request lite dump request overlimit
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdLiteDumpClientTest, RequestLiteProcessDump002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "RequestLiteProcessDump002: start.";
+    int ret = 0;
+    for (int i = 0; i < 11; i++) {
+        ret = RequestLimitedProcessDump(getpid());
+    }
+    EXPECT_EQ(ret, REQUEST_REJECT);
+
+    GTEST_LOG_(INFO) << "RequestLiteProcessDump002: end.";
 }
 
 /**
@@ -73,15 +94,17 @@ HWTEST_F(FaultloggerdLiteDumpClientTest, RequestLimitedPipeFd001, TestSize.Level
 {
     GTEST_LOG_(INFO) << "RequestLimitedPipeFd001: start.";
     int pipeWriteFd;
-    auto ret = RequestLimitedPipeFd(-1, &pipeWriteFd, 3000, getuid());
+    auto ret = RequestLimitedPipeFd(-1, &pipeWriteFd, getpid(), "test");
+    char procName[NAME_BUF_LEN];
+    GetProcessName(procName, sizeof(procName));
     EXPECT_EQ(ret, DEFAULT_ERROR_CODE);
-    ret = RequestLimitedPipeFd(3, &pipeWriteFd, 3000, getuid());
+    ret = RequestLimitedPipeFd(3, &pipeWriteFd, getpid(), "test");
     EXPECT_EQ(ret, DEFAULT_ERROR_CODE);
-
-    ret = RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, 3000, 9999);
+    ret = RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, getpid(), procName);
     EXPECT_EQ(ret, REQUEST_SUCCESS);
-
-    ret = RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, 3000, getuid());
+    ret = RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, getpid(), procName);
+    EXPECT_EQ(ret, SDK_DUMP_REPEAT);
+    ret = RequestLimitedPipeFd(PIPE_READ, &pipeWriteFd, getpid(), procName);
     EXPECT_EQ(ret, REQUEST_SUCCESS);
     GTEST_LOG_(INFO) << "RequestLimitedPipeFd001: end.";
 }
@@ -97,10 +120,25 @@ HWTEST_F(FaultloggerdLiteDumpClientTest, RequestLimitedDelPipeFd001, TestSize.Le
     auto ret = RequestLimitedDelPipeFd(9999);
     EXPECT_EQ(ret, REQUEST_SUCCESS);
 
-    ret = RequestLimitedDelPipeFd(getuid());
+    ret = RequestLimitedDelPipeFd(getpid());
     EXPECT_EQ(ret, REQUEST_SUCCESS);
     GTEST_LOG_(INFO) << "RequestLimitedDelPipeFd001: end.";
 }
 
+/**
+ * @tc.name: RequestLimitedDelPipeFd002
+ * @tc.desc: Test request lite dump pipe
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdLiteDumpClientTest, RequestLimitedDelPipeFd002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "RequestLimitedDelPipeFd002: start.";
+    int ret = 0;
+    for (int i = 0; i < 31; i++) {
+        ret = RequestLimitedDelPipeFd(getpid());
+    }
+    EXPECT_EQ(ret, REQUEST_REJECT);
+    GTEST_LOG_(INFO) << "RequestLimitedDelPipeFd002: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

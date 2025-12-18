@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "dfx_define.h"
+#include <ctype.h>
 
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
@@ -99,4 +100,32 @@ void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* tid)
         *endTime = 0;
         *tid = si->si_value.sival_int;
     }
+}
+
+bool IsNoNewPriv(const char* statusPath)
+{
+    int fd = open(statusPath, O_RDONLY);
+    if (fd < 0) {
+        return false;
+    }
+    char buf[LINE_BUF_SIZE];
+    ssize_t n = read(fd, buf, sizeof(buf) - 1);
+    if (n <= 0) {
+        close(fd);
+        return false;
+    }
+    buf[sizeof(buf) - 1] = '\0';
+    close(fd);
+
+    const char key[] = "NoNewPrivs";
+    char *p = strstr(buf, key);
+    bool result = false;
+    if (p) {
+        char *val = p + strlen(key);
+        while (val < buf + sizeof(buf) && !isdigit(*val)) {
+            val++;
+        }
+        result = (*val == '1');
+    }
+    return result;
 }

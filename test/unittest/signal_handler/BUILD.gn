@@ -51,6 +51,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/signal_handler/dfx_signalhandler_exception.c",
       "$faultloggerd_interfaces_path/innerkits/signal_handler/dfx_lite_dump_request.c",
       "$faultloggerd_interfaces_path/innerkits/signal_handler/safe_reader.c",
+      "$faultloggerd_interfaces_path/innerkits/signal_handler/dfx_dumprequest.c",
     ]
 
     deps = [
@@ -65,6 +66,7 @@ if (defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "googletest:gtest_main",
+      "hilog:libhilog_snapshot",
     ]
   }
 

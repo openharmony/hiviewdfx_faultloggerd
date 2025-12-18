@@ -38,7 +38,7 @@ public:
     static bool IsArkHapMapItem(const std::string& name);
     static bool IsArkCodeMapItem(const std::string& name);
     static bool IsLegalMapItem(const std::string& name, bool withArk = true);
-
+    static bool IsArkWebProc();
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
     void Sort(bool less = true);
     void EnableMapIndex(bool enableMapIndex) { enableMapIndex_ = enableMapIndex; }

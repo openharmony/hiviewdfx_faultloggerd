@@ -129,14 +129,17 @@ public:
                       const FaultLoggerdRequest& requestData) override;
 private:
     static bool Filter(const std::string& socketName, int32_t connectionFd, const FaultLoggerdRequest& requestData);
+    static std::map<int, int> launchLiteDumpMap_;
 };
 
-class LiteProcDumperPipeService : public FaultLoggerService<LitePerfFdRequestData> {
+class LiteProcDumperPipeService : public FaultLoggerService<LiteDumpFdRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
-                      const LitePerfFdRequestData& requestData) override;
+                      const LiteDumpFdRequestData& requestData) override;
 private:
-    static bool Filter(const std::string& socketName, int32_t connectionFd, const LitePerfFdRequestData& requestData);
+    static bool Filter(const std::string& socketName, int32_t connectionFd, const LiteDumpFdRequestData& requestData);
+    static bool CheckProcessName(int32_t pid, const std::string& procName);
+    static  std::map<int, int> launchLiteDumpPipeMap_;
 };
 
 class PipeService : public FaultLoggerService<PipFdRequestData> {

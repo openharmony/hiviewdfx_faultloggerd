@@ -35,7 +35,7 @@ static const int DUMP_ARG_ONE = 1;
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
-long g_uid = 0;
+long g_pid = 0;
 
 static void PrintCommandHelp()
 {
@@ -56,7 +56,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
         isLitePerf = true;
         return true;
     } else if (!strcmp("-render", argv[DUMP_ARG_ONE])) {
-        OHOS::HiviewDFX::SafeStrtol(argv[2], g_uid, DECIMAL_BASE); // 2 : the index of uid
+        OHOS::HiviewDFX::SafeStrtol(argv[2], g_pid, DECIMAL_BASE); // 2 : the index of uid
         isRender = true;
         return true;
     }
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     } else if (isRender) {
         DFXLOGI("start lite processdump");
         OHOS::HiviewDFX::LiteProcessDumper liteProcessDumper;
-        liteProcessDumper.Dump(static_cast<int>(g_uid));
+        liteProcessDumper.Dump(static_cast<int>(g_pid));
     } else {
         DFXLOGI("invalid param");
     }

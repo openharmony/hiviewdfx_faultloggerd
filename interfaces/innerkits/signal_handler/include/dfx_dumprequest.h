@@ -22,7 +22,7 @@ extern "C" {
 #endif
 
 void DfxDumpRequest(int signo, struct ProcessDumpRequest *request);
-void DumpPrviProcess(int signo, struct ProcessDumpRequest *request);
+bool DumpPrviProcess(int signo, struct ProcessDumpRequest *request);
 
 int32_t DFX_InheritCapabilities(void);
 

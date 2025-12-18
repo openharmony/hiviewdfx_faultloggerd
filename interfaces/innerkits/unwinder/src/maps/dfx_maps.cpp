@@ -40,6 +40,8 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxMaps"
 
+bool g_isArkWebProc = false;
+
 inline const std::string GetMapsFile(pid_t pid)
 {
     std::string path = "";
@@ -85,6 +87,11 @@ std::shared_ptr<DfxMaps> DfxMaps::CreateByBuffer(const std::string& bundleName, 
         return dfxMaps;
     }
     return nullptr;
+}
+
+bool DfxMaps::IsArkWebProc()
+{
+    return g_isArkWebProc;
 }
 
 bool DfxMaps::Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex)
@@ -165,7 +172,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     ParseMaps(pid, fp, fgetCount);
 
     (void)fclose(fp);
-    
+
     if (fgetCount == 0) {
         DFXLOGE("Failed to get maps(%{public}s), err(%{public}d).", path.c_str(), errno);
         return false;
@@ -199,7 +206,9 @@ bool DfxMaps::ParseByBuffer(const std::string& bundleName, std::string& buffer)
         if (map == nullptr) {
             continue;
         }
-        DfxMap::FormatMapName(bundleName, map->name);
+        bool isArkWebSo = false;
+        DfxMap::FormatMapName(bundleName, map->name, isArkWebSo);
+        g_isArkWebProc |= isArkWebSo;
         HandleMap(map);
     }
     if (fgetCount == 0) {

@@ -93,18 +93,19 @@ private:
 class LimitedPipePair {
 public:
     int32_t GetPipeFd(FaultLoggerPipeType pipeType);
-    explicit LimitedPipePair(int32_t uid);
+    explicit LimitedPipePair(int32_t pid);
     LimitedPipePair(LimitedPipePair&&) noexcept = default;
     LimitedPipePair& operator=(LimitedPipePair&&) noexcept = default;
 
-    static LimitedPipePair& CreatePipePair(int uid);
-    static bool CheckDumpRecord(int uid);
-    static LimitedPipePair* GetPipePair(int uid);
-    static void DelPipePair(int uid);
+    static LimitedPipePair& CreatePipePair(int pid);
+    static bool CheckDumpRecord(int pid);
+    static LimitedPipePair* GetPipePair(int pid);
+    static void DelPipePair(int pid);
+    static size_t GetPipeSize() { return pipes_.size(); }
 private:
     LimitedPipePair(const LimitedPipePair&) = delete;
     LimitedPipePair& operator=(const LimitedPipePair&) = delete;
-    int32_t uid_;
+    int32_t pid_;
     FaultLoggerPipe faultLoggerPipeBuf_;
     static std::list<LimitedPipePair> pipes_;
 };

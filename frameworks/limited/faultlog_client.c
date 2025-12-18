@@ -200,7 +200,7 @@ static int32_t RequestServer(const void *buf, int len, int* fd)
     return retCode;
 }
 
-int32_t RequestLimitedPipeFd(const int32_t pipeType, int* pipeFd, const int32_t timeout, int uid)
+int32_t RequestLimitedPipeFd(const int32_t pipeType, int* pipeFd, int pid, const char* procName)
 {
 #ifndef is_ohos_lite
     if (pipeType < PIPE_FD_READ || pipeType > PIPE_FD_DELETE) {
@@ -208,43 +208,46 @@ int32_t RequestLimitedPipeFd(const int32_t pipeType, int* pipeFd, const int32_t 
         return DEFAULT_ERROR_CODE;
     }
     DFXLOGI("%{public}s :: pipeType: %{public}d.", __func__, pipeType);
-    LitePerfFdRequestData request;
+    LiteDumpFdRequestData request;
     request.head.clientType = PIPE_FD_LIMITED_CLIENT;
     request.head.clientPid = getpid();
     request.pipeType = (int8_t)pipeType;
-    request.pid = getpid();
-    request.uid = uid;
-    request.timeout = timeout;
-    int requestLen = (int)sizeof(struct LitePerfFdRequestData);
+    request.pid = pid;
+    if (procName == NULL) {
+        request.processName[0] = '\0';
+    } else {
+        memcpy_s(request.processName, sizeof(request.processName), procName, NAME_BUF_LEN);
+        request.processName[sizeof(request.processName) - 1] = '\0';
+    }
+    int requestLen = (int)sizeof(struct LiteDumpFdRequestData);
     return RequestServer(&request, requestLen, pipeFd);
 #else
     return DEFAULT_ERROR_CODE;
 #endif
 }
 
-int32_t RequestLimitedDelPipeFd(int uid)
+int32_t RequestLimitedDelPipeFd(int pid)
 {
 #ifndef is_ohos_lite
-    LitePerfFdRequestData request;
+    LiteDumpFdRequestData  request;
     request.head.clientType = PIPE_FD_LIMITED_CLIENT;
     request.head.clientPid = getpid();
     request.pipeType = PIPE_FD_DELETE;
-    request.pid = getpid();
-    request.uid = uid;
-    int requestLen = (int)sizeof(struct LitePerfFdRequestData);
+    request.pid = pid;
+    int requestLen = (int)sizeof(struct LiteDumpFdRequestData);
     return RequestServer(&request, requestLen, NULL);
 #else
     return DEFAULT_ERROR_CODE;
 #endif
 }
 
-int32_t RequestLimitedProcessDump(int uid)
+int32_t RequestLimitedProcessDump(int pid)
 {
 #ifndef is_ohos_lite
     FaultLoggerdRequest request;
     request.head.clientType = LIMITED_PROCESS_DUMP_CLIENT;
     request.head.clientPid = getpid();
-    request.pid = uid; // 使用uid充当pid
+    request.pid = pid;
     int requestLen = (int)sizeof(struct FaultLoggerdRequest);
     return RequestServer(&request, requestLen, NULL);
 #else

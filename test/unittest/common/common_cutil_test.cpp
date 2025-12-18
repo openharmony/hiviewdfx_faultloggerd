@@ -142,6 +142,20 @@ HWTEST_F(CommonCutilTest, ParseSiValueTest001, TestSize.Level0)
         ASSERT_EQ(timeout, data & ~(1ULL << flagOffset));
     }
 }
+
+/**
+ * @tc.name: IsNoNewPriv001
+ * @tc.desc: test IsNoNewPriv functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, IsNoNewPriv001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "IsNoNewPriv001: start.";
+    std::string path = "/proc/99999/status";
+    EXPECT_FALSE(IsNoNewPriv(path.c_str()));
+    EXPECT_FALSE(IsNoNewPriv(PROC_SELF_STATUS_PATH));
+    GTEST_LOG_(INFO) << "IsNoNewPriv001: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

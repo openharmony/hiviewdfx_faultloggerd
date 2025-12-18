@@ -352,7 +352,7 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
     DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
         "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
 #ifndef is_ohos_lite
-    if (IsNoNewPriv()) {
+    if (IsNoNewPriv(PROC_SELF_STATUS_PATH)) {
         DumpPrviRequest(signo);
     } else {
 #endif

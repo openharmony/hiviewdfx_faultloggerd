@@ -36,6 +36,8 @@ AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSecondsCInterce(void);
 
 AT_SYMBOL_HIDDEN void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* tid);
 
+AT_SYMBOL_HIDDEN bool IsNoNewPriv(const char* statusPath);
+
 #ifdef __cplusplus
 }
 #endif

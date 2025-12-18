@@ -215,6 +215,19 @@ typedef struct LitePerfFdRequestData {
     bool checkLimit;
 } __attribute__((packed)) LitePerfFdRequestData;
 
+typedef struct LiteDumpFdRequestData {
+    /** request data head **/
+    RequestDataHead head;
+    /** process id */
+    int32_t pid;
+    /** user id */
+    uid_t uid;
+    /** type of pipe */
+    int8_t pipeType;
+    /** process name */
+    char processName[128]; // 128 : proc name len
+} __attribute__((packed)) LiteDumpFdRequestData;
+
 /**
  * @brief  request information
 */

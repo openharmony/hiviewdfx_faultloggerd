@@ -32,7 +32,7 @@ public:
     static std::shared_ptr<DfxMap> Create(const std::string& vma);
     static void PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag);
     static void FormatMapName(pid_t pid, std::string& mapName);
-    static void FormatMapName(const std::string& bundleName, std::string& mapName);
+    static void FormatMapName(const std::string& bundleName, std::string& mapName, bool& isArkWeb);
     static std::string UnFormatMapName(const std::string& mapName);
 
     DfxMap() = default;
