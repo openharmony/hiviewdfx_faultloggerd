@@ -35,6 +35,7 @@ public:
         STACK_TIMEOUT,
         STACK_DEFERRED,
         STACK_OVER_LIMIT,
+        STACK_RESOURCE_LIMIT,
         STACK_NO_PROCESS,
         STACK_UNKNOWN,
     };
@@ -54,6 +55,7 @@ public:
     bool NotifyStartCollect(int pid);
     KernelResult GetCollectedStackResult();
 private:
+    static void* CollectKernelStackTaskWrapper(void* arg);
     static void CollectKernelStackTask(int pid, std::promise<KernelResult> result);
     static bool CheckProcessValid(int pid);
     static ErrorCode ToErrCode(int kernelErr);

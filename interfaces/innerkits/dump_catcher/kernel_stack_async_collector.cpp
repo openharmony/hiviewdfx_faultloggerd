@@ -51,6 +51,24 @@ const struct KerrCodeToErrCode ERR_CODE_CONVERT_TABLE[] = {
     { KERNELSTACK_EIOCTL, KernelStackAsyncCollector::STACK_EIOCTL },
 };
 
+struct AsyncCollect {
+    AsyncCollect(int pid, std::promise<KernelStackAsyncCollector::KernelResult> result)
+        : pid(pid), result(std::move(result)) {}
+    int pid;
+    std::promise<KernelStackAsyncCollector::KernelResult> result;
+};
+
+void* KernelStackAsyncCollector::CollectKernelStackTaskWrapper(void *arg)
+{
+    if (arg == nullptr) {
+        DFXLOGW("invalid arg!");
+        return nullptr;
+    }
+    std::unique_ptr<AsyncCollect> collect(static_cast<AsyncCollect *>(arg));
+    CollectKernelStackTask(collect->pid, std::move(collect->result));
+    return nullptr;
+}
+
 KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessStackWithTimeout(int pid,
     uint32_t timeoutMs) const
 {
@@ -62,7 +80,19 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessSta
     std::promise<KernelResult> result;
     auto f = result.get_future();
     // kernel may take much time
-    std::thread {CollectKernelStackTask, pid, std::move(result)}.detach();
+    pthread_t tid = -1;
+    AsyncCollect *collect = new (std::nothrow) AsyncCollect(pid, std::move(result));
+    if (collect == nullptr) {
+        DFXLOGE("new collect failed, pid:%{public}d", pid);
+        return KernelResult {STACK_RESOURCE_LIMIT};
+    }
+    auto err = pthread_create(&tid, nullptr, CollectKernelStackTaskWrapper, collect);
+    if (err != 0) {
+        DFXLOGE("create thread failed, pid:%{public}d, error: %{public}s", pid, strerror(err));
+        delete collect;
+        return KernelResult {STACK_RESOURCE_LIMIT};
+    }
+    (void)pthread_detach(tid);
     auto st = f.wait_for(std::chrono::milliseconds(timeoutMs));
     if (st == std::future_status::timeout) {
         DFXLOGE("GetStackWithTimeout task timeout pid:%{public}d", pid);
@@ -84,7 +114,19 @@ bool KernelStackAsyncCollector::NotifyStartCollect(int pid)
     std::promise<KernelResult> result;
     stackFuture_ = result.get_future();
     // kernel may take much time
-    std::thread {CollectKernelStackTask, pid, std::move(result)}.detach();
+    pthread_t tid = -1;
+    AsyncCollect *collect = new (std::nothrow) AsyncCollect(pid, std::move(result));
+    if (collect == nullptr) {
+        DFXLOGE("new collect failed, pid:%{public}d", pid);
+        return false;
+    }
+    auto err = pthread_create(&tid, nullptr, CollectKernelStackTaskWrapper, collect);
+    if (err != 0) {
+        DFXLOGE("create thread failed, pid:%{public}d, error: %{public}s", pid, strerror(err));
+        delete collect;
+        return false;
+    }
+    (void)pthread_detach(tid);
     return true;
 }
 
