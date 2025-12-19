@@ -14,13 +14,13 @@
  */
 
 #include <fcntl.h>
-#include <filesystem>
 #include <gtest/gtest.h>
 #include <sys/stat.h>
 #include <thread>
 
 #include "directory_ex.h"
 #include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 
 #define private public
 #include "fault_logger_daemon.h"

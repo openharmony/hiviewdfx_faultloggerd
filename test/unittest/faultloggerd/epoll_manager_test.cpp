@@ -21,7 +21,7 @@
 #include <thread>
 #include <vector>
 
-#include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;

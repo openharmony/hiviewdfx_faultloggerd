@@ -16,6 +16,7 @@
 #define FUZZ_PROJECT_NAME "filemanager_fuzzer"
 
 #include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 #include "smart_fd.h"
 #include "temp_file_manager.h"
 

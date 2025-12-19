@@ -41,15 +41,6 @@ if (defined(ohos_lite)) {
 
       sources = [
         "$c_utils_src_path/directory_ex.cpp",
-        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_client.cpp",
-        "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
-        "$faultloggerd_path/services/epoll_manager.cpp",
-        "$faultloggerd_path/services/fault_logger_config.cpp",
-        "$faultloggerd_path/services/fault_logger_daemon.cpp",
-        "$faultloggerd_path/services/fault_logger_server.cpp",
-        "$faultloggerd_path/services/fault_logger_service.cpp",
-        "$faultloggerd_path/services/temp_file_manager.cpp",
-        "$faultloggerd_path/services/fault_common_util.cpp",
         "faultlogger_server_test.cpp",
         "faultloggerd_test.cpp",
         "temp_file_manager_test.cpp",
@@ -60,6 +51,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_common_path/trace:dfx_trace",
         "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
         "$faultloggerd_path/common/dfxutil:dfx_util",
+        "$faultloggerd_path/test/utils:faultloggerd_test_src",
         "//base/hiviewdfx/hilog_lite/frameworks/featured:hilog_shared",
       ]
 
@@ -106,8 +98,6 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/services/coredump",
     ]
     sources = [
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_client.cpp",
-      "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
       "$faultloggerd_frameworks_path/limited/faultlog_client.c",
       "faultlogger_server_test.cpp",
       "faultloggerd_client_test.cpp",
@@ -127,8 +117,8 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_path/common/trace:dfx_trace",
-      "$faultloggerd_path/services:faultloggerd_test_src",
       "$faultloggerd_path/test/utils:dfx_test_util",
+      "$faultloggerd_path/test/utils:faultloggerd_test_src",
     ]
 
     external_deps = [

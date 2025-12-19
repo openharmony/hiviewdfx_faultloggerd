@@ -16,6 +16,7 @@
 #define FUZZ_PROJECT_NAME "faultloggerdserver_fuzzer"
 
 #include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)

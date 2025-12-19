@@ -18,6 +18,7 @@
 #include "dfx_define.h"
 #include "faultloggerd_client.h"
 #include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 
 /* Fuzzer entry point */
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
