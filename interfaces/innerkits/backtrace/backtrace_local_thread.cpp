@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include "dfx_define.h"
+#include "dfx_log.h"
 #include "procinfo.h"
 
 namespace OHOS {
@@ -28,6 +29,7 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxBacktraceLocal"
+constexpr int MAX_WAIT_MUTEX_SEC = 10;
 }
 
 std::string GetThreadHead(int32_t tid)
@@ -43,8 +45,14 @@ std::string GetThreadHead(int32_t tid)
 
 bool BacktraceLocalThread::Unwind(Unwinder& unwinder, bool fast, size_t maxFrameNum, size_t skipFrameNum)
 {
-    static std::mutex mutex;
-    std::unique_lock<std::mutex> lock(mutex);
+    static std::timed_mutex mutex;
+    std::unique_lock<std::timed_mutex> lock(mutex, std::defer_lock);
+    auto timeout = std::chrono::system_clock::now() + std::chrono::seconds(MAX_WAIT_MUTEX_SEC);
+    if (!lock.try_lock_until(timeout)) {
+        DFXLOGW("%{public}s :: Unwind try_lock_until timeout", __func__);
+        return false;
+    }
+
     bool ret = false;
 
     if (tid_ < BACKTRACE_CURRENT_THREAD) {
