@@ -702,18 +702,18 @@ void DfxDumpRequest(int signo, struct ProcessDumpRequest *request)
     ProcessDump(signo);
 }
 
-void DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
+bool DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
 {
     DFXLOGI("start lite process dump");
 #ifndef is_ohos_lite
     if (request == NULL) {
         DFXLOGE("Failed to DumpRequest because of error parameters!");
-        return;
+        return false;
     }
     UpdateSanBoxProcess(request);
     if (!MMapMemoryOnce()) {
         DFXLOGE("Failed mmap memory to lite dump");
-        return;
+        return false;
     }
     CollectStat(request);
     CollectStatm(request);
@@ -727,4 +727,5 @@ void DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
     UnmapMemoryOnce();
 #endif
     DFXLOGI("lite process exit code %{public}d", ret);
+    return true;
 }

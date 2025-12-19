@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-#include "dfx_dumprequest.h"
+#include "dfx_lite_dump_request.h"
 
+#include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -73,42 +74,17 @@ void* g_mmapSpace = MAP_FAILED;
 int g_mmapPos = 0;
 const int TOTAL_MEMORY_SIZE = PRIV_COPY_STACK_BUFFER_SIZE + PROC_STAT_BUF_SIZE + PROC_STATM_BUF_SIZE;
 const int FILE_PATH_LEN = 256;
-const char PID_STR_NAME[] = "Pid:";
+static const char PID_STR_NAME[] = "Pid:";
+static const char THREAD_SELF_STATUS_PATH[] = "/proc/thread-self/status";
 
-bool IsNoNewPriv(void)
+
+pid_t GetProcId(const char *statusPath, const char *item)
 {
-    int fd = open(PROC_SELF_STATUS_PATH, O_RDONLY);
-    if (fd < 0) {
-        DFXLOGE("fail to open %{public}s %{public}d", PROC_SELF_STATUS_PATH, errno);
-        return false;
+    pid_t pid = -1;
+    if (statusPath == NULL || item == NULL) {
+        return pid;
     }
-    char buf[LINE_BUF_SIZE];
-    ssize_t n = read(fd, buf, sizeof(buf) - 1);
-    if (n <= 0) {
-        DFXLOGE("fail to read %{public}s %{public}d", PROC_SELF_STATUS_PATH, errno);
-        close(fd);
-        return false;
-    }
-    buf[sizeof(buf) - 1] = '\0';
-    close(fd);
-
-    const char key[] = "NoNewPrivs";
-    char *p = strstr(buf, key);
-    bool result = false;
-    if (p) {
-        char *val = p + strlen(key);
-        while (*val < '0' || *val > '9') {
-            val++;
-        }
-        result = (*val == '1');
-    }
-    return result;
-}
-
-pid_t GetRealPid(void)
-{
-    pid_t pid = syscall(SYS_getpid);
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(PROC_SELF_STATUS_PATH, O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(statusPath, O_RDONLY));
     if (fd < 0) {
         DFXLOGE("GetRealPid:: open failed! pid:%{public}d, errno:%{public}d).", pid, errno);
         return pid;
@@ -127,7 +103,7 @@ pid_t GetRealPid(void)
         }
 
         if (b == '\n' || i == LINE_BUF_SIZE) {
-            if (strncmp(buf, PID_STR_NAME, strlen(PID_STR_NAME)) != 0) {
+            if (strncmp(buf, item, strlen(item)) != 0) {
                 i = 0;
                 (void)memset_s(buf, sizeof(buf), '\0', sizeof(buf));
                 continue;
@@ -473,7 +449,8 @@ void WriteFileItems(int pipeWriteFd, DIR *dir, const char * path, const uint64_t
 bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr, pid_t pid)
 {
     char path[FILE_PATH_LEN];
-    int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/fd", GetRealPid());
+    int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/fd",
+        GetProcId(PROC_SELF_STATUS_PATH, PID_STR_NAME));
     if (ret < 0) {
         DFXLOGE("CollectOpenFiles :: snprintf_s failed, ret(%{public}d)", ret);
         return false;
@@ -509,9 +486,9 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
 {
     DFXLOGI("start enter %{public}s", __func__);
     RegisterAllocator();
-    RequestLimitedProcessDump(request->uid);
+    RequestLimitedProcessDump(request->pid);
     int pipeWriteFd = -1;
-    RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, 3000, request->uid); // 3000 : request pipe timeout
+    RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, request->pid, request->processName);
     if (pipeWriteFd < 0) {
         DFXLOGE("lite dump failed to request pipe %{public}d", errno);
         return false;
@@ -546,12 +523,12 @@ void UpdateSanBoxProcess(struct ProcessDumpRequest *request)
     if (request == NULL) {
         return;
     }
-    request->pid = GetRealPid();
-    request->tid = getproctid();
+    request->pid = GetProcId(PROC_SELF_STATUS_PATH, PID_STR_NAME);
+    request->tid = GetProcId(THREAD_SELF_STATUS_PATH, PID_STR_NAME);
     GetThreadNameByTid(request->tid, request->threadName, sizeof(request->threadName));
 }
 
-void ResetLiteDump()
+void ResetLiteDump(void)
 {
     g_mmapPos = 0;
 }

@@ -440,6 +440,9 @@ std::string WaitCreateFile(const std::string& folder, std::regex& reg, time_t ti
         FD_ZERO(&rfds);
         FD_SET(fd, &rfds);
         timeoutVal.tv_sec = end - time(nullptr);
+        if (timeoutVal.tv_sec <= 0) {
+            break;
+        }
         int ret = select(fd + 1, &rfds, nullptr, nullptr, &timeoutVal);
         if (ret <= 0 || !FD_ISSET(fd, &rfds)) {
             continue;

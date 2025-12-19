@@ -228,7 +228,7 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "LiteProcessDumpTest001: start.";
     LiteProcessDumper liteDumper;
-    liteDumper.Dump(0);
+    EXPECT_FALSE(liteDumper.Dump(666666));
     GTEST_LOG_(INFO) << "LiteProcessDumpTest001: end.";
 }
 

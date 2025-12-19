@@ -31,6 +31,7 @@
 #include <thread>
 
 #include "dfx_define.h"
+#include "dfx_cutil.h"
 #include "dfx_dumprequest.h"
 #include "dfx_signal_handler.h"
 #include "dfx_signalhandler_exception.h"
@@ -1082,8 +1083,10 @@ HWTEST_F(SignalHandlerTest, DfxNotifyWatchdogThreadStart001, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, DfxLiteDumperTest001, TestSize.Level2)
 {
-    EXPECT_GT(GetRealPid(), 0);
-    EXPECT_FALSE(IsNoNewPriv());
+    EXPECT_EQ(GetProcId(nullptr, "Pid:"), -1);
+    EXPECT_EQ(GetProcId(PROC_SELF_STATUS_PATH, NULL), -1);
+    EXPECT_GT(GetProcId(PROC_SELF_STATUS_PATH, "Pid:"), 0);
+    EXPECT_GT(GetProcId("/proc/thread-self/status", "Pid:"), 0);
     UpdateSanBoxProcess(nullptr);
     EXPECT_TRUE(MMapMemoryOnce());
     ProcessDumpRequest request {};
@@ -1127,7 +1130,7 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest003, TestSize.Level2)
     ProcessDumpRequest request {};
     request.pid = getpid();
     request.uid = 200000;
-    EXPECT_TRUE(LiteCrashHandler(&request));
+    EXPECT_FALSE(LiteCrashHandler(&request));
 }
 
 #if defined(__aarch64__)
@@ -1185,6 +1188,22 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest006, TestSize.Level2)
     }
     EXPECT_TRUE(str.find("OpenFiles") != std::string::npos);
     DeInitPipe();
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest007
+ * @tc.desc: add test case liteDump DumpPrviProcess
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest007, TestSize.Level2)
+{
+    ProcessDumpRequest request;
+    int signo = 11;
+    EXPECT_FALSE(DumpPrviProcess(signo, nullptr));
+    prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+    request.pid = getpid();
+    GetProcessName(request.processName, sizeof(request.processName));
+    EXPECT_TRUE(DumpPrviProcess(signo, &request));
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

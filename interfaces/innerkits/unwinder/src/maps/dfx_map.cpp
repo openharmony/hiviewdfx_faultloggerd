@@ -404,7 +404,7 @@ std::string DfxMap::GetElfName()
     return soName;
 }
 
-void DfxMap::FormatMapName(const std::string& bundleName, std::string& mapName)
+void DfxMap::FormatMapName(const std::string& bundleName, std::string& mapName, bool& isArkWeb)
 {
     if (mapName.empty()) {
         return;
@@ -412,6 +412,10 @@ void DfxMap::FormatMapName(const std::string& bundleName, std::string& mapName)
     // arkwebcore process get real path
     if (StartsWith(mapName, MAP_ARKWEB_CORE_PREFIX)) {
         mapName = ARKWEB_CORE_REAL_PATH + mapName.substr(strlen(MAP_ARKWEB_CORE_PREFIX));
+        if (isArkWeb) {
+            return;
+        }
+        isArkWeb = EndsWith(mapName, "libarkweb_engine.so");
         return;
     }
     if (StartsWith(mapName, SANDBOX_PATH_PREFIX)) {

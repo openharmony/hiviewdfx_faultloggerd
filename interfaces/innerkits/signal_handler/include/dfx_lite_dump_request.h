@@ -20,8 +20,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-bool IsNoNewPriv(void);
-pid_t GetRealPid(void);
+pid_t GetProcId(const char *statusPath, const char *item);
 bool MMapMemoryOnce();
 void UnmapMemoryOnce();
 void UpdateSanBoxProcess(struct ProcessDumpRequest *request);
@@ -33,7 +32,7 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request);
 bool CollectMemoryNearRegisters(int fd, ucontext_t *context);
 bool CollectMaps(const int pipeFd, const char* path);
 bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr, pid_t pid);
-void ResetLiteDump();
+void ResetLiteDump(void);
 #ifdef __cplusplus
 }
 #endif

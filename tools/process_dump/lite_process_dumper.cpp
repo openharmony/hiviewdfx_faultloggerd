@@ -127,13 +127,12 @@ void LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpReques
     DFXLOGI("end memory tag %{public}s", data);
 }
 
-bool LiteProcessDumper::ReadPipeData(int uid)
+bool LiteProcessDumper::ReadPipeData(int pid)
 {
     DFXLOGI("start read pipe data");
     int pipeReadFd = -1;
-    constexpr int timeoutMs = 3000;
 #ifndef is_ohos_lite
-    RequestLimitedPipeFd(0, &pipeReadFd, timeoutMs, uid);
+    RequestLimitedPipeFd(PIPE_READ, &pipeReadFd, pid, nullptr);
 #endif
     if (pipeReadFd <= 0) {
         return false;
@@ -152,7 +151,7 @@ bool LiteProcessDumper::ReadPipeData(int uid)
     }
     DFXLOGI("finish read pipe data");
 #ifndef is_ohos_lite
-    RequestLimitedDelPipeFd(uid);
+    RequestLimitedDelPipeFd(pid);
 #endif
     return true;
 }
@@ -188,9 +187,11 @@ void LiteProcessDumper::InitProcess()
     process_->InitKeyThread(request_, false);
 }
 
-void LiteProcessDumper::Dump(int uid)
+bool LiteProcessDumper::Dump(int pid)
 {
-    ReadPipeData(uid);
+    if (!ReadPipeData(pid)) {
+        return false;
+    }
     if (!DfxBufferWriter::GetInstance().InitBufferWriter(request_)) {
         DFXLOGE("Failed to init buffer writer.");
     }
@@ -205,6 +206,7 @@ void LiteProcessDumper::Dump(int uid)
     SysEventReporter reporter(request_.type);
     reporter.Report(*process_, request_);
     DFXLOGI("dump finish.");
+    return true;
 }
 
 void LiteProcessDumper::PrintHeader()

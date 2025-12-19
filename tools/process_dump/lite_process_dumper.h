@@ -39,9 +39,9 @@ public:
 
 class LiteProcessDumper {
 public:
-    void Dump(int uid);
+    bool Dump(int pid);
 private:
-    bool ReadPipeData(int uid);
+    bool ReadPipeData(int pid);
     void ReadRequest(int pipeReadFd);
     void ReadStat(int pipeReadFd);
     void ReadStatm(int pipeReadFd);

@@ -28,22 +28,22 @@ extern "C" {
  * @param pipeType type of request about pipe
  * @param pipeFd pipeFd to transfer message
  * @param timeout timeout ms
- * @param uid dump process uid
+ * @param pid dump process pid
  * @return if succeed return 0, otherwise return -1
 */
-AT_SYMBOL_HIDDEN int32_t RequestLimitedPipeFd(const int32_t pipeType, int* pipeFd, const int32_t timeout, int uid);
+AT_SYMBOL_HIDDEN int32_t RequestLimitedPipeFd(const int32_t pipeType, int* pipeFd, int pid, const char* procName);
 
 /**
  * @brief request delete limited process file descriptor
  * @return if succeed return 0, otherwise return the error code
 */
-AT_SYMBOL_HIDDEN int32_t RequestLimitedDelPipeFd(int uid);
+AT_SYMBOL_HIDDEN int32_t RequestLimitedDelPipeFd(int pid);
 
 /**
  * @brief request limited processdump
  * @return if succeed return 0, otherwise return the error code
 */
-AT_SYMBOL_HIDDEN int32_t RequestLimitedProcessDump(int uid);
+AT_SYMBOL_HIDDEN int32_t RequestLimitedProcessDump(int pid);
 
 #ifdef __cplusplus
 }

@@ -32,6 +32,7 @@
 #include "proc_util.h"
 
 #ifndef is_ohos_lite
+#include "dfx_cutil.h"
 #include "fault_logger_pipe.h"
 #endif
 
@@ -39,7 +40,9 @@
 #include "hisysevent.h"
 #endif
 
+#include "file_util.h"
 #include "string_printf.h"
+#include "string_util.h"
 #include "temp_file_manager.h"
 
 namespace OHOS {
@@ -49,7 +52,21 @@ namespace {
 constexpr const char* const FAULTLOGGERD_SERVICE_TAG = "FAULT_LOGGER_SERVICE";
 constexpr int ARKWEB_MIN_UID = 1000001;
 constexpr int ARKWEB_MAX_UID = 1099999;
-constexpr int ROOT_UID = 0;
+#ifdef FAULTLOGGERD_TEST
+constexpr int LITE_DUMP_LIMIT_ONE_DAY = 10;
+#else
+constexpr int LITE_DUMP_LIMIT_ONE_DAY = 60;
+#endif
+constexpr int ONE_DAY_SEC = 24 * 60 * 60;
+
+int GetRealUid(int uid)
+{
+    if (uid >= ARKWEB_MIN_UID && uid <= ARKWEB_MAX_UID) {
+        return ARKWEB_MIN_UID;
+    }
+    return uid;
+}
+
 bool CheckCallerUID(uint32_t callerUid)
 {
     const uint32_t whitelist[] = {
@@ -503,55 +520,84 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
     return responseData;
 }
 
-bool LiteProcDumperPipeService::Filter(const std::string &socketName, int32_t connectionFd,
-    const LitePerfFdRequestData &requestData)
+bool LiteProcDumperPipeService::CheckProcessName(int32_t pid, const std::string& procName)
 {
-    if (requestData.pipeType > FaultLoggerPipeType::PIPE_FD_DELETE ||
-        requestData.pipeType < FaultLoggerPipeType::PIPE_FD_READ) {
-        return false;
-    }
+    std::string cmdlinePath = "/proc/" + std::to_string(pid) + "/cmdline";
+    std::string cmdLineCont;
+    LoadStringFromFile(cmdlinePath, cmdLineCont);
+    cmdlinePath = cmdLineCont.c_str(); // clear zero char
+    return cmdlinePath == procName;
+}
+
+bool LiteProcDumperPipeService::Filter(const std::string &socketName, int32_t connectionFd,
+    const LiteDumpFdRequestData &requestData)
+{
     struct ucred creds{};
     if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
         return false;
     }
 
-    constexpr uint32_t faultloggerdUid = 1202;
-    if (creds.uid == faultloggerdUid || creds.uid == ROOT_UID ||
-        (creds.uid >= ARKWEB_MIN_UID && creds.uid <= ARKWEB_MAX_UID)) {
+    int uid = GetRealUid(creds.uid);
+    auto& liteDumpCount = launchLiteDumpPipeMap_[uid];
+    if (liteDumpCount++ >= LITE_DUMP_LIMIT_ONE_DAY * 3) { // 3 : write read delete
+        DFXLOGW("%{public}s :: litedump pipe service is limited for uid %{public}d.", FAULTLOGGERD_SERVICE_TAG, uid);
+        return false;
+    }
+
+    if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_DELETE ||
+        requestData.pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
         return true;
     }
+
+    if (requestData.pipeType != FaultLoggerPipeType::PIPE_FD_WRITE) {
+        return false;
+    }
+    if (CheckProcessName(requestData.pid, requestData.processName)) {
+        return true;
+    }
+
     DFXLOGW("Lite pipe failed to check request credential request:%{public}d, cred:%{public}d, fd:%{public}d",
-            requestData.uid, creds.uid, connectionFd);
+        requestData.uid, creds.uid, connectionFd);
     return false;
 }
 
+std::map<int, int> LiteProcDumperPipeService::launchLiteDumpPipeMap_;
 int32_t LiteProcDumperPipeService::OnRequest(const std::string& socketName, int32_t connectionFd,
-    const LitePerfFdRequestData& requestData)
+    const LiteDumpFdRequestData& requestData)
 {
     DFX_TRACE_SCOPED("LimitedPipeServiceOnRequest");
+    if (launchLiteDumpPipeMap_.empty()) {
+        DelayTaskQueue::GetInstance().AddDelayTask([] { launchLiteDumpPipeMap_.clear(); }, ONE_DAY_SEC);
+    }
     if (!Filter(socketName, connectionFd, requestData)) {
         return ResponseCode::REQUEST_REJECT;
     }
-    int uid = static_cast<int>(requestData.uid);
+    int pid = static_cast<int>(requestData.pid);
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_DELETE) {
-        LimitedPipePair::DelPipePair(uid);
+        LimitedPipePair::DelPipePair(pid);
         SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
         return responseData;
     }
 
     int32_t fd = {0};
     if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_WRITE) {
-        if (LimitedPipePair::CheckDumpRecord(uid)) {
-            DFXLOGE("%{public}s :: uid(%{public}d) is dumping.", FAULTLOGGERD_SERVICE_TAG, uid);
+        if (LimitedPipePair::CheckDumpRecord(pid)) {
+            DFXLOGE("%{public}s :: pid(%{public}d) is dumping.", FAULTLOGGERD_SERVICE_TAG, pid);
             return ResponseCode::SDK_DUMP_REPEAT;
         }
-        auto& pipePair = LimitedPipePair::CreatePipePair(uid);
+        auto& pipePair = LimitedPipePair::CreatePipePair(pid);
         fd = pipePair.GetPipeFd(FaultLoggerPipeType::PIPE_FD_WRITE);
     } else if (requestData.pipeType == FaultLoggerPipeType::PIPE_FD_READ) {
-        auto& pipePair = LimitedPipePair::CreatePipePair(uid);
-        fd = pipePair.GetPipeFd(FaultLoggerPipeType::PIPE_FD_READ);
+        auto pipePair = LimitedPipePair::GetPipePair(pid);
+        if (pipePair == nullptr) {
+            return ResponseCode::REQUEST_REJECT;
+        }
+        fd = pipePair->GetPipeFd(FaultLoggerPipeType::PIPE_FD_READ);
     }
+    DelayTaskQueue::GetInstance().AddDelayTask([pid] {
+        LimitedPipePair::DelPipePair(pid);
+        }, 10); // 10 : dump should finish in 10s
     if (fd < 0) {
         DFXLOGE("%{public}s :: failed to get fd for pipeType(%{public}d).", FAULTLOGGERD_SERVICE_TAG,
             requestData.pipeType);
@@ -562,6 +608,7 @@ int32_t LiteProcDumperPipeService::OnRequest(const std::string& socketName, int3
     return responseData;
 }
 
+std::map<int, int> LiteProcDumperService::launchLiteDumpMap_;
 bool LiteProcDumperService::Filter(const std::string& socketName, int32_t connectionFd,
     const FaultLoggerdRequest& requestData)
 {
@@ -569,28 +616,39 @@ bool LiteProcDumperService::Filter(const std::string& socketName, int32_t connec
     if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
         return false;
     }
-
-    if (creds.uid != ROOT_UID && (creds.uid < ARKWEB_MIN_UID || creds.uid > ARKWEB_MAX_UID)) {
-        DFXLOGW("Lite dumper failed check request credential cred:%{public}d, fd:%{public}d", creds.uid, connectionFd);
+    auto uid = GetRealUid(creds.uid);
+    if (launchLiteDumpMap_.empty()) {
+        DelayTaskQueue::GetInstance().AddDelayTask([] { launchLiteDumpMap_.clear(); }, ONE_DAY_SEC);
+    }
+    auto& cnt = launchLiteDumpMap_[uid];
+    if (cnt++ >= LITE_DUMP_LIMIT_ONE_DAY) {
+        DFXLOGW("%{public}s :: litedump service is limited for uid %{public}d.", FAULTLOGGERD_SERVICE_TAG, uid);
         return false;
     }
-    return true;
+#ifndef is_ohos_lite
+    std::string procStatus = "/proc/" + std::to_string(requestData.pid) + "/status";
+    if (IsNoNewPriv(procStatus.c_str())) {
+        return true;
+    }
+#endif
+    DFXLOGW("pid %{public}d not a no new priv porcess", requestData.pid);
+    return false;
 }
 
-void LaunchProcessDump(int uid)
+static void LaunchProcessDump(int dumpPid)
 {
     pid_t pid = fork();
     if (pid == 0) {
         pid_t childPid = fork();
         if (childPid == 0) {
             DFXLOGI("start launch processdump");
-            char uidStr[32]; // 32 : uid buf len
-            int ret = snprintf_s(uidStr, sizeof(uidStr), sizeof(uidStr) - 1, "%d", uid);
+            char pidStr[32]; // 32 : pid buf len
+            int ret = snprintf_s(pidStr, sizeof(pidStr), sizeof(pidStr) - 1, "%d", dumpPid);
             if (ret < 0) {
-                DFXLOGE("fill uid fail, not launch processdump %{public}d", ret);
+                DFXLOGE("fill dumpPid fail, not launch processdump %{public}d", ret);
                 _exit(0);
             }
-            execl(PROCESSDUMP_PATH, "processdump", "-render", uidStr, NULL);
+            execl(PROCESSDUMP_PATH, "processdump", "-render", pidStr, NULL);
         }
         _exit(0);
     }
@@ -607,7 +665,7 @@ int32_t LiteProcDumperService::OnRequest(const std::string& socketName, int32_t 
         return ResponseCode::REQUEST_REJECT;
     }
 
-    LaunchProcessDump(requestData.pid); // notice real value is uid
+    LaunchProcessDump(requestData.pid);
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     return responseData;

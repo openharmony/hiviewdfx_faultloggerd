@@ -197,7 +197,7 @@ void LitePerfPipePair::ClearTimeOutPairs()
     });
 }
 
-LimitedPipePair::LimitedPipePair(int32_t uid) : uid_(uid) {}
+LimitedPipePair::LimitedPipePair(int32_t pid) : pid_(pid) {}
 
 int32_t LimitedPipePair::GetPipeFd(FaultLoggerPipeType pipeType)
 {
@@ -210,37 +210,37 @@ int32_t LimitedPipePair::GetPipeFd(FaultLoggerPipeType pipeType)
     return -1;
 }
 
-LimitedPipePair& LimitedPipePair::CreatePipePair(int uid)
+LimitedPipePair& LimitedPipePair::CreatePipePair(int pid)
 {
-    auto pipePair = GetPipePair(uid);
+    auto pipePair = GetPipePair(pid);
     if (pipePair != nullptr) {
         return *pipePair;
     }
-    return pipes_.emplace_back(uid);
+    return pipes_.emplace_back(pid);
 }
 
-bool LimitedPipePair::CheckDumpRecord(int uid)
+bool LimitedPipePair::CheckDumpRecord(int pid)
 {
     auto iter = std::find_if(pipes_.begin(), pipes_.end(),
-        [uid](const LimitedPipePair& pipePair) {
-            return pipePair.uid_ == uid;
+        [pid](const LimitedPipePair& pipePair) {
+            return pipePair.pid_ == pid;
         });
     return iter != pipes_.end();
 }
 
-LimitedPipePair* LimitedPipePair::GetPipePair(int uid)
+LimitedPipePair* LimitedPipePair::GetPipePair(int pid)
 {
     auto iter = std::find_if(pipes_.begin(), pipes_.end(),
-        [uid](const LimitedPipePair& pipePair) {
-            return pipePair.uid_ == uid;
+        [pid](const LimitedPipePair& pipePair) {
+            return pipePair.pid_ == pid;
         });
     return iter == pipes_.end() ? nullptr : &(*iter);
 }
 
-void LimitedPipePair::DelPipePair(int uid)
+void LimitedPipePair::DelPipePair(int pid)
 {
-    pipes_.remove_if([uid](const LimitedPipePair& pipePair) {
-        return pipePair.uid_ == uid;
+    pipes_.remove_if([pid](const LimitedPipePair& pipePair) {
+        return pipePair.pid_ == pid;
     });
 }
 } // namespace HiviewDfx

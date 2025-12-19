@@ -344,13 +344,12 @@ HWTEST_F(MapsTest, CreateByBuffer001, TestSize.Level2)
 
 /**
  * @tc.name: CreateByBuffer002
- * @tc.desc: test create by buffer
+ * @tc.desc: test create by buffer common hap
  * @tc.type: FUNC
  */
 HWTEST_F(MapsTest, CreateByBuffer002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CreateByBuffer002: start.";
-    std::string mapsPath = "/proc/self/maps";
     std::string content =  "7ef9f8b000-7efa1f1000 r--s 038ca000 1ff:02 62203520                      "
                             "/system/app/SceneBoard/SceneBoard.hap\nOpenFiles:\n"
                             "0->/dev/null native object of unknown type 0\n"
@@ -361,7 +360,34 @@ HWTEST_F(MapsTest, CreateByBuffer002, TestSize.Level2)
                             "5->socket:[1295] native object of unknown type 0\n";
     std::string bundleName = "root";
     EXPECT_TRUE(DfxMaps::CreateByBuffer(bundleName, content) != nullptr);
+    EXPECT_FALSE(DfxMaps::IsArkWebProc());
     GTEST_LOG_(INFO) << "CreateByBuffer002: end.";
+}
+
+/**
+ * @tc.name: CreateByBuffer003
+ * @tc.desc: test create by buffer contain arkweb
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, CreateByBuffer003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CreateByBuffer003: start.";
+    std::string content =  "5a0f486000-5a10373000 r--p 00000000 "
+                           "/data/app/el1/bundle/public/com.hmos.arkweb/libs/arm64/libarkweb_engine.so\n"
+                            "5a19631000-5a19e87000 r--p 00000000 "
+                            "/data/service/el1/public/for-all-app/shared_relro/libwebviewchromium64.relro\n";
+    std::string bundleName = "root";
+    EXPECT_TRUE(DfxMaps::CreateByBuffer(bundleName, content) == nullptr);
+    EXPECT_FALSE(DfxMaps::IsArkWebProc());
+
+    content = "5a0f486000-5a10373000 r--p 00000000 104:4f 8320                          "
+              "/data/storage/el1/bundle/arkwebcore/libs/arm64/libarkweb_engine.so\n"
+              "5a3e1b7000-5a3e1c6000 rw-p 00174000 104:4f 8321         ss                 "
+              "/data/storage/el1/bundle/arkwebcore/libs/arm64/libarkweb_render.so\n";
+
+    EXPECT_TRUE(DfxMaps::CreateByBuffer(bundleName, content) != nullptr);
+    EXPECT_TRUE(DfxMaps::IsArkWebProc());
+    GTEST_LOG_(INFO) << "CreateByBuffer003: end.";
 }
 }
 } // namespace HiviewDFX
