@@ -21,6 +21,7 @@ group("fuzzServerTest") {
         "faultloggerdserver_fuzzer:FaultloggerdServerFuzzTest",
         "filedescservice_fuzzer:FileDescServiceFuzzTest",
         "filemanager_fuzzer:FileManagerFuzzTest",
+        "litedump_fuzzer:LitedumpFuzzTest",
         "pipeservice_fuzzer:PipeServiceFuzzTest",
         "sdkdumpservice_fuzzer:SdkDumpServiceFuzzTest",
     ]
