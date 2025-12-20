@@ -150,6 +150,8 @@ const char* GetTrace(size_t skipFrameNum, size_t maxFrameNums)
 
 std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bool includeThreadInfo)
 {
+    ElapsedTime et;
+    DFXLOGI("Receive GetProcessStacktrace request.");
     std::string ss = "\n" + GetStacktraceHeader();
     Unwinder unwinder{};
     std::function<bool(int)> func = [&](int tid) {
@@ -178,7 +180,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bo
 
     std::vector<int> tids;
     GetTidsByPidWithFunc(getpid(), tids, func);
-
+    DFXLOGI("GetProcessStacktrace elapsed time: %{public}" PRId64 " ms", et.Elapsed<std::chrono::milliseconds>());
     return ss;
 }
 } // namespace HiviewDFX
