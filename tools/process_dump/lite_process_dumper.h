@@ -60,6 +60,8 @@ private:
     void PrintMaps();
     void PrintOpenFiles();
 
+    bool Report();
+
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> dfxMaps_;
 
@@ -70,6 +72,7 @@ private:
     std::string rawData_;
     std::shared_ptr<Unwinder> unwinder_;
     std::shared_ptr<DfxProcess> process_;
+    std::string keyThreadStackStr_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

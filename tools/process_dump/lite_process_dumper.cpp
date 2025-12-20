@@ -34,6 +34,10 @@
 #ifndef is_ohos_lite
 #include "faultlog_client.h"
 #endif
+#ifndef HISYSEVENT_DISABLE
+#include "hisysevent.h"
+#include "hisysevent_c.h"
+#endif
 #include "procinfo.h"
 #include "reporter.h"
 #include "thread_context.h"
@@ -202,9 +206,7 @@ bool LiteProcessDumper::Dump(int pid)
     InitProcess();
     Unwind();
     PrintAll();
-
-    SysEventReporter reporter(request_.type);
-    reporter.Report(*process_, request_);
+    Report();
     DFXLOGI("dump finish.");
     return true;
 }
@@ -252,7 +254,8 @@ void LiteProcessDumper::PrintThreadInfo()
     std::string faultThreadInfo;
     faultThreadInfo += "Fault thread info:\n";
     faultThreadInfo += StringPrintf("Tid:%d, Name:%s\n", request_.tid, request_.threadName);
-    faultThreadInfo += unwinder_->GetFramesStr(unwinder_->GetFrames());
+    keyThreadStackStr_ = unwinder_->GetFramesStr(unwinder_->GetFrames());
+    faultThreadInfo += keyThreadStackStr_;
     instance.WriteMsg(faultThreadInfo);
     std::istringstream iss(faultThreadInfo);
     std::string line;
@@ -343,6 +346,34 @@ void LiteProcessDumper::PrintAll()
     PrintMaps();
     PrintOpenFiles();
     DFXLOGI("finish print all to file");
+}
+
+bool LiteProcessDumper::Report()
+{
+    if (DfxMaps::IsArkWebProc()) {
+        SysEventReporter reporter(request_.type);
+        reporter.Report(*process_, request_);
+    }
+
+    std::string summary = "litehandler:"  + keyThreadStackStr_;
+#ifndef HISYSEVENT_DISABLE
+    HiSysEventParam params[] = {
+        {.name = "PID", .t = HISYSEVENT_INT32, .v = { .i32 = request_.pid}, .arraySize = 0},
+        {.name = "UID", .t = HISYSEVENT_INT32, .v = { .i32 = request_.uid}, .arraySize = 0},
+        {.name = "PROCESS_NAME", .t = HISYSEVENT_STRING,
+            .v = {.s = const_cast<char*>(request_.processName)}, .arraySize = 0},
+        {.name = "HAPPEN_TIME", .t = HISYSEVENT_UINT64, .v = {.ui64 = GetTimeMilliSeconds()}, .arraySize = 0},
+        {.name = "SUMMARY", .t = HISYSEVENT_STRING, .v = {.s = const_cast<char*>(summary.c_str())}, .arraySize = 0},
+    };
+    int ret = OH_HiSysEvent_Write("RELIABILITY", "CPP_CRASH_NO_LOG",
+                                  HISYSEVENT_FAULT, params, sizeof(params) / sizeof(params[0]));
+    DFXLOGI("Report pid %{public}d lite dump event ret %{public}d", request_.pid, ret);
+    return ret == 0;
+#else
+    DFXLOGI("Not supported lite dump event report");
+    return true;
+#endif
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
