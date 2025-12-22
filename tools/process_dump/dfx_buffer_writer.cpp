@@ -134,7 +134,22 @@ int DfxBufferWriter::DefaultWrite(int32_t fd, const char *buf, const size_t len)
         return -1;
     }
     if (fd > 0) {
-        return OHOS_TEMP_FAILURE_RETRY(write(fd, buf, len));
+        ssize_t writeSize = 0;
+        int savedErrno = 0;
+        constexpr size_t maxTryTimes = 1000;
+        size_t tryTimes = 0;
+        do {
+            writeSize = write(fd, buf, len);
+            savedErrno = errno;
+            if (++tryTimes >= maxTryTimes) {
+                DFXLOGW("Exceeding the maximum number of retries!");
+                break;
+            }
+            if (writeSize == -1 && savedErrno == EAGAIN) {
+                usleep(1000); // 1000 : sleep 1ms try again
+            }
+        } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
+        return writeSize;
     }
     return 0;
 }

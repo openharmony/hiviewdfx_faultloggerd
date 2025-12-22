@@ -88,6 +88,7 @@ if (defined(ohos_lite)) {
     sources = [
       "$faultloggerd_path/tools/process_dump/lperf/lperf_event_record.cpp",
       "$faultloggerd_path/tools/process_dump/lperf/lperf_events.cpp",
+      "buffer_writer_test.cpp",
       "dfx_processdump_test.cpp",
       "dump_info_header_test.cpp",
       "fault_stack_test.cpp",
