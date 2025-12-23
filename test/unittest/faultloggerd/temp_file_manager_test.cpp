@@ -293,7 +293,7 @@ HWTEST_F(ScanCurrentFilesTest, ScanCurrentFilesOnStartTest02, TestSize.Level2)
     ASSERT_TRUE(CreateTestFile(oldFilePath1));
     string oldFilePath2 = GetFileName(JS_HEAP, 1);
     ASSERT_TRUE(CreateTestFile(oldFilePath2));
-    FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, []() {
+    FaultLoggerdTestServer::AddTask(ExecutorThreadType::HELPER, []() {
         tempFileManager.ScanTempFilesOnStart();
     });
     this_thread::sleep_for(chrono::milliseconds(1000));

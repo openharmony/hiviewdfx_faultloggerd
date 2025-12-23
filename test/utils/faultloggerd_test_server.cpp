@@ -39,14 +39,14 @@ TaskQueue::Executor::Executor(TaskQueue& taskQueue) : EpollListener(CreateEventF
 
 TaskQueue::Executor::~Executor()
 {
-    std::lock_guard<std::mutex> lock(taskQueue_.mutex);
+    std::lock_guard<std::mutex> lock(taskQueue_.mutex_);
     taskQueue_.executor_ = nullptr;
     taskQueue_.tasks_.clear();
 }
 
 bool TaskQueue::AddTask(const std::function<void()> &task)
 {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> lock(mutex_);
     if (task == nullptr || executor_ == nullptr) {
         DFXLOGE("%{public}s :: failed to add task.", FAULTLOGGERD_TEST_TAG);
         return false;
@@ -74,15 +74,15 @@ void TaskQueue::Executor::OnEventPoll()
     }
     while (!taskQueue_.tasks_.empty()) {
         taskQueue_.tasks_.front()();
-        std::lock_guard<std::mutex> lock(taskQueue_.mutex);
+        std::lock_guard<std::mutex> lock(taskQueue_.mutex_);
         taskQueue_.tasks_.pop_front();
     }
 }
 
-TaskQueue &TaskQueue::GetInstance(TestThreadEnum testThreadEnum)
+TaskQueue &TaskQueue::GetInstance(ExecutorThreadType testThreadEnum)
 {
     switch (testThreadEnum) {
-        case TestThreadEnum::HELPER: {
+        case ExecutorThreadType::HELPER: {
             static TaskQueue helper;
             return helper;
         }
@@ -106,14 +106,14 @@ FaultLoggerdTestServer::FaultLoggerdTestServer()
     helperServer_ = std::thread([] {
         auto& helper = EpollManager::GetInstance();
         helper.Init(maxEpollEvent);
-        TaskQueue::GetInstance(TestThreadEnum::HELPER).InitExecutor();
+        TaskQueue::GetInstance(ExecutorThreadType::HELPER).InitExecutor();
         FaultLoggerDaemon::GetInstance().InitHelperServer();
         helper.StartEpoll(maxConnection);
     });
     mainServer_ = std::thread([] {
         auto& main = EpollManager::GetInstance();
         main.Init(maxEpollEvent);
-        TaskQueue::GetInstance(TestThreadEnum::MAIN).InitExecutor();
+        TaskQueue::GetInstance(ExecutorThreadType::MAIN).InitExecutor();
         FaultLoggerDaemon::GetInstance().InitMainServer();
         constexpr auto epollTimeoutInMilliseconds = 3 * 1000;
         main.StartEpoll(maxConnection, epollTimeoutInMilliseconds);
@@ -123,7 +123,7 @@ FaultLoggerdTestServer::FaultLoggerdTestServer()
     std::this_thread::sleep_for(std::chrono::seconds(faultLoggerdInitTime));
 }
 
-bool FaultLoggerdTestServer::AddTask(TestThreadEnum type, const std::function<void()>& task)
+bool FaultLoggerdTestServer::AddTask(ExecutorThreadType type, const std::function<void()>& task)
 {
     return TaskQueue::GetInstance(type).AddTask(task);
 }
@@ -133,11 +133,11 @@ FaultLoggerdTestServer::~FaultLoggerdTestServer()
         EpollManager::GetInstance().StopEpoll();
     };
     if (mainServer_.joinable()) {
-        TaskQueue::GetInstance(TestThreadEnum::MAIN).AddTask(stopTask);
+        TaskQueue::GetInstance(ExecutorThreadType::MAIN).AddTask(stopTask);
         mainServer_.join();
     }
     if (helperServer_.joinable()) {
-        TaskQueue::GetInstance(TestThreadEnum::HELPER).AddTask(stopTask);
+        TaskQueue::GetInstance(ExecutorThreadType::HELPER).AddTask(stopTask);
         helperServer_.join();
     }
 }

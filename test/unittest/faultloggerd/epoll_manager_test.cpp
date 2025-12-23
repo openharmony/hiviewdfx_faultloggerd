@@ -56,7 +56,7 @@ HWTEST_F(EpollManagerTest, DelayTaskTest01, TestSize.Level2)
             ASSERT_GT(ret, 0);
         };
         std::this_thread::sleep_for(std::chrono::microseconds(100));
-        ASSERT_GT(FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, task), 0);
+        ASSERT_GT(FaultLoggerdTestServer::AddTask(ExecutorThreadType::HELPER, task), 0);
     }
     constexpr uint64_t waitTime = 4;
     std::this_thread::sleep_for(std::chrono::seconds(waitTime));
@@ -77,7 +77,7 @@ HWTEST_F(EpollManagerTest, DelayTaskTest02, TestSize.Level2)
         ASSERT_EQ(DelayTaskQueue::GetInstance().AddDelayTask(nullptr, 0), 0);
         ASSERT_EQ(DelayTaskQueue::GetInstance().AddDelayTask([] {}, 0), 0);
     };
-    auto ret = FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, task);
+    auto ret = FaultLoggerdTestServer::AddTask(ExecutorThreadType::HELPER, task);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     ASSERT_TRUE(ret);
 }
@@ -100,7 +100,7 @@ HWTEST_F(EpollManagerTest, DelayTaskTest03, TestSize.Level2)
         ASSERT_TRUE(DelayTaskQueue::GetInstance().RemoveDelayTask(delayTaskId1));
         ASSERT_TRUE(DelayTaskQueue::GetInstance().RemoveDelayTask(delayTaskId2));
     };
-    auto ret = FaultLoggerdTestServer::AddTask(TestThreadEnum::HELPER, task);
+    auto ret = FaultLoggerdTestServer::AddTask(ExecutorThreadType::HELPER, task);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     ASSERT_TRUE(ret);
 }
