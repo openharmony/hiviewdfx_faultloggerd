@@ -202,7 +202,6 @@ void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
     while (eventFd_) {
         int32_t timeOut = (!listeners_.empty() && !listeners_.front()->IsPersist()) ? epollTimeoutInMilliseconds : -1;
         int epollNum = OHOS_TEMP_FAILURE_RETRY(epoll_wait(eventFd_.GetFd(), events.data(), maxConnection, timeOut));
-        std::lock_guard<std::mutex> lck(epollMutex_);
         if (epollNum < 0 || !eventFd_) {
             continue;
         }
@@ -236,7 +235,6 @@ void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
 
 void EpollManager::StopEpoll()
 {
-    std::lock_guard<std::mutex> lck(epollMutex_);
     if (eventFd_) {
         for (const auto& listener : listeners_) {
             (void)DelEpollEvent(listener->GetFd());

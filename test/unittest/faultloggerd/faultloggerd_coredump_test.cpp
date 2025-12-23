@@ -31,6 +31,7 @@
 #include "fault_common_util.h"
 #include "coredump_manager_service.h"
 #include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 #include "fault_logger_daemon.h"
 #include "coredump_callback_service.h"
 

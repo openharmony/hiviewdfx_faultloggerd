@@ -24,16 +24,4 @@ void SendRequestToServer(const OHOS::HiviewDFX::SocketRequestData &socketRequest
 
 void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType);
 
-class FaultLoggerdTestServer {
-public:
-    static FaultLoggerdTestServer& GetInstance();
-    FaultLoggerdTestServer(const FaultLoggerdTestServer &) = delete;
-    FaultLoggerdTestServer(FaultLoggerdTestServer &&) = delete;
-    FaultLoggerdTestServer &operator=(const FaultLoggerdTestServer &) = delete;
-    FaultLoggerdTestServer &operator=(FaultLoggerdTestServer &&) = delete;
-private:
-    FaultLoggerdTestServer();
-    ~FaultLoggerdTestServer() = default;
-};
-
 #endif

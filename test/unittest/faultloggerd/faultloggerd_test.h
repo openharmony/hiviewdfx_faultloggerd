@@ -17,7 +17,6 @@
 #define FAULTLOGGERD_TEST_H
 
 #include <cstdint>
-#include <functional>
 
 constexpr const char* const TEST_TEMP_FILE_PATH = "/data/test/faultloggerd/temp/";
 
@@ -32,23 +31,5 @@ void ClearTempFiles();
  * @return the count of temp files.
  */
 uint64_t CountTempFiles();
-
-enum class TestThreadEnum {
-    MAIN,
-    HELPER,
-};
-
-class FaultLoggerdTestServer {
-public:
-    static FaultLoggerdTestServer& GetInstance();
-    FaultLoggerdTestServer(const FaultLoggerdTestServer &) = delete;
-    FaultLoggerdTestServer(FaultLoggerdTestServer &&) = delete;
-    FaultLoggerdTestServer &operator=(const FaultLoggerdTestServer &) = delete;
-    FaultLoggerdTestServer &operator=(FaultLoggerdTestServer &&) = delete;
-    static bool AddTask(TestThreadEnum type, const std::function<void()>& task);
-private:
-    FaultLoggerdTestServer();
-    ~FaultLoggerdTestServer() = default;
-};
 
 #endif

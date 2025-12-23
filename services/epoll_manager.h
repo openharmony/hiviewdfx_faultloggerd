@@ -58,7 +58,6 @@ private:
     EpollListener* GetTargetListener(int32_t fd);
     std::list<std::unique_ptr<EpollListener>> listeners_;
     SmartFd eventFd_;
-    std::mutex epollMutex_;
 };
 
 constexpr uint64_t MS_PER_S = 1000;

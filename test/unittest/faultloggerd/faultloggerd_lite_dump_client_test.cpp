@@ -16,7 +16,7 @@
 #include <fcntl.h>
 #include <gtest/gtest.h>
 #include "faultlog_client.h"
-#include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 #include <thread>
 
 #include <sys/prctl.h>

@@ -19,8 +19,6 @@ ohos_fuzztest("PipeServiceFuzzTest") {
   module_out_path = "faultloggerd/faultloggerd"
   fuzz_config_file = "$faultloggerd_path/test/fuzztest/faultloggerdserver/pipeservice_fuzzer"
   sources = [
-    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_client.cpp",
-    "$faultloggerd_path/interfaces/innerkits/faultloggerd_client/faultloggerd_socket.cpp",
     "$faultloggerd_path/test/fuzztest/faultloggerdserver/common/faultloggerd_test.cpp",
     "pipe_service_fuzzer.cpp",
   ]
@@ -29,7 +27,7 @@ ohos_fuzztest("PipeServiceFuzzTest") {
     "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     "$faultloggerd_path/common/dfxutil:dfx_util",
     "$faultloggerd_path/common/trace:dfx_trace",
-    "$faultloggerd_path/services:faultloggerd_test_src",
+    "$faultloggerd_path/test/utils:faultloggerd_test_src",
   ]
   external_deps = [
     "bounds_checking_function:libsec_shared",

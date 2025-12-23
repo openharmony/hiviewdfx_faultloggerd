@@ -31,6 +31,7 @@
 #include "faultloggerd_client.h"
 #include "fault_common_util.h"
 #include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 #include "fault_logger_daemon.h"
 #include "smart_fd.h"
 

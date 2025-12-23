@@ -17,6 +17,7 @@
 
 #include <thread>
 
+#include "epoll_manager.h"
 #include "fault_logger_daemon.h"
 
 using namespace OHOS::HiviewDFX;
@@ -41,32 +42,4 @@ void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType
 {
     head.clientType = clientType;
     head.clientPid = getpid();
-}
-
-FaultLoggerdTestServer &FaultLoggerdTestServer::GetInstance()
-{
-    static FaultLoggerdTestServer faultLoggerdTestServer;
-    return faultLoggerdTestServer;
-}
-
-FaultLoggerdTestServer::FaultLoggerdTestServer()
-{
-    constexpr int32_t maxConnection = 30;
-    constexpr int32_t maxEpollEvent = 1024;
-    std::thread([] {
-        auto& helper = OHOS::HiviewDFX::EpollManager::GetInstance();
-        helper.Init(maxEpollEvent);
-        OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().InitHelperServer();
-        helper.StartEpoll(maxConnection);
-    }).detach();
-    std::thread([] {
-        auto& main = OHOS::HiviewDFX::EpollManager::GetInstance();
-        main.Init(maxEpollEvent);
-        OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().InitMainServer();
-        constexpr auto epollTimeoutInMilliseconds = 3 * 1000;
-        main.StartEpoll(maxConnection, epollTimeoutInMilliseconds);
-    }).detach();
-    constexpr int32_t faultLoggerdInitTime = 2;
-    // Pause for two seconds to wait for the server to initialize.
-    std::this_thread::sleep_for(std::chrono::seconds(faultLoggerdInitTime));
 }

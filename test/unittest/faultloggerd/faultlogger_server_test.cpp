@@ -23,15 +23,13 @@
 #include <unistd.h>
 
 #include "dfx_exception.h"
-#include "dfx_log.h"
 #include "dfx_socket_request.h"
 #include "dfx_util.h"
 #include "dfx_test_util.h"
-#include "fault_logger_daemon.h"
-#include "fault_logger_pipe.h"
 #include "faultloggerd_client.h"
 #include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
+#include "faultloggerd_test_server.h"
 #include "fault_common_util.h"
 #include "smart_fd.h"
 
