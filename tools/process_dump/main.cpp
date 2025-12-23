@@ -35,7 +35,7 @@ static const int DUMP_ARG_ONE = 1;
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
 static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
-long g_pid = 0;
+static long g_pid = 0;
 
 static void PrintCommandHelp()
 {
@@ -52,11 +52,16 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
     if (!strcmp("-signalhandler", argv[DUMP_ARG_ONE])) {
         isSignalHdlr = true;
         return true;
-    } else if (!strcmp("-liteperf", argv[DUMP_ARG_ONE])) {
+    }
+    if (!strcmp("-liteperf", argv[DUMP_ARG_ONE])) {
         isLitePerf = true;
         return true;
-    } else if (!strcmp("-render", argv[DUMP_ARG_ONE])) {
-        OHOS::HiviewDFX::SafeStrtol(argv[2], g_pid, DECIMAL_BASE); // 2 : the index of uid
+    }
+    if (!strcmp("-render", argv[DUMP_ARG_ONE])) {
+        if (argc < 3) { // 3 : contain type pid
+            return false;
+        }
+        OHOS::HiviewDFX::SafeStrtol(argv[2], g_pid, DECIMAL_BASE); // 2 : the index of pid
         isRender = true;
         return true;
     }

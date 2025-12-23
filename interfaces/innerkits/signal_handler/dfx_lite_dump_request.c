@@ -70,13 +70,13 @@ typedef struct FdTable {
     _Atomic(struct FdTableOverflow*) overflow;
 } FdTable;
 
-void* g_mmapSpace = MAP_FAILED;
-int g_mmapPos = 0;
-const int TOTAL_MEMORY_SIZE = PRIV_COPY_STACK_BUFFER_SIZE + PROC_STAT_BUF_SIZE + PROC_STATM_BUF_SIZE;
-const int FILE_PATH_LEN = 256;
-static const char PID_STR_NAME[] = "Pid:";
-static const char THREAD_SELF_STATUS_PATH[] = "/proc/thread-self/status";
+static void* g_mmapSpace = MAP_FAILED;
+static unsigned int g_mmapPos = 0;
 
+static const int TOTAL_MEMORY_SIZE = PRIV_COPY_STACK_BUFFER_SIZE + PROC_STAT_BUF_SIZE + PROC_STATM_BUF_SIZE;
+static const int FILE_PATH_LEN = 256;
+static const char * const PID_STR_NAME = "Pid:";
+static const char * const THREAD_SELF_STATUS_PATH = "/proc/thread-self/status";
 
 pid_t GetProcId(const char *statusPath, const char *item)
 {
@@ -84,6 +84,11 @@ pid_t GetProcId(const char *statusPath, const char *item)
     if (statusPath == NULL || item == NULL) {
         return pid;
     }
+    char realPath[PATH_MAX] = {0};
+    if (realpath(statusPath, realPath) == NULL) {
+        return pid;
+    }
+
     int fd = OHOS_TEMP_FAILURE_RETRY(open(statusPath, O_RDONLY));
     if (fd < 0) {
         DFXLOGE("GetRealPid:: open failed! pid:%{public}d, errno:%{public}d).", pid, errno);
@@ -177,6 +182,11 @@ bool CollectStat(struct ProcessDumpRequest *request)
         DFXLOGE("mmap failed");
         return false;
     }
+    if (g_mmapPos + PROC_STAT_BUF_SIZE > TOTAL_MEMORY_SIZE) {
+        DFXLOGE("collect stat memory size over flow");
+        return false;
+    }
+
     char path[FILE_PATH_LEN];
     int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/stat", request->pid);
     if (ret < 0) {
@@ -191,10 +201,6 @@ bool CollectStat(struct ProcessDumpRequest *request)
         return false;
     }
 
-    if (g_mmapPos  + PROC_STAT_BUF_SIZE > TOTAL_MEMORY_SIZE) {
-        DFXLOGE("collect stat memory size over flow");
-        return false;
-    }
     char* stat = (char*)g_mmapSpace + g_mmapPos;
     stat[PROC_STAT_BUF_SIZE - 1] = '\0';
     ssize_t n = read(fd, stat, PROC_STAT_BUF_SIZE - 1);
@@ -213,6 +219,10 @@ bool CollectStatm(struct ProcessDumpRequest *request)
         DFXLOGE("mmap failed");
         return false;
     }
+    if (g_mmapPos + PROC_STATM_BUF_SIZE > TOTAL_MEMORY_SIZE) {
+        DFXLOGE("collect statm mmap space is over flow");
+        return false;
+    }
     char path[FILE_PATH_LEN];
     int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/statm", request->pid);
     if (ret < 0) {
@@ -224,10 +234,6 @@ bool CollectStatm(struct ProcessDumpRequest *request)
     if (fd < 0) {
         DFXLOGI("failed to open %{public}s errno %{public}d", path, errno);
         g_mmapPos += PROC_STATM_BUF_SIZE;
-        return false;
-    }
-    if (g_mmapPos + PROC_STATM_BUF_SIZE > TOTAL_MEMORY_SIZE) {
-        DFXLOGE("collect statm mmap space is over flow");
         return false;
     }
 
@@ -392,7 +398,7 @@ static void FillFdsaninfo(FdTableEntry *fdEntries, FdTableEntry *overflowEntries
 
 static void FillFdsanOwner(FdTableEntry fdEntries, FdTableEntry overflowEntries, uint64_t* fdsanOwners)
 {
-    if (fdEntries.entries == MAP_FAILED || overflowEntries.entries == MAP_FAILED) {
+    if (fdEntries.entries == MAP_FAILED) {
         return;
     }
     for (size_t i = 0; i < fdEntries.entryCount; i++) {
@@ -403,6 +409,9 @@ static void FillFdsanOwner(FdTableEntry fdEntries, FdTableEntry overflowEntries,
     }
     munmap(fdEntries.entries, fdEntries.entryCount * sizeof(FdEntry));
 
+    if (overflowEntries.entries == MAP_FAILED) {
+        return;
+    }
     for (size_t j = 0; j < overflowEntries.entryCount; j++) {
         struct FdEntry *entry = &(overflowEntries.entries[j]);
         if (entry->close_tag) {
@@ -412,7 +421,7 @@ static void FillFdsanOwner(FdTableEntry fdEntries, FdTableEntry overflowEntries,
     munmap(overflowEntries.entries, overflowEntries.entryCount * sizeof(FdEntry));
 }
 
-void WriteFileItems(int pipeWriteFd, DIR *dir, const char * path, const uint64_t* fdsanOwners)
+void WriteFileItems(int pipeWriteFd, DIR *dir, const char * path, const uint64_t* fdsanOwners, int fdMaxIndex)
 {
     struct dirent *entry;
     char target[FILE_PATH_LEN];
@@ -431,6 +440,9 @@ void WriteFileItems(int pipeWriteFd, DIR *dir, const char * path, const uint64_t
         if (len != -1) {
             target[len] = '\0';
             int fd = atoi(entry->d_name);
+            if (fd < 0 || fd > fdMaxIndex) {
+                continue;
+            }
             uint64_t tag = fdsanOwners[fd];
             const char* type = fdsan_get_tag_type(tag);
             uint64_t val = fdsan_get_tag_value(tag);
@@ -446,7 +458,7 @@ void WriteFileItems(int pipeWriteFd, DIR *dir, const char * path, const uint64_t
     }
 }
 
-bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr, pid_t pid)
+bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr)
 {
     char path[FILE_PATH_LEN];
     int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/fd",
@@ -468,8 +480,9 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr, pid_t pid)
     FdTableEntry fdEntries = {0};
     FdTableEntry overflowEntries = {0};
     FillFdsaninfo(&fdEntries, &overflowEntries, fdTableAddr);
+    size_t entryCount = fdEntries.entryCount + overflowEntries.entryCount;
 
-    size_t mmapSize = (fdEntries.entryCount + overflowEntries.entryCount) * sizeof(uint64_t);
+    size_t mmapSize = entryCount * sizeof(uint64_t);
     uint64_t* fdsanOwners = mmap(NULL, mmapSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (fdsanOwners == MAP_FAILED) {
         closedir(dir);
@@ -477,8 +490,9 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr, pid_t pid)
         return false;
     }
     FillFdsanOwner(fdEntries, overflowEntries, fdsanOwners);
-    WriteFileItems(pipeWriteFd, dir, path, fdsanOwners);
+    WriteFileItems(pipeWriteFd, dir, path, fdsanOwners, (int)entryCount);
     closedir(dir);
+    munmap(fdsanOwners, mmapSize);
     return true;
 }
 
@@ -510,7 +524,7 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
 
     CollectMemoryNearRegisters(pipeWriteFd, &request->context);
     CollectMaps(pipeWriteFd, PROC_SELF_MAPS_PATH);
-    CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table(), request->pid);
+    CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table());
 
     close(pipeWriteFd);
     UnregisterAllocator();

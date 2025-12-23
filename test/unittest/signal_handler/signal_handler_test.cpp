@@ -1087,6 +1087,7 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest001, TestSize.Level2)
     EXPECT_EQ(GetProcId(PROC_SELF_STATUS_PATH, NULL), -1);
     EXPECT_GT(GetProcId(PROC_SELF_STATUS_PATH, "Pid:"), 0);
     EXPECT_GT(GetProcId("/proc/thread-self/status", "Pid:"), 0);
+
     UpdateSanBoxProcess(nullptr);
     EXPECT_TRUE(MMapMemoryOnce());
     ProcessDumpRequest request {};
@@ -1095,6 +1096,9 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest001, TestSize.Level2)
     EXPECT_TRUE(CollectStat(&request));
     EXPECT_TRUE(CollectStatm(&request));
     EXPECT_TRUE(CollectStack(&request));
+
+    EXPECT_FALSE(CollectStat(&request));
+    EXPECT_FALSE(CollectStatm(&request));
 
     ResetLiteDump();
     request.pid = 99999;
@@ -1177,10 +1181,8 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest005, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, DfxLiteDumperTest006, TestSize.Level2)
 {
-    ProcessDumpRequest request {};
-    request.pid = getpid();
     char buf[LINE_BUF_SIZE];
-    CollectOpenFiles(g_pipeFd[PIPE_WRITE], (uint64_t)fdsan_get_fd_table(), request.pid);
+    EXPECT_TRUE(CollectOpenFiles(g_pipeFd[PIPE_WRITE], (uint64_t)fdsan_get_fd_table()));
     ClosePipeFd(g_pipeFd[PIPE_WRITE]);
     std::string str;
     while (read(g_pipeFd[PIPE_READ], buf, sizeof(buf)) > 0) {

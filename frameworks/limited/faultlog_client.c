@@ -103,7 +103,7 @@ static void CloseSocket(int sockfd)
     }
 }
 
-static bool RecvMsgFromSocket(const int sockfd, unsigned char* data, size_t* len)
+static bool RecvMsgFromSocket(const int sockfd, unsigned char* data, unsigned int dataSize, size_t* len)
 {
     if ((sockfd < 0) || (data == NULL)) {
         return false;
@@ -135,7 +135,7 @@ static bool RecvMsgFromSocket(const int sockfd, unsigned char* data, size_t* len
     }
 
     *len = cmsg->cmsg_len - sizeof(struct cmsghdr);
-    if (memcpy_s(data, *len, CMSG_DATA(cmsg), *len) != 0) {
+    if (memcpy_s(data, dataSize, CMSG_DATA(cmsg), *len) != 0) {
         DFXLOGE("%{public}s :: memcpy error", __func__);
         return false;
     }
@@ -146,7 +146,7 @@ static bool ReadFileDescriptorFromSocket(int sockfd, int* fd)
 {
     size_t dataLen = sizeof(int);
     unsigned char data[dataLen + 1];
-    if (!RecvMsgFromSocket(sockfd, data, &dataLen)) {
+    if (!RecvMsgFromSocket(sockfd, data, sizeof(data), &dataLen)) {
         DFXLOGE("%{public}s :: Failed to recv message", __func__);
         return false;
     }
@@ -194,8 +194,9 @@ static int32_t RequestServer(const void *buf, int len, int* fd)
 
     if (!ReadFileDescriptorFromSocket(sockfd, fd)) {
         retCode = RECEIVE_DATA_FAILED;
+    } else {
+        retCode = REQUEST_SUCCESS;
     }
-    retCode = REQUEST_SUCCESS;
     CloseSocket(sockfd);
     return retCode;
 }

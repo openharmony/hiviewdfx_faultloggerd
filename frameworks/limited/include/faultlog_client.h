@@ -27,8 +27,8 @@ extern "C" {
  * @brief request limited process pipe file descriptor
  * @param pipeType type of request about pipe
  * @param pipeFd pipeFd to transfer message
- * @param timeout timeout ms
  * @param pid dump process pid
+ * @param procName dump process cmdline
  * @return if succeed return 0, otherwise return -1
 */
 AT_SYMBOL_HIDDEN int32_t RequestLimitedPipeFd(const int32_t pipeType, int* pipeFd, int pid, const char* procName);

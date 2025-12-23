@@ -88,7 +88,11 @@ void LiteProcessDumper::ReadStatm(int pipeReadFd)
 void LiteProcessDumper::ReadStack(int pipeReadFd)
 {
     stackBuf_.resize(PRIV_COPY_STACK_BUFFER_SIZE);
-    read(pipeReadFd, stackBuf_.data(), PRIV_COPY_STACK_BUFFER_SIZE);
+    if (read(pipeReadFd, stackBuf_.data(), PRIV_COPY_STACK_BUFFER_SIZE) != PRIV_COPY_STACK_BUFFER_SIZE) {
+        DFXLOGE("read stack fail %{public}d", errno);
+        return;
+    }
+    DFXLOGI("read stack success");
 }
 
 MemoryBlockInfo ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr, unsigned int count, unsigned int forward)

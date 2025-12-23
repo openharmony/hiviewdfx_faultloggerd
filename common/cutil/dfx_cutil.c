@@ -122,7 +122,7 @@ bool IsNoNewPriv(const char* statusPath)
     bool result = false;
     if (p) {
         char *val = p + strlen(key);
-        while (val < buf + sizeof(buf) && !isdigit(*val)) {
+        while (val < buf + sizeof(buf) - 1 && !isdigit(*val)) {
             val++;
         }
         result = (*val == '1');

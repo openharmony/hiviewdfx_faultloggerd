@@ -139,7 +139,7 @@ int DfxBufferWriter::DefaultWrite(int32_t fd, const char *buf, const size_t len)
     return 0;
 }
 
-int DfxBufferWriter::GeFaultloggerdRequestType()
+int DfxBufferWriter::GetFaultloggerdRequestType()
 {
     switch (request_.siginfo.si_signo) {
         case SIGLEAK_STACK:
@@ -178,7 +178,7 @@ bool DfxBufferWriter::InitBufferWriter(const ProcessDumpRequest& request)
     } else {
         struct FaultLoggerdRequest faultloggerdRequest{
             .pid = request_.pid,
-            .type = GeFaultloggerdRequestType(),
+            .type = GetFaultloggerdRequestType(),
             .tid = request_.tid,
             .time = request_.timeStamp
         };

@@ -48,7 +48,7 @@ public:
     void AppendBriefDumpInfo(const std::string& info);
     void PrintBriefDumpInfo();
 
-    int GeFaultloggerdRequestType();
+    int GetFaultloggerdRequestType();
     bool InitBufferWriter(const ProcessDumpRequest& request);
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
     void RemoveFileIfNeed(const std::string& dirPath) const;

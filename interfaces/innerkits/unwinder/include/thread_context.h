@@ -103,7 +103,7 @@ public:
 
     void SetMaps(std::shared_ptr<DfxMaps> maps) { maps_ = maps; }
     void SetStackBuf(std::vector<uint8_t> stackBuf) { stackBuf_ = stackBuf; }
-    void SetStackForward(int forward) { stackForward_ = forward; }
+    void SetStackForward(unsigned int forward) { stackForward_ = forward; }
 
 private:
     LocalThreadContextMix() = default;
