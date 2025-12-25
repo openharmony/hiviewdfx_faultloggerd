@@ -160,6 +160,12 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
 std::shared_ptr<DfxElf> VdsoElfFactory::Create()
 {
 #if is_ohos && !is_mingw
+    // Limit array length to mitigate OOM risk, it is about twice as large as the vdso mapped segment.
+    constexpr size_t maxMapSize = 25000;
+    if (size_ >= maxMapSize) {
+        DFXLOGE("Invalid data size %{public}zu", size_);
+        return nullptr;
+    }
     std::vector<uint8_t> shmmData(size_);
     size_t byte = ReadProcMemByPid(pid_, begin_, shmmData.data(), size_);
     if (byte != size_) {

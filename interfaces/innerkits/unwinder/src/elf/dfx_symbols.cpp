@@ -163,11 +163,13 @@ std::string DfxSymbols::Demangle(const std::string& buf)
         bufStr += LINKER_PREFIX.size();
         funcName += LINKER_PREFIX_NAME;
     }
-
-    int status = 0;
     char* demangledStr = nullptr;
     if (buf[1] == 'Z') {
-        demangledStr = abi::__cxa_demangle(bufStr, nullptr, nullptr, &status);
+        int status = 0;
+        auto demangledResult = abi::__cxa_demangle(bufStr, nullptr, nullptr, &status);
+        if (status == 0) {
+            demangledStr = demangledResult;
+        }
     }
 #ifdef RUSTC_DEMANGLE
     if (buf[1] == 'R') {
