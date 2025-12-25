@@ -604,7 +604,7 @@ int32_t LiteProcDumperPipeService::OnRequest(const std::string& socketName, int3
         return ResponseCode::ABNORMAL_SERVICE;
     }
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
-    SendFileDescriptorToSocket(connectionFd, &fd, 1);  //  Failed to send message, errno(9)
+    SendFileDescriptorToSocket(connectionFd, &fd, 1);
     return responseData;
 }
 

@@ -299,8 +299,14 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest005, TestSize.Level2)
     liteDumper.ReadStack(g_pipeFd[PIPE_READ]);
     std::string s(liteDumper.stackBuf_.begin(), liteDumper.stackBuf_.end());
     EXPECT_EQ(s.substr(0, str.length()), str);
+
+    std::string sk(PRIV_COPY_STACK_BUFFER_SIZE, 'a');
+    write(g_pipeFd[PIPE_WRITE], sk.c_str(), sk.length());
+    liteDumper.ReadStack(g_pipeFd[PIPE_READ]);
+
     GTEST_LOG_(INFO) << "LiteProcessDumpTest005: end.";
 }
+
 /**
  * @tc.name: LiteProcessDumpTest006
  * @tc.desc: test LiteDump ReadMemory
@@ -332,7 +338,7 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest006, TestSize.Level2)
 
 /**
  * @tc.name: LiteProcessDumpTest008
- * @tc.desc: test liteDump ReadStack
+ * @tc.desc: test DfxBufferWriter create crash file
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, LiteProcessDumpTest008, TestSize.Level2)
@@ -349,7 +355,7 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest008, TestSize.Level2)
 
 /**
  * @tc.name: LiteProcessDumpTest009
- * @tc.desc: test liteDump ReadStack
+ * @tc.desc: test DfxBufferWriter GetFaultloggerdRequestType
  * @tc.type: FUNC
  */
 HWTEST_F (ProcessDumpTest, LiteProcessDumpTest009, TestSize.Level2)
@@ -359,18 +365,18 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest009, TestSize.Level2)
     writer.request_ = {};
     writer.request_.siginfo.si_signo = SIGLEAK_STACK;
     writer.request_.siginfo.si_code = -SIGLEAK_STACK_FDSAN;
-    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    EXPECT_EQ(writer.GetFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
     writer.request_.siginfo.si_code = -SIGLEAK_STACK_JEMALLOC;
-    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    EXPECT_EQ(writer.GetFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
     writer.request_.siginfo.si_code = -SIGLEAK_STACK_BADFD;
-    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    EXPECT_EQ(writer.GetFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
     writer.request_.siginfo.si_code = -99;
-    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::LEAK_STACKTRACE);
+    EXPECT_EQ(writer.GetFaultloggerdRequestType(), FaultLoggerType::LEAK_STACKTRACE);
 
     writer.request_.siginfo.si_signo = SIGDUMP;
-    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
+    EXPECT_EQ(writer.GetFaultloggerdRequestType(), FaultLoggerType::CPP_STACKTRACE);
     writer.request_.siginfo.si_signo = SIGILL;
-    EXPECT_EQ(writer.GeFaultloggerdRequestType(), FaultLoggerType::CPP_CRASH);
+    EXPECT_EQ(writer.GetFaultloggerdRequestType(), FaultLoggerType::CPP_CRASH);
     GTEST_LOG_(INFO) << "LiteProcessDumpTest009: end.";
 }
 #endif
