@@ -156,6 +156,30 @@ HWTEST_F(CommonCutilTest, IsNoNewPriv001, TestSize.Level0)
     EXPECT_FALSE(IsNoNewPriv(PROC_SELF_STATUS_PATH));
     GTEST_LOG_(INFO) << "IsNoNewPriv001: end.";
 }
+
+/**
+ * @tc.name: SafeStrtol001
+ * @tc.desc: test StartsWith functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, SafeStrtol001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SafeStrtol001: start.";
+    long num = 0;
+    EXPECT_FALSE(SafeStrtol(nullptr, &num, DECIMAL_BASE));
+    std::string numStr = "0";
+    EXPECT_TRUE(SafeStrtol(numStr.c_str(), &num, DECIMAL_BASE));
+    numStr = "abc";
+    EXPECT_FALSE(SafeStrtol(numStr.c_str(), &num, DECIMAL_BASE));
+    numStr = "abc123";
+    EXPECT_FALSE(SafeStrtol(numStr.c_str(), &num, DECIMAL_BASE));
+    numStr = "123abc";
+    EXPECT_FALSE(SafeStrtol(numStr.c_str(), &num, DECIMAL_BASE));
+    numStr = "123";
+    EXPECT_TRUE(SafeStrtol(numStr.c_str(), &num, DECIMAL_BASE));
+    EXPECT_EQ(num, 123);
+    GTEST_LOG_(INFO) << "SafeStrtol001: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

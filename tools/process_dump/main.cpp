@@ -22,6 +22,7 @@
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "dfx_cutil.h"
 #include "lite_perf_dumper.h"
 #include "process_dumper.h"
 
@@ -61,7 +62,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
         if (argc < 3) { // 3 : contain type pid
             return false;
         }
-        OHOS::HiviewDFX::SafeStrtol(argv[2], g_pid, DECIMAL_BASE); // 2 : the index of pid
+        SafeStrtol(argv[2], &g_pid, DECIMAL_BASE); // 2 : the index of pid
         isRender = true;
         return true;
     }

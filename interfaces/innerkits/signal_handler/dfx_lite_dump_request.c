@@ -84,10 +84,6 @@ pid_t GetProcId(const char *statusPath, const char *item)
     if (statusPath == NULL || item == NULL) {
         return pid;
     }
-    char realPath[PATH_MAX] = {0};
-    if (realpath(statusPath, realPath) == NULL) {
-        return pid;
-    }
 
     int fd = OHOS_TEMP_FAILURE_RETRY(open(statusPath, O_RDONLY));
     if (fd < 0) {
@@ -439,8 +435,11 @@ void WriteFileItems(int pipeWriteFd, DIR *dir, const char * path, const uint64_t
         len = readlink(linkpath, target, sizeof(target) - 1);
         if (len != -1) {
             target[len] = '\0';
-            int fd = atoi(entry->d_name);
-            if (fd < 0 || fd > fdMaxIndex) {
+            long fd;
+            if (!SafeStrtol(entry->d_name, &fd, DECIMAL_BASE)) {
+                continue;
+            }
+            if (fd < 0 || fd >= fdMaxIndex) {
                 continue;
             }
             uint64_t tag = fdsanOwners[fd];
