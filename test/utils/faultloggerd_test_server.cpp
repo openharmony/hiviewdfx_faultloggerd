@@ -79,9 +79,9 @@ void TaskQueue::Executor::OnEventPoll()
     }
 }
 
-TaskQueue &TaskQueue::GetInstance(ExecutorThreadType testThreadEnum)
+TaskQueue &TaskQueue::GetInstance(ExecutorThreadType type)
 {
-    switch (testThreadEnum) {
+    switch (type) {
         case ExecutorThreadType::HELPER: {
             static TaskQueue helper;
             return helper;
