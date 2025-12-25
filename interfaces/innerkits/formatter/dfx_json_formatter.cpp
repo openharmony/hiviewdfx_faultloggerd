@@ -106,8 +106,8 @@ bool StackJsonFormatter::FormatNativeFrame(Json::Value& frames, const uint32_t& 
     frame.relPc = strtoull(pc.c_str(), nullptr, hexadecimal);
     frame.mapName = JsonAsString(frames[frameIdx]["file"]);
     frame.buildId = JsonAsString(frames[frameIdx]["buildId"]);
-    if (frames[frameIdx].isMember("offset") && frames[frameIdx]["offset"].isInt()) {
-        frame.funcOffset = frames[frameIdx]["offset"].asInt();
+    if (frames[frameIdx].isMember("offset") && frames[frameIdx]["offset"].isUInt64()) {
+        frame.funcOffset = frames[frameIdx]["offset"].asUInt64();
     }
     frame.funcName = JsonAsString(frames[frameIdx]["symbol"]);
     if (snprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, frameIdx, pc.c_str(),
