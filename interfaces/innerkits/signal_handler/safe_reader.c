@@ -83,6 +83,9 @@ static bool IsReadableAddr(uintptr_t addr)
 
 size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen)
 {
+    if (destPtr == 0) {
+        return 0;
+    }
     size_t copeSize = Min(destLen, srcLen);
     uintptr_t currentPtr = srcPtr;
     uintptr_t srcEndPtr = srcPtr + copeSize;
