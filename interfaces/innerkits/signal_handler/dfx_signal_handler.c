@@ -324,17 +324,18 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 
     DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
             signo, si->si_code, pid, tid);
-    if (signo == SIGDUMP) {
-        if (si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
-            DFXLOGW("DFX_SigchainHandler :: signo(%{public}d:%{public}d) is not remote dump type, return directly",
-                signo, si->si_code);
-            return IsDumpSignal(signo);
-        }
+    if (signo == SIGDUMP && si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
+        return IsDumpSignal(signo);
     }
-
+    static _Atomic(int) prevTid = -1;
+    if (tid == prevTid) {
+        return IsDumpSignal(signo);
+    }
     // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
+    prevTid = syscall(SYS_gettid);
     if (!IsDumpSignal(g_prevHandledSignal) && !IsPrintLogSignal(g_prevHandledSignal)) {
+        prevTid = -1;
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return IsDumpSignal(signo);
     }
@@ -342,9 +343,9 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 
     int savedErrno = errno;
     if (!FillDumpRequest(signo, si, context)) {
+        prevTid = -1;
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        DFXLOGE("DFX_SigchainHandler :: signal(%{public}d) in %{public}d:%{public}d fill dump request faild.",
-            signo, g_request.pid, g_request.tid);
+        DFXLOGE("DFX_SigchainHandler :: fill dump request faild.");
         errno = savedErrno;
         return IsDumpSignal(signo);
     }
@@ -360,6 +361,7 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 #ifndef is_ohos_lite
     }
 #endif
+    prevTid = -1;
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
     errno = savedErrno;
@@ -419,6 +421,11 @@ static void DFX_InstallSignalHandler(void)
         } else {
             sigfillset(&sigchain.sca_mask);
             add_special_handler_at_last(signo, &sigchain);
+        }
+        if (signo == SIGSEGV) {
+            /*Sigaction registers sigsgev again to prevent
+              the cppcrash file from not being generated when cash in other sigchain handler*/
+            InstallSigActionHandler(signo);
         }
     }
 

@@ -27,6 +27,7 @@
 #include <info/fatal_message.h>
 #include <iostream>
 #include <sstream>
+#include <sigchain.h>
 #include <pthread.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -107,6 +108,7 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
     {"triSIGTRAP", "trigger a SIGTRAP", &DfxCrasher::TriggerTrapException},
     {"triSIGABRT", "trigger a SIGABRT", &DfxCrasher::Abort},
     {"triSIGPIPE", "trigger a SIGPIPE", &DfxCrasher::TriggerPipeException},
+    {"triSignalHandlerCrash", "trigger a SIGSEGV in SignalHandler", &DfxCrasher::SignalHandlerCrash},
     {"triSocketSIGPIPE", "trigger a socket SIGPIPE", &DfxCrasher::TriggerSocketException},
 
     {"Loop", "trigger a ForeverLoop", &DfxCrasher::Loop},
@@ -322,6 +324,24 @@ NOINLINE int DfxCrasher::Abort(void)
 {
     HILOG_FATAL(LOG_CORE, "Test Trigger ABORT!");
     abort();
+    return 0;
+}
+
+static bool SigchainHandler(int signo, siginfo_t *si, void *context)
+{
+    raise(SIGSEGV);
+    return true;
+}
+
+NOINLINE int DfxCrasher::SignalHandlerCrash(void)
+{
+    struct signal_chain_action sigchain = {
+        .sca_sigaction = SigchainHandler,
+        .sca_mask = {},
+        .sca_flags = 0,
+    };
+    add_special_signal_handler(SIGSEGV, &sigchain);
+    raise(SIGSEGV);
     return 0;
 }
 
