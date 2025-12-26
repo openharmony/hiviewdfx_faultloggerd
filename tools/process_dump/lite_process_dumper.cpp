@@ -359,8 +359,8 @@ bool LiteProcessDumper::Report()
         SysEventReporter reporter(request_.type);
         reporter.Report(*process_, request_);
     }
-
-    std::string summary = "litehandler:"  + keyThreadStackStr_;
+    std::string reason = DfxSignal::PrintSignal(request_.siginfo) + "\n";
+    std::string summary = "litehandler:" + reason + keyThreadStackStr_;
 #ifndef HISYSEVENT_DISABLE
     HiSysEventParam params[] = {
         {.name = "PID", .t = HISYSEVENT_INT32, .v = { .i32 = request_.pid}, .arraySize = 0},
