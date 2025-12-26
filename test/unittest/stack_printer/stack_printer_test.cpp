@@ -699,6 +699,12 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_005, TestSize.Level2)
     std::shared_ptr<Unwinder> unwinder = std::make_shared<Unwinder>(false);
     std::shared_ptr<DfxMaps> maps = DfxMaps::Create(getpid(), MAPS_PATH);
     stackPrinter->SetUnwindInfo(unwinder, maps);
+
+    uint64_t startTime = timestamps[0] - 10;
+    uint64_t endTime = timestamps[0] - 1;
+    // shoud return empty stack
+    std::string emptyStack = stackPrinter->GetHeaviestStack(gettid(), startTime, endTime);
+    ASSERT_EQ(emptyStack, "");
     std::string stack = stackPrinter->GetHeaviestStack(gettid());
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
@@ -876,10 +882,9 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_010, TestSize.Level2)
     GTEST_LOG_(INFO) << "StackPrinterTest_010: start.";
     // SampledFrame string to be deserialized: mapSize + \n + tid + vecSize + frameinfo + \n
     // frameinfo: indent + count + level + pc + isLeaf + timestamps.size() + timestamps(set empty)
-    std::string sampledFrameMapStr = "11\n" + std::to_string(gettid()) + " 1 1 5 3 9630076 0 0\n";
-    std::stringstream ss(sampledFrameMapStr);
+    std::stringstream ss("11\n" + std::to_string(gettid()) + " 1 1 5 3 9630076 0 0\n");
     auto result = StackPrinter::DeserializeSampledFrameMap(ss);
-    ASSERT_TRUE(ss.fail());
+    ASSERT_FALSE(ss.fail());
     ASSERT_TRUE(result.empty());
 
     ss.str("");
@@ -891,8 +896,14 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_010, TestSize.Level2)
 
     ss.str("");
     ss.clear();
-    sampledFrameMapStr = "1\n-1 1 1 5 3 9630076 0 0\n";
-    ss.str(sampledFrameMapStr);
+    ss.str("1\n-1 1 1 5 3 9630076 0 0\n");
+    result = StackPrinter::DeserializeSampledFrameMap(ss);
+    ASSERT_FALSE(ss.fail());
+    ASSERT_TRUE(result.empty());
+
+    ss.str("");
+    ss.clear();
+    ss.str("1\n65537 1 1 5 3 9630076 0 0\n");
     result = StackPrinter::DeserializeSampledFrameMap(ss);
     ASSERT_FALSE(ss.fail());
     ASSERT_TRUE(result.empty());
@@ -908,13 +919,12 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_010, TestSize.Level2)
     ss.clear();
     ss.str("1\ninvalidTid 1");
     result = StackPrinter::DeserializeSampledFrameMap(ss);
-    ASSERT_FALSE(ss.fail());
+    ASSERT_TRUE(ss.fail());
     ASSERT_TRUE(result.empty());
 
     ss.str("");
     ss.clear();
-    sampledFrameMapStr = "1\n" + std::to_string(gettid()) + " 1 1 5 3 9630076 0 0\n";
-    ss.str(sampledFrameMapStr);
+    ss.str("1\n" + std::to_string(gettid()) + " 1 1 5 3 9630076 0 0\n");
     result = StackPrinter::DeserializeSampledFrameMap(ss);
     ASSERT_FALSE(ss.fail());
     ASSERT_EQ(result.size(), 1);
