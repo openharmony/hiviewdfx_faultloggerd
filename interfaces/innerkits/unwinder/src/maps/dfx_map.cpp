@@ -45,115 +45,100 @@ const char* const SANDBOX_PATH_PREFIX = "/data/storage/el1/bundle/";
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 
 #if defined(is_ohos) && is_ohos
-AT_ALWAYS_INLINE const char* SkipWhiteSpace(const char *cp)
-{
-    if (cp == nullptr) {
-        return nullptr;
-    }
 
-    while (*cp == ' ' || *cp == '\t') {
-        ++cp;
+AT_ALWAYS_INLINE bool SkipWhiteSpace(const char* buff, const size_t buffSize, size_t& buffOffset)
+{
+    if (buff == nullptr) {
+        return false;
     }
-    return cp;
+    while (buffOffset < buffSize) {
+        const char item = buff[buffOffset];
+        if (item != ' ' && item != '\t') {
+            return true;
+        }
+        buffOffset++;
+    }
+    return false;
 }
 
-AT_ALWAYS_INLINE const char* ScanHex(const char *cp, unsigned long &valp)
+AT_ALWAYS_INLINE bool ScanHex(const char* buff, const size_t buffSize, uint64_t& valp, size_t& buffOffset)
 {
-    cp = SkipWhiteSpace(cp);
-    if (cp == nullptr) {
-        return nullptr;
+    if (!SkipWhiteSpace(buff, buffSize, buffOffset)) {
+        return false;
     }
-
-    unsigned long cnt = 0;
-    unsigned long val = 0;
-    while (1) {
-        unsigned long digit = *cp;
-        if ((digit - '0') <= 9) { // 9 : max 9
+    valp = 0;
+    unsigned cnt = 0;
+    while (buffOffset < buffSize) {
+        unsigned char digit = buff[buffOffset];
+        if (digit >= '0' && digit <= '9') {
             digit -= '0';
-        } else if ((digit - 'a') < 6) { // 6 : 16 - 10
+        } else if (digit >= 'a' && digit <= 'f') {
             digit -= 'a' - 10; // 10 : base 10
-        } else if ((digit - 'A') < 6) { // 6 : 16 - 10
+        } else if (digit >= 'A' && digit <= 'F') {
             digit -= 'A' - 10; // 10 : base 10
         } else {
             break;
         }
-        val = (val << 4) | digit; // 4 : hex
+        constexpr uint64_t hex = 4;
+        valp = (valp << hex) | digit;
         ++cnt;
-        ++cp;
+        buffOffset++;
     }
-    if (cnt == 0) {
-        return nullptr;
-    }
-
-    valp = val;
-    return cp;
+    return cnt > 0;
 }
 
-AT_ALWAYS_INLINE const char* ScanDec(const char *cp, unsigned long &valp)
+AT_ALWAYS_INLINE bool ScanDec(const char* buff, const size_t buffSize, uint64_t& valp, size_t& buffOffset)
 {
-    cp = SkipWhiteSpace(cp);
-    if (cp == nullptr) {
-        return nullptr;
+    if (!SkipWhiteSpace(buff, buffSize, buffOffset)) {
+        return false;
     }
-
-    unsigned long cnt = 0;
-    unsigned long digit = 0;
-    unsigned long val = 0;
-    while (1) {
-        digit = *cp;
-        if ((digit - '0') <= 9) { // 9 : max 9
+    valp = 0;
+    unsigned int cnt = 0;
+    while (buffOffset < buffSize) {
+        unsigned char digit = buff[buffOffset];
+        if (digit >= '0' && digit <= '9') {
             digit -= '0';
-            ++cp;
         } else {
             break;
         }
-
-        val = (10 * val) + digit; // 10 : base 10
+        constexpr uint64_t dec = 10;
+        valp = (valp * dec) + digit;
         ++cnt;
+        buffOffset++;
     }
-    if (cnt == 0) {
-        return nullptr;
-    }
-
-    valp = val;
-    return cp;
+    return cnt > 0;
 }
 
-AT_ALWAYS_INLINE const char* ScanChar(const char *cp, char &valp)
+AT_ALWAYS_INLINE bool ScanChar(const char* buff, const size_t buffSize, char& valp, size_t& buffOffset)
 {
-    cp = SkipWhiteSpace(cp);
-    if (cp == nullptr) {
-        return nullptr;
+    if (!SkipWhiteSpace(buff, buffSize, buffOffset)) {
+        return false;
     }
-
-    valp = *cp;
-
-    /* don't step over NUL terminator */
-    if (*cp) {
-        ++cp;
+    valp = buff[buffOffset];
+    if (valp) {
+        buffOffset++;
     }
-    return cp;
+    return true;
 }
 
-AT_ALWAYS_INLINE const char* ScanString(const char *cp, char *valp, size_t size)
+AT_ALWAYS_INLINE bool ScanString(const char* buff, const size_t buffSize, std::string& valp, size_t& buffOffset)
 {
-    cp = SkipWhiteSpace(cp);
-    if (cp == nullptr) {
-        return nullptr;
+    if (!SkipWhiteSpace(buff, buffSize, buffOffset)) {
+        return false;
     }
-
-    size_t i = 0;
-    while (*cp != ' ' && *cp != '\t' && *cp != '\0') {
-        if ((valp != nullptr) && (i < size - 1)) {
-            valp[i++] = *cp;
+    const auto beginOffSet = buffOffset;
+    while (buffOffset < buffSize) {
+        const char cp = buff[buffOffset];
+        if (cp == ' ' || cp == '\t' || cp == '\0') {
+            break;
         }
-        ++cp;
+        buffOffset++;
     }
-    if (i == 0 || i >= size) {
-        return nullptr;
+    if (beginOffSet < buffOffset) {
+        valp = std::string(buff + beginOffSet, buffOffset - beginOffSet);
+        return true;
     }
-    valp[i] = '\0';
-    return cp;
+    return false;
 }
 
 AT_ALWAYS_INLINE bool PermsToProtsAndFlag(const char* permChs, const size_t sz, uint32_t& prots, uint32_t& flag)
@@ -210,51 +195,39 @@ std::shared_ptr<DfxMap> DfxMap::Create(const std::string& vma)
     return map;
 }
 
-bool DfxMap::Parse(const char* buf, size_t size)
+bool DfxMap::Parse(const char* buff, size_t buffSize)
 {
 #if defined(is_ohos) && is_ohos
-    if (buf == nullptr || size == 0) {
+    constexpr size_t maxDfxMapSize = 4 * 1024;
+    if (buffSize >= maxDfxMapSize) {
         return false;
     }
-
-    char permChs[5] = {0}; // 5 : rwxp
-    char dash = 0;
-    char colon = 0;
-    unsigned long tmp = 0;
-    const char *path = nullptr;
-    const char* cp = buf;
-
     // 7658d38000-7658d40000 rw-p 00000000 00:00 0                              [anon:thread signal stack]
     /* scan: "begin-end perms offset major:minor inum path" */
-    cp = ScanHex(cp, tmp);
-    begin = static_cast<uint64_t>(tmp);
-    cp = ScanChar(cp, dash);
-    if (dash != '-') {
+    size_t buffOffset = 0;
+    ScanHex(buff, buffSize, begin, buffOffset);
+    char dashChar = 0;
+    ScanChar(buff, buffSize, dashChar, buffOffset);
+    if (dashChar != '-') {
         return false;
     }
-    cp = ScanHex(cp, tmp);
-    end = static_cast<uint64_t>(tmp);
-    cp = ScanString(cp, permChs, sizeof(permChs));
-    if (!PermsToProtsAndFlag(permChs, sizeof(permChs), prots, flag)) {
+    ScanHex(buff, buffSize, end, buffOffset);
+    ScanString(buff, buffSize, perms, buffOffset);
+    if (!PermsToProtsAndFlag(perms.c_str(), perms.size(), prots, flag)) {
         return false;
     }
-    cp = ScanHex(cp, tmp);
-    offset = static_cast<uint64_t>(tmp);
-    cp = ScanHex(cp, tmp);
-    major = static_cast<uint64_t>(tmp);
-    cp = ScanChar(cp, colon);
-    if (colon != ':') {
+    ScanHex(buff, buffSize, offset, buffOffset);
+    ScanHex(buff, buffSize, major, buffOffset);
+    ScanChar(buff, buffSize, dashChar, buffOffset);
+    if (dashChar != ':') {
         return false;
     }
-    cp = ScanHex(cp, tmp);
-    minor = static_cast<uint64_t>(tmp);
-    cp = ScanDec(cp, tmp);
-    inode = static_cast<ino_t>(tmp);
-    path = SkipWhiteSpace(cp);
-
-    perms = std::string(permChs, sizeof(permChs));
-    if (path != nullptr && path < buf + size - 1) { // Prevent null pointer dereference when using TrimAndDupStr
-        TrimAndDupStr(path, name);
+    ScanHex(buff, buffSize, minor, buffOffset);
+    uint64_t inodeValue = 0;
+    ScanDec(buff, buffSize, inodeValue, buffOffset);
+    inode = static_cast<ino_t>(inodeValue);
+    if (buffOffset < buffSize) {
+        TrimAndDupStr(buff + buffOffset, buffSize - buffOffset, name);
     }
     return true;
 #else
@@ -451,6 +424,5 @@ std::string DfxMap::UnFormatMapName(const std::string& mapName)
     }
     return mapName;
 }
-
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -57,39 +57,31 @@
 namespace OHOS {
 namespace HiviewDFX {
 #ifndef is_host
-bool TrimAndDupStr(const std::string &source, std::string &str)
+bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str)
 {
-    if (source.empty()) {
-        return false;
-    }
-
-    const char *begin = source.data();
-    const char *end = begin + source.size();
-    if (begin == end) {
+    if (buff == nullptr || buffSize == 0) {
         DFXLOGE("Source is empty");
         return false;
     }
-
-    while ((begin < end) && isspace(*begin)) {
-        begin++;
+    size_t buffOffset = 0;
+    while (isspace(buff[buffOffset])) {
+        if (++buffOffset == buffSize) {
+            return false;
+        }
     }
-
-    while ((begin < end) && isspace(*(end - 1))) {
-        end--;
+    size_t validLen = strnlen(buff + buffOffset, buffSize - buffOffset);
+    auto endOffSet = buffOffset + validLen;
+    while (isspace(buff[endOffSet - 1])) {
+        endOffSet--;
     }
-
-    if (begin == end) {
-        return false;
-    }
-
-    uint32_t maxStrLen = NAME_BUF_LEN;
-    uint32_t offset = static_cast<uint32_t>(end - begin);
-    if (maxStrLen > offset) {
-        maxStrLen = offset;
-    }
-
-    str.assign(begin, maxStrLen);
+    validLen = std::min(endOffSet - buffOffset, static_cast<size_t>(NAME_BUF_LEN));
+    str.assign(buff + buffOffset, validLen);
     return true;
+}
+
+bool TrimAndDupStr(const std::string &source, std::string &str)
+{
+    return TrimAndDupStr(source.c_str(), source.size(), str);
 }
 
 uint64_t GetTimeMilliSeconds(void)

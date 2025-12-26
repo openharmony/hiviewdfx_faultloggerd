@@ -390,6 +390,60 @@ HWTEST_F(MapsTest, CreateByBuffer003, TestSize.Level2)
     EXPECT_TRUE(DfxMaps::IsArkWebProc());
     GTEST_LOG_(INFO) << "CreateByBuffer003: end.";
 }
+
+/**
+ * @tc.name: MapParseTest001
+ * @tc.desc: test parse map by string.
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, MapParseTest001, TestSize.Level2)
+{
+    DfxMap dfxMap;
+    ASSERT_FALSE(dfxMap.Parse(nullptr, 0));
+    constexpr auto testCase1 = "\t 7A0ab40000 ";
+    ASSERT_FALSE(dfxMap.Parse(testCase1, strlen(testCase1)));
+    constexpr size_t maxTestSize = 1024 * 4;
+    constexpr size_t normalTestSize = 1024 / 2;
+    ASSERT_FALSE(dfxMap.Parse(testCase1, maxTestSize));
+    ASSERT_FALSE(dfxMap.Parse(testCase1, normalTestSize));
+    constexpr auto testCase2 = "7f0ab40000*";
+    ASSERT_FALSE(dfxMap.Parse(testCase2, strlen(testCase2)));
+    constexpr auto testCase3 = "7f0ab40000-";
+    ASSERT_FALSE(dfxMap.Parse(testCase3, strlen(testCase3)));
+    constexpr auto testCase4 = "7f0ab40000-7f0ab41000";
+    ASSERT_FALSE(dfxMap.Parse(testCase4, strlen(testCase4)));
+    ASSERT_FALSE(dfxMap.Parse(testCase4, normalTestSize));
+    constexpr auto testCase5 = "7f0ab40000-7f0ab41000 r---p";
+    ASSERT_FALSE(dfxMap.Parse(testCase5, strlen(testCase5)));
+    constexpr auto testCase6 = "7f0ab40000-7f0ab41000 ra-p\t";
+    ASSERT_FALSE(dfxMap.Parse(testCase6, strlen(testCase6)));
+    constexpr auto testCase7 = "7f0ab40000-7f0ab41000 r--p ";
+    ASSERT_FALSE(dfxMap.Parse(testCase7, strlen(testCase7)));
+    constexpr auto testCase8 = "7f0ab40000-7f0ab41000 r--p 00000b37";
+    ASSERT_FALSE(dfxMap.Parse(testCase8, strlen(testCase8)));
+    constexpr auto testCase9 = "7f0ab40000-7f0ab41000 r--p 00000b37 b3";
+    ASSERT_FALSE(dfxMap.Parse(testCase9, strlen(testCase9)));
+    constexpr auto testCase10 = "7f0ab40000-7f0ab41000 r--p 00000b37 b3-";
+    ASSERT_FALSE(dfxMap.Parse(testCase10, strlen(testCase10)));
+    constexpr auto testCase11 = "7f0ab40000-7f0ab41000 r--p 00000b37 b3:";
+    ASSERT_TRUE(dfxMap.Parse(testCase11, strlen(testCase11)));
+    constexpr auto testCase12 = "7f0ab40000-7f0ab41000 r--p 00000b37 b3:07 ";
+    ASSERT_TRUE(dfxMap.Parse(testCase12, strlen(testCase12)));
+    constexpr auto testCase13 = "7f0ab40000-7f0ab41000 r--p 00000b37 b3:07 a";
+    ASSERT_TRUE(dfxMap.Parse(testCase13, strlen(testCase13)));
+    constexpr auto testCase14 = "7f0ab40000-7f0ab41000 r--p 00000b37 b3:07 1882";
+    ASSERT_TRUE(dfxMap.Parse(testCase14, strlen(testCase14)));
+    constexpr auto testCase15 = "7f0ab40000-7f0ab41000 r--p 00000b37 b3:07 1882 /system/lib64/init/test.z.so";
+    ASSERT_TRUE(dfxMap.Parse(testCase15, strlen(testCase15)));
+    ASSERT_EQ(dfxMap.begin, 0x7f0ab40000);
+    ASSERT_EQ(dfxMap.end, 0x7f0ab41000);
+    ASSERT_EQ(dfxMap.perms, "r--p");
+    ASSERT_EQ(dfxMap.offset, 0xb37);
+    ASSERT_EQ(dfxMap.major, 0xb3);
+    ASSERT_EQ(dfxMap.minor, 0x07);
+    ASSERT_EQ(dfxMap.inode, 1882);
+    ASSERT_EQ(dfxMap.name, "/system/lib64/init/test.z.so");
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

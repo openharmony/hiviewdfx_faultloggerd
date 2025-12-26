@@ -43,7 +43,7 @@ public:
         uint32_t prots, const std::string& name)
         : begin(begin), end(end), offset(offset), prots(prots), name(name) {}
 
-    bool Parse(const char* buf, size_t size);
+    bool Parse(const char* buff, size_t buffSize);
     bool IsMapExec();
     bool IsArkExecutable();
     bool IsJsvmExecutable();

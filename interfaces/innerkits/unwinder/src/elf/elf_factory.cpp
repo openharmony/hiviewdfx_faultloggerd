@@ -160,8 +160,11 @@ std::shared_ptr<DfxElf> RegularElfFactory::Create()
 std::shared_ptr<DfxElf> VdsoElfFactory::Create()
 {
 #if is_ohos && !is_mingw
-    // Limit array length to mitigate OOM risk, it is about twice as large as the vdso mapped segment.
-    constexpr size_t maxMapSize = 25000;
+    /*
+     * Memory needs to be allocated to read the memory mapping endpoint of the vdso.
+     * To avoid allocating too much memory, the memory allocation is temporarily limited to a size of 10MB.
+     */
+    constexpr size_t maxMapSize = 10 * 1024 * 1024;
     if (size_ >= maxMapSize) {
         DFXLOGE("Invalid data size %{public}zu", size_);
         return nullptr;

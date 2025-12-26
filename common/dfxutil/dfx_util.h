@@ -30,6 +30,7 @@ namespace OHOS {
 namespace HiviewDFX {
 #ifndef is_host
 AT_SYMBOL_HIDDEN bool TrimAndDupStr(const std::string &source, std::string &str);
+AT_SYMBOL_HIDDEN bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str);
 AT_SYMBOL_HIDDEN uint64_t GetTimeMilliSeconds(void);
 AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSeconds(void);
 AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
