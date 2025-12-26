@@ -34,6 +34,7 @@ constexpr uint64_t MICROSEC_TO_NANOSEC = 1000;
 constexpr int FORMAT_TIME_LEN = 20;
 constexpr int MICROSEC_LEN = 6;
 constexpr size_t MAX_SAMPLE_TIDS = 10;
+constexpr int MAX_TID_VALUE = 65536;
 }  // namespace
 
 struct StackRecord {
@@ -376,6 +377,9 @@ std::string StackPrinter::Impl::GetHeaviestStack(int tid, uint64_t beginTime, ui
     std::lock_guard<std::mutex> lock(mutex_);
     auto& stackRecordVec = tidStackRecordMap_[tid];
     std::vector<StackRecord> vec = TimeFilter(stackRecordVec, beginTime, endTime);
+    if (vec.empty()) {
+        return std::string("");
+    }
     std::sort(vec.begin(), vec.end(), [](const auto& a, const auto& b) {
         return a.snapshotTimes.size() > b.snapshotTimes.size();
     });
@@ -547,24 +551,16 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::Impl::DeserializeSampledF
         return std::map<int, std::vector<SampledFrame>>();
     }
     if (mapSize > MAX_SAMPLE_TIDS) {
-        is.setstate(std::ios::failbit);
         return std::map<int, std::vector<SampledFrame>>();
     }
     is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     for (size_t i = 0; i < mapSize; i++) {
-        std::string tidStr;
+        int tid;
         size_t vecSize;
-        if (!(is >> tidStr >> vecSize)) {
+        if (!(is >> tid >> vecSize)) {
             is.setstate(std::ios::failbit);
             return std::map<int, std::vector<SampledFrame>>();
         }
-        int base = 10;
-        char* endPtr;
-        long tidNum = std::strtol(tidStr.c_str(), &endPtr, base);
-        if (*endPtr != '\0' || tidNum < INT_MIN || tidNum > INT_MAX) {
-            return std::map<int, std::vector<SampledFrame>>();
-        }
-        int tid = static_cast<int>(tidNum);
         std::vector<SampledFrame> sampledFrameVec;
         for (size_t j = 0; j < vecSize; j++) {
             SampledFrame frame;
@@ -575,7 +571,7 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::Impl::DeserializeSampledF
             sampledFrameVec.emplace_back(frame);
         }
         is.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        if (tid < 0) {
+        if (tid < 0 || tid > MAX_TID_VALUE) {
             return std::map<int, std::vector<SampledFrame>>();
         }
         sampledFrameMap[tid] = sampledFrameVec;
