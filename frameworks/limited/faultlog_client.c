@@ -134,8 +134,14 @@ static bool RecvMsgFromSocket(const int sockfd, unsigned char* data, unsigned in
         return false;
     }
 
+    unsigned char* src = CMSG_DATA(cmsg);
+    if (src == NULL) {
+        DFXLOGE("%{public}s :: Invalid cmsg data", __func__);
+        return false;
+    }
+
     *len = cmsg->cmsg_len - sizeof(struct cmsghdr);
-    if (memcpy_s(data, dataSize, CMSG_DATA(cmsg), *len) != 0) {
+    if (memcpy_s(data, dataSize, src, *len) != 0) {
         DFXLOGE("%{public}s :: memcpy error", __func__);
         return false;
     }

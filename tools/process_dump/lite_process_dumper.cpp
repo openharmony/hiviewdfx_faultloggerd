@@ -31,6 +31,7 @@
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
+#include "dfx_cutil.h"
 #ifndef is_ohos_lite
 #include "faultlog_client.h"
 #endif
@@ -328,7 +329,7 @@ void LiteProcessDumper::PrintOpenFiles()
         auto pos =  line.find_first_of('-');
         if (pos != std::string::npos) {
             long fd;
-            if (!SafeStrtol(line.substr(0, pos), fd, DECIMAL_BASE)) {
+            if (!SafeStrtol(line.substr(0, pos).c_str(), &fd, DECIMAL_BASE)) {
                 continue;
             }
             line += "\n";

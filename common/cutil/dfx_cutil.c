@@ -15,18 +15,19 @@
 
 #include "dfx_cutil.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
+#include <securec.h>
+#include <stdlib.h>
+#include <string.h>
 #include <syscall.h>
 #include <unistd.h>
-#include <sys/time.h>
 #include <time.h>
-#include <securec.h>
-#include <stdio.h>
-#include <string.h>
+
+#include <sys/time.h>
+
 #include "dfx_define.h"
-#include <ctype.h>
 
 static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
 {
@@ -128,4 +129,22 @@ bool IsNoNewPriv(const char* statusPath)
         result = (*val == '1');
     }
     return result;
+}
+
+bool SafeStrtol(const char* numStr, long* out, int base)
+{
+    if (numStr == NULL || *numStr == '\0') {
+        return false;
+    }
+    char* endPtr = NULL;
+    errno = 0;
+    long val = strtol(numStr, &endPtr, base);
+    if (endPtr == numStr || *endPtr != '\0' || errno == ERANGE) {
+        return false;
+    }
+    if (val == 0 && numStr[0] != '0') {
+        return false;
+    }
+    *out = val;
+    return true;
 }

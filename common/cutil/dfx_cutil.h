@@ -38,6 +38,8 @@ AT_SYMBOL_HIDDEN void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* 
 
 AT_SYMBOL_HIDDEN bool IsNoNewPriv(const char* statusPath);
 
+AT_SYMBOL_HIDDEN bool SafeStrtol(const char* numStr, long* out, int base);
+
 #ifdef __cplusplus
 }
 #endif

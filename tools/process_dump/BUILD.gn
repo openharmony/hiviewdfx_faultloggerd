@@ -53,6 +53,7 @@ if (defined(ohos_lite)) {
       "utils",
       "$c_utils_include_path",
       "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_common_path/cutil",
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/async_stack/include",
@@ -71,6 +72,7 @@ if (defined(ohos_lite)) {
     public_configs = [ ":processdump_config" ]
 
     deps = [
+      "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
@@ -92,6 +94,7 @@ if (defined(ohos_lite)) {
     public_configs = [ ":processdump_config" ]
 
     deps = [
+      "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
@@ -113,6 +116,7 @@ if (defined(ohos_lite)) {
       "coredump",
       "utils",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_common_path/cutil",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
