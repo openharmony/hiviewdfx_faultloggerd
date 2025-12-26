@@ -24,6 +24,7 @@
 #include "dfx_log.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
+#include "dfx_offline_parser.h"
 #ifndef is_ohos_lite
 #include "bundle_mgr_interface.h"
 #include "bundle_mgr_proxy.h"
@@ -90,13 +91,15 @@ bool DumpUtils::IsLastValidFrame(const DfxFrame& frame)
     return false;
 }
 
-void DumpUtils::GetThreadKernelStack(DfxThread& thread)
+void DumpUtils::GetThreadKernelStack(DfxThread& thread, bool needParseSymbols)
 {
     std::string threadKernelStack;
     pid_t tid = thread.GetThreadInfo().nsTid;
     DfxThreadStack threadStack;
+    DfxOfflineParser offlineParser;
+    DfxOfflineParser* parserPtr = needParseSymbols ? &offlineParser : nullptr;
     if (DfxGetKernelStack(tid, threadKernelStack, true) == 0 &&
-        FormatThreadKernelStack(threadKernelStack, threadStack)) {
+        FormatThreadKernelStack(threadKernelStack, threadStack, parserPtr)) {
         DFXLOGW("Failed to get tid(%{public}d) user stack, try kernel", tid);
         if (IsBetaVersion()) {
             DFXLOGI("%{public}s", threadKernelStack.c_str());

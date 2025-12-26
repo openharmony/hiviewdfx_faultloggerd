@@ -116,7 +116,7 @@ int KeyThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpRequest
     if (process.GetKeyThread()->GetThreadRegs() != nullptr) {
         result = GetKeyThreadStack(process, unwinder) ? 1 : 0;
     } else {
-        DumpUtils::GetThreadKernelStack(*process.GetKeyThread());
+        DumpUtils::GetThreadKernelStack(*process.GetKeyThread(), true);
     }
     unwinder.SetIsJitCrashFlag(false);
     if (!unwindFailTip_.empty()) {

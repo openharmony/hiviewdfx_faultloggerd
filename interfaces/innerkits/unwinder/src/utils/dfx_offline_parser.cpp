@@ -43,7 +43,13 @@ const char* const ARKWEBCORE_PATH_PREFIX = "/data/app/el1/bundle/public/com.huaw
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 MAYBE_UNUSED const char* const SELF_CMDLINE_PATH = "/proc/self/cmdline";
 const int MAX_SINGLE_FRAME_PARSE_TIME = 1000;
+constexpr int32_t MIN_APP_UID = 20000;
 }
+DfxOfflineParser::DfxOfflineParser()
+{
+    DfxOfflineParser("");
+}
+
 DfxOfflineParser::DfxOfflineParser(const std::string& bundleName, bool onlyParseBuildId)
     : onlyParseBuildId_(onlyParseBuildId), bundleName_(bundleName)
 {
@@ -52,6 +58,7 @@ DfxOfflineParser::DfxOfflineParser(const std::string& bundleName, bool onlyParse
     UnwinderConfig::SetEnableMiniDebugInfo(false);
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
     dfxMaps_ = std::make_shared<DfxMaps>();
+    uid_ = getuid();
 }
 
 DfxOfflineParser::~DfxOfflineParser()
@@ -144,7 +151,7 @@ bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
 
 std::string DfxOfflineParser::GetBundlePath(const std::string& originPath) const
 {
-    if (StartsWith(originPath, ARKWEBCORE_SANDBOX_PATH_PREFIX)) {
+    if (StartsWith(originPath, ARKWEBCORE_SANDBOX_PATH_PREFIX) && uid_ < MIN_APP_UID) {
         return ARKWEBCORE_PATH_PREFIX + originPath.substr(std::strlen(ARKWEBCORE_SANDBOX_PATH_PREFIX));
     }
     if (bundleName_.empty() || !StartsWith(originPath, SANDBOX_PATH_PREFIX)) {

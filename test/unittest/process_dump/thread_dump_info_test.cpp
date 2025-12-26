@@ -355,4 +355,55 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest006, TestSize.Level2)
     kill(pid, SIGKILL);
     GTEST_LOG_(INFO) << "ThreadDumpInfoTest006: end.";
 }
+
+#if defined(__aarch64__)
+/**
+ * @tc.name: ThreadDumpInfoTest007
+ * @tc.desc: test KeyThreadDumpInfo dumpcatch, unwind with no regs
+ * @tc.type: FUNC
+ */
+HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        sleep(3); // 3 : sleep 3 seconds
+        exit(0);
+    }
+    pid_t tid = pid;
+    pid_t nsPid = pid;
+    ProcessDumpRequest request = {
+        .type = ProcessDumpType::DUMP_TYPE_DUMP_CATCH,
+        .tid = tid,
+        .pid = pid,
+        .nsPid = pid,
+    };
+    DfxProcess process;
+    process.InitProcessInfo(pid, nsPid, getuid(), "");
+    process.SetVmPid(pid);
+    process.InitKeyThread(request);
+    process.GetKeyThread()->SetThreadRegs(nullptr); // not get regs, unwind with kernel stack
+    Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
+    unwinder.EnableFillFrames(false);
+    KeyThreadDumpInfo dumpInfo;
+    dumpInfo.UnwindStack(process, request, unwinder);
+    dumpInfo.Print(process, request, unwinder);
+    std::vector<std::string> keyWords = {
+        "Tid:",
+        to_string(tid),
+        "Name:",
+        "#00",
+        "#01",
+        "(",
+        ")",
+    };
+    for (const std::string& keyWord : keyWords) {
+        EXPECT_TRUE(CheckContent(result, keyWord, true));
+    }
+    process.Detach();
+    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: end.";
+}
+#endif
 }

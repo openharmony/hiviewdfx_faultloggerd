@@ -38,6 +38,7 @@ struct ReportData {
 };
 class DfxOfflineParser {
 public:
+    DfxOfflineParser();
     DfxOfflineParser(const std::string& bundleName, bool onlyParseBuildId = false);
     ~DfxOfflineParser();
     DfxOfflineParser(const DfxOfflineParser&) = delete;
@@ -58,6 +59,7 @@ private:
     std::string bundleName_ {""};
     std::shared_ptr<DfxMaps> dfxMaps_ {nullptr};
     ElapsedTime counter_;
+    int32_t uid_ {0};
 };
 }
 }
