@@ -28,14 +28,14 @@ namespace HiviewDFX {
 class LitePerfDumper final {
 public:
     static LitePerfDumper &GetInstance();
-    void Perf();
+    void Perf(int requestFd);
 
 private:
     LitePerfDumper() = default;
     DISALLOW_COPY_AND_MOVE(LitePerfDumper);
 
-    int PerfProcess(LitePerfParam& lperf);
-    int32_t ReadLperfAndCheck(LitePerfParam& lperf);
+    int PerfProcess(LitePerfParam& lperf, int requestFd);
+    int32_t ReadLperfAndCheck(LitePerfParam& lperf, int reqeustFd);
     int PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf);
     void WriteSampleData(int bufFd, const std::string& data);
 };

@@ -19,10 +19,10 @@
 #include <securec.h>
 #include <unistd.h>
 
+#include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_util.h"
-#include "dfx_cutil.h"
 #include "lite_perf_dumper.h"
 #include "process_dumper.h"
 
@@ -43,7 +43,22 @@ static void PrintCommandHelp()
     printf("%s\nplease use dumpcatcher\n", DUMP_STACK_TAG_USAGE.c_str());
 }
 
-static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &isLitePerf, bool &isRender)
+static bool StartLitePerf(int argc, char *argv[])
+{
+    if (argc < 3) { // 3 : contain type requestFd
+        return false;
+    }
+    long requestFd;
+    if (!SafeStrtol(argv[2], &requestFd, DECIMAL_BASE)) { // 2 : the index of requestFd
+        return false;
+    }
+#ifdef DFX_ENABLE_LPERF
+    OHOS::HiviewDFX::LitePerfDumper::GetInstance().Perf(static_cast<int>(requestFd));
+#endif
+    return true;
+}
+
+static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &isRender)
 {
     if (argc <= DUMP_ARG_ONE) {
         return false;
@@ -55,8 +70,7 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
         return true;
     }
     if (!strcmp("-liteperf", argv[DUMP_ARG_ONE])) {
-        isLitePerf = true;
-        return true;
+        return StartLitePerf(argc, argv);
     }
     if (!strcmp("-render", argv[DUMP_ARG_ONE])) {
         if (argc < 3) { // 3 : contain type pid
@@ -80,12 +94,11 @@ int main(int argc, char *argv[])
     }
 
     bool isSignalHdlr = false;
-    bool isLitePerf = false;
     bool isRender = false;
 
     setsid();
 
-    if (!ParseParameters(argc, argv, isSignalHdlr, isLitePerf, isRender)) {
+    if (!ParseParameters(argc, argv, isSignalHdlr, isRender)) {
         PrintCommandHelp();
         return 0;
     }
@@ -93,10 +106,6 @@ int main(int argc, char *argv[])
     if (isSignalHdlr) {
         alarm(PROCESSDUMP_TIMEOUT);
         OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
-    } else if (isLitePerf) {
-#ifdef DFX_ENABLE_LPERF
-        OHOS::HiviewDFX::LitePerfDumper::GetInstance().Perf();
-#endif
     } else if (isRender) {
         DFXLOGI("start lite processdump");
         OHOS::HiviewDFX::LiteProcessDumper liteProcessDumper;
