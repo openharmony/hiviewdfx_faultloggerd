@@ -32,19 +32,59 @@ using namespace OHOS::HiviewDFX;
 static bool g_init = false;
 #if defined(__aarch64__)
 // Filter out illegal requests
-static std::atomic<uint64_t> g_enabledAsyncType(ASYNC_TYPE_LIBUV_QUEUE | ASYNC_TYPE_LIBUV_TIMER |
-                                               ASYNC_TYPE_FFRT_QUEUE | ASYNC_TYPE_FFRT_POOL);
+static std::atomic<uint64_t> g_enabledAsyncType = DEFAULT_ASYNC_TYPE;
 static pthread_key_t g_stackidKey;
 static OHOS::HiviewDFX::FpBacktrace* g_fpBacktrace = nullptr;
 using SetStackIdFn = void(*)(uint64_t stackId);
 using CollectAsyncStackFn = uint64_t(*)(uint64_t type);
-using UvSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
-using FFRTSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
+using GenericSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
 
 typedef uint64_t(*GetStackIdFunc)(void);
 extern "C" void DFX_SetAsyncStackCallback(GetStackIdFunc func) __attribute__((weak));
 
-uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
+namespace {
+
+void UpdateAsyncStackCallbacks(uint64_t lastType, uint64_t currentType)
+{
+    // libuv callback is registered by default in DfxSetAsyncStackCallback().
+    // Other async sources are registered/unregistered incrementally based on type changes.
+
+    struct AsyncCallback {
+        const char* funcName;
+        uint64_t mask;
+    };
+
+    const AsyncCallback callbacks[] = {
+        {"EventSetAsyncStackFunc", ASYNC_TYPE_EVENTHANDLER},
+        {"PromiseSetAsyncStackFunc", ASYNC_TYPE_PROMISE},
+        {"CustomizeSetAsyncStackFunc", ASYNC_TYPE_CUSTOMIZE},
+        {"FFRTSetAsyncStackFunc", ASYNC_TYPE_FFRT_POOL | ASYNC_TYPE_FFRT_QUEUE}
+    };
+
+    auto setCallbackFn = [](const char * funcName, CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn) {
+        auto genericSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(dlsym(RTLD_DEFAULT, funcName));
+        if (genericSetAsyncStackFn != nullptr) {
+            genericSetAsyncStackFn(collectAsyncStackFn, setStackIdFn);
+        }
+    };
+
+    for (const auto& callback : callbacks) {
+        // Whether this async type was enabled before the update (lastType).
+        const bool lastEnabled = (lastType & callback.mask) != 0;
+        // Whether this async type is enabled after the update (currentType).
+        const bool currentEnabled = (currentType & callback.mask) != 0;
+        if (lastEnabled && !currentEnabled) {
+            setCallbackFn(callback.funcName, nullptr, nullptr);
+            continue;
+        }
+        if (!lastEnabled && currentEnabled) {
+            setCallbackFn(callback.funcName, DfxCollectAsyncStack, DfxSetSubmitterStackId);
+        }
+    }
+}
+} // namespace
+
+static inline uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
 {
     size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, depth);
     uint64_t stackId = 0;
@@ -86,7 +126,9 @@ extern "C" uint64_t DfxCollectStackWithDepth(uint64_t type, size_t depth)
 
 extern "C" uint64_t DfxSetAsyncStackType(uint64_t asyncType)
 {
-    return g_enabledAsyncType.exchange(asyncType);
+    uint64_t lastType = g_enabledAsyncType.exchange(asyncType);
+    UpdateAsyncStackCallbacks(lastType, asyncType);
+    return lastType;
 }
 
 extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
@@ -105,15 +147,19 @@ void DfxSetAsyncStackCallback(void)
     }
     DFX_SetAsyncStackCallback(DfxGetSubmitterStackId);
     const char* uvSetAsyncStackFnName = "LibuvSetAsyncStackFunc";
-    auto uvSetAsyncStackFn = reinterpret_cast<UvSetAsyncStackFn>(dlsym(RTLD_DEFAULT, uvSetAsyncStackFnName));
+    auto uvSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(dlsym(RTLD_DEFAULT, uvSetAsyncStackFnName));
     if (uvSetAsyncStackFn != nullptr) {
         uvSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
     }
-
-    const char* ffrtSetAsyncStackFnName = "FFRTSetAsyncStackFunc";
-    auto ffrtSetAsyncStackFn = reinterpret_cast<FFRTSetAsyncStackFn>(dlsym(RTLD_DEFAULT, ffrtSetAsyncStackFnName));
-    if (ffrtSetAsyncStackFn != nullptr) {
-        ffrtSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
+    const char* debuggableEnv = getenv("HAP_DEBUGGABLE");
+    if (debuggableEnv != nullptr && strcmp(debuggableEnv, "true") == 0) {
+        const char* ffrtSetAsyncStackFnName = "FFRTSetAsyncStackFunc";
+        auto ffrtSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(
+            dlsym(RTLD_DEFAULT, ffrtSetAsyncStackFnName));
+        if (ffrtSetAsyncStackFn != nullptr) {
+            g_enabledAsyncType.fetch_or(ASYNC_TYPE_FFRT_QUEUE | ASYNC_TYPE_FFRT_POOL);
+            ffrtSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
+        }
     }
 }
 #endif
