@@ -387,18 +387,18 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
         return -1;
     }
 
+    int pipefd[PIPE_NUM_SZ] = {-1, -1};
+    if (pipe2(pipefd, O_NONBLOCK) != 0) {
+        DFXLOGE("Failed to create pipe, errno: %{public}d.", errno);
+        return -1;
+    }
+
     pid_t pid = ForkBySyscall();
     if (pid < 0) {
         DFXLOGE("Failed to fork.");
         return -1;
     }
     if (pid == 0) {
-        int pipefd[PIPE_NUM_SZ] = {-1, -1};
-        if (pipe2(pipefd, O_NONBLOCK) != 0) {
-            DFXLOGE("Failed to create pipe, errno: %{public}d.", errno);
-            _exit(-1);
-        }
-
         pid_t dumpPid = ForkBySyscall();
         if (dumpPid < 0) {
             DFXLOGE("Failed to fork.");
@@ -411,6 +411,8 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
             _exit(0);
         }
     }
+    syscall(SYS_close, pipefd[PIPE_READ]);
+    syscall(SYS_close, pipefd[PIPE_WRITE]);
     int res = WaitpidTimeout(pid);
     if (res < 0) {
         DFXLOGE("Failed to wait pid(%{public}d), errno(%{public}d)", pid, errno);
@@ -423,28 +425,17 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
 
 bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& lperf)
 {
-    ssize_t writeLen = sizeof(LitePerfParam);
-    if (fcntl(pipefd[1], F_SETPIPE_SZ, writeLen) < writeLen) {
-        DFXLOGE("Failed to set pipe buffer size, errno(%{public}d).", errno);
-        return false;
-    }
-
-    struct iovec iovs[1] = {
-        {
-            .iov_base = (void *)(&lperf),
-            .iov_len = sizeof(struct LitePerfParam)
-        },
-    };
-
-    if (OHOS_TEMP_FAILURE_RETRY(writev(pipefd[PIPE_WRITE], iovs, 1)) != writeLen) {
+    if (OHOS_TEMP_FAILURE_RETRY(write(pipefd[PIPE_WRITE], &lperf, sizeof(LitePerfParam))) != sizeof(LitePerfParam)) {
         DFXLOGE("Failed to write pipe, errno(%{public}d)", errno);
         return false;
     }
-    OHOS_TEMP_FAILURE_RETRY(dup2(pipefd[PIPE_READ], STDOUT_FILENO));
-    if (pipefd[PIPE_READ] != STDOUT_FILENO) {
-        syscall(SYS_close, pipefd[PIPE_READ]);
+
+    char fdStr[16]; // 16 : fd strlen
+    int ret = snprintf_s(fdStr, sizeof(fdStr), sizeof(fdStr) - 1, "%d", pipefd[PIPE_READ]);
+    if (ret < 0) {
+        DFXLOGE("fill pipe fd fail, not launch processdump %{public}d", ret);
+        _exit(0);
     }
-    syscall(SYS_close, pipefd[PIPE_WRITE]);
 
     if (DFX_InheritCapabilities == nullptr || DFX_InheritCapabilities() != 0) {
         DFXLOGE("Failed to inherit Capabilities from parent.");
@@ -452,7 +443,7 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
     }
 
     DFXLOGI("execl processdump -liteperf.");
-    execl(PROCESSDUMP_PATH, "processdump", "-liteperf", nullptr);
+    execl(PROCESSDUMP_PATH, "processdump", "-liteperf", fdStr, nullptr);
     DFXLOGE("Failed to execl processdump -liteperf, errno(%{public}d)", errno);
     return false;
 }
