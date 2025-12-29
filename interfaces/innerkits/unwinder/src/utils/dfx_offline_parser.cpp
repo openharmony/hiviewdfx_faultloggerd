@@ -45,10 +45,7 @@ MAYBE_UNUSED const char* const SELF_CMDLINE_PATH = "/proc/self/cmdline";
 const int MAX_SINGLE_FRAME_PARSE_TIME = 1000;
 constexpr int32_t MIN_APP_UID = 20000;
 }
-DfxOfflineParser::DfxOfflineParser()
-{
-    DfxOfflineParser("");
-}
+DfxOfflineParser::DfxOfflineParser() : DfxOfflineParser("") {}
 
 DfxOfflineParser::DfxOfflineParser(const std::string& bundleName, bool onlyParseBuildId)
     : onlyParseBuildId_(onlyParseBuildId), bundleName_(bundleName)
