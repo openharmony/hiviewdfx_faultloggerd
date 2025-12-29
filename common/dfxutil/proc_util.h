@@ -79,6 +79,7 @@ std::string GetFirstNumberSeq(const std::string& cont);
 bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk);
 bool IsSigDumpMask(uint64_t sigBlk);
 uint64_t GetClkTck();
+uint32_t GetPssMemory();
 } // namespace Dfx
 } // namespace OHOS
 #endif // PROC_UTIL_H

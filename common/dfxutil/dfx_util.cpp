@@ -243,6 +243,24 @@ uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask)
     return outAddr;
 }
 
+bool SafeStrtolCpp(const std::string& numStr, long& out, int base)
+{
+    if (numStr.empty()) {
+        return false;
+    }
+    char* endPtr = nullptr;
+    errno = 0;
+    long val = strtol(numStr.c_str(), &endPtr, base);
+    if (endPtr == numStr.c_str() || *endPtr != '\0' || errno == ERANGE) {
+        return false;
+    }
+    if (val == 0 && numStr.c_str()[0] != '0') {
+        return false;
+    }
+    out = val;
+    return true;
+}
+
 #if is_ohos && !is_mingw
 size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size)
 {

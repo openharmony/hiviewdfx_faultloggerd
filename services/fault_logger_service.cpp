@@ -169,7 +169,8 @@ void StatsService::ReportDumpStats(const DumpStats& stat)
         "WRITE_DUMP_INFO_TIME", stat.writeDumpInfoCost,
         "UNWIND_TIME", stat.processdumpFinishTime - stat.processdumpStartTime,
         "TARGET_PROCESS_THREAD_COUNT", stat.targetProcessThreadCount,
-        "SMO_PARSE_TIME", stat.smoParseTime);
+        "SMO_PARSE_TIME", stat.smoParseTime,
+        "PSS_MEMORY", stat.pssMemory);
 }
 
 std::string StatsService::GetElfName(const FaultLoggerdStatsRequest& request)
@@ -197,6 +198,7 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
         stats.targetProcessName = requestData.targetProcess;
         stats.writeDumpInfoCost = requestData.writeDumpInfoCost;
         stats.smoParseTime = requestData.smoParseTime;
+        stats.pssMemory = requestData.pssMemory;
     } else if (requestData.type == DUMP_CATCHER) {
         auto task = [requestData, this] {
             auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
