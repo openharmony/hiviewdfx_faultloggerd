@@ -327,15 +327,15 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
     if (signo == SIGDUMP && si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
         return IsDumpSignal(signo);
     }
-    static _Atomic(int) prevTid = -1;
-    if (tid == prevTid) {
+    static _Atomic(int) handlingTid = 0;
+    if (tid == handlingTid) {
         return IsDumpSignal(signo);
     }
     // crash signal should never be skipped
     pthread_mutex_lock(&g_signalHandlerMutex);
-    prevTid = syscall(SYS_gettid);
+    handlingTid = tid;
     if (!IsDumpSignal(g_prevHandledSignal) && !IsPrintLogSignal(g_prevHandledSignal)) {
-        prevTid = -1;
+        handlingTid = 0;
         pthread_mutex_unlock(&g_signalHandlerMutex);
         return IsDumpSignal(signo);
     }
@@ -343,7 +343,7 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 
     int savedErrno = errno;
     if (!FillDumpRequest(signo, si, context)) {
-        prevTid = -1;
+        handlingTid = 0;
         pthread_mutex_unlock(&g_signalHandlerMutex);
         DFXLOGE("DFX_SigchainHandler :: fill dump request faild.");
         errno = savedErrno;
@@ -361,7 +361,7 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 #ifndef is_ohos_lite
     }
 #endif
-    prevTid = -1;
+    handlingTid = 0;
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
     errno = savedErrno;
