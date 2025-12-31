@@ -17,7 +17,6 @@
     extern "C" {
       PrintTrace*;
       GetTrace*;
-      ffrt_get_current_coroutine_stack*;
     };
   local:
     *;
