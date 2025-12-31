@@ -117,10 +117,13 @@ HWTEST_F(CommonTest, DfxUtilTest001, TestSize.Level2)
 HWTEST_F(CommonTest, DfxUtilTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxUtilTest002: start.";
-    std::string testStr = " abcd  ";
     std::string resStr;
-    bool ret = TrimAndDupStr(testStr, resStr);
-    ASSERT_EQ(ret, true);
+    ASSERT_FALSE(TrimAndDupStr(nullptr, 0, resStr));
+    constexpr auto testEmptyStr = "  ";
+    ASSERT_FALSE(TrimAndDupStr(testEmptyStr, 0, resStr));
+    ASSERT_FALSE(TrimAndDupStr(testEmptyStr, resStr));
+    constexpr auto testStr = " abcd  ";
+    ASSERT_TRUE(TrimAndDupStr(testStr, resStr));
     ASSERT_EQ(resStr, "abcd");
     GTEST_LOG_(INFO) << "DfxUtilTest002: end.";
 }
