@@ -74,9 +74,9 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
             frames = std::move(threadStack.frames);
             ret = true;
             DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
-            if (IsBetaVersion()) {
-                DFXLOGI("%{public}s", msg.c_str());
-            }
+        }
+        if (IsBetaVersion()) {
+            DFXLOGI("%{public}s", msg.c_str());
         }
     }
     if (ret) {
