@@ -15,6 +15,7 @@
 #include "coredump_header_writer.h"
 
 #include "coredump_mapping_manager.h"
+#include "dfx_log.h"
 #include "securec.h"
 
 namespace OHOS {

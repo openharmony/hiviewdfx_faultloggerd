@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2025 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,36 +17,19 @@
 #define ELAPSED_TIME_H
 
 #include <chrono>
-#include "dfx_log.h"
+#include <string>
+
 namespace OHOS {
 namespace HiviewDFX {
 class ElapsedTime {
 public:
-    ElapsedTime()
-    {
-        begin_ = std::chrono::high_resolution_clock::now();
-    }
+    ElapsedTime() : begin_(std::chrono::high_resolution_clock::now()) {}
 
     ElapsedTime(std::string printContent, time_t limitCostMilliseconds)
-        : limitCostMilliseconds_(limitCostMilliseconds), printContent_(std::move(printContent))
-    {
-        Reset();
-    }
-
-    ~ElapsedTime()
-    {
-        if (limitCostMilliseconds_ != 0) {
-            time_t costTime = Elapsed<std::chrono::milliseconds>();
-            if (costTime > limitCostMilliseconds_) {
-                DFXLOGW("%{public}s running %{public}" PRId64 " ms", printContent_.c_str(), costTime);
-            }
-        }
-    }
-
-    void Reset()
-    {
-        begin_ = std::chrono::high_resolution_clock::now();
-    }
+        : begin_(std::chrono::high_resolution_clock::now()), limitCostMilliseconds_(limitCostMilliseconds),
+        printContent_(std::move(printContent)) {}
+    ~ElapsedTime();
+    void Reset();
 
     template<typename Duration=std::chrono::nanoseconds>
     time_t Elapsed() const
@@ -56,8 +39,8 @@ public:
 
 private:
     std::chrono::time_point<std::chrono::high_resolution_clock> begin_;
-    time_t limitCostMilliseconds_ = 0;
-    std::string printContent_ = "";
+    time_t limitCostMilliseconds_ {0};
+    std::string printContent_;
 };
 }
 }

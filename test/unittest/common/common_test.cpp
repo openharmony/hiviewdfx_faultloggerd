@@ -25,6 +25,7 @@
 #include "dfx_log.h"
 #include "string_util.h"
 #include "dfx_test_util.h"
+#include "elapsed_time.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -224,6 +225,24 @@ HWTEST_F(CommonTest, StringUtilTest001, TestSize.Level2)
     ret = EndsWith(end, ".hap");
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "StringUtilTest001: end.";
+}
+
+/**
+ * @tc.name: ElapsedTimeTest001
+ * @tc.desc: test ElapsedTime class
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, ElapsedTimeTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ElapsedTimeTest001: start.";
+
+    ElapsedTime t1;
+    ElapsedTime t2("t2 timeout", 1);
+    ElapsedTime t3("t3 timeout", 10);
+    usleep(1000);
+    t1.Reset();
+    EXPECT_GT(t1.Elapsed(), 0);
+    GTEST_LOG_(INFO) << "ElapsedTimeTest001: end.";
 }
 
 /**
