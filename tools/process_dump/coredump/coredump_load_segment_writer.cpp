@@ -19,6 +19,7 @@
 #include <sys/uio.h>
 
 #include "coredump_config_manager.h"
+#include "dfx_log.h"
 #include "dfx_trace.h"
 #include "securec.h"
 

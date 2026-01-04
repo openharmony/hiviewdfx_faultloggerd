@@ -60,6 +60,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
       "$faultloggerd_interfaces_path/innerkits/dump_catcher:libdfx_dumpcatcher",
       "$faultloggerd_interfaces_path/innerkits/formatter:libjson_stack_formatter",
     ]
