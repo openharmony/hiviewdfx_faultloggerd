@@ -32,7 +32,7 @@ int32_t CoredumpSignalService::SendStartSignal(pid_t targetPid)
     siginfo_t si{0};
     si.si_signo = SIGLEAK_STACK;
     si.si_errno = 0;
-    si.si_code = SIGLEAK_STACK_COREDUMP;
+    si.si_code = -SIGLEAK_STACK_COREDUMP;
     if (auto ret = FaultCommonUtil::SendSignalToProcess(targetPid, si); ret != ResponseCode::REQUEST_SUCCESS) {
         return ret;
     }
@@ -44,7 +44,6 @@ int32_t CoredumpSignalService::SendCancelSignal(pid_t workerPid)
     siginfo_t si{0};
     si.si_signo = SIGTERM;
     si.si_errno = 0;
-    si.si_code = SIGLEAK_STACK_COREDUMP;
 #ifndef FAULTLOGGERD_TEST
     if (syscall(SYS_rt_sigqueueinfo, workerPid, si.si_signo, &si) != 0) {
         DFXLOGE("Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
