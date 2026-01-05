@@ -100,7 +100,7 @@ HWTEST_F(ExtraCrashInfoTest, ExtraCrashInfoTest001, TestSize.Level2)
     ExtraCrashInfo extraCrashInfo;
     extraCrashInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
-        StringPrintf("ExtraCrashInfo(Memory start address %018" PRIx64 "):",
+        StringPrintf("ExtraCrashInfo(Memory start address %016" PRIx64 "):",
         reinterpret_cast<uint64_t>(memory)),
         "0x000:", "0x020:", "0x040:", "0x060:", "0x080:",
         "0x0a0:", "0x0c0:", "0x0e0:", "0x100:", "0x120:",
