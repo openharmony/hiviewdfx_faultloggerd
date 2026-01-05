@@ -34,7 +34,7 @@ std::string ExtraCrashInfo::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t
 {
     DFXLOGI("Start read memory type of crashObj, memory length(%zu).", length);
     constexpr size_t step = sizeof(uintptr_t);
-    std::string memoryContent = StringPrintf("ExtraCrashInfo(Memory start address %018" PRIx64 "):",
+    std::string memoryContent = StringPrintf("ExtraCrashInfo(Memory start address %016" PRIx64 "):",
         static_cast<uint64_t>(addr));
     size_t size = (length + step - 1) / step;
     std::vector<uintptr_t> memory(size, 0);
@@ -48,7 +48,7 @@ std::string ExtraCrashInfo::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t
         if (offset % 0x20 == 0) {  // Print offset every 32 bytes
             memoryContent += StringPrintf("\n+0x%03" PRIx64 ":", static_cast<uint64_t>(offset));
         }
-        memoryContent += StringPrintf(" %018" PRIx64, static_cast<uint64_t>(memory[index]));
+        memoryContent += StringPrintf(" %016" PRIx64, static_cast<uint64_t>(memory[index]));
     }
     memoryContent += "\n";
     return memoryContent;
