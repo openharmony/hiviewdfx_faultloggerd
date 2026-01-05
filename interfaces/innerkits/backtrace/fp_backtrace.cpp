@@ -180,16 +180,6 @@ DfxFrame* FpBacktraceImpl::SymbolicAddress(void* pc)
         frame = nullptr;
         return nullptr;
     }
-    
-    frame->relPc = frame->map->GetRelPc(frame->pc);
-    frame->mapOffset = frame->map->offset;
-    auto elf = frame->map->GetElf();
-    if (elf == nullptr) {
-        unwinder_.FillJsFrame(*frame);
-    } else {
-        DfxSymbols::GetFuncNameAndOffsetByPc(frame->relPc, elf, frame->funcName, frame->funcOffset);
-        frame->buildId = elf->GetBuildId();
-    }
     return frame.get();
 }
 #endif
