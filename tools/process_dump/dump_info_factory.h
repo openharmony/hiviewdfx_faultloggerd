@@ -19,7 +19,6 @@
 #include <map>
 #include <memory>
 #include "dump_info.h"
-#include "dfx_log.h"
 namespace OHOS {
 namespace HiviewDFX {
 using CreateObjectFunc = std::shared_ptr<DumpInfo>(*)();

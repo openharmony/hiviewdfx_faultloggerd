@@ -14,6 +14,7 @@
  */
 #include "coredump_session_service.h"
 
+#include "dfx_log.h"
 #include "dfx_util.h"
 #include "faultloggerd_socket.h"
 #include "hisysevent_c.h"

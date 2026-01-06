@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "coredump_task_scheduler.h"
+#include "dfx_log.h"
 #include "dfx_util.h"
 
 namespace OHOS {

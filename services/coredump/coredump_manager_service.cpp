@@ -18,6 +18,7 @@
 #include <fstream>
 
 #include "coredump_model.h"
+#include "dfx_log.h"
 #include "fault_common_util.h"
 #include "faultloggerd_socket.h"
 #include "file_util.h"

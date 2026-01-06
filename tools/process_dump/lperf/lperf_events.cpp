@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include "dfx_log.h"
 #include "dfx_lperf.h"
 
 namespace OHOS {
