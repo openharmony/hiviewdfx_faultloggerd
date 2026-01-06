@@ -1192,8 +1192,8 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
     msg = "Thread info: name=example_name, tid=12345, key=value., key2=value2., key3=value3., pid=0";
 #if defined(__aarch64__)
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
-    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+    ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
+    ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
 
     // get kernel stack
     ASSERT_EQ(DfxGetKernelStack(gettid(), msg), 0);

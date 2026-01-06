@@ -84,7 +84,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
     threadStack.threadName = result[1].str();
     int base {10};
     threadStack.tid = strtol(result[2].str().c_str(), nullptr, base); // 2 : second of searched element
-    auto pos = kernelStack.rfind("pid=" + result[result.size() - 1].str());
+    auto pos = kernelStack.rfind("pid=" + result[result.size() - 1].str() + "):");
     if (pos == std::string::npos) {
         return false;
     }
