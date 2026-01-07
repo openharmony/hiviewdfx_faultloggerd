@@ -30,6 +30,7 @@ ohos_unittest("async_stack_test") {
     "stack_table_test.cpp",
   ]
   cflags_cc = [ "-Dprivate=public" ]
+  ldflags = [ "-rdynamic" ]
   deps = [
     "$faultloggerd_common_path/dfxutil:dfx_util",
     "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
