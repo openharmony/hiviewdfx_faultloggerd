@@ -55,7 +55,8 @@ namespace HiviewDFX {
 
 void LiteProcessDumper::ReadRequest(int pipeReadFd)
 {
-    if (read(pipeReadFd, &request_, sizeof(struct ProcessDumpRequest)) != sizeof(struct ProcessDumpRequest)) {
+    if (read(pipeReadFd, &request_, sizeof(struct ProcessDumpRequest)) !=
+        static_cast<ssize_t>(sizeof(struct ProcessDumpRequest))) {
         DFXLOGI("failed to read request %{public}d", errno);
         return;
     }
@@ -65,7 +66,7 @@ void LiteProcessDumper::ReadRequest(int pipeReadFd)
 void LiteProcessDumper::ReadStat(int pipeReadFd)
 {
     char buf[PROC_STAT_BUF_SIZE];
-    if (read(pipeReadFd, buf, sizeof(buf)) != sizeof(buf)) {
+    if (read(pipeReadFd, buf, sizeof(buf)) != static_cast<ssize_t>(sizeof(buf))) {
         DFXLOGI("failed to read stat %{public}d", errno);
         return;
     }
@@ -77,7 +78,7 @@ void LiteProcessDumper::ReadStat(int pipeReadFd)
 void LiteProcessDumper::ReadStatm(int pipeReadFd)
 {
     char buf[PROC_STATM_BUF_SIZE];
-    if (read(pipeReadFd, buf, sizeof(buf)) != sizeof(buf)) {
+    if (read(pipeReadFd, buf, sizeof(buf)) != static_cast<ssize_t>(sizeof(buf))) {
         DFXLOGI("failed to read statm %{public}d", errno);
         return;
     }
