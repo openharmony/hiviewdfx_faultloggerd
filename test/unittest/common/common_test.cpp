@@ -239,9 +239,9 @@ HWTEST_F(CommonTest, ElapsedTimeTest001, TestSize.Level2)
     ElapsedTime t1;
     ElapsedTime t2("t2 timeout", 1);
     ElapsedTime t3("t3 timeout", 10);
-    usleep(1000);
-    t1.Reset();
+    usleep(1100);
     EXPECT_GT(t1.Elapsed(), 0);
+    t1.Reset();
     GTEST_LOG_(INFO) << "ElapsedTimeTest001: end.";
 }
 
