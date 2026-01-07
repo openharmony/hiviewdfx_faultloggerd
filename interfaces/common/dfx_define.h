@@ -82,6 +82,7 @@ static const char* const PROC_SELF_CMDLINE_PATH = "/proc/self/cmdline";
 static const char* const PROC_SELF_COMM_PATH = "/proc/self/comm";
 static const char* const PROC_SELF_MAPS_PATH = "/proc/self/maps";
 static const char* const PROC_SELF_EXE_PATH = "/proc/self/exe";
+static const char* const PROC_SELF_SMAPS_ROLLUP_PATH = "/proc/self/smaps_rollup";
 static const char* const ADLT_PATH_NAME_START = "/system/lib/libadlt";
 #ifdef DFX_LOG_HILOG_BASE
 static const char* const PROCESSDUMP_PATH = "/system/bin/processdump";

@@ -284,6 +284,8 @@ typedef struct FaultLoggerdStatsRequest {
     uintptr_t offset;
     /** SMO parse symbol time */
     uint64_t smoParseTime;
+    /** Pss and SwapPss Total memory */
+    uint32_t pssMemory;
     char summary[128]; // 128 : max summary size
     /** the caller elf of dumpcatcher interface */
     char callerElf[128]; // 128 : max function name size
