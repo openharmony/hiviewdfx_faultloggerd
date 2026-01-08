@@ -365,11 +365,6 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
     return elf;
 }
 
-const std::shared_ptr<DfxElf> DfxMap::GetElfLongLong(long long pid)
-{
-    return GetElf(static_cast<pid_t>(pid));
-}
-
 std::string DfxMap::GetElfName()
 {
     if (name.empty() || GetElf() == nullptr) {
