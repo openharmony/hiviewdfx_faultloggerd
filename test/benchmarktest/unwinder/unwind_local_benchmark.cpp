@@ -136,7 +136,7 @@ static size_t UnwinderLocalFp(MAYBE_UNUSED void* data) {
             frames.emplace_back(frame);
         }
         Unwinder::FillLocalFrames(frames);
-        DFXLOGU(Unwinder::GetFramesStr(frames).c_str());
+        DFXLOGU("%{public}s", Unwinder::GetFramesStr(frames).c_str());
     }
     return unwSize;
 }
@@ -159,7 +159,7 @@ static size_t FpUnwinderLocal(MAYBE_UNUSED void* data) {
             frames.emplace_back(frame);
         }
         Unwinder::FillLocalFrames(frames);
-        DFXLOGU(Unwinder::GetFramesStr(frames).c_str());
+        DFXLOGU("%{public}s", Unwinder::GetFramesStr(frames).c_str());
     }
     return unwSize;
 }
@@ -182,7 +182,7 @@ static size_t FpUnwinderLocalSafe(MAYBE_UNUSED void* data) {
             frames.emplace_back(frame);
         }
         Unwinder::FillLocalFrames(frames);
-        DFXLOGU(Unwinder::GetFramesStr(frames).c_str());
+        DFXLOGU("%{public}s", Unwinder::GetFramesStr(frames).c_str());
     }
     return unwSize;
 }

@@ -94,7 +94,9 @@ size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, 
         uintptr_t pageEndPtr = GetCurrentPageEndAddr(currentPtr);
         pageEndPtr = Min(pageEndPtr, srcEndPtr);
         if (!IsReadableAddr(currentPtr) || !IsReadableAddr(pageEndPtr - 1)) {
-            break;
+            destIndex += pageEndPtr - currentPtr;
+            currentPtr = pageEndPtr;
+            continue;
         }
         while (currentPtr < pageEndPtr) {
             ((uint8_t*)destPtr)[destIndex++] = *((uint8_t*)currentPtr++);
