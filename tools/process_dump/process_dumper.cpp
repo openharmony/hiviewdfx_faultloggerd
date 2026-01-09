@@ -604,7 +604,9 @@ void ProcessDumper::ReportSigDumpStats()
     stat->processdumpFinishTime = finishTime_ == 0 ? GetTimeMillisec() : finishTime_;
     stat->writeDumpInfoCost = finishParseSymbolTime_ > 0 ? stat->processdumpFinishTime - finishParseSymbolTime_ : 0;
     stat->smoParseTime = smoParseTime_;
-    stat->pssMemory = GetPssMemory();
+    if (IsBetaVersion()) {
+        stat->pssMemory = GetPssMemory();
+    }
     if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
         request_.processName, sizeof(request_.processName)) != 0) {
         DFXLOGE("Failed to copy target processName (%{public}d)", errno);
