@@ -39,10 +39,10 @@ public:
     bool Write() override;
     Elf64_Half GetPhnum() const { return ePhnum_; }
 private:
-    void ProgramSegmentHeaderFill(Elf64_Phdr &ph, Elf64_Word pType, Elf64_Word pFlags,
+    static void ProgramSegmentHeaderFill(Elf64_Phdr &ph, Elf64_Word pType, Elf64_Word pFlags,
         const DumpMemoryRegions &region);
-    void PtNoteHeaderFill(Elf64_Phdr &ph);
-    void PtLoadHeaderFill(Elf64_Phdr &ph, const DumpMemoryRegions &region);
+    static void PtNoteHeaderFill(Elf64_Phdr &ph);
+    static void PtLoadHeaderFill(Elf64_Phdr &ph, const DumpMemoryRegions &region);
     Elf64_Half ePhnum_ {0};
     std::vector<DumpMemoryRegions> maps_;
     CoredumpBufferWriter& bw_;
@@ -55,7 +55,7 @@ public:
 private:
     void SectionHeaderFill(Elf64_Shdr *sectionHeader, Elf64_Word shType, Elf64_Xword shFlag, Elf64_Phdr *programHeader);
     void AdjustOffset(uint8_t remain);
-    void SetShFlag(const Elf64_Phdr* programHeader, Elf64_Xword &shFlag);
+    static void SetShFlag(const Elf64_Phdr* programHeader, Elf64_Xword &shFlag);
     CoredumpBufferWriter& bw_;
 };
 } // namespace HiviewDFX

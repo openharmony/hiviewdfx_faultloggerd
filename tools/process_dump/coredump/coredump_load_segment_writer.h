@@ -38,10 +38,10 @@ private:
         uint64_t totalWritten {0};
     };
     uint64_t WriteMergedSeg(size_t idxBegin, size_t idxEnd, char *start);
-    size_t GetTotalSize();
+    size_t GetTotalSize() const;
     auto GenerateWriteTasks();
     void RunWriteTasks(std::vector<WriteTask>& tasks);
-    int GetDumpThreadCount();
+    static int GetDumpThreadCount();
 
     struct MergedSegment {
         Elf64_Phdr phdr {};

@@ -41,15 +41,13 @@ namespace HiviewDFX {
 int g_pipeFd[] = {-1, -1};
 class ProcessDumpTest : public testing::Test {
 public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp()
+    void SetUp() override
     {
         pipe(g_pipeFd);
         int newSize = 1024 * 1024; // 1MB
         fcntl(g_pipeFd[PIPE_WRITE], F_SETPIPE_SZ, newSize);
     }
-    void TearDown()
+    void TearDown() override
     {
         ClosePipeFd(g_pipeFd[PIPE_WRITE]);
         ClosePipeFd(g_pipeFd[PIPE_READ]);

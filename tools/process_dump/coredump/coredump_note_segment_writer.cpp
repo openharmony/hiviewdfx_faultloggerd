@@ -73,7 +73,7 @@ void ThreadNoteWriter::InitWriters()
     RegisterThreadWriter(cfg_.threads.armTaggedAddrCtrl, [this](pid_t tid) {return ArmTaggedAddrCtrlWrite();});
 }
 
-void ThreadNoteWriter::ThreadNoteWrite(pid_t tid)
+void ThreadNoteWriter::ThreadNoteWrite(pid_t tid) const
 {
     for (auto& noteUnitWrite : writers_) {
         noteUnitWrite(tid);
@@ -555,7 +555,7 @@ bool FileRegionWriter::Write()
     return true;
 }
 
-bool FileRegionWriter::WriteAddrRelated()
+bool FileRegionWriter::WriteAddrRelated() const
 {
     for (const auto& region : maps_) {
         if (region.pathName[0] != '/' || (region.priority[0] != 'r')) {

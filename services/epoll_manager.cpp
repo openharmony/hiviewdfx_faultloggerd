@@ -177,7 +177,7 @@ bool EpollManager::RemoveListener(int32_t fd)
     return true;
 }
 
-EpollListener* EpollManager::GetTargetListener(int32_t fd)
+EpollListener* EpollManager::GetTargetListener(int32_t fd) const
 {
     auto iter = std::find_if(listeners_.begin(), listeners_.end(),
         [fd](const std::unique_ptr<EpollListener>& listener) {

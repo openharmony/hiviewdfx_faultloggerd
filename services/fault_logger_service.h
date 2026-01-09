@@ -90,7 +90,7 @@ public:
                       const FaultLoggerdStatsRequest& requestData) override;
 private:
     void RemoveTimeoutDumpStats();
-    void ReportDumpStats(const DumpStats& stat);
+    static void ReportDumpStats(const DumpStats& stat);
     static std::string GetElfName(const FaultLoggerdStatsRequest& request);
     std::list<DumpStats> stats_{};
 };

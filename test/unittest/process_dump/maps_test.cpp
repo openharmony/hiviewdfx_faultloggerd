@@ -137,7 +137,7 @@ std::set<uintptr_t> InitInterestedAddrs(DfxProcess& process, ProcessDumpRequest&
     return interestedAddrs;
 }
 
-bool CheckInterestedAddrsValues(std::pair<uintptr_t, uintptr_t>& pair)
+bool CheckInterestedAddrsValues(const std::pair<uintptr_t, uintptr_t>& pair)
 {
     for (const auto& addr : interestedAddrs) {
         if (addr >= pair.first && addr < pair.second) {

@@ -14,12 +14,10 @@
  */
 #ifndef DUMP_INFO_FACTORY_H
 #define DUMP_INFO_FACTORY_H
-#include <functional>
 #include <string>
 #include <map>
 #include <memory>
 #include "dump_info.h"
-#include "dfx_log.h"
 namespace OHOS {
 namespace HiviewDFX {
 using CreateObjectFunc = std::shared_ptr<DumpInfo>(*)();

@@ -82,7 +82,7 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return count == length;
 }
 namespace {
-bool CheckCppCrashExtraKeyWords(const string& filePath, std::string *keywords, int length, int minRegIdx)
+bool CheckCppCrashExtraKeyWords(const string& filePath, const std::string *keywords, int length, int minRegIdx)
 {
     if (filePath.empty()) {
         return false;

@@ -76,9 +76,9 @@ public:
 private:
     std::string GetReasonInfo(const ProcessDumpRequest& request, DfxProcess& process, DfxMaps& maps);
     std::string GetCrashLogConfigInfo(const ProcessDumpRequest& request, DfxProcess& process);
-    std::string GetLastFatalMsg(DfxProcess& process, const ProcessDumpRequest& request);
-    std::string UpdateFatalMessageWhenDebugSignal(DfxProcess& process, const ProcessDumpRequest& request);
-    std::string ReadCrashObjString(const ProcessDumpRequest& request) const;
+    static std::string GetLastFatalMsg(const DfxProcess& process, const ProcessDumpRequest& request);
+    static std::string UpdateFatalMessageWhenDebugSignal(const DfxProcess& process, const ProcessDumpRequest& request);
+    static std::string ReadCrashObjString(const ProcessDumpRequest& request);
 };
 
 class SubmitterStack : public DecorativeDumpInfo {
@@ -101,8 +101,8 @@ public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<ExtraCrashInfo>(); }
 private:
-    std::string GetCrashObjContent(DfxProcess& process, const ProcessDumpRequest& request);
-    std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length) const;
+    static std::string GetCrashObjContent(const ProcessDumpRequest& request);
+    static std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length);
 };
 
 class OtherThreadDumpInfo : public DecorativeDumpInfo {

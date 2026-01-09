@@ -24,9 +24,9 @@ pid_t GetProcId(const char *statusPath, const char *item);
 bool MMapMemoryOnce();
 void UnmapMemoryOnce();
 void UpdateSanBoxProcess(struct ProcessDumpRequest *request);
-bool CollectStack(struct ProcessDumpRequest *request);
-bool CollectStat(struct ProcessDumpRequest *request);
-bool CollectStatm(struct ProcessDumpRequest *request);
+bool CollectStack(const struct ProcessDumpRequest *request);
+bool CollectStat(const struct ProcessDumpRequest *request);
+bool CollectStatm(const struct ProcessDumpRequest *request);
 bool LiteCrashHandler(struct ProcessDumpRequest *request);
 
 bool CollectMemoryNearRegisters(int fd, ucontext_t *context);

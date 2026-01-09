@@ -150,7 +150,7 @@ void UnmapMemoryOnce()
 /**
  * should collect stack in src process
  */
-bool CollectStack(struct ProcessDumpRequest *request)
+bool CollectStack(const struct ProcessDumpRequest *request)
 {
     DFXLOGI("start collect process stack");
     if (g_mmapSpace == MAP_FAILED) {
@@ -172,7 +172,7 @@ bool CollectStack(struct ProcessDumpRequest *request)
     return true;
 }
 
-bool CollectStat(struct ProcessDumpRequest *request)
+bool CollectStat(const struct ProcessDumpRequest *request)
 {
     if (g_mmapSpace == MAP_FAILED) {
         DFXLOGE("mmap failed");
@@ -209,7 +209,7 @@ bool CollectStat(struct ProcessDumpRequest *request)
     return true;
 }
 
-bool CollectStatm(struct ProcessDumpRequest *request)
+bool CollectStatm(const struct ProcessDumpRequest *request)
 {
     if (g_mmapSpace == MAP_FAILED) {
         DFXLOGE("mmap failed");

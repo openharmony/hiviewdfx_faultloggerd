@@ -30,17 +30,17 @@ namespace HiviewDFX {
 
 class DumpInfoJsonFormatter {
 public:
-    bool GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
+    static bool GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
         std::string& jsonStringInfo, int dumpError);
 
 private:
 #ifndef is_ohos_lite
-    void GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process, Json::Value& jsonInfo);
-    void GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo);
-    void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo) const;
-    bool FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo) const;
-    void FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
-    void FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const;
+    static void GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process, Json::Value& jsonInfo);
+    static void GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo);
+    static void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo);
+    static bool FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo);
+    static void FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo);
+    static void FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo);
     static void FillThreadstatInfo(Json::Value& jsonInfo, const std::shared_ptr<ProcessInfo> info);
 #endif
 };

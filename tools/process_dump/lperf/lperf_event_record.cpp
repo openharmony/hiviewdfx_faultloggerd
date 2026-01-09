@@ -37,7 +37,7 @@ uint32_t LperfRecordSample::GetType() const
     return header_.type;
 }
 
-void LperfRecordSample::InitHeader(uint8_t* data)
+void LperfRecordSample::InitHeader(const uint8_t* data)
 {
     if (data == nullptr) {
         header_.type = PERF_RECORD_MMAP;
@@ -45,7 +45,7 @@ void LperfRecordSample::InitHeader(uint8_t* data)
         header_.size = 0;
         return;
     }
-    header_ = *(reinterpret_cast<perf_event_header *>(data));
+    header_ = *(reinterpret_cast<const perf_event_header *>(data));
 }
 
 bool LperfRecordSample::Init(uint8_t* data)

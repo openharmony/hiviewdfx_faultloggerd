@@ -25,18 +25,18 @@ class CoredumpSessionService {
 public:
     CoredumpSessionService():sessionManager_(CoredumpSessionManager::Instance()) {}
 
-    SessionId CreateSession(const CreateCoredumpRequest& request);
-    bool CancelSession(SessionId sessionId);
-    bool UpdateWorkerPid(SessionId sessionId, pid_t workerPid);
-    void UpdateReport(SessionId sessionId, const CoredumpCallbackReport& rpt);
+    SessionId CreateSession(const CreateCoredumpRequest& request) const;
+    bool CancelSession(SessionId sessionId) const;
+    bool UpdateWorkerPid(SessionId sessionId, pid_t workerPid) const;
+    void UpdateReport(SessionId sessionId, const CoredumpCallbackReport& rpt) const;
 
     int GetClientFd(SessionId sessionId) const;
 
-    bool WriteTimeout(SessionId sessionId);
-    bool WriteResult(SessionId sessionId);
+    bool WriteTimeout(SessionId sessionId) const;
+    bool WriteResult(SessionId sessionId) const;
 private:
-    bool WriteResult(SessionId sessionId, const CoreDumpResult& result);
-    bool ReportCoredumpStatistics(SessionId sessionId);
+    bool WriteResult(SessionId sessionId, const CoreDumpResult& result) const;
+    bool ReportCoredumpStatistics(SessionId sessionId) const;
     CoredumpSessionManager& sessionManager_;
 };
 }

@@ -27,10 +27,10 @@ REGISTER_DUMP_INFO_CLASS(ExtraCrashInfo);
 void ExtraCrashInfo::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
     DecorativeDumpInfo::Print(process, request, unwinder);
-    DfxBufferWriter::GetInstance().WriteMsg(GetCrashObjContent(process, request));
+    DfxBufferWriter::GetInstance().WriteMsg(GetCrashObjContent(request));
 }
 
-std::string ExtraCrashInfo::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length) const
+std::string ExtraCrashInfo::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length)
 {
     DFXLOGI("Start read memory type of crashObj, memory length(%zu).", length);
     constexpr size_t step = sizeof(uintptr_t);
@@ -54,7 +54,7 @@ std::string ExtraCrashInfo::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t
     return memoryContent;
 }
 
-std::string ExtraCrashInfo::GetCrashObjContent(DfxProcess& process, const ProcessDumpRequest& request)
+std::string ExtraCrashInfo::GetCrashObjContent(const ProcessDumpRequest& request)
 {
     std::string content = "";
 #ifdef __LP64__

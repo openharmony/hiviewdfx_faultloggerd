@@ -55,7 +55,7 @@ private:
     ~EpollManager();
     bool AddEpollEvent(EpollListener& epollListener) const;
     bool DelEpollEvent(int32_t fd) const;
-    EpollListener* GetTargetListener(int32_t fd);
+    EpollListener* GetTargetListener(int32_t fd) const;
     std::list<std::unique_ptr<EpollListener>> listeners_;
     SmartFd eventFd_;
 };

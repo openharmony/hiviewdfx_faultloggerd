@@ -144,7 +144,7 @@ bool CheckProcessComm(int pid, const std::string& name)
     return false;
 }
 
-int CheckKeyWords(const std::string& filePath, std::string *keywords, int length, int minRegIdx)
+int CheckKeyWords(const std::string& filePath, const std::string *keywords, int length, int minRegIdx)
 {
     std::ifstream file;
     file.open(filePath.c_str(), std::ios::in);

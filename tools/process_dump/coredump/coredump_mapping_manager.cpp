@@ -66,7 +66,7 @@ bool CoredumpMappingManager::ShouldIncludeRegion(const DumpMemoryRegions& region
     return perms.find('p') != std::string::npos && perms.find('r') != std::string::npos;
 }
 
-bool CoredumpMappingManager::IsHwAsanProcess()
+bool CoredumpMappingManager::IsHwAsanProcess() const
 {
     return std::any_of(maps_.begin(), maps_.end(), [](auto const& region) {
         std::string pathName = region.pathName;
@@ -74,7 +74,7 @@ bool CoredumpMappingManager::IsHwAsanProcess()
     });
 }
 
-uint64_t CoredumpMappingManager::EstimateFileSize()
+uint64_t CoredumpMappingManager::EstimateFileSize() const
 {
     auto noteCount = static_cast<uint64_t>(
         std::count_if(maps_.begin(), maps_.end(), [](const DumpMemoryRegions& region) {return true;}));

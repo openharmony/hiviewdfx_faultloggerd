@@ -68,7 +68,7 @@ int LitePerfDumper::PerfProcess(LitePerfParam& lperf, int requestFd)
     return PerfRecord(pipeWriteFd, lperf);
 }
 
-int LitePerfDumper::PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf)
+int LitePerfDumper::PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf) const
 {
     SmartFd bufFd(pipeWriteFd[PIPE_BUF_INDEX]);
     SmartFd resFd(pipeWriteFd[PIPE_RES_INDEX]);
@@ -99,7 +99,7 @@ int LitePerfDumper::PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf)
     return 0;
 }
 
-void LitePerfDumper::WriteSampleData(int bufFd, const std::string& data)
+void LitePerfDumper::WriteSampleData(int bufFd, const std::string& data) const
 {
     constexpr size_t step = MAX_PIPE_SIZE;
     for (size_t i = 0; i < data.size(); i += step) {
