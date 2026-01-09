@@ -29,13 +29,7 @@ namespace {
 static const int BUF_LEN = 100;
 }
 
-class StackTableTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class StackTableTest : public testing::Test {};
 
 namespace {
 /**

@@ -36,27 +36,11 @@ namespace OHOS {
 namespace HiviewDFX {
 class DfxSigDumpHandlerTest : public testing::Test {
 public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
     static void TestThreadRunTask();
 };
 
 static const int TEST_THREAD_NUM = 10;
 static const int TEST_SLEEP_SEC = 5;
-
-void DfxSigDumpHandlerTest::SetUpTestCase()
-{}
-
-void DfxSigDumpHandlerTest::TearDownTestCase()
-{}
-
-void DfxSigDumpHandlerTest::SetUp()
-{}
-
-void DfxSigDumpHandlerTest::TearDown()
-{}
 
 void DfxSigDumpHandlerTest::TestThreadRunTask()
 {

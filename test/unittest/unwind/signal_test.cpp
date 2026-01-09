@@ -29,13 +29,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxSignalTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxSignalTest : public testing::Test {};
 } // namespace HiviewDFX
 } // namespace OHOS
 

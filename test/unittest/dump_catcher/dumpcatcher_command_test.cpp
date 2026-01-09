@@ -35,8 +35,6 @@ class DumpCatcherCommandTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
 };
 
 void DumpCatcherCommandTest::SetUpTestCase()
@@ -52,12 +50,6 @@ void DumpCatcherCommandTest::TearDownTestCase()
     StopTestHap(TEST_BUNDLE_NAME);
     UninstallTestHap(TEST_BUNDLE_NAME);
 }
-
-void DumpCatcherCommandTest::SetUp()
-{}
-
-void DumpCatcherCommandTest::TearDown()
-{}
 
 /**
  * @tc.name: DumpCatcherCommandTest001

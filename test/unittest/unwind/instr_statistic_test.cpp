@@ -37,13 +37,7 @@ namespace HiviewDFX {
 #define LOG_TAG "DfxInstrStatisticTest"
 #define LOG_DOMAIN 0xD002D11
 
-class InstrStatisticTest : public testing::Test {
-public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class InstrStatisticTest : public testing::Test {};
 
 /**
  * @tc.name: InstrStatisticTest001

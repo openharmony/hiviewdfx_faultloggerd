@@ -13,8 +13,7 @@
  * limitations under the License.
  */
 
-#include "faultloggerd_module_test.h"
-
+#include <gtest/gtest.h>
 #include <securec.h>
 #include <sstream>
 #include <unistd.h>
@@ -27,6 +26,9 @@ using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 
 namespace {
+
+class FaultloggerdModuleTest : public testing::Test {};
+
 void WaitForServiceReady(const std::string& serviceName)
 {
     int pid = GetProcessPid(serviceName);

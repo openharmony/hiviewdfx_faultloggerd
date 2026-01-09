@@ -45,8 +45,6 @@ class KernelSnapshotTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
 };
 
 void KernelSnapshotTest::SetUpTestCase()
@@ -68,12 +66,6 @@ void KernelSnapshotTest::TearDownTestCase()
     system("param set kernel_snapshot_check_interval 60");
     system(START_FAULTLOGGERD);
 }
-
-void KernelSnapshotTest::SetUp()
-{}
-
-void KernelSnapshotTest::TearDown()
-{}
 
 namespace {
 #if defined(__aarch64__)

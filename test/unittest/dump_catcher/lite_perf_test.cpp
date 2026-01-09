@@ -29,25 +29,7 @@ using namespace testing::ext;
 namespace OHOS {
 namespace HiviewDFX {
 
-class LitePerfTest : public testing::Test {
-public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
-};
-
-void LitePerfTest::SetUpTestCase()
-{}
-
-void LitePerfTest::TearDownTestCase()
-{}
-
-void LitePerfTest::SetUp()
-{}
-
-void LitePerfTest::TearDown()
-{}
+class LitePerfTest : public testing::Test {};
 
 /**
  * @tc.name: LitePerfTest001

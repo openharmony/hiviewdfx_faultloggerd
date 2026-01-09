@@ -48,13 +48,7 @@ using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxProcessDumpTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxProcessDumpTest : public testing::Test {};
 } // namespace HiviewDFX
 } // namespace OHOS
 

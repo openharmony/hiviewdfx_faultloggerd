@@ -28,13 +28,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxRegsTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxRegsTest : public testing::Test {};
 
 namespace {
 #if defined(__aarch64__)

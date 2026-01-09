@@ -49,15 +49,9 @@ namespace HiviewDFX {
 int g_pipeFd[] = {-1, -1};
 class SignalHandlerTest : public testing::Test {
 public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
+    void SetUp() override;
+    void TearDown() override;
 };
-
-void SignalHandlerTest::SetUpTestCase() {}
-
-void SignalHandlerTest::TearDownTestCase() {}
 
 void SignalHandlerTest::SetUp()
 {

@@ -32,9 +32,7 @@ bool g_jsvmEnable = false;
 
 class JsvmTest : public testing::Test {
 public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp()
+    void SetUp() override
     {
         std::string filePath;
 #if defined(__arm__)
@@ -44,7 +42,6 @@ public:
 #endif
         g_jsvmEnable = filesystem::exists(filePath);
     }
-    void TearDown() {}
 };
 
 /**

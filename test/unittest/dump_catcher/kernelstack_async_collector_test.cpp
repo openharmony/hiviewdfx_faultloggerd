@@ -32,13 +32,7 @@ namespace OHOS {
 namespace HiviewDFX {
 std::atomic<int> g_count = 0;
 std::atomic<int> g_countWithTimeout = 0;
-class KernelStackAsyncCollectorTest : public testing::Test {
-public:
-    static void SetUpTestCase() {};
-    static void TearDownTestCase() {};
-    void SetUp() {};
-    void TearDown() {};
-};
+class KernelStackAsyncCollectorTest : public testing::Test {};
 
 /**
  * @tc.name: KernelStackAsyncCollectorTest001

@@ -36,27 +36,12 @@ static constexpr uint64_t TEST_WAIT_SLOW_PERIOD = 5;
 class DumpCatcherSystemTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void);
-    void SetUp();
-    void TearDown();
 };
 
 void DumpCatcherSystemTest::SetUpTestCase(void)
 {
     chmod("/data/crasher_c", 0755); // 0755 : -rwxr-xr-x
     chmod("/data/crasher_cpp", 0755); // 0755 : -rwxr-xr-x
-}
-
-void DumpCatcherSystemTest::TearDownTestCase(void)
-{
-}
-
-void DumpCatcherSystemTest::SetUp(void)
-{
-}
-
-void DumpCatcherSystemTest::TearDown(void)
-{
 }
 
 namespace {

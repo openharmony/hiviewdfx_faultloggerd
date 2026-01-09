@@ -32,13 +32,7 @@ using RustDemangleFn = char*(*)(const char *);
 RustDemangleFn g_rustDemangleFn = nullptr;
 } // namespace
 
-class ArkTest : public testing::Test {
-public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class ArkTest : public testing::Test {};
 
 /**
  * @tc.name: ArkTest001

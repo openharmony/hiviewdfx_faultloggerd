@@ -33,13 +33,7 @@ using namespace std;
 #define DUMPCATCHER_ELF_FILE "/system/bin/dumpcatcher"
 namespace OHOS {
 namespace HiviewDFX {
-class DfxSymbolsTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxSymbolsTest : public testing::Test {};
 
 
 /**

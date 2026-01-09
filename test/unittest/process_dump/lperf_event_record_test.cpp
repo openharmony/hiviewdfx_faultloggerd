@@ -22,25 +22,7 @@ using namespace testing::ext;
 
 namespace OHOS {
 namespace HiviewDFX {
-class LperfEventRecordTest : public testing::Test {
-public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
-};
-
-void LperfEventRecordTest::SetUpTestCase()
-{}
-
-void LperfEventRecordTest::TearDownTestCase()
-{}
-
-void LperfEventRecordTest::SetUp()
-{}
-
-void LperfEventRecordTest::TearDown()
-{}
+class LperfEventRecordTest : public testing::Test {};
 
 struct TestRecordSample {
     perf_event_header header_;

@@ -35,13 +35,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class UnwindEntryParserTest : public testing::Test {
-public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class UnwindEntryParserTest : public testing::Test {};
 
 /**
  * @tc.name: UnwindEntryParser001

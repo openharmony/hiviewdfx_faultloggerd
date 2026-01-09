@@ -30,13 +30,7 @@ using namespace testing::mt;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxDumpCatcherSlowPolicyTest : public testing::Test {
-public:
-    static void SetUpTestCase() {};
-    static void TearDownTestCase() {};
-    void SetUp() {};
-    void TearDown() {};
-};
+class DfxDumpCatcherSlowPolicyTest : public testing::Test {};
 
 /**
  * @tc.name: DfxDumpCatcherSlowPolicyTest001

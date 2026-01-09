@@ -37,13 +37,7 @@ namespace {
 #endif //__x86_64__
 #endif //ENABLE_MINIDEBUGINFO
 }
-class ElfFactoryTest : public testing::Test {
-public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class ElfFactoryTest : public testing::Test {};
 
 /**
  * @tc.name: ElfFactoryTest001
