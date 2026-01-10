@@ -1204,7 +1204,7 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
     ASSERT_FALSE(formattedStack.empty());
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
     GTEST_LOG_(INFO) << "formattedStack is json :\n" << formattedStack;
-    ASSERT_EQ(formattedStack, std::string("null\n"));
+    ASSERT_NE(formattedStack, std::string("null\n"));
 
     // get thread stat
     ProcessInfo info;

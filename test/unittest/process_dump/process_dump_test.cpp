@@ -218,6 +218,20 @@ HWTEST_F (ProcessDumpTest, DfxThreadTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxThreadTest002: end.";
 }
 
+/**
+ * @tc.name: DfxThreadTest003
+ * @tc.desc: test DfxThread GetProcessInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, DfxThreadTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxThreadTest003: start.";
+    const int32_t tid = 99999;
+    DfxThread thread(tid, tid, tid, true);
+    EXPECT_EQ(true, thread.GetProcessInfo() == nullptr) << "DfxThreadTest003 Failed";
+    GTEST_LOG_(INFO) << "DfxThreadTest003: end.";
+}
+
 #if defined(__aarch64__)
 /**
  * @tc.name: LiteProcessDumpTest001
