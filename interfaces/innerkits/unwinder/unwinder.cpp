@@ -267,7 +267,7 @@ private:
     bool Apply(std::shared_ptr<DfxRegs> regs, std::shared_ptr<RegLocState> rs);
     bool UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc);
 #if defined(ENABLE_MIXSTACK)
-    bool StepArkJsFrame(StepFrame& frame);
+    bool StepArkJsFrame(StepFrame& frame, uint64_t frameIndex = 0);
 #endif
     bool StepV8Frame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind);
     inline void SetLocalStackCheck(void* ctx, bool check) const
@@ -694,7 +694,7 @@ int Unwinder::Impl::ArkWriteJitCodeToFile(int fd)
 }
 
 #if defined(ENABLE_MIXSTACK)
-bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
+bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame, uint64_t frameIndex)
 {
     DFX_TRACE_SCOPED_DLSYM("StepArkJsFrame pc: %p", reinterpret_cast<void *>(frame.pc));
     std::string timeLimitCheck;
@@ -712,17 +712,16 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
     if (isJitCrash_) {
         MAYBE_UNUSED uintptr_t methodId = 0;
         ArkUnwindParam arkParam(memory_.get(), &(Unwinder::AccessMem), &frame.fp, &frame.sp, &frame.pc,
-            &methodId, &frame.isJsFrame, jitCache_);
+            &methodId, &frame.isJsFrame, &frame.frameType, frameIndex, jitCache_);
         ret = DfxArk::Instance().StepArkFrameWithJit(&arkParam);
     } else {
-        ArkStepParam arkParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsFrame);
+        ArkStepParam arkParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsFrame, &frame.frameType, frameIndex);
         ret = DfxArk::Instance().StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &arkParam);
     }
     if (ret < 0) {
         DFXLOGE("Failed to step ark frame");
         return false;
     }
-    frame.frameType = frame.isJsFrame ? FrameType::JS_FRAME : FrameType::NATIVE_FRAME;
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         DFXLOGD("---ark pc: %{private}p, fp: %{private}p, sp: %{private}p, isJsFrame: %{public}d.",
             reinterpret_cast<void *>(frame.pc),
@@ -986,19 +985,33 @@ bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>
 bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind)
 {
 #if defined(ENABLE_MIXSTACK)
-    if (stopWhenArkFrame_ && (map != nullptr && map->IsArkExecutable())) {
+    if (stopWhenArkFrame_ && (map != nullptr && (map->IsArkExecutable() || map->IsStaticArkExecutable(frame.pc)))) {
         DFXLOGU("Stop by ark frame");
         stopUnwind = true;
         return false;
     }
-    if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.frameType == FrameType::JS_FRAME)) {
+    if (!enableMixstack_ || map == nullptr) {
+        return true;
+    }
+    if (map->IsStaticArkExecutable(frame.pc) || frame.frameType == FrameType::STATIC_JS_FRAME) {
+        static uint64_t frameIndex = 0;
+        if (map->IsStaticArkExecutable(frame.pc)) {
+            frame.frameType = FrameType::STATIC_JS_FRAME;
+            frameIndex = 0;
+        }
+        if (!StepArkJsFrame(frame, frameIndex)) {
+            DFXLOGE("Failed to step static ark Js frame, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
+            return false;
+        }
+        frameIndex++;
+        stopUnwind = true;
+    } else if (map->IsArkExecutable() || frame.frameType == FrameType::JS_FRAME) {
         if (!StepArkJsFrame(frame)) {
             DFXLOGE("Failed to step ark Js frame, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
             lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
             return false;
         }
         stopUnwind = true;
-        return true;
     }
 #endif
     return true;
@@ -1286,7 +1299,7 @@ void Unwinder::Impl::FillFrames(std::vector<DfxFrame>& frames)
 {
     for (size_t i = 0; i < frames.size(); ++i) {
         auto& frame = frames[i];
-        if (frame.frameType == FrameType::JS_FRAME) {
+        if (frame.frameType == FrameType::JS_FRAME || frame.frameType == FrameType::STATIC_JS_FRAME) {
 #if defined(ENABLE_MIXSTACK)
             FillJsFrame(frame);
 #endif

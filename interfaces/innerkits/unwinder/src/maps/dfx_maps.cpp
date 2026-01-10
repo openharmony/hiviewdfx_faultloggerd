@@ -28,6 +28,7 @@
 
 #include "dfx_define.h"
 #include "dfx_log.h"
+#include "dfx_symbols.h"
 #include "dfx_trace_dlsym.h"
 #include "string_printf.h"
 #include "string_util.h"
@@ -480,6 +481,27 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
         return false;
     }
     return map->IsArkExecutable();
+}
+
+bool DfxMaps::GetStaticArkRange(uintptr_t& start, uintptr_t& end)
+{
+    std::vector<std::shared_ptr<DfxMap>> maps;
+    std::string libName = "arkruntime";
+    if (!FindMapsByName("lib" + libName + ".so", maps)) {
+        DFXLOGE("can not find map!");
+        return false;
+    }
+    std::shared_ptr<DfxMap> execMap;
+    for (const auto& map : maps) {
+        if (map->IsMapExec()) {
+            execMap = map;
+            break;
+        }
+    }
+    if (execMap == nullptr) {
+        return false;
+    }
+    return execMap->GetStaticArkRange(start, end);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

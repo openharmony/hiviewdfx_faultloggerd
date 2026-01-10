@@ -45,7 +45,8 @@ void TestStepArkFrame(const uint8_t* data, size_t size)
     bool isJsFrame = testData.methodid % 2;
 
     DfxMemory dfxMemory;
-    ArkStepParam arkParam(&testData.fp, &testData.sp, &testData.pc, &isJsFrame);
+    FrameType frameType = FrameType::NATIVE_FRAME;
+    ArkStepParam arkParam(&testData.fp, &testData.sp, &testData.pc, &isJsFrame, &frameType, 0);
     DfxArk::Instance().StepArkFrame(&dfxMemory, &(Unwinder::AccessMem), &arkParam);
 }
 
@@ -58,8 +59,9 @@ void TestStepArkFrameWithJit(const uint8_t* data, size_t size)
     bool isJsFrame = testData.methodid % 2;
     std::vector<uintptr_t> jitCache_ = {};
     DfxMemory dfxMemory;
+    FrameType frameType = FrameType::NATIVE_FRAME;
     ArkUnwindParam arkParam(&dfxMemory, &(Unwinder::AccessMem), &testData.fp,
-        &testData.sp, &testData.pc, &testData.methodid, &isJsFrame, jitCache_);
+        &testData.sp, &testData.pc, &testData.methodid, &isJsFrame, &frameType, 0, jitCache_);
     DfxArk::Instance().StepArkFrameWithJit(&arkParam);
 }
 

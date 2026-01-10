@@ -42,6 +42,8 @@ namespace {
 uintptr_t g_arkStubBegin{0};
 uintptr_t g_arkStubEnd{0};
 std::atomic_bool g_updateArkStubFlag{false};
+uintptr_t g_staticArkBegin{0};
+uintptr_t g_staticArkEnd{0};
 }
 
 extern "C" bool ffrt_get_current_coroutine_stack(void** stackAddr, size_t* size) __attribute__((weak));
@@ -52,6 +54,7 @@ public:
     uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size) override;
     DfxFrame* SymbolicAddress(void* pc) override;
 private:
+    void BacktraceArkFrame(ArkStepParam &arkParam, MemoryReader& memoryReader, uint64_t& staticArkFrameIndex) const;
     uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size, MemoryReader& memoryReader) const;
     bool GetCurrentThreadRange(uintptr_t startFp, uintptr_t& threadBegin, uintptr_t& threadEnd);
     std::shared_ptr<DfxMaps> maps_ = nullptr;
@@ -71,7 +74,7 @@ bool FpBacktraceImpl::Init()
             size_t stackSize = 0;
             ffrt_get_current_coroutine_stack(&stackBegin, &stackSize);
         }
-        DfxArk::Instance().InitArkFunction(ArkFunction::STEP_ARK);
+        DfxArk::Instance().InitArkFunction("step_ark");
     });
     maps_ = DfxMaps::Create(0, false);
     if (maps_ == nullptr) {
@@ -79,6 +82,7 @@ bool FpBacktraceImpl::Init()
         return false;
     }
     maps_->GetStackRange(mainStackBegin_, mainStackEnd_);
+    maps_->GetStaticArkRange(g_staticArkBegin, g_staticArkEnd);
     return true;
 }
 
@@ -96,12 +100,29 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
     ProcessMemoryReader memoryReader;
     return BacktraceFromFp(startFp, pcArray, size, memoryReader);
 }
+void FpBacktraceImpl::BacktraceArkFrame(ArkStepParam &arkParam, MemoryReader& memoryReader,
+    uint64_t &staticArkFrameIndex) const
+{
+    if (*(arkParam.pc) >= g_staticArkBegin && *(arkParam.pc) < g_staticArkEnd) {
+        staticArkFrameIndex = 0;
+        arkParam.frameIndex = staticArkFrameIndex;
+        *(arkParam.frameType) = FrameType::STATIC_JS_FRAME;
+    }
+    DfxArk::Instance().StepArkFrame(&memoryReader, [](void* memoryReader, uintptr_t addr, uintptr_t* val) {
+        return reinterpret_cast<MemoryReader*>(memoryReader)->ReadMemory(addr, val, sizeof(uintptr_t));
+    }, &arkParam);
+    if (*(arkParam.frameType) == FrameType::STATIC_JS_FRAME) {
+        staticArkFrameIndex++;
+    }
+}
 
 uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_t size,
     MemoryReader& memoryReader) const
 {
     uint32_t index = 0;
     bool isJsFrame = false;
+    FrameType frameType = FrameType::NATIVE_FRAME;
+    uint64_t staticArkFrameIndex = 0;
     uintptr_t registerState[] = {reinterpret_cast<uintptr_t>(startFp), 0};
     uintptr_t sp = 0;
     uintptr_t arkStubBegin{0};
@@ -116,11 +137,11 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
         constexpr auto fpIndex = 0;
         constexpr auto pcIndex = 1;
         uintptr_t preFp = registerState[fpIndex];
-        if (isJsFrame || (registerState[pcIndex] < arkStubEnd && registerState[pcIndex] >= arkStubBegin)) {
-            ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame);
-            DfxArk::Instance().StepArkFrame(&memoryReader, [](void* memoryReader, uintptr_t addr, uintptr_t* val) {
-                return reinterpret_cast<MemoryReader*>(memoryReader)->ReadMemory(addr, val, sizeof(uintptr_t));
-            }, &arkParam);
+        if (isJsFrame || (registerState[pcIndex] < arkStubEnd && registerState[pcIndex] >= arkStubBegin) ||
+            (registerState[pcIndex] < g_staticArkEnd && registerState[pcIndex] >= g_staticArkBegin)) {
+            ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame, &frameType,
+                                  staticArkFrameIndex);
+            BacktraceArkFrame(arkParam, memoryReader, staticArkFrameIndex);
         } else {
             if (!memoryReader.ReadMemory(registerState[fpIndex], registerState, sizeof(registerState))) {
                 break;
@@ -132,17 +153,16 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
                 break;
             }
             // when fp back trace first frame failed, use the ark interface try again
-            registerState[fpIndex] = reinterpret_cast<uintptr_t>(startFp);
-            ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame);
-            DfxArk::Instance().StepArkFrame(&memoryReader, [](void* memoryReader, uintptr_t addr, uintptr_t* val) {
-                return reinterpret_cast<MemoryReader*>(memoryReader)->ReadMemory(addr, val, sizeof(uintptr_t));
-            }, &arkParam);
+            ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame, &frameType,
+                                  staticArkFrameIndex);
+            BacktraceArkFrame(arkParam, memoryReader, staticArkFrameIndex);
         }
         auto realPc = reinterpret_cast<void *>(StripPac(registerState[pcIndex], 0));
         if (realPc != nullptr) {
             pcArray[index++] = realPc;
         }
-        if (registerState[fpIndex] <= preFp || registerState[fpIndex] == 0) {
+        if (frameType != FrameType::STATIC_JS_FRAME &&
+            (registerState[fpIndex] <= preFp || registerState[fpIndex] == 0)) {
             break;
         }
     }

@@ -36,6 +36,7 @@
 #include "dfx_instr_statistic.h"
 #include "dfx_util.h"
 #include "dfx_maps.h"
+#include "dfx_symbols.h"
 #include "dfx_trace_dlsym.h"
 #include "dwarf_define.h"
 #include "elf_factory.h"
@@ -379,6 +380,22 @@ bool DfxElf::GetFuncInfo(uint64_t addr, ElfSymbol& elfSymbol)
 
     const auto &symbols = GetFuncSymbols();
     return FindFuncSymbol(addr, symbols, elfSymbol);
+}
+
+bool DfxElf::FindFuncSymbolByName(std::string funcName, ElfSymbol& elfSymbol)
+{
+    const auto &symbols = GetFuncSymbols();
+    if (symbols.empty()) {
+        return false;
+    }
+    for (const auto &symbol : symbols) {
+        std::string symName = DfxSymbols::Demangle(symbol.nameStr);
+        if (symName == funcName) {
+            elfSymbol = symbol;
+            return true;
+        }
+    }
+    return false;
 }
 
 bool DfxElf::FindFuncSymbol(uint64_t addr, const std::set<ElfSymbol>& symbols, ElfSymbol& elfSymbol)

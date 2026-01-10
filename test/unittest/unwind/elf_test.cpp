@@ -85,6 +85,9 @@ HWTEST_F(DfxElfTest, DfxElfTest001, TestSize.Level2)
     EXPECT_FALSE(elf->GetFuncSymbols().empty());
     EXPECT_GT(elf->GetMmapSize(), 0);
     GTEST_LOG_(INFO) << elf->GetElfName();
+    ElfSymbol symbol;
+    EXPECT_TRUE(elf->FindFuncSymbolByName("main", symbol));
+    EXPECT_FALSE(elf->FindFuncSymbolByName("XXX", symbol));
     GTEST_LOG_(INFO) << "DfxElfTest001: end.";
 }
 
@@ -135,6 +138,9 @@ HWTEST_F(DfxElfTest, DfxElfTest002, TestSize.Level2)
     EXPECT_FALSE(elf->GetFuncSymbols().empty());
     EXPECT_GT(elf->GetMmapSize(), 0);
     GTEST_LOG_(INFO) << elf->GetElfName();
+    ElfSymbol symbol;
+    EXPECT_TRUE(elf->FindFuncSymbolByName("main", symbol));
+    EXPECT_FALSE(elf->FindFuncSymbolByName("XXX", symbol));
     GTEST_LOG_(INFO) << "DfxElfTest002: end.";
 }
 
