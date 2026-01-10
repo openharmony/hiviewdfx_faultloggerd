@@ -42,6 +42,7 @@
 #endif
 #include "procinfo.h"
 #include "reporter.h"
+#include <sys/prctl.h>
 #include "thread_context.h"
 #include "unwinder.h"
 #include "unwinder_config.h"
@@ -154,11 +155,22 @@ bool LiteProcessDumper::ReadPipeData(int pid)
     ReadStack(pipeReadFd);
     ReadMemoryNearRegister(pipeReadFd, request_);
 
-    constexpr int bufSize = 1024;
-    char data[bufSize] = {0};
+    std::vector<char> data(MAX_PIPE_SIZE, 0);
     ssize_t n = 1;
-    while ((n = read(pipeReadFd, data, bufSize)) > 0) {
-        rawData_ += std::string(data, n);
+    size_t tryTimes = 0;
+    constexpr size_t maxTryTimes = 1000;
+    while ((n = read(pipeReadFd, data.data(), MAX_PIPE_SIZE)) > 0 ||
+        (n == -1 && (errno == EAGAIN || errno == EINTR))) {
+        if (n == -1 && errno == EAGAIN) {
+            if (++tryTimes > maxTryTimes) {
+                DFXLOGW("Exceeding the maximum number of retries!");
+                break;
+            }
+            usleep(1000); // 1000 : sleep 1ms try agin
+        }
+        if (n > 0) {
+            rawData_.append(data.data(), static_cast<size_t>(n));
+        }
     }
     DFXLOGI("finish read pipe data");
 #ifndef is_ohos_lite
@@ -210,6 +222,8 @@ bool LiteProcessDumper::Dump(int pid)
     std::string bundleName = request_.processName;
     bundleName = bundleName.substr(0, bundleName.find_first_of(':'));
     dfxMaps_ = DfxMaps::CreateByBuffer(bundleName, rawData_);
+    CollectOpenFiles();
+    MmapJitSymbol();
     InitProcess();
     Unwind();
     PrintAll();
@@ -319,15 +333,19 @@ void LiteProcessDumper::PrintMaps()
     DfxBufferWriter::GetInstance().WriteMsg(mapsStr);
 }
 
-void LiteProcessDumper::PrintOpenFiles()
+void LiteProcessDumper::CollectOpenFiles()
 {
-    std::string openFiles = "OpenFiles:\n";
-    DfxBufferWriter::GetInstance().WriteMsg(openFiles);
-
     std::istringstream iss(rawData_);
     std::string line;
-    std::map<int, std::string> fdFiles;
     while (std::getline(iss, line)) {
+        if (line == "end trans openfiles") {
+            DFXLOGI("find open file start, end prase_maps");
+            std::string rest;
+            rest.assign(std::istreambuf_iterator<char>(iss),
+                        std::istreambuf_iterator<char>());
+            rawData_ = rest;
+            break;
+        }
         auto pos =  line.find_first_of('-');
         if (pos != std::string::npos) {
             long fd;
@@ -335,11 +353,31 @@ void LiteProcessDumper::PrintOpenFiles()
                 continue;
             }
             line += "\n";
-            fdFiles.emplace(fd, line);
+            fdFiles_.emplace(fd, line);
         }
     }
-    for (auto& file : fdFiles) {
+}
+
+void LiteProcessDumper::PrintOpenFiles()
+{
+    std::string openFiles = "OpenFiles:\n";
+    DfxBufferWriter::GetInstance().WriteMsg(openFiles);
+    for (auto& file : fdFiles_) {
         DfxBufferWriter::GetInstance().WriteMsg(file.second);
+    }
+}
+
+void LiteProcessDumper::MmapJitSymbol()
+{
+    auto jitSymbolMMap = mmap(NULL, ARKWEB_JIT_SYMBOL_BUF_SIZE,
+        PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (jitSymbolMMap == MAP_FAILED) {
+        DFXLOGW("Failed to mmap!\n");
+        return;
+    }
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, jitSymbolMMap, ARKWEB_JIT_SYMBOL_BUF_SIZE, "ARKWEB_JIT_symbol");
+    if (memcpy_s(jitSymbolMMap, ARKWEB_JIT_SYMBOL_BUF_SIZE, rawData_.c_str(), rawData_.length()) != EOK) {
+        DFXLOGE("Failed to copy rawData_.");
     }
 }
 

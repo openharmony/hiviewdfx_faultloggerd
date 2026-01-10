@@ -118,6 +118,9 @@ public:
             LocalThreadContext::GetInstance().CleanUp();
         }
 #endif
+        if (arkwebJsExtractorptr_ != 0) {
+            DfxJsvm::Instance().ArkwebDestroyJsSymbolExtractor(arkwebJsExtractorptr_);
+        }
     }
 
     inline void EnableUnwindCache(bool enableCache)
@@ -204,6 +207,7 @@ public:
     void FillFrame(DfxFrame& frame, bool needSymParse = true);
     void ParseFrameSymbol(DfxFrame& frame);
     void FillJsFrame(DfxFrame& frame);
+    void FillArkwebJsFrame(DfxFrame& frame);
     bool GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, DfxFrame& frame);
     void GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<uintptr_t> pcs);
     inline void SetIsJitCrashFlag(bool isCrash)
@@ -230,7 +234,7 @@ private:
         uintptr_t sp = 0;
         uintptr_t fp = 0;
         bool isJsFrame {false};
-        bool isJsvmFrame {false};
+        FrameType frameType {FrameType::NATIVE_FRAME};
     };
     struct StepCache {
         std::shared_ptr<DfxMap> map = nullptr;
@@ -265,7 +269,7 @@ private:
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(StepFrame& frame);
 #endif
-    bool StepJsvmFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map);
+    bool StepV8Frame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind);
     inline void SetLocalStackCheck(void* ctx, bool check) const
     {
         if ((pid_ == UNWIND_TYPE_LOCAL) && (ctx != nullptr)) {
@@ -291,6 +295,7 @@ private:
     MAYBE_UNUSED bool ignoreMixstack_ = false;
     MAYBE_UNUSED bool stopWhenArkFrame_ = false;
     MAYBE_UNUSED bool isJitCrash_ = false;
+    uintptr_t arkwebJsExtractorptr_ = 0;
 
     int32_t pid_ = 0;
     uintptr_t pacMask_ = 0;
@@ -717,6 +722,7 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
         DFXLOGE("Failed to step ark frame");
         return false;
     }
+    frame.frameType = frame.isJsFrame ? FrameType::JS_FRAME : FrameType::NATIVE_FRAME;
     if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
         DFXLOGD("---ark pc: %{private}p, fp: %{private}p, sp: %{private}p, isJsFrame: %{public}d.",
             reinterpret_cast<void *>(frame.pc),
@@ -729,24 +735,39 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame)
 }
 #endif
 
-bool Unwinder::Impl::StepJsvmFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map)
+bool Unwinder::Impl::StepV8Frame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind)
 {
-    if (enableJsvmstack_ && ((map != nullptr && map->IsJsvmExecutable()) || frame.isJsvmFrame)) {
-        DFX_TRACE_SCOPED_DLSYM("StepJsvmFrame pc: %p", reinterpret_cast<void *>(frame.pc));
-        std::string timeLimitCheck;
-        timeLimitCheck += "StepJsvmFrame, pc: " + std::to_string(frame.pc) +
-            ", fp:" + std::to_string(frame.fp) + ", sp:" + std::to_string(frame.sp) +
-            ", isJsvmFrame:" + std::to_string(frame.isJsvmFrame);
-        ElapsedTime counter(timeLimitCheck, 20); // 20 : limit cost time 20 ms
-        JsvmStepParam jsvmParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsvmFrame);
+    if (map == nullptr) {
+        return false;
+    }
+    bool needStepJsvmStack = enableJsvmstack_ && (map->IsJsvmExecutable());
+    bool needStepArkwebStak = map->IsArkWebJsExecutable();
+    if (!needStepJsvmStack && !needStepArkwebStak) {
+        stopUnwind = false;
+        return true;
+    }
+    DFX_TRACE_SCOPED_DLSYM("StepV8Frame pc: %p", reinterpret_cast<void *>(frame.pc));
+    std::string timeLimitCheck;
+    timeLimitCheck += "StepV8Frame, pc: " + std::to_string(frame.pc) +
+        ", fp:" + std::to_string(frame.fp) + ", sp:" + std::to_string(frame.sp) +
+        ", frameType: "+ std::to_string(static_cast<uint8_t>(frame.frameType));
+    ElapsedTime counter(timeLimitCheck, 20); // 20 : limit cost time 20 ms
+    JsvmStepParam jsvmParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsFrame);
+    if (needStepJsvmStack) {
         if (DfxJsvm::Instance().StepJsvmFrame(memory_.get(), &(Unwinder::AccessMem), &jsvmParam) < 0) {
-            DFXLOGE("Failed to step ark frame");
+            DFXLOGE("Failed to step jsvm frame");
             return false;
         }
-        regs_->SetPc(StripPac(frame.pc, pacMask_));
-        regs_->SetSp(frame.sp);
-        regs_->SetFp(frame.fp);
+    } else if (needStepArkwebStak) {
+        if (DfxJsvm::Instance().StepArkwebJsFrame(memory_.get(), &(Unwinder::AccessMem), &jsvmParam) < 0) {
+            DFXLOGE("Failed to step arkweb js frame");
+            return false;
+        }
     }
+    regs_->SetPc(StripPac(frame.pc, pacMask_));
+    regs_->SetSp(frame.sp);
+    regs_->SetFp(frame.fp);
+    stopUnwind = true;
     return true;
 }
 
@@ -857,7 +878,8 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
         needAdjustPc = true;
         pcs_.emplace_back(frame.pc);
 #if defined(ENABLE_MIXSTACK)
-        if (enableArk && isGetArkRange && ((frame.pc >= arkMapStart && frame.pc < arkMapEnd) || frame.isJsFrame)) {
+        if (enableArk && isGetArkRange && ((frame.pc >= arkMapStart && frame.pc < arkMapEnd) ||
+            frame.frameType == FrameType::JS_FRAME)) {
             if (StepArkJsFrame(frame)) {
                 continue;
             }
@@ -948,7 +970,7 @@ bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>
     int mapRet = memory_->GetMapByPc(frame.pc, map);
     if (mapRet != UNW_ERROR_NONE) {
         if (frame.isJsFrame) {
-            DFXLOGW("Failed to get map with ark, frames size: %{public}zu", frames_.size());
+            DFXLOGW("Failed to get js frame map, frames size: %{public}zu", frames_.size());
             mapRet = UNW_ERROR_UNKNOWN_ARK_MAP;
         }
         if (frames_.size() > 2) { // 2, least 2 frame
@@ -969,7 +991,7 @@ bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxM
         stopUnwind = true;
         return false;
     }
-    if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.isJsFrame)) {
+    if ((enableMixstack_) && ((map != nullptr && map->IsArkExecutable()) || frame.frameType == FrameType::JS_FRAME)) {
         if (!StepArkJsFrame(frame)) {
             DFXLOGE("Failed to step ark Js frame, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
             lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
@@ -1125,7 +1147,10 @@ bool Unwinder::Impl::StepInner(const bool isSigFrame, StepFrame& frame, void *ct
             return true;
         }
         bool stopUnwind = false;
-        if (!StepJsvmFrame(frame, map)) {
+        bool res = StepV8Frame(frame, map, stopUnwind);
+        if (stopUnwind) {
+            return res;
+        } else if (!res) {
             break;
         }
         bool processFrameResult = UnwindArkFrame(frame, map, stopUnwind);
@@ -1216,7 +1241,13 @@ void Unwinder::Impl::AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> ma
 #endif
     pcs_.emplace_back(frame.pc);
     DfxFrame dfxFrame;
-    dfxFrame.isJsFrame = frame.isJsFrame;
+    if (map != nullptr && map->IsArkWebJsExecutable()) { // Arkwebjs frames require setting the frametype in advance
+        dfxFrame.isJsFrame = true;
+        dfxFrame.frameType = FrameType::ARKWEB_JS_FRAME;
+    } else {
+        dfxFrame.isJsFrame = frame.isJsFrame;
+        dfxFrame.frameType = frame.frameType;
+    }
     dfxFrame.index = frames_.size();
     dfxFrame.fp = static_cast<uint64_t>(frame.fp);
     dfxFrame.pc = static_cast<uint64_t>(frame.pc);
@@ -1255,10 +1286,12 @@ void Unwinder::Impl::FillFrames(std::vector<DfxFrame>& frames)
 {
     for (size_t i = 0; i < frames.size(); ++i) {
         auto& frame = frames[i];
-        if (frame.isJsFrame) {
+        if (frame.frameType == FrameType::JS_FRAME) {
 #if defined(ENABLE_MIXSTACK)
             FillJsFrame(frame);
 #endif
+        } else if (frame.frameType == FrameType::ARKWEB_JS_FRAME) {
+            FillArkwebJsFrame(frame);
         } else {
             FillFrame(frame, enableParseNativeSymbol_);
         }
@@ -1310,6 +1343,35 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame, bool needSymParse)
     }
     frame.mapName = mapName;
     DFXLOGU("mapName: %{public}s, mapOffset: %{public}" PRIx64 "", frame.mapName.c_str(), frame.mapOffset);
+}
+
+void Unwinder::Impl::FillArkwebJsFrame(DfxFrame& frame)
+{
+    if (frame.map == nullptr) {
+        DFXLOGU("Current ArkwebJs frame is not map.");
+        return;
+    }
+    DFX_TRACE_SCOPED_DLSYM("FillArkwebJsFrame:%s", frame.map->name.c_str());
+    DFXLOGU("FillArkwebJsFrame, map name: %{public}s", frame.map->name.c_str());
+    uint32_t pid = pid_ <= 0 ? getpid() : pid_;
+    if (arkwebJsExtractorptr_ == 0 &&
+        DfxJsvm::Instance().ArkwebCreateJsSymbolExtractor(&arkwebJsExtractorptr_, pid) == -1) {
+        DFXLOGE("create arkweb js extractor failed");
+        return;
+    }
+    JsvmFunction jsFunction;
+    DfxJsvm::Instance().ParseArkwebJsFrameInfo(frame.pc, arkwebJsExtractorptr_, &jsFunction);
+    frame.funcName = std::string(jsFunction.functionName);
+    if (frame.map->name == "[anon:v8]") { // interpreter frame is native frame
+        frame.mapName = frame.map->GetElfName();
+        frame.isJsFrame = false;
+        frame.relPc = frame.pc - frame.map->begin;
+    } else {
+        frame.isJsFrame = true;
+        frame.mapName = "";
+        frame.map = nullptr;
+    }
+    DFXLOGU("arkweb js frame funcName: %{public}s", frame.funcName.c_str());
 }
 
 void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
@@ -1378,6 +1440,8 @@ bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, D
     frame.map = map;
     if (DfxMaps::IsArkHapMapItem(map->name) || DfxMaps::IsArkCodeMapItem(map->name)) {
         FillJsFrame(frame);
+    } else if (map->IsArkWebJsExecutable()) {
+        FillArkwebJsFrame(frame);
     } else {
         FillFrame(frame, enableParseNativeSymbol_);
     }
@@ -1438,6 +1502,8 @@ void Unwinder::Impl::GetFramesByPcs(std::vector<DfxFrame>& frames, std::vector<u
         frame.map = map;
         if (DfxMaps::IsArkHapMapItem(map->name) || DfxMaps::IsArkCodeMapItem(map->name)) {
             FillJsFrame(frame);
+        } else if (map->IsArkWebJsExecutable()) {
+            FillArkwebJsFrame(frame);
         } else {
             FillFrame(frame, enableParseNativeSymbol_);
         }

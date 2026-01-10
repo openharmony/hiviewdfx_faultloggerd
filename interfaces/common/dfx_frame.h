@@ -54,6 +54,14 @@ struct ParseSymbolState {
 private:
     std::atomic<bool> isParseSymbolComplete {false};
 };
+
+enum class FrameType: uint8_t {
+    NATIVE_FRAME = 0,
+    JS_FRAME = 1,
+    STATIC_JS_FRAME = 2,
+    JSVM_FRAME = 3,
+    ARKWEB_JS_FRAME = 4,
+};
 /**
  * @brief Native Frame struct
  * It serves as the public definition of the native stack frame.
@@ -94,6 +102,8 @@ struct DfxFrame {
     std::string originSoName {""};
     /** state of parse symbol */
     ParseSymbolState parseSymbolState;
+    /** type of frame */
+    FrameType frameType {FrameType::NATIVE_FRAME};
 
     DfxFrame() {}
     DfxFrame(uint64_t pc, uint64_t sp = 0) : pc(pc), sp(sp) {}

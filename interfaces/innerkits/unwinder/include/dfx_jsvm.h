@@ -35,10 +35,10 @@ struct JsvmStepParam {
     uintptr_t *fp;
     uintptr_t *sp;
     uintptr_t *pc;
-    bool *isJsvmFrame;
+    bool *isJsFrame;
 
-    JsvmStepParam(uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsvmFrame)
-        : fp(fp), sp(sp), pc(pc), isJsvmFrame(isJsvmFrame) {}
+    JsvmStepParam(uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame)
+        : fp(fp), sp(sp), pc(pc), isJsFrame(isJsFrame) {}
 };
 }
 
@@ -86,24 +86,70 @@ public:
     */
     int JsvmDestroyJsSymbolExtractor(uintptr_t extractorPtr);
 
+        /**
+     * @brief step arkweb js frame
+     *
+     * @param obj memory pointer object
+     * @param readMemFn read memory function
+     * @param jsvmParam praram of step jsvm
+     * @return if succeed return 1, otherwise return -1
+    */
+    int StepArkwebJsFrame(void *obj, ReadMemFunc readMemFn, JsvmStepParam* jsvmParam);
+
+    /**
+     * @brief Parse arkweb js Frame Info
+     *
+     * @param pc program counter
+     * @param extractorPtr extractorPtr from ArkwebCreateJsSymbolExtractor
+     * @param JsvmFunction jsvmFunction variable
+     * @return if succeed return 1, otherwise return -1
+    */
+    int ParseArkwebJsFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFunction *jsvmFunction);
+
+    /**
+     * @brief create arkweb js symbol extracrot
+     *
+     * @param extractorPtr extractorPtr variable
+     * @param pid dump target process pid
+     * @return if succeed return 1, otherwise return -1
+    */
+    int ArkwebCreateJsSymbolExtractor(uintptr_t* extractorPtr, uint32_t pid);
+    /**
+     * @brief destroy arkweb js symbol extracrot
+     *
+     * @param extractorPtr extractorPtr from ArkwebCreateJsSymbolExtractor
+     * @return if succeed return 1, otherwise return -1
+    */
+    int ArkwebDestroyJsSymbolExtractor(uintptr_t extractorPtr);
+
 private:
     DfxJsvm() = default;
     ~DfxJsvm() = default;
     DfxJsvm(const DfxJsvm&) = delete;
     DfxJsvm& operator=(const DfxJsvm&) = delete;
-    bool GetLibJsvmHandle(void);
-    template <typename FuncName>
-    void DlsymJsvmFunc(const char* funcName, FuncName& dlsymFuncName);
-    void* handle_ = nullptr;
+    std::string GetArkwebInstallLibPath();
+    bool GetLibJsvmHandle(const char* const libName, void** handle);
+    bool DlsymJsvmFunc(const char* const libName, const char* const funcName, void** dlsymFuncName);
+    bool InitJsvmFunction(const char* const functionName);
     using StepJsvmFn = int (*)(void*, ReadMemFunc, JsvmStepParam*);
     using ParseJsvmFrameInfoFn = int (*)(uintptr_t, uintptr_t, JsvmFunction*);
     using JsvmCreateJsSymbolExtractorFn = int (*)(uintptr_t*, uint32_t);
     using JsvmDestroyJsSymbolExtractorFn = int (*)(uintptr_t);
     std::mutex mutex_;
+
     StepJsvmFn stepJsvmFn_ = nullptr;
     ParseJsvmFrameInfoFn parseJsvmFrameInfoFn_ = nullptr;
     JsvmCreateJsSymbolExtractorFn jsvmCreateJsSymbolExtractorFn_ = nullptr;
     JsvmDestroyJsSymbolExtractorFn jsvmDestroyJsSymbolExtractorFn_ = nullptr;
+
+    using StepArkwebJsFn = int (*)(void*, ReadMemFunc, JsvmStepParam*);
+    using ParseArkwebJsFrameInfoFn = int (*)(uintptr_t, uintptr_t, JsvmFunction*);
+    using ArkwebCreateJsSymbolExtractorFn = int (*)(uintptr_t*, uint32_t);
+    using ArkwebDestroyJsSymbolExtractorFn = int (*)(uintptr_t);
+    StepArkwebJsFn stepArkwebJsFn_ = nullptr;
+    ParseArkwebJsFrameInfoFn parseArkwebJsFrameInfoFn_ = nullptr;
+    ArkwebCreateJsSymbolExtractorFn arkwebCreateJsSymbolExtractorFn_ = nullptr;
+    ArkwebDestroyJsSymbolExtractorFn arkwebDestroyJsSymbolExtractorFn_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

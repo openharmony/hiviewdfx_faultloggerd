@@ -34,15 +34,42 @@ namespace {
 #define LOG_TAG "DfxJsvm"
 
 const char* const JSVM_LIB_NAME = "libjsvm.so";
+const std::string ARK_WEB_JS_LIB_NAME = "libwebjs_dfx.so";
+const char* const CREATE_JSVM_FUNC_NAME = "create_jsvm_extractor";
+const char* const DESTROY_JSVM_FUNC_NAME = "destroy_jsvm_extractor";
+const char* const PARSE_JSVM_FUNC_NAME = "jsvm_parse_js_frame_info";
+const char* const STEP_JSVM_FUNC_NAME = "step_jsvm";
+
+const char* const CREATE_ARKWEBJS_FUNC_NAME = "create_webjs_extractor";
+const char* const DESTROY_ARKWEBJS_FUNC_NAME = "destroy_webjs_extractor";
+const char* const PARSE_ARKWEBJS_FUNC_NAME = "web_parse_js_frame_info";
+const char* const STEP_ARKWEBJS_FUNC_NAME = "step_webjs";
+struct JsvmFunctionTable {
+    const char* libPath;
+    const char* const functionName;
+    void** funcPointer;
+};
+}
+std::string DfxJsvm::GetArkwebInstallLibPath()
+{
+    std::string bundleName = "com.huawei.hmos.arkwebcore";
+#if defined(__aarch64__)
+    const std::string arkwebEngineLibPath = "/data/app/el1/bundle/public/" + std::string(bundleName) + "/libs/arm64/";
+#elif defined(__x86_64__)
+    const std::string arkwebEngineLibPath = "";
+#elif defined(__arm__)
+    const std::string arkwebEngineLibPath = "/data/app/el1/bundle/public/" + std::string(bundleName) + "/libs/arm/";
+#endif
+    return arkwebEngineLibPath;
 }
 
-bool DfxJsvm::GetLibJsvmHandle()
+bool DfxJsvm::GetLibJsvmHandle(const char* const libName, void** handle)
 {
-    if (handle_ != nullptr) {
+    if (*handle != nullptr) {
         return true;
     }
-    handle_ = dlopen(JSVM_LIB_NAME, RTLD_LAZY);
-    if (handle_ == nullptr) {
+    *handle = dlopen(libName, RTLD_LAZY);
+    if (*handle == nullptr) {
         DFXLOGU("Failed to load library(%{public}s).", dlerror());
         return false;
     }
@@ -55,35 +82,51 @@ DfxJsvm& DfxJsvm::Instance()
     return instance;
 }
 
-template <typename FuncName>
-void DfxJsvm::DlsymJsvmFunc(const char* funcName, FuncName& dlsymFuncName)
+bool DfxJsvm::DlsymJsvmFunc(const char* const libName, const char* const funcName, void** dlsymFuncName)
+{
+    if (dlsymFuncName == nullptr) {
+        return false;
+    }
+    if (*dlsymFuncName != nullptr) {
+        return true;
+    }
+    void* handle = nullptr;
+    if (!GetLibJsvmHandle(libName, &handle)) {
+        return false;
+    }
+    *dlsymFuncName = dlsym(handle, (funcName));
+    if (*dlsymFuncName == nullptr) {
+        DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", funcName, dlerror());
+        return false;
+    }
+    return true;
+}
+
+bool DfxJsvm::InitJsvmFunction(const char* const functionName)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    do {
-        if (dlsymFuncName != nullptr) {
-            break;
+    std::string arkWebLib = GetArkwebInstallLibPath() + ARK_WEB_JS_LIB_NAME;
+    std::vector<JsvmFunctionTable> functionTable = {
+        {JSVM_LIB_NAME, CREATE_JSVM_FUNC_NAME, reinterpret_cast<void**>(&jsvmCreateJsSymbolExtractorFn_)},
+        {JSVM_LIB_NAME, DESTROY_JSVM_FUNC_NAME, reinterpret_cast<void**>(&jsvmDestroyJsSymbolExtractorFn_)},
+        {JSVM_LIB_NAME, PARSE_JSVM_FUNC_NAME, reinterpret_cast<void**>(&parseJsvmFrameInfoFn_)},
+        {JSVM_LIB_NAME, STEP_JSVM_FUNC_NAME, reinterpret_cast<void**>(&stepJsvmFn_)},
+        {arkWebLib.c_str(), CREATE_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&arkwebCreateJsSymbolExtractorFn_)},
+        {arkWebLib.c_str(), DESTROY_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&arkwebDestroyJsSymbolExtractorFn_)},
+        {arkWebLib.c_str(), PARSE_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&parseArkwebJsFrameInfoFn_)},
+        {arkWebLib.c_str(), STEP_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&stepArkwebJsFn_)},
+    };
+    for (const auto& function : functionTable) {
+        if (strcmp(function.functionName, functionName) == 0) {
+            return DlsymJsvmFunc(function.libPath, functionName, function.funcPointer);
         }
-        if (!GetLibJsvmHandle()) {
-            break;
-        }
-        (dlsymFuncName) = reinterpret_cast<FuncName>(dlsym(handle_, (funcName)));
-        if (dlsymFuncName == nullptr) {
-            DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", funcName, dlerror());
-            break;
-        }
-    } while (false);
+    }
+    return false;
 }
 
 int DfxJsvm::JsvmCreateJsSymbolExtractor(uintptr_t* extractorPtr, uint32_t pid)
 {
-    if (jsvmCreateJsSymbolExtractorFn_ != nullptr) {
-        return jsvmCreateJsSymbolExtractorFn_(extractorPtr, pid);
-    }
-
-    const char* jsvmFuncName = "create_jsvm_extractor";
-    DlsymJsvmFunc(jsvmFuncName, jsvmCreateJsSymbolExtractorFn_);
-
-    if (jsvmCreateJsSymbolExtractorFn_ != nullptr) {
+    if (jsvmCreateJsSymbolExtractorFn_ != nullptr || InitJsvmFunction(CREATE_JSVM_FUNC_NAME)) {
         return jsvmCreateJsSymbolExtractorFn_(extractorPtr, pid);
     }
     return -1;
@@ -91,14 +134,7 @@ int DfxJsvm::JsvmCreateJsSymbolExtractor(uintptr_t* extractorPtr, uint32_t pid)
 
 int DfxJsvm::JsvmDestroyJsSymbolExtractor(uintptr_t extractorPtr)
 {
-    if (jsvmDestroyJsSymbolExtractorFn_ != nullptr) {
-        return jsvmDestroyJsSymbolExtractorFn_(extractorPtr);
-    }
-
-    const char* jsvmFuncName = "destroy_jsvm_extractor";
-    DlsymJsvmFunc(jsvmFuncName, jsvmDestroyJsSymbolExtractorFn_);
-
-    if (jsvmDestroyJsSymbolExtractorFn_ != nullptr) {
+    if (jsvmDestroyJsSymbolExtractorFn_ != nullptr || InitJsvmFunction(DESTROY_JSVM_FUNC_NAME)) {
         return jsvmDestroyJsSymbolExtractorFn_(extractorPtr);
     }
     return -1;
@@ -106,14 +142,8 @@ int DfxJsvm::JsvmDestroyJsSymbolExtractor(uintptr_t extractorPtr)
 
 int DfxJsvm::ParseJsvmFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFunction *jsvmFunction)
 {
-    if (parseJsvmFrameInfoFn_ != nullptr && jsvmFunction != nullptr) {
-        return parseJsvmFrameInfoFn_(pc, extractorPtr, jsvmFunction);
-    }
-
-    const char* jsvmFuncName = "jsvm_parse_js_frame_info";
-    DlsymJsvmFunc(jsvmFuncName, parseJsvmFrameInfoFn_);
-
-    if (parseJsvmFrameInfoFn_ != nullptr && jsvmFunction != nullptr) {
+    if ((parseJsvmFrameInfoFn_ != nullptr || InitJsvmFunction(PARSE_JSVM_FUNC_NAME)) &&
+        jsvmFunction != nullptr) {
         return parseJsvmFrameInfoFn_(pc, extractorPtr, jsvmFunction);
     }
     return -1;
@@ -125,15 +155,47 @@ int DfxJsvm::StepJsvmFrame(void *obj, ReadMemFunc readMemFn, JsvmStepParam* jsvm
         DFXLOGE("param is nullptr.");
         return -1;
     }
-    if (stepJsvmFn_ != nullptr) {
+    if (stepJsvmFn_ != nullptr || InitJsvmFunction(STEP_JSVM_FUNC_NAME)) {
         return stepJsvmFn_(obj, readMemFn, jsvmParam);
     }
+    return -1;
+}
 
-    const char* jsvmFuncName = "step_jsvm";
-    DlsymJsvmFunc(jsvmFuncName, stepJsvmFn_);
+int DfxJsvm::ArkwebCreateJsSymbolExtractor(uintptr_t* extractorPtr, uint32_t pid)
+{
+    if (arkwebCreateJsSymbolExtractorFn_ != nullptr ||
+        InitJsvmFunction(CREATE_ARKWEBJS_FUNC_NAME)) {
+        return arkwebCreateJsSymbolExtractorFn_(extractorPtr, pid);
+    }
+    return -1;
+}
 
-    if (stepJsvmFn_ != nullptr) {
-        return stepJsvmFn_(obj, readMemFn, jsvmParam);
+int DfxJsvm::ArkwebDestroyJsSymbolExtractor(uintptr_t extractorPtr)
+{
+    if (arkwebDestroyJsSymbolExtractorFn_ != nullptr ||
+        InitJsvmFunction(DESTROY_ARKWEBJS_FUNC_NAME)) {
+        return arkwebDestroyJsSymbolExtractorFn_(extractorPtr);
+    }
+    return -1;
+}
+
+int DfxJsvm::ParseArkwebJsFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFunction *jsvmFunction)
+{
+    if ((parseArkwebJsFrameInfoFn_ != nullptr || InitJsvmFunction(PARSE_ARKWEBJS_FUNC_NAME)) &&
+        jsvmFunction != nullptr) {
+        return parseArkwebJsFrameInfoFn_(pc, extractorPtr, jsvmFunction);
+    }
+    return -1;
+}
+
+int DfxJsvm::StepArkwebJsFrame(void *obj, ReadMemFunc readMemFn, JsvmStepParam* jsvmParam)
+{
+    if (obj == nullptr || readMemFn == nullptr || jsvmParam == nullptr) {
+        DFXLOGE("param is nullptr.");
+        return -1;
+    }
+    if (stepArkwebJsFn_ != nullptr || InitJsvmFunction(STEP_ARKWEBJS_FUNC_NAME)) {
+        return stepArkwebJsFn_(obj, readMemFn, jsvmParam);
     }
     return -1;
 }
