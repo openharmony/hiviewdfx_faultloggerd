@@ -55,6 +55,7 @@ public:
     std::string ToString() const;
     void SetAdltLoadBase(uint64_t loadBase) { adltLoadBase_ = loadBase; }
     uint64_t GetAdltLoadBase() const { return adltLoadBase_; }
+    void ReleaseElf();
 
     uint64_t begin = 0;
     uint64_t end = 0;

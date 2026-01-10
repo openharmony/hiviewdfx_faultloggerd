@@ -419,5 +419,12 @@ std::string DfxMap::UnFormatMapName(const std::string& mapName)
     }
     return mapName;
 }
+
+void DfxMap::ReleaseElf()
+{
+    if (elf != nullptr) {
+        elf = nullptr;
+    }
+}
 } // namespace HiviewDFX
 } // namespace OHOS
