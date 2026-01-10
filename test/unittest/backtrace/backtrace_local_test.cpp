@@ -56,8 +56,8 @@ class BacktraceLocalTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
+    void SetUp() override;
+    void TearDown() override;
 
     uint32_t fdCount;
     uint32_t mapsCount;

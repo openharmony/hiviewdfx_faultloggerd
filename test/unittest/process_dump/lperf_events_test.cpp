@@ -27,7 +27,6 @@ class LperfEventsTest : public testing::Test {};
 
 /**
  * @tc.name: LperfEventsTestTest002
- * @tc.name: LperfEventsTestTest002
  * @tc.desc: test LperfEvents invalid tids
  * @tc.type: FUNC
  */

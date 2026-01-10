@@ -34,7 +34,10 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DumpUtilsTest : public testing::Test {};
+class DumpUtilsTest : public testing::Test {
+public:
+    static void SetUpTestCase();
+};
 } // namespace HiviewDFX
 } // namespace OHOS
 

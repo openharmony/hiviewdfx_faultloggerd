@@ -33,25 +33,7 @@ using namespace testing::ext;
 #if defined(__arm__)
 namespace OHOS {
 namespace HiviewDFX {
-class ArmExidxTest : public testing::Test {
-public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
-};
-
-void ArmExidxTest::SetUpTestCase()
-{}
-
-void ArmExidxTest::TearDownTestCase()
-{}
-
-void ArmExidxTest::SetUp()
-{}
-
-void ArmExidxTest::TearDown()
-{}
+class ArmExidxTest : public testing::Test {};
 
 /**
  * @tc.name: ArmExidxTest001
