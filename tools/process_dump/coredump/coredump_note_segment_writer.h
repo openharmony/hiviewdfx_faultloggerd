@@ -116,7 +116,7 @@ public:
     bool Write() override;
     void SetKeyThreadData(CoredumpThread coreDumpKeyThreadData);
 private:
-    void ThreadNoteWrite(pid_t tid);
+    void ThreadNoteWrite(pid_t tid) const;
     bool PrstatusWrite(pid_t tid);
     bool ArmPacMaskWrite(pid_t tid);
     bool FpregsetWrite(pid_t tid);
@@ -172,7 +172,7 @@ private:
  */
 class NoteSegmentWriter : public Writer {
 public:
-    NoteSegmentWriter(CoredumpProc& coreDumpThread, const std::vector<DumpMemoryRegions>& maps,
+    NoteSegmentWriter(const CoredumpProc& coreDumpThread, const std::vector<DumpMemoryRegions>& maps,
         CoredumpBufferWriter& bw)
         : pid_(coreDumpThread.targetPid), targetTid_(coreDumpThread.keyTid), maps_(maps), bw_(bw) {}
     bool Write() override;
@@ -209,7 +209,7 @@ public:
     FileRegionWriter(std::vector<DumpMemoryRegions>& maps, CoredumpBufferWriter& bw) : maps_(maps), bw_(bw) {}
     bool Write() override;
 private:
-    bool WriteAddrRelated();
+    bool WriteAddrRelated() const;
     bool WriteFilePath(Elf64_Half &lineNumber);
     std::vector<DumpMemoryRegions> maps_;
     CoredumpBufferWriter& bw_;

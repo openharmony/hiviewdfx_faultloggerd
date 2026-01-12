@@ -38,13 +38,7 @@ using namespace std;
 namespace OHOS {
 namespace HiviewDFX {
 constexpr const char* const TEST_TEMP_FILE = "/data/test/testfile";
-class DfxCoreDumpTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {};
-    static void TearDownTestCase(void) {}
-    void SetUp() {};
-    void TearDown() {}
-};
+class DfxCoreDumpTest : public testing::Test {};
 } // namespace HiviewDFX
 } // namespace OHOS
 

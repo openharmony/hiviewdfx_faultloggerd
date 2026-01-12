@@ -14,7 +14,6 @@
  */
 #ifndef DUMP_INFO_FACTORY_H
 #define DUMP_INFO_FACTORY_H
-#include <functional>
 #include <string>
 #include <map>
 #include <memory>

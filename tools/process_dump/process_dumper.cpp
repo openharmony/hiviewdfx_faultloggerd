@@ -261,7 +261,6 @@ void ProcessDumper::FormatJsonInfoIfNeed(const DumpErrorCode& resDump)
         return;
     }
     std::string jsonInfo;
-    DumpInfoJsonFormatter stackInfoFormatter;
     int dumpError = 0;
     switch (resDump) {
         case DUMP_ESUCCESS:
@@ -275,7 +274,7 @@ void ProcessDumper::FormatJsonInfoIfNeed(const DumpErrorCode& resDump)
             dumpError = -1;
             break;
     }
-    stackInfoFormatter.GetJsonFormatInfo(request_, *process_, jsonInfo, dumpError);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request_, *process_, jsonInfo, dumpError);
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         process_->SetCrashInfoJson(jsonInfo);
     } else if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {

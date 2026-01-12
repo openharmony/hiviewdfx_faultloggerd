@@ -47,11 +47,6 @@ namespace HiviewDFX {
 
 class UnwinderTest : public testing::Test {
 public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp() {}
-    void TearDown() {}
-
     std::map<int, std::shared_ptr<Unwinder>> unwinders_;
     const size_t skipFrameNum = 2;
 };

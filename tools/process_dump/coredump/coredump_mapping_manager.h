@@ -27,8 +27,8 @@ public:
     static CoredumpMappingManager& GetInstance();
     void Parse(pid_t pid);
     static bool ShouldIncludeRegion(const DumpMemoryRegions& region);
-    bool IsHwAsanProcess();
-    uint64_t EstimateFileSize();
+    bool IsHwAsanProcess() const;
+    uint64_t EstimateFileSize() const;
     const std::vector<DumpMemoryRegions>& GetMaps() { return maps_; }
     static bool isAppSpawn_;
 private:

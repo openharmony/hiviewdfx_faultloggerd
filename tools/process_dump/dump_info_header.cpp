@@ -144,7 +144,7 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
     return crashLogConfigInfo;
 }
 
-std::string DumpInfoHeader::GetLastFatalMsg(DfxProcess& process, const ProcessDumpRequest& request)
+std::string DumpInfoHeader::GetLastFatalMsg(const DfxProcess& process, const ProcessDumpRequest& request)
 {
     std::string lastFatalMsg = "";
     if ((request.msg.type == MESSAGE_FATAL || request.msg.type == MESSAGE_CALLBACK) &&
@@ -157,7 +157,7 @@ std::string DumpInfoHeader::GetLastFatalMsg(DfxProcess& process, const ProcessDu
     return lastFatalMsg;
 }
 
-std::string DumpInfoHeader::ReadCrashObjString(const ProcessDumpRequest& request) const
+std::string DumpInfoHeader::ReadCrashObjString(const ProcessDumpRequest& request)
 {
     std::string content = "";
 #ifdef __LP64__
@@ -175,7 +175,8 @@ std::string DumpInfoHeader::ReadCrashObjString(const ProcessDumpRequest& request
     return content;
 }
 
-std::string DumpInfoHeader::UpdateFatalMessageWhenDebugSignal(DfxProcess& process, const ProcessDumpRequest& request)
+std::string DumpInfoHeader::UpdateFatalMessageWhenDebugSignal(const DfxProcess& process,
+    const ProcessDumpRequest& request)
 {
     if (request.type != ProcessDumpType::DUMP_TYPE_BADFD && request.type != ProcessDumpType::DUMP_TYPE_FDSAN &&
         request.type != ProcessDumpType::DUMP_TYPE_JEMALLOC) {

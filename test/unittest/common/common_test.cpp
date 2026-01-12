@@ -33,13 +33,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class CommonTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class CommonTest : public testing::Test {};
 
 static void getLibPathsBySystemBits(vector<std::string> &filePaths)
 {

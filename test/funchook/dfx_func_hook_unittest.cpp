@@ -13,35 +13,25 @@
  * limitations under the License.
  */
 
-#include "dfx_func_hook_unittest.h"
-
 #include <csignal>
+#include <gtest/gtest.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "dfx_exit_hook.h"
 
-using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
 using namespace std;
-void DfxFuncHookUnitTest::SetUpTestCase(void)
-{
-}
-
-void DfxFuncHookUnitTest::TearDownTestCase(void)
-{
-}
+namespace {
+class DfxFuncHookUnitTest : public testing::Test {
+public:
+    void SetUp() override;
+};
 
 void DfxFuncHookUnitTest::SetUp(void)
 {
     StartHookExitFunc();
 }
-
-void DfxFuncHookUnitTest::TearDown(void)
-{
-}
-
-namespace {
 /**
  * @tc.name: FuncHookTest001
  * @tc.desc: fork a child process and exit with calling _exit

@@ -55,17 +55,11 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DwarfTest : public testing::Test {
-public:
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DwarfTest : public testing::Test {};
 
 class DwarfEntryParserTest : public DwarfEntryParser {
 public:
     explicit DwarfEntryParserTest(std::shared_ptr<DfxMemory> memory) : DwarfEntryParser(memory) {};
-    ~DwarfEntryParserTest() {};
     bool SearchEntryTest(uintptr_t pc, const UnwindTableInfo& uti, UnwindEntryInfo& uei)
     {
         return SearchEntry(pc, uti, uei);
@@ -93,8 +87,6 @@ struct MemoryArea {
 
 class DfxMemoryTest : public DfxMemory {
 public:
-    DfxMemoryTest() {};
-    virtual ~DfxMemoryTest() {};
     size_t Read(uintptr_t& addr, void* val, size_t size, bool incre = false) override;
     void SetBuffer(uintptr_t addr, std::vector<uint8_t> buffer);
     void Reset();

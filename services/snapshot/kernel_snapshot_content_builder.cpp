@@ -71,7 +71,7 @@ std::string KernelSnapshotContentBuilder::GenerateSummary()
     return ComposeSummary();
 }
 
-size_t KernelSnapshotContentBuilder::ComputeTotalLength()
+size_t KernelSnapshotContentBuilder::ComputeTotalLength() const
 {
     size_t totalLength = 0;
     for (const auto& section : contentSections_) {

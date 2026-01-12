@@ -48,13 +48,7 @@ using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxProcessDumpTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxProcessDumpTest : public testing::Test {};
 } // namespace HiviewDFX
 } // namespace OHOS
 
@@ -88,7 +82,7 @@ static bool CheckCppCrashKeyWords(const string& filePath, pid_t pid, int sig)
     return count == length;
 }
 namespace {
-bool CheckCppCrashExtraKeyWords(const string& filePath, std::string *keywords, int length, int minRegIdx)
+bool CheckCppCrashExtraKeyWords(const string& filePath, const std::string *keywords, int length, int minRegIdx)
 {
     if (filePath.empty()) {
         return false;

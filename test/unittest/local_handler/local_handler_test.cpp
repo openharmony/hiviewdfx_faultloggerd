@@ -45,25 +45,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class LocalHandlerTest : public testing::Test {
-public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
-};
-
-void LocalHandlerTest::SetUpTestCase()
-{}
-
-void LocalHandlerTest::TearDownTestCase()
-{}
-
-void LocalHandlerTest::SetUp()
-{}
-
-void LocalHandlerTest::TearDown()
-{}
+class LocalHandlerTest : public testing::Test {};
 
 static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
 {

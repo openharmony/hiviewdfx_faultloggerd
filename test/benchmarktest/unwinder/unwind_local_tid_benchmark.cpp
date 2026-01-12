@@ -38,7 +38,7 @@ static constexpr int NUM_THREE = 3;
 static constexpr int NUM_FOUR = 4;
 static constexpr int NUM_FIVE = 5;
 
-NOINLINE int TestFunc6(std::atomic_int* tid, std::atomic_bool* done)
+NOINLINE int TestFunc6(std::atomic_int* tid, const std::atomic_bool* done)
 {
     tid->store(gettid());
     while (!done->load()) {
@@ -46,31 +46,31 @@ NOINLINE int TestFunc6(std::atomic_int* tid, std::atomic_bool* done)
     return NUM_ONE;
 }
 
-NOINLINE int TestFunc5(std::atomic_int* tid, std::atomic_bool* done)
+NOINLINE int TestFunc5(std::atomic_int* tid, const std::atomic_bool* done)
 {
     int val = TestFunc6(tid, done);
     return val * val + NUM_FIVE;
 }
 
-NOINLINE int TestFunc4(std::atomic_int* tid, std::atomic_bool* done)
+NOINLINE int TestFunc4(std::atomic_int* tid, const std::atomic_bool* done)
 {
     int val = TestFunc5(tid, done);
     return val * val + NUM_FOUR;
 }
 
-NOINLINE int TestFunc3(std::atomic_int* tid, std::atomic_bool* done)
+NOINLINE int TestFunc3(std::atomic_int* tid, const std::atomic_bool* done)
 {
     int val = TestFunc4(tid, done);
     return val * val + NUM_THREE;
 }
 
-NOINLINE int TestFunc2(std::atomic_int* tid, std::atomic_bool* done)
+NOINLINE int TestFunc2(std::atomic_int* tid, const std::atomic_bool* done)
 {
     int val = TestFunc3(tid, done);
     return val * val + NUM_TWO;
 }
 
-NOINLINE int TestFunc1(std::atomic_int* tid, std::atomic_bool* done)
+NOINLINE int TestFunc1(std::atomic_int* tid, const std::atomic_bool* done)
 {
     int val = TestFunc2(tid, done);
     return val * val + NUM_ONE;

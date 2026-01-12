@@ -27,25 +27,7 @@ namespace OHOS {
 namespace HiviewDFX {
 static const int BUF_LEN = 100;
 
-class RustcDemangleTest : public testing::Test {
-public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
-};
-
-void RustcDemangleTest::SetUpTestCase()
-{}
-
-void RustcDemangleTest::TearDownTestCase()
-{}
-
-void RustcDemangleTest::SetUp()
-{}
-
-void RustcDemangleTest::TearDown()
-{}
+class RustcDemangleTest : public testing::Test {};
 
 /**
  * @tc.name: RustcDemangleTest001

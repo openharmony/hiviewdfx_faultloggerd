@@ -34,9 +34,7 @@ namespace HiviewDFX {
 class RegistersTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void) {}
-    void SetUp();
-    void TearDown() {}
+    void SetUp() override;
     static int WriteLogFunc(int32_t fd, const char *buf, size_t len);
     static std::string result;
 };

@@ -42,23 +42,23 @@ private:
             std::vector<CrashMap>& crashMaps);
     CrashMap ParseSnapshotUnit(const std::vector<std::string> &lines, size_t &index);
 
-    bool PreProcessLine(std::string &line) const;
-    std::unordered_map<std::string, std::string> ConvertThreadInfoToPairs(const std::string &line);
+    static bool PreProcessLine(std::string &line);
+    static std::unordered_map<std::string, std::string> ConvertThreadInfoToPairs(const std::string &line);
 
     bool ProcessTransStart(const std::vector<std::string>& lines, size_t& index,
         std::string keyword, CrashMap& output);
 
-    void ParseTransStart(const SnapshotCell& cell, CrashMap &output);
-    void ParseThreadInfo(const SnapshotCell& cell, CrashMap &output);
-    void ParseStackBacktrace(const SnapshotCell& cell, CrashMap &output);
-    void ParseProcessRealName(const SnapshotCell& cell, CrashMap& output);
-    void ParseDefaultAction(const SnapshotCell& cell, CrashMap &output);
+    static void ParseTransStart(const SnapshotCell& cell, CrashMap &output);
+    static void ParseThreadInfo(const SnapshotCell& cell, CrashMap &output);
+    static void ParseStackBacktrace(const SnapshotCell& cell, CrashMap &output);
+    static void ParseProcessRealName(const SnapshotCell& cell, CrashMap& output);
+    static void ParseDefaultAction(const SnapshotCell& cell, CrashMap &output);
 
     void ProcessSnapshotSection(const SnapshotCell& cell, CrashMap &output);
 
     void InitializeParseTable();
     void InitializeKeywordTrie();
-    using ParseFunction = void (KernelSnapshotParser::*)(const SnapshotCell&, CrashMap&);
+    using ParseFunction = void (*)(const SnapshotCell&, CrashMap&);
     std::unordered_map<SnapshotSection, ParseFunction> parseTable_;
     KernelSnapshotTrie snapshotTrie_;
 };

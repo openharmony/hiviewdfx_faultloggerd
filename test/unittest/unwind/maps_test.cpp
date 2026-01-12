@@ -54,10 +54,7 @@ const string ARK_CODE_MAP_NAME = "[anon:ArkTS Code:libdialog.z.so/Dialog.js]";
 
 class MapsTest : public testing::Test {
 public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() { maps_ = DfxMaps::Create(getpid(), MAPS_FILE); }
-    void TearDown() {}
+    void SetUp() override { maps_ = DfxMaps::Create(getpid(), MAPS_FILE); }
 
 public:
     std::shared_ptr<DfxMaps> maps_;

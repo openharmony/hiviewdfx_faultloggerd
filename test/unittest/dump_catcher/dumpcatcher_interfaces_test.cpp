@@ -44,8 +44,6 @@ class DumpCatcherInterfacesTest : public testing::Test {
 public:
     static void SetUpTestCase();
     static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
 };
 
 static const int THREAD_ALIVE_TIME = 2;
@@ -71,12 +69,6 @@ void DumpCatcherInterfacesTest::TearDownTestCase()
     StopTestHap(TEST_BUNDLE_NAME);
     UninstallTestHap(TEST_BUNDLE_NAME);
 }
-
-void DumpCatcherInterfacesTest::SetUp()
-{}
-
-void DumpCatcherInterfacesTest::TearDown()
-{}
 
 AT_OPT_NONE static void TestFunRecursive(int recursiveCount)
 {

@@ -36,13 +36,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxElfTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxElfTest : public testing::Test {};
 
 std::vector<std::string> interestedSections = { ".dynsym", ".eh_frame_hdr", ".eh_frame", ".symtab" };
  /**

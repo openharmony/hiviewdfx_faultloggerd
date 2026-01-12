@@ -54,12 +54,12 @@ public:
     LperfRecordSampleData data_ = {};
     LperfRecordSample() = default;
 
-    const char* GetName();
+    static const char* GetName();
     uint32_t GetType() const;
     bool Init(uint8_t* data);
     void Clear();
 protected:
-    void InitHeader(uint8_t* data);
+    void InitHeader(const uint8_t* data);
 
 private:
     struct perf_event_header header_ = {};

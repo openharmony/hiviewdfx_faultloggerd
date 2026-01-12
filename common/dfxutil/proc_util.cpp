@@ -124,7 +124,7 @@ std::string ThreadStateToString(ThreadState state)
     }
 }
 
-static bool ParseStatSubString(const std::string& statSubStr, ProcessInfo& info)
+static bool ParseStatSubString(const std::string& statSubStr, const ProcessInfo& info)
 {
     int parsed = sscanf_s(statSubStr.c_str(),
         ") %c "             // state(3)

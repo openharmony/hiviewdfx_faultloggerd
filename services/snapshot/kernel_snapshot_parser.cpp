@@ -48,7 +48,7 @@ KernelSnapshotParser::KernelSnapshotParser()
     InitializeKeywordTrie();
 }
 
-bool KernelSnapshotParser::PreProcessLine(std::string& line) const
+bool KernelSnapshotParser::PreProcessLine(std::string& line)
 {
     if (line.size() <= SEQUENCE_LENGTH || line[0] == '\t') {
         return false;
@@ -197,10 +197,10 @@ void KernelSnapshotParser::ParseDefaultAction(const SnapshotCell& cell, CrashMap
 void KernelSnapshotParser::InitializeParseTable()
 {
     parseTable_ = {
-        {SnapshotSection::TRANSACTION_START, &KernelSnapshotParser::ParseTransStart},
-        {SnapshotSection::THREAD_INFO, &KernelSnapshotParser::ParseThreadInfo},
-        {SnapshotSection::STACK_BACKTRACE, &KernelSnapshotParser::ParseStackBacktrace},
-        {SnapshotSection::PROCESS_STATISTICS, &KernelSnapshotParser::ParseProcessRealName}
+        {SnapshotSection::TRANSACTION_START, KernelSnapshotParser::ParseTransStart},
+        {SnapshotSection::THREAD_INFO, KernelSnapshotParser::ParseThreadInfo},
+        {SnapshotSection::STACK_BACKTRACE, KernelSnapshotParser::ParseStackBacktrace},
+        {SnapshotSection::PROCESS_STATISTICS, KernelSnapshotParser::ParseProcessRealName}
     };
 }
 
@@ -214,9 +214,8 @@ void KernelSnapshotParser::InitializeKeywordTrie()
 void KernelSnapshotParser::ProcessSnapshotSection(const SnapshotCell& cell, CrashMap& output)
 {
     auto it = parseTable_.find(cell.sectionKey);
-    if (it != parseTable_.end()) {
-        ParseFunction func = it->second;
-        (this->*func)(cell, output);
+    if (it != parseTable_.end() && it->second) {
+        it->second(cell, output);
     } else {
         ParseDefaultAction(cell, output);
     }

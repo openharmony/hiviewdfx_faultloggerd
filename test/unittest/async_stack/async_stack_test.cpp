@@ -77,25 +77,7 @@ namespace HiviewDFX {
 #define LOG_TAG "AsyncStackTest"
 #define LOG_DOMAIN 0xD002D11
 
-class AsyncStackTest : public testing::Test {
-public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
-};
-
-void AsyncStackTest::SetUpTestCase()
-{}
-
-void AsyncStackTest::TearDownTestCase()
-{}
-
-void AsyncStackTest::SetUp()
-{}
-
-void AsyncStackTest::TearDown()
-{}
+class AsyncStackTest : public testing::Test {};
 
 constexpr size_t BUFFER_SIZE = 64 * 1024;
 char *g_stackTrace = new (std::nothrow) char[BUFFER_SIZE];

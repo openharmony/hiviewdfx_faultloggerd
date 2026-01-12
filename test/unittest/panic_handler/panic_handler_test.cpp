@@ -32,17 +32,9 @@ static std::shared_ptr<RustPanicListener> panicListener = nullptr;
 }
 class PanicHandlerTest : public testing::Test {
 public:
-    static void SetUpTestCase();
-    static void TearDownTestCase();
-    void SetUp();
-    void TearDown();
+    void SetUp() override;
+    void TearDown() override;
 };
-
-void PanicHandlerTest::SetUpTestCase()
-{}
-
-void PanicHandlerTest::TearDownTestCase()
-{}
 
 void PanicHandlerTest::SetUp()
 {

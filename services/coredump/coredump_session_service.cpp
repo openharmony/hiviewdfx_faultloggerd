@@ -22,12 +22,12 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-SessionId CoredumpSessionService::CreateSession(const CreateCoredumpRequest& request)
+SessionId CoredumpSessionService::CreateSession(const CreateCoredumpRequest& request) const
 {
     return sessionManager_.CreateSession(request);
 }
 
-bool CoredumpSessionService::CancelSession(SessionId sessionId)
+bool CoredumpSessionService::CancelSession(SessionId sessionId) const
 {
     auto session = sessionManager_.GetSession(sessionId);
     if (!session) {
@@ -37,7 +37,7 @@ bool CoredumpSessionService::CancelSession(SessionId sessionId)
     return true;
 }
 
-bool CoredumpSessionService::UpdateWorkerPid(SessionId sessionId, pid_t workerPid)
+bool CoredumpSessionService::UpdateWorkerPid(SessionId sessionId, pid_t workerPid) const
 {
     auto session = sessionManager_.GetSession(sessionId);
     if (!session) {
@@ -47,7 +47,7 @@ bool CoredumpSessionService::UpdateWorkerPid(SessionId sessionId, pid_t workerPi
     return true;
 }
 
-void CoredumpSessionService::UpdateReport(SessionId sessionId, const CoredumpCallbackReport& rpt)
+void CoredumpSessionService::UpdateReport(SessionId sessionId, const CoredumpCallbackReport& rpt) const
 {
     auto session = sessionManager_.GetSession(sessionId);
     if (!session) {
@@ -66,7 +66,7 @@ int CoredumpSessionService::GetClientFd(SessionId sessionId) const
     return session->clientFd;
 }
 
-bool CoredumpSessionService::WriteTimeout(SessionId sessionId)
+bool CoredumpSessionService::WriteTimeout(SessionId sessionId) const
 {
     CoreDumpResult coredumpRequest;
     coredumpRequest.retCode = -1;
@@ -74,7 +74,7 @@ bool CoredumpSessionService::WriteTimeout(SessionId sessionId)
     return WriteResult(sessionId, coredumpRequest);
 }
 
-bool CoredumpSessionService::WriteResult(SessionId sessionId)
+bool CoredumpSessionService::WriteResult(SessionId sessionId) const
 {
     DFXLOGI("%{public}s sessionId %{public}d ", __func__, sessionId);
 
@@ -94,7 +94,7 @@ bool CoredumpSessionService::WriteResult(SessionId sessionId)
     return WriteResult(sessionId, coredumpResult);
 }
 
-bool CoredumpSessionService::WriteResult(SessionId sessionId, const CoreDumpResult& coredumpResult)
+bool CoredumpSessionService::WriteResult(SessionId sessionId, const CoreDumpResult& coredumpResult) const
 {
     auto session = sessionManager_.GetSession(sessionId);
     if  (!session) {
@@ -108,7 +108,7 @@ bool CoredumpSessionService::WriteResult(SessionId sessionId, const CoreDumpResu
     return true;
 }
 
-bool CoredumpSessionService::ReportCoredumpStatistics(SessionId sessionId)
+bool CoredumpSessionService::ReportCoredumpStatistics(SessionId sessionId) const
 {
     const auto session = sessionManager_.GetSession(sessionId);
     if (!session) {

@@ -36,10 +36,7 @@ namespace OHOS {
 namespace HiviewDFX {
 class DumpUtilsTest : public testing::Test {
 public:
-    static void SetUpTestCase(void);
-    static void TearDownTestCase(void) {}
-    void SetUp() {};
-    void TearDown() {}
+    static void SetUpTestCase();
 };
 } // namespace HiviewDFX
 } // namespace OHOS

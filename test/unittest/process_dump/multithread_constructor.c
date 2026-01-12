@@ -26,7 +26,7 @@
 
 const static unsigned int SLEEP_TIMEOUT = 360000;
 
-static void CreateThread(int *argv)
+static void CreateThread(const int *argv)
 {
     int threadID = *argv;
     printf("create MultiThread %d\n", threadID);

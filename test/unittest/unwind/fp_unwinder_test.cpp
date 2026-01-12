@@ -27,13 +27,7 @@ namespace HiviewDFX {
 #define LOG_TAG "DfxFpUnwinderTest"
 #define LOG_DOMAIN 0xD002D11
 
-class FpUnwinderTest : public testing::Test {
-public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class FpUnwinderTest : public testing::Test {};
 
 /**
  * @tc.name: FpUnwinderTest001

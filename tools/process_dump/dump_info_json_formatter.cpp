@@ -122,7 +122,7 @@ void DumpInfoJsonFormatter::GetDumpJsonFormatInfo(DfxProcess& process, Json::Val
 }
 
 void DumpInfoJsonFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads,
-                                          Json::Value& jsonInfo) const
+                                          Json::Value& jsonInfo)
 {
     for (auto const& oneThread : threads) {
         if (oneThread != nullptr) {
@@ -138,7 +138,7 @@ void DumpInfoJsonFormatter::AppendThreads(const std::vector<std::shared_ptr<DfxT
     }
 }
 
-bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo) const
+bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo)
 {
     for (const auto& frame : frames) {
         if (frame.isJsFrame) {
@@ -155,7 +155,7 @@ bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, 
     return true;
 }
 
-void DumpInfoJsonFormatter::FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const
+void DumpInfoJsonFormatter::FillJsFrameJson(const DfxFrame& frame, Json::Value& jsonInfo)
 {
     Json::Value frameJson;
     frameJson["file"] = frame.mapName;
@@ -166,7 +166,7 @@ void DumpInfoJsonFormatter::FillJsFrameJson(const DfxFrame& frame, Json::Value& 
     jsonInfo.append(frameJson);
 }
 
-void DumpInfoJsonFormatter::FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo) const
+void DumpInfoJsonFormatter::FillNativeFrameJson(const DfxFrame& frame, Json::Value& jsonInfo)
 {
     Json::Value frameJson;
 #ifdef __LP64__

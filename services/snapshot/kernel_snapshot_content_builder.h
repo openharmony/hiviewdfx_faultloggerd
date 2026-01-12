@@ -43,7 +43,7 @@ private:
     };
 
     std::vector<SnapshotUserSection> BuildSections();
-    size_t ComputeTotalLength();
+    size_t ComputeTotalLength() const;
     std::string ComposeSummary();
 
     CrashMap& crashData_;

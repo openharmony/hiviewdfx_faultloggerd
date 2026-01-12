@@ -28,13 +28,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxOfflineParserTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxOfflineParserTest : public testing::Test {};
 
 /**
  * @tc.name: DfxOfflineParserTest001

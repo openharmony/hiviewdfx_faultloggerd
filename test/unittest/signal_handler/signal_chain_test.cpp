@@ -24,13 +24,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class SignalChainTest : public testing::Test {
-public:
-    static void SetUpTestCase() {}
-    static void TearDownTestCase() {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class SignalChainTest : public testing::Test {};
 
 #define SIGCHIAN_TEST_SIGNAL_NUM_1 1
 #define SIGCHIAN_TEST_SIGNAL_NUM_2 2

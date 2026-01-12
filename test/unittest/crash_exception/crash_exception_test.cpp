@@ -31,13 +31,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class CrashExceptionTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class CrashExceptionTest : public testing::Test {};
 
 static constexpr int32_t TEST_PROCESS_ID = 1234;
 static constexpr int32_t TEST_UID = 5678;

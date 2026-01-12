@@ -35,9 +35,7 @@ namespace HiviewDFX {
 class MapsTest : public testing::Test {
 public:
     static void SetUpTestCase(void);
-    static void TearDownTestCase(void) {}
-    void SetUp();
-    void TearDown() {}
+    void SetUp() override;
     static int WriteLogFunc(int32_t fd, const char *buf, size_t len);
     static std::string result;
 };
@@ -137,7 +135,7 @@ std::set<uintptr_t> InitInterestedAddrs(DfxProcess& process, ProcessDumpRequest&
     return interestedAddrs;
 }
 
-bool CheckInterestedAddrsValues(std::pair<uintptr_t, uintptr_t>& pair)
+bool CheckInterestedAddrsValues(const std::pair<uintptr_t, uintptr_t>& pair)
 {
     for (const auto& addr : interestedAddrs) {
         if (addr >= pair.first && addr < pair.second) {

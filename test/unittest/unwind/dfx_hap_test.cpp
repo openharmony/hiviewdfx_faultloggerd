@@ -26,13 +26,7 @@ using namespace std;
 
 namespace OHOS {
 namespace HiviewDFX {
-class DfxHapTest : public testing::Test {
-public:
-    static void SetUpTestCase(void) {}
-    static void TearDownTestCase(void) {}
-    void SetUp() {}
-    void TearDown() {}
-};
+class DfxHapTest : public testing::Test {};
 
 /**
  * @tc.name: DfxHapTest001

@@ -81,7 +81,7 @@ uint64_t LoadSegmentWriter::WriteMergedSeg(size_t idxBegin, size_t idxEnd, char 
     return totalSize;
 }
 
-size_t LoadSegmentWriter::GetTotalSize()
+size_t LoadSegmentWriter::GetTotalSize() const
 {
     size_t total = 0;
     for (const auto &seg: segs_) {
