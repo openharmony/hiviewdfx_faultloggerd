@@ -15,6 +15,7 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 dfx_unwinder_sources = [
   "src/ark/dfx_ark.cpp",
+  "src/ark/dfx_extractor_utils.cpp",
   "src/ark/dfx_hap.cpp",
   "src/elf/dfx_elf.cpp",
   "src/elf/dfx_elf_parser.cpp",
@@ -353,6 +354,7 @@ if (defined(ohos_lite)) {
       ":lzma_config",
     ]
     sources = [
+      "src/ark/dfx_extractor_utils.cpp",
       "src/ark/dfx_hap.cpp",
       "src/elf/dfx_elf.cpp",
       "src/elf/dfx_elf_parser.cpp",

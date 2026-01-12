@@ -105,6 +105,9 @@
       OHOS::HiviewDFX::DfxArk::ArkDestoryJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxArk::ParseArkFrameInfo*;
       OHOS::HiviewDFX::DfxArk::StepArkFrame*;
+      OHOS::HiviewDFX::DfxExtractor::Clear*;
+      OHOS::HiviewDFX::DfxExtractor::Init*;
+      OHOS::HiviewDFX::DfxExtractor::GetHapAbcInfo*;
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
       OHOS::HiviewDFX::DfxMaps::GetArkStackRange*;

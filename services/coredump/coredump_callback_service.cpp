@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "coredump_callback_service.h"
+#include "dfx_log.h"
 #include "faultloggerd_socket.h"
 
 namespace OHOS {

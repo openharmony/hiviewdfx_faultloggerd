@@ -43,6 +43,7 @@
 #include "dump_utils.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
+#include "dfx_log.h"
 
 #include "dfx_ptrace.h"
 #include "dfx_process.h"

@@ -27,6 +27,7 @@
 #include "dfx_buffer_writer.h"
 #include "dfx_dump_request.h"
 #include "dfx_exception.h"
+#include "dfx_log.h"
 #include "dfx_maps.h"
 #include "dfx_process.h"
 #include "dfx_signal.h"
