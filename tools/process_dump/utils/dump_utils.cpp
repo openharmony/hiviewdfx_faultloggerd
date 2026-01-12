@@ -101,11 +101,11 @@ void DumpUtils::GetThreadKernelStack(DfxThread& thread, bool needParseSymbols)
     if (DfxGetKernelStack(tid, threadKernelStack, true) == 0 &&
         FormatThreadKernelStack(threadKernelStack, threadStack, parserPtr)) {
         DFXLOGW("Failed to get tid(%{public}d) user stack, try kernel", tid);
-        if (IsBetaVersion()) {
-            DFXLOGI("%{public}s", threadKernelStack.c_str());
-        }
         thread.SetParseSymbolNecessity(false);
         thread.SetFrames(threadStack.frames);
+    }
+    if (IsBetaVersion()) {
+        DFXLOGI("%{public}s", threadKernelStack.c_str());
     }
 }
 

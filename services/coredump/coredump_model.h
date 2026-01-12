@@ -17,7 +17,6 @@
 
 #include <chrono>
 #include <string>
-#include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {

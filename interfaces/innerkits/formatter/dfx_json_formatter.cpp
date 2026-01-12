@@ -62,6 +62,7 @@ private:
     bool FormatJsonThreadStack(Json::Value& thread, std::string& outStackStr);
     bool FormatNativeFrame(Json::Value& frames, const uint32_t& frameIdx, std::string& outStr);
     bool FormatJsFrame(const Json::Value& frames, const uint32_t& frameIdx, std::string& outStr);
+    bool IsStatInfoValid(Json::Value& thread);
 
     DfxOfflineParser parser_;
     bool onlyParseBuildId_;
@@ -253,6 +254,26 @@ bool StackJsonFormatter::FormatJsonStack(Json::Value& threads, std::string& outS
     return true;
 }
 
+bool StackJsonFormatter::IsStatInfoValid(Json::Value& thread)
+{
+    const int statInfoCount = 6;
+    std::array<const char* const, statInfoCount> statInfo = {
+        "state",
+        "utime",
+        "stime",
+        "priority",
+        "nice",
+        "clk"
+    };
+
+    for (const auto& info : statInfo) {
+        if (!thread.isMember(info) || !thread[info].isConvertibleTo(Json::stringValue)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool StackJsonFormatter::FormatJsonThreadStack(Json::Value& thread, std::string& outStackStr)
 {
     std::string ss;
@@ -262,12 +283,7 @@ bool StackJsonFormatter::FormatJsonThreadStack(Json::Value& thread, std::string&
         ss += "Tid:" + JsonAsString(thread["tid"]) + ", Name:" + JsonAsString(thread["thread_name"]) + "\n";
     }
     // state=R, utime=5, stime=1, priority=-10, nice=-1, clk=100
-    if (thread["state"].isConvertibleTo(Json::stringValue) &&
-        thread["utime"].isConvertibleTo(Json::stringValue) &&
-        thread["stime"].isConvertibleTo(Json::stringValue) &&
-        thread["priority"].isConvertibleTo(Json::stringValue) &&
-        thread["nice"].isConvertibleTo(Json::stringValue) &&
-        thread["clk"].isConvertibleTo(Json::stringValue)) {
+    if (IsStatInfoValid(thread)) {
         ss += "state=" + JsonAsString(thread["state"]) + ", utime=" + JsonAsString(thread["utime"]) +
             ", stime=" + JsonAsString(thread["stime"]) + ", priority=" + JsonAsString(thread["priority"]) +
             ", nice=" + JsonAsString(thread["nice"]) + ", clk=" + JsonAsString(thread["clk"]) + "\n";
@@ -451,14 +467,15 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
         constexpr int fieldCnt = 6;
         if (parsed != fieldCnt) {
             DFXLOGE("parser tid %{public}ld field failed, cnt %{public}d", threadStack.tid, parsed);
-            continue;
+        } else {
+            threadInfo["state"] = std::string(1, state);
+            threadInfo["utime"] = utime;
+            threadInfo["stime"] = stime;
+            threadInfo["priority"] = priority;
+            threadInfo["nice"] = nice;
+            threadInfo["clk"] = clk;
         }
-        threadInfo["state"] = std::string(1, state);
-        threadInfo["utime"] = utime;
-        threadInfo["stime"] = stime;
-        threadInfo["priority"] = priority;
-        threadInfo["nice"] = nice;
-        threadInfo["clk"] = clk;
+
         Json::Value frames(Json::arrayValue);
         for (const auto& frame : threadStack.frames) {
             Json::Value frameJson;

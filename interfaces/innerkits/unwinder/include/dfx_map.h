@@ -50,7 +50,6 @@ public:
     bool IsVdsoMap();
     const std::shared_ptr<DfxHap> GetHap();
     const std::shared_ptr<DfxElf> GetElf(pid_t pid = 0);
-    const std::shared_ptr<DfxElf> GetElfLongLong(long long pid = 0);
     std::string GetElfName();
     uint64_t GetRelPc(uint64_t pc);
     std::string ToString() const;

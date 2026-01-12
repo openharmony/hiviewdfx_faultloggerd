@@ -14,6 +14,7 @@
  */
 #include "coredump_facade.h"
 #include "coredump_session_manager.h"
+#include "dfx_log.h"
 
 namespace OHOS {
 namespace HiviewDFX {

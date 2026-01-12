@@ -44,6 +44,7 @@
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_log.h"
+
 #include "dfx_ptrace.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
@@ -62,6 +63,7 @@
 #include "hisysevent.h"
 #endif
 #include "procinfo.h"
+#include "proc_util.h"
 #include "reporter.h"
 #include "unwinder_config.h"
 #ifndef is_ohos_lite
@@ -602,6 +604,9 @@ void ProcessDumper::ReportSigDumpStats()
     stat->processdumpFinishTime = finishTime_ == 0 ? GetTimeMillisec() : finishTime_;
     stat->writeDumpInfoCost = finishParseSymbolTime_ > 0 ? stat->processdumpFinishTime - finishParseSymbolTime_ : 0;
     stat->smoParseTime = smoParseTime_;
+    if (IsBetaVersion()) {
+        stat->pssMemory = GetPssMemory();
+    }
     if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
         request_.processName, sizeof(request_.processName)) != 0) {
         DFXLOGE("Failed to copy target processName (%{public}d)", errno);

@@ -24,6 +24,7 @@
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_dump_res.h"
+#include "dfx_log.h"
 #include "dfx_trace.h"
 #include "faultloggerd_client.h"
 #include "lperf_event_record.h"

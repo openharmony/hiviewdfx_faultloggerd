@@ -40,10 +40,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 }
 
-extern "C" __attribute__((weak)) bool ffrt_get_current_coroutine_stack(void** stackAddr, size_t* size)
-{
-    return false;
-}
+extern "C" bool ffrt_get_current_coroutine_stack(void** stackAddr, size_t* size) __attribute__((weak));
 
 class FpBacktraceImpl : public FpBacktrace {
 public:
@@ -65,9 +62,11 @@ bool FpBacktraceImpl::Init()
 {
     static std::once_flag flag;
     std::call_once(flag, []() {
-        void* stackBegin = 0;
-        size_t stackSize = 0;
-        ffrt_get_current_coroutine_stack(&stackBegin, &stackSize);
+        if (ffrt_get_current_coroutine_stack) {
+            void* stackBegin = 0;
+            size_t stackSize = 0;
+            ffrt_get_current_coroutine_stack(&stackBegin, &stackSize);
+        }
         DfxArk::Instance().InitArkFunction(ArkFunction::STEP_ARK);
     });
     maps_ = DfxMaps::Create(0, false);
@@ -154,7 +153,8 @@ bool FpBacktraceImpl::GetCurrentThreadRange(uintptr_t startFp, uintptr_t& thread
         }
     }
     size_t stackSize = 0;
-    if (ffrt_get_current_coroutine_stack(reinterpret_cast<void**>(&threadBegin), &stackSize)) {
+    if (ffrt_get_current_coroutine_stack &&
+        ffrt_get_current_coroutine_stack(reinterpret_cast<void**>(&threadBegin), &stackSize)) {
         if (startFp >= threadBegin && startFp < threadBegin + stackSize) {
             threadEnd = threadBegin + stackSize;
             return true;
@@ -179,16 +179,6 @@ DfxFrame* FpBacktraceImpl::SymbolicAddress(void* pc)
     if (frame->map == nullptr) {
         frame = nullptr;
         return nullptr;
-    }
-    
-    frame->relPc = frame->map->GetRelPc(frame->pc);
-    frame->mapOffset = frame->map->offset;
-    auto elf = frame->map->GetElf();
-    if (elf == nullptr) {
-        unwinder_.FillJsFrame(*frame);
-    } else {
-        DfxSymbols::GetFuncNameAndOffsetByPc(frame->relPc, elf, frame->funcName, frame->funcOffset);
-        frame->buildId = elf->GetBuildId();
     }
     return frame.get();
 }

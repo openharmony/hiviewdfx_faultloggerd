@@ -44,10 +44,7 @@ HWTEST_F(BufferWriterTest, BufferWriterTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BufferWriterTest001: start.";
     int fds[PIPE_NUM_SZ] = {-1, -1};
-    if (pipe2(fds, O_NONBLOCK) != 0) {
-        GTEST_LOG_(ERROR) << "Failed to create pipe. ";
-        return;
-    }
+    ASSERT_EQ(pipe2(fds, O_NONBLOCK), 0);
     auto readFd = SmartFd{fds[PIPE_READ]};
     auto writeFd = SmartFd{fds[PIPE_WRITE]};
     if (fcntl(readFd.GetFd(), F_SETPIPE_SZ, MAX_PIPE_SIZE) < 0 ||

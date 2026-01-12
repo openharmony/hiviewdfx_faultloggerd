@@ -1024,6 +1024,13 @@ void Unwinder::Impl::UpdateRegsState(
     } else {
         if (enableLrFallback_ && (frames_.size() == 1 && !isResetFrames_) && regs_->SetPcFromReturnAddress(memory_)) {
             unwinderResult = true;
+#if defined(__aarch64__)
+            // update fp val to next frame
+            auto fp = *(regs_->GetReg(REG_FP));
+            uintptr_t nextFp;
+            memory_->Read<uintptr_t>(fp, &nextFp, false);
+            regs_->SetFp(nextFp);
+#endif
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 DFXLOGW("Failed to step first frame, lr fallback");
             }

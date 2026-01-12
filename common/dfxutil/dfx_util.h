@@ -43,6 +43,7 @@ AT_SYMBOL_HIDDEN bool IsOversea();
 AT_SYMBOL_HIDDEN off_t GetFileSize(int fd);
 AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
 AT_SYMBOL_HIDDEN uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
+AT_SYMBOL_HIDDEN bool SafeStrtolCpp(const std::string& numStr, long& out, int base);
 #if is_ohos && !is_mingw
 AT_SYMBOL_HIDDEN size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif

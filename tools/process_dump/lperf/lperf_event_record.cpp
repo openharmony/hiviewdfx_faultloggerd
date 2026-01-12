@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include "dfx_log.h"
 #include "lperf_event_record.h"
 
 namespace OHOS {

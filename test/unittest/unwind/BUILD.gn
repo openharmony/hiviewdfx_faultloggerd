@@ -209,6 +209,7 @@ ohos_unittest("test_unwind_supporting") {
   defines = [ "is_ohos=${is_ohos}" ]
   sources = [
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_ark.cpp",
+    "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_extractor_utils.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/ark/dfx_hap.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/maps/dfx_maps.cpp",
     "$faultloggerd_interfaces_path/innerkits/unwinder/src/memory/dfx_memory.cpp",

@@ -295,5 +295,39 @@ uint64_t GetClkTck()
     }
     return static_cast<uint64_t>(clockTicks);
 }
+
+uint32_t GetPssMemory()
+{
+    FILE *fp = fopen(PROC_SELF_SMAPS_ROLLUP_PATH, "r");
+    if (fp == nullptr) {
+        return 0;
+    }
+    char line[256] = {0}; // 256 : read smaps_rollup line is enough
+    std::string pssStr;
+    std::string swapPssStr;
+    while (fgets(line, sizeof(line) - 1, fp) != nullptr) {
+        std::string strLine(line);
+        if (pssStr.empty() && strLine.find("Pss:") != std::string::npos) {
+            pssStr = GetFirstNumberSeq(strLine);
+        } else if (strLine.find("SwapPss:") != std::string::npos) {
+            swapPssStr = GetFirstNumberSeq(strLine);
+            break;
+        }
+    }
+    (void)fclose(fp);
+
+    if (pssStr.empty() || swapPssStr.empty()) {
+        return 0;
+    }
+    long pss;
+    if (!SafeStrtolCpp(pssStr, pss, DECIMAL_BASE)) {
+        return 0;
+    }
+    long swapPss;
+    if (!SafeStrtolCpp(swapPssStr, swapPss, DECIMAL_BASE)) {
+        return 0;
+    }
+    return static_cast<uint32_t>(pss) + static_cast<uint32_t>(swapPss);
+}
 } // namespace HiviewDFX
 } // namespace OHOS

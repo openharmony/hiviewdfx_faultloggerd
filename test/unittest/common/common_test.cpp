@@ -233,9 +233,9 @@ HWTEST_F(CommonTest, ElapsedTimeTest001, TestSize.Level2)
     ElapsedTime t1;
     ElapsedTime t2("t2 timeout", 1);
     ElapsedTime t3("t3 timeout", 10);
-    usleep(1000);
-    t1.Reset();
+    usleep(1100);
     EXPECT_GT(t1.Elapsed(), 0);
+    t1.Reset();
     GTEST_LOG_(INFO) << "ElapsedTimeTest001: end.";
 }
 
@@ -280,6 +280,30 @@ HWTEST_F(CommonTest, ROMBaselineTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "ROMBaselineTest001: end.";
 }
 
+/**
+ * @tc.name: SafeStrtolCpp001
+ * @tc.desc: test StartsWith functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, SafeStrtolCpp001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SafeStrtolCpp001: start.";
+    std::string numStr;
+    long num = 0;
+    EXPECT_FALSE(SafeStrtolCpp(numStr, num, DECIMAL_BASE));
+    numStr = "0";
+    EXPECT_TRUE(SafeStrtolCpp(numStr, num, DECIMAL_BASE));
+    numStr = "abc";
+    EXPECT_FALSE(SafeStrtolCpp(numStr, num, DECIMAL_BASE));
+    numStr = "abc123";
+    EXPECT_FALSE(SafeStrtolCpp(numStr, num, DECIMAL_BASE));
+    numStr = "123abc";
+    EXPECT_FALSE(SafeStrtolCpp(numStr, num, DECIMAL_BASE));
+    numStr = "123";
+    EXPECT_TRUE(SafeStrtolCpp(numStr, num, DECIMAL_BASE));
+    EXPECT_EQ(num, 123);
+    GTEST_LOG_(INFO) << "SafeStrtolCpp001: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

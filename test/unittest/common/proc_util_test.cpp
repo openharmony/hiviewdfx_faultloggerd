@@ -350,5 +350,16 @@ HWTEST(ProcUtilTest, FomatProcessInfoToStringTest001, TestSize.Level2)
     expect = "state=S, utime=12345, stime=1234, priority=10, nice=-10, clk=";
     ASSERT_EQ(result.compare(0, expect.length(), expect), 0);
 }
+
+/**
+ * @tc.name: GetPssMemoryTest001
+ * @tc.desc: check GetPssMemory.
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, GetPssMemoryTest001, TestSize.Level2)
+{
+    uint32_t pssMemory = GetPssMemory();
+    ASSERT_TRUE(pssMemory > 0);
+}
 } // namespace HiviewDFX
 } // namespace OHOS

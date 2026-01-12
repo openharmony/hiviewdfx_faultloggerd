@@ -23,12 +23,6 @@ extern "C" {
 #endif
 
 /**
- * NOTICE: The DfxCollectAsyncStack function filters requests using types from AsyncType.
- *
- * To enable stack backtrace, you need to set your own type as the target type using the DfxSetAsyncStackType function.
-*/
-
-/**
  * @brief init async stack
  *
  * @return if succeed return true, otherwise return false
@@ -59,14 +53,23 @@ typedef enum {
     ASYNC_TYPE_FFRT_QUEUE       = 1ULL << 9,
     ASYNC_TYPE_EVENTHANDLER     = 1ULL << 16,
     ASYNC_TYPE_PROMISE          = 1ULL << 17,
+    ASYNC_TYPE_ARKTS_WORKER     = 1ULL << 24,
+    ASYNC_TYPE_ARKTS_TASKPOOL   = 1ULL << 25,
     ASYNC_TYPE_CUSTOMIZE        = 1ULL << 32
 } AsyncType;
 
+constexpr uint64_t DEFAULT_ASYNC_TYPE = ASYNC_TYPE_LIBUV_QUEUE | ASYNC_TYPE_LIBUV_TIMER;
+
 /**
- * @brief set the currently enabled asyn type and return the old asynchronous type value
+ * @brief set the currently enabled async type and return the last asynchronous type value
  *
- * @param asyncType  new async type (specific type definition see AsyncType)
+ * @param asyncType  current async type (specific type definition see AsyncType)
  * @return return the async type value before setting
+ *
+ * @note The default enabled value is DEFAULT_ASYNC_TYPE.
+ *       If you change the enabled types temporarily, call this function again to restore:
+ *       - restore last value: uint64_t lastType = DfxSetAsyncStackType(xxx); ...; DfxSetAsyncStackType(lastType);
+ *       - or restore default: DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
 */
 uint64_t DfxSetAsyncStackType(uint64_t asyncType);
 

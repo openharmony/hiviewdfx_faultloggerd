@@ -17,6 +17,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <thread>
@@ -35,6 +36,39 @@
 
 using namespace testing;
 using namespace testing::ext;
+
+#if defined(__aarch64__)
+namespace {
+using CollectFn = uint64_t(*)(uint64_t);
+using SetFn = void(*)(uint64_t);
+
+std::atomic<int> g_eventHandlerSetCalls {0};
+std::atomic<int> g_eventHandlerClearCalls {0};
+CollectFn g_lastEventHandlerCollect = nullptr;
+SetFn g_lastEventHandlerSetId = nullptr;
+
+void ResetCallbackProbeState()
+{
+    g_eventHandlerSetCalls.store(0);
+    g_eventHandlerClearCalls.store(0);
+    g_lastEventHandlerCollect = nullptr;
+    g_lastEventHandlerSetId = nullptr;
+}
+} // namespace
+
+// Provide fake exported symbols so dlsym(RTLD_DEFAULT, "...") in async_stack.cpp can find them.
+extern "C" __attribute__((visibility("default"))) void EventSetAsyncStackFunc(
+    CollectFn collectAsyncStackFn, SetFn setStackIdFn)
+{
+    g_lastEventHandlerCollect = collectAsyncStackFn;
+    g_lastEventHandlerSetId = setStackIdFn;
+    if (collectAsyncStackFn == nullptr || setStackIdFn == nullptr) {
+        g_eventHandlerClearCalls.fetch_add(1);
+    } else {
+        g_eventHandlerSetCalls.fetch_add(1);
+    }
+}
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -148,9 +182,7 @@ HWTEST_F(AsyncStackTest, AsyncStackTest004, TestSize.Level2)
 #if defined(__aarch64__)
     uint64_t oldType = DfxSetAsyncStackType(ASYNC_TYPE_LIBUV_TIMER);
     GTEST_LOG_(INFO) << "oldType: " << oldType;
-    uint64_t defaultAsyncType = ASYNC_TYPE_LIBUV_QUEUE | ASYNC_TYPE_LIBUV_TIMER |
-                                ASYNC_TYPE_FFRT_QUEUE | ASYNC_TYPE_FFRT_POOL;
-    ASSERT_EQ(oldType, defaultAsyncType);
+    ASSERT_EQ(oldType, DEFAULT_ASYNC_TYPE);
     DfxSetAsyncStackType(oldType);
 #endif
     GTEST_LOG_(INFO) << "AsyncStackTest004: end.";
@@ -179,6 +211,32 @@ HWTEST_F(AsyncStackTest, AsyncStackTest005, TestSize.Level2)
     DfxSetAsyncStackType(oldType);
 #endif
     GTEST_LOG_(INFO) << "AsyncStackTest005: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest006
+ * @tc.desc: test incremental (un)register callbacks via DfxSetAsyncStackType
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest006: start.";
+#if defined(__aarch64__)
+    ResetCallbackProbeState();
+
+    // Enable EVENTHANDLER should register non-null callbacks.
+    (void)DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE | ASYNC_TYPE_EVENTHANDLER);
+    ASSERT_EQ(g_eventHandlerSetCalls.load(), 1);
+    ASSERT_NE(reinterpret_cast<void*>(g_lastEventHandlerCollect), nullptr);
+    ASSERT_NE(reinterpret_cast<void*>(g_lastEventHandlerSetId), nullptr);
+
+    // Disable EVENTHANDLER should clear callbacks.
+    (void)DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    ASSERT_EQ(g_eventHandlerClearCalls.load(), 1);
+    ASSERT_EQ(reinterpret_cast<void*>(g_lastEventHandlerCollect), nullptr);
+    ASSERT_EQ(reinterpret_cast<void*>(g_lastEventHandlerSetId), nullptr);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest006: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

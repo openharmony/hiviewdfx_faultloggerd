@@ -43,7 +43,7 @@ const char* const ARKWEBCORE_PATH_PREFIX = "/data/app/el1/bundle/public/com.huaw
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 MAYBE_UNUSED const char* const SELF_CMDLINE_PATH = "/proc/self/cmdline";
 const int MAX_SINGLE_FRAME_PARSE_TIME = 1000;
-constexpr int32_t MIN_APP_UID = 20000;
+constexpr uint32_t MIN_APP_UID = 20000;
 }
 DfxOfflineParser::DfxOfflineParser() : DfxOfflineParser("") {}
 

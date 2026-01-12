@@ -14,6 +14,7 @@
  */
 #include "coredump_task_scheduler.h"
 #include "coredump_session_manager.h"
+#include "dfx_log.h"
 #include "dfx_util.h"
 #include "epoll_manager.h"
 #include "fault_logger_daemon.h"

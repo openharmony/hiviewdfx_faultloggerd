@@ -425,7 +425,8 @@ int LitePerf::Impl::ExecDump(const std::vector<int>& tids, int freq, int duratio
 
 bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& lperf)
 {
-    if (OHOS_TEMP_FAILURE_RETRY(write(pipefd[PIPE_WRITE], &lperf, sizeof(LitePerfParam))) != sizeof(LitePerfParam)) {
+    if (OHOS_TEMP_FAILURE_RETRY(write(pipefd[PIPE_WRITE], &lperf, sizeof(LitePerfParam))) !=
+        static_cast<ssize_t>(sizeof(LitePerfParam))) {
         DFXLOGE("Failed to write pipe, errno(%{public}d)", errno);
         return false;
     }

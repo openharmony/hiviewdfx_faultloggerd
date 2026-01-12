@@ -76,7 +76,7 @@ int DFX_SetAppRunningUniqueId(const char* appRunningUniqueId, size_t len);
  * @brief Types of crash objects for diagnostic information
  */
 enum CrashObjType : uint8_t {
-    OBJ_STRING = 0,       // Null-terminated string (max 1024 bytes)
+    OBJ_STRING = 0,       // Null-terminated string (max 64KB)
     OBJ_MEMORY_64B,       // 64-byte memory block
     OBJ_MEMORY_256B,      // 256-byte memory block
     OBJ_MEMORY_1024B,     // 1KB memory block

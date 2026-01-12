@@ -286,25 +286,26 @@ bool CollectMemoryNearRegisters(int fd, ucontext_t *context)
     char start[50] = "start trans register";
     write(fd, start, sizeof(start));
 #if defined(__aarch64__)
+    const uintptr_t pacMaskDefault = ~(uintptr_t)0xFFFFFF8000000000;
     int lrIndex = 30;
     for (uint16_t i = 0; i < lrIndex; i++) {
-        RegInfo info = {i, false, context->uc_mcontext.regs[i]};
+        RegInfo info = {i, false, context->uc_mcontext.regs[i] & pacMaskDefault};
         CreateMemoryBlock(fd, info, i);
     }
 
-    RegInfo info = {lrIndex, true, context->uc_mcontext.regs[lrIndex]};
+    RegInfo info = {lrIndex, true, context->uc_mcontext.regs[lrIndex] & pacMaskDefault};
     CreateMemoryBlock(fd, info, lrIndex);
 
     int spIndex = 31;
     info.regIndex = spIndex;
     info.isPcLr = false;
-    info.regAddr = context->uc_mcontext.sp;
+    info.regAddr = (context->uc_mcontext.sp & pacMaskDefault);
     CreateMemoryBlock(fd, info, spIndex);
 
     int pcIndex = 32;
     info.regIndex = pcIndex;
     info.isPcLr = true;
-    info.regAddr = context->uc_mcontext.pc;
+    info.regAddr = (context->uc_mcontext.pc & pacMaskDefault);
     CreateMemoryBlock(fd, info, pcIndex);
 #endif
     char end[50] = "end trans register";

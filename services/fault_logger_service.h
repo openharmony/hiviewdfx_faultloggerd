@@ -75,6 +75,7 @@ struct DumpStats {
     uint64_t processdumpFinishTime = 0;
     uint64_t dumpCatcherFinishTime = 0;
     uint64_t smoParseTime = 0;
+    uint32_t pssMemory = 0;
     int32_t result = 0;
     uint32_t targetProcessThreadCount = 0;
     uint32_t writeDumpInfoCost = 0;

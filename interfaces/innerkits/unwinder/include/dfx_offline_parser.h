@@ -59,7 +59,7 @@ private:
     std::string bundleName_ {""};
     std::shared_ptr<DfxMaps> dfxMaps_ {nullptr};
     ElapsedTime counter_;
-    int32_t uid_ {0};
+    uint32_t uid_ {0};
 };
 }
 }
