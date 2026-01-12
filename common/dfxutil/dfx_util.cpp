@@ -70,6 +70,9 @@ bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str)
         }
     }
     size_t validLen = strnlen(buff + buffOffset, buffSize - buffOffset);
+    if (validLen == 0) {
+        return false;
+    }
     auto endOffSet = buffOffset + validLen;
     while (isspace(buff[endOffSet - 1])) {
         endOffSet--;
