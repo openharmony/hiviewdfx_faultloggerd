@@ -37,7 +37,6 @@ namespace {
 const char* const BBOX_PATH = "/dev/bbox";
 const int BUFF_STACK_SIZE = 20 * 1024;
 const uint32_t MAGIC_NUM = 0x9517;
-MAYBE_UNUSED const int MAX_ALL_FRAME_PARSE_TIME = 3000;
 typedef struct HstackVal {
     uint32_t magic {0};
     pid_t pid {0};
@@ -118,8 +117,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
 #endif
 }
 
-bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack,
-    bool needParseSymbol, const std::string& bundleName, bool onlyParseBuildId)
+bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThreadStack>& processStack)
 {
 #if !defined(is_ohos_lite) && defined(__aarch64__)
     ElapsedTime counter;
@@ -130,29 +128,14 @@ bool FormatProcessKernelStack(const std::string& kernelStack, std::vector<DfxThr
         DFXLOGE("Invalid kernelStack, please check it!");
         return false;
     }
-    DfxEnableTraceDlsym(true);
-    std::unique_ptr<DfxOfflineParser> parser = nullptr;
-    if (needParseSymbol) {
-        parser = std::make_unique<DfxOfflineParser>(bundleName, onlyParseBuildId);
-    }
     for (const std::string& threadKernelStack : threadKernelStackVec) {
         DfxThreadStack threadStack;
-        if (FormatThreadKernelStack(threadKernelStack, threadStack, parser.get())) {
+        if (FormatThreadKernelStack(threadKernelStack, threadStack)) {
             processStack.emplace_back(threadStack);
         }
     }
-    DfxEnableTraceDlsym(false);
     auto costTime = counter.Elapsed<std::chrono::milliseconds>();
-    DFXLOGI("format kernel stack cost time = %{public}" PRId64 " ms", costTime);
-    if (costTime > MAX_ALL_FRAME_PARSE_TIME || onlyParseBuildId) {
-        ReportData reportData;
-        reportData.parseCostType = onlyParseBuildId ? ParseCostType::PARSE_ALL_BUILDID_TIME
-            : ParseCostType::PARSE_ALL_FRAME_TIME;
-        reportData.bundleName = bundleName;
-        reportData.costTime = static_cast<uint32_t>(costTime);
-        reportData.threadCount = static_cast<uint32_t>(threadKernelStackVec.size());
-        DfxOfflineParser::ReportDumpStats(reportData);
-    }
+    DFXLOGI("FormatProcessKernelStack cost time = %{public}" PRId64 " ms", costTime);
     return true;
 #else
     return false;

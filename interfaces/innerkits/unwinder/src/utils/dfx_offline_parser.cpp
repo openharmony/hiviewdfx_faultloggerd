@@ -20,9 +20,11 @@
 #include "dfx_log.h"
 #include "dfx_symbols.h"
 #include "dfx_trace_dlsym.h"
+#include "dfx_util.h"
 #include "elf_factory.h"
 #include "string_util.h"
 #include "unwinder_config.h"
+#include "proc_util.h"
 
 #ifndef HISYSEVENT_DISABLE
 #include "file_util.h"
@@ -43,6 +45,7 @@ const char* const ARKWEBCORE_PATH_PREFIX = "/data/app/el1/bundle/public/com.huaw
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 MAYBE_UNUSED const char* const SELF_CMDLINE_PATH = "/proc/self/cmdline";
 const int MAX_SINGLE_FRAME_PARSE_TIME = 1000;
+const int MAX_SINGLE_FRAME_BUILDID_PARSE_TIME = 10;
 constexpr uint32_t MIN_APP_UID = 20000;
 }
 DfxOfflineParser::DfxOfflineParser() : DfxOfflineParser("") {}
@@ -66,30 +69,32 @@ DfxOfflineParser::~DfxOfflineParser()
 
 bool DfxOfflineParser::ParseSymbolWithFrame(DfxFrame& frame)
 {
-    DFX_TRACE_SCOPED_DLSYM("ParseSymbolWithFrame:%s", frame.mapName.c_str());
-    counter_.Reset();
-    bool result = IsJsFrame(frame) ? ParseJsSymbol(frame) : ParseNativeSymbol(frame);
-    auto costTime = counter_.Elapsed<std::chrono::milliseconds>();
-    if (costTime > MAX_SINGLE_FRAME_PARSE_TIME) {
-        ReportDumpStats(frame, static_cast<uint32_t>(costTime));
+    return IsJsFrame(frame) ? ParseJsSymbol(frame) : ParseBuildIdAndNativeSymbol(frame);
+}
+
+bool DfxOfflineParser::ParseBuildIdJsSymbol(DfxFrame& frame)
+{
+    return IsJsFrame(frame) ? ParseJsSymbol(frame) : ParseBuildId(frame);
+}
+
+bool DfxOfflineParser::ParseBuildIdJsSymbolWithFrames(std::vector<DfxFrame>& frames)
+{
+    bool result = false;
+    for (auto& frame : frames) {
+        if (ParseBuildIdJsSymbol(frame)) {
+            result = true;
+        }
     }
     return result;
 }
 
-bool DfxOfflineParser::IsJsFrame(const DfxFrame& frame)
-{
-    return DfxMaps::IsArkHapMapItem(frame.mapName) || DfxMaps::IsArkCodeMapItem(frame.mapName);
-}
-
 bool DfxOfflineParser::ParseNativeSymbol(DfxFrame& frame)
 {
+    DFX_TRACE_SCOPED_DLSYM("ParseSoSymbol:%s", frame.mapName.c_str());
+    counter_.Reset();
     auto elf = GetElfForFrame(frame);
     if (elf == nullptr) {
         return false;
-    }
-    frame.buildId = elf->GetBuildId();
-    if (onlyParseBuildId_) {
-        return true;
     }
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
         DFXLOGU("Failed to get symbol, relPc: %{public}" PRIx64 ", mapName: %{public}s",
@@ -97,7 +102,52 @@ bool DfxOfflineParser::ParseNativeSymbol(DfxFrame& frame)
         return false;
     }
     frame.parseSymbolState.SetParseSymbolState(true);
+    auto costTime = counter_.Elapsed<std::chrono::milliseconds>();
+    if (costTime > MAX_SINGLE_FRAME_PARSE_TIME) {
+        ReportDumpStats(frame, static_cast<uint32_t>(costTime), PARSE_SINGLE_SO_SYMBOL_TIME);
+    }
     return true;
+}
+
+bool DfxOfflineParser::ParseNativeSymbolWithFrames(std::vector<DfxFrame>& frames)
+{
+    bool result = false;
+    for (auto& frame : frames) {
+        if (ParseNativeSymbol(frame)) {
+            result = true;
+        }
+    }
+    return result;
+}
+
+bool DfxOfflineParser::ParseBuildId(DfxFrame& frame)
+{
+    DFX_TRACE_SCOPED_DLSYM("ParseBuildId:%s", frame.mapName.c_str());
+    counter_.Reset();
+    auto elf = GetElfForFrame(frame);
+    if (elf == nullptr) {
+        return false;
+    }
+    frame.buildId = elf->GetBuildId();
+    auto costTime = counter_.Elapsed<std::chrono::milliseconds>();
+    if (costTime > MAX_SINGLE_FRAME_BUILDID_PARSE_TIME) {
+        ReportDumpStats(frame, static_cast<uint32_t>(costTime), PARSE_SINGLE_SO_BUILDID_TIME);
+    }
+    return true;
+}
+
+bool DfxOfflineParser::IsJsFrame(const DfxFrame& frame)
+{
+    return DfxMaps::IsArkHapMapItem(frame.mapName) || DfxMaps::IsArkCodeMapItem(frame.mapName);
+}
+
+bool DfxOfflineParser::ParseBuildIdAndNativeSymbol(DfxFrame& frame)
+{
+    bool result = ParseBuildId(frame);
+    if (!result || onlyParseBuildId_) {
+        return result;
+    }
+    return ParseNativeSymbol(frame);
 }
 
 std::shared_ptr<DfxMap> DfxOfflineParser::GetMapForFrame(const DfxFrame& frame)
@@ -117,6 +167,8 @@ std::shared_ptr<DfxMap> DfxOfflineParser::GetMapForFrame(const DfxFrame& frame)
 
 bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
 {
+    DFX_TRACE_SCOPED_DLSYM("ParseJsSymbol:%s", frame.mapName.c_str());
+    counter_.Reset();
     if (dfxMaps_ == nullptr) {
         return false;
     }
@@ -143,6 +195,10 @@ bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
     frame.packageName = std::string(jsFunction.packageName);
     frame.line = static_cast<int32_t>(jsFunction.line);
     frame.column = jsFunction.column;
+    auto costTime = counter_.Elapsed<std::chrono::milliseconds>();
+    if (costTime > MAX_SINGLE_FRAME_PARSE_TIME) {
+        ReportDumpStats(frame, static_cast<uint32_t>(costTime), PARSE_SINGLE_JS_SYMBOL_TIME);
+    }
     return true;
 }
 
@@ -183,7 +239,7 @@ std::shared_ptr<DfxElf> DfxOfflineParser::GetElfForFrame(const DfxFrame& frame)
     return elf;
 }
 
-void DfxOfflineParser::ReportDumpStats(const ReportData& reportData)
+bool DfxOfflineParser::ReportDumpStats(const ReportData& reportData)
 {
 #ifndef HISYSEVENT_DISABLE
     std::string cmdline;
@@ -191,7 +247,7 @@ void DfxOfflineParser::ReportDumpStats(const ReportData& reportData)
         DFXLOGE("Failed to read self cmdline, errno:%{public}d", errno);
     }
     Trim(cmdline);
-    HiSysEventWrite(
+    int ret = HiSysEventWrite(
         HiSysEvent::Domain::HIVIEWDFX,
         "DUMP_CATCHER_STATS",
         HiSysEvent::EventType::STATISTIC,
@@ -200,14 +256,21 @@ void DfxOfflineParser::ReportDumpStats(const ReportData& reportData)
         "RESULT", reportData.parseCostType,
         "SUMMARY", reportData.summary.c_str(),
         "WRITE_DUMP_INFO_TIME", reportData.costTime,
-        "TARGET_PROCESS_THREAD_COUNT", reportData.threadCount);
+        "TARGET_PROCESS_THREAD_COUNT", reportData.threadCount,
+        "PSS_MEMORY", reportData.pssMemory,
+        "DUMPER_START_TIME", reportData.parseTime.formatKernelStackTime,
+        "UNWIND_TIME", reportData.parseTime.parseBuildIdJsSymbolTime,
+        "OVERALL_TIME", reportData.parseTime.parseNativeSymbolTime);
+    return ret == 0;
+#else
+    return true;
 #endif
 }
 
-void DfxOfflineParser::ReportDumpStats(const DfxFrame& frame, uint32_t costTime)
+bool DfxOfflineParser::ReportDumpStats(const DfxFrame& frame, uint32_t costTime, ParseCostType type)
 {
     ReportData reportData;
-    reportData.parseCostType = ParseCostType::PARSE_SINGLE_FRAME_TIME;
+    reportData.parseCostType = type;
     reportData.bundleName = bundleName_;
     reportData.costTime = costTime;
     std::string summary = "";
@@ -219,7 +282,8 @@ void DfxOfflineParser::ReportDumpStats(const DfxFrame& frame, uint32_t costTime)
             frame.buildId.c_str());
     }
     reportData.summary = summary;
-    ReportDumpStats(reportData);
+    reportData.pssMemory = IsBetaVersion() ? GetPssMemory() : 0;
+    return ReportDumpStats(reportData);
 }
 } // namespace HiviewDFX
 } // namespace OHOS

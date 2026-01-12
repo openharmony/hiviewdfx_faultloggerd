@@ -27,6 +27,15 @@ enum ParseCostType : int32_t {
     PARSE_ALL_FRAME_TIME = 100,
     PARSE_SINGLE_FRAME_TIME = 101,
     PARSE_ALL_BUILDID_TIME = 102,
+    PARSE_SINGLE_JS_SYMBOL_TIME = 103,
+    PARSE_SINGLE_SO_BUILDID_TIME = 104,
+    PARSE_SINGLE_SO_SYMBOL_TIME = 105,
+};
+
+struct ParseTime {
+    uint32_t formatKernelStackTime {0};
+    uint32_t parseBuildIdJsSymbolTime {0};
+    uint32_t parseNativeSymbolTime {0};
 };
 
 struct ReportData {
@@ -35,6 +44,8 @@ struct ReportData {
     std::string summary {""};
     uint32_t costTime {0};
     uint32_t threadCount {0};
+    uint32_t pssMemory {0};
+    ParseTime parseTime;
 };
 class DfxOfflineParser {
 public:
@@ -44,15 +55,20 @@ public:
     DfxOfflineParser(const DfxOfflineParser&) = delete;
     DfxOfflineParser& operator= (const DfxOfflineParser&) = delete;
     bool ParseSymbolWithFrame(DfxFrame& frame);
-    static void ReportDumpStats(const ReportData& reportData);
+    bool ParseBuildIdJsSymbolWithFrames(std::vector<DfxFrame>& frames);
+    bool ParseNativeSymbolWithFrames(std::vector<DfxFrame>& frames);
+    static bool ReportDumpStats(const ReportData& reportData);
 private:
     static bool IsJsFrame(const DfxFrame& frame);
-    bool ParseNativeSymbol(DfxFrame& frame);
+    bool ParseBuildIdAndNativeSymbol(DfxFrame& frame);
     bool ParseJsSymbol(DfxFrame& frame);
+    bool ParseBuildId(DfxFrame& frame);
+    bool ParseNativeSymbol(DfxFrame& frame);
+    bool ParseBuildIdJsSymbol(DfxFrame& frame);
     std::string GetBundlePath(const std::string& originPath) const;
     std::shared_ptr<DfxElf> GetElfForFrame(const DfxFrame& frame);
     std::shared_ptr<DfxMap> GetMapForFrame(const DfxFrame& frame);
-    void ReportDumpStats(const DfxFrame& frame, uint32_t costTime);
+    bool ReportDumpStats(const DfxFrame& frame, uint32_t costTime, ParseCostType type);
     bool onlyParseBuildId_ {false};
     bool cachedEnableMiniDebugInfo_ {false};
     bool cachedEnableLoadSymbolLazily_ {false};

@@ -20,6 +20,7 @@
 #include <vector>
 #include <iostream>
 #include <filesystem>
+#include "dfx_kernel_stack.h"
 #include "dfx_offline_parser.h"
 
 using namespace OHOS::HiviewDFX;
@@ -185,6 +186,134 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest008, TestSize.Level2)
         ASSERT_TRUE(!isFileExist);
     }
     GTEST_LOG_(INFO) << "DfxOfflineParserTest008: end.";
+}
+
+/**
+ * @tc.name: DfxOfflineParserTest009
+ * @tc.desc: test ParseSymbolWithFrame
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest009, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest009: start.";
+    DfxOfflineParser parser("testhap");
+#if defined(__aarch64__)
+    std::string soName = "/system/lib64/chipset-sdk-sp/libunwinder.z.so";
+#else
+    std::string soName = "/system/lib/chipset-sdk-sp/libunwinder.z.so";
+#endif
+    DfxFrame frame;
+    frame.mapName = soName;
+    parser.ParseSymbolWithFrame(frame);
+    ASSERT_TRUE(!frame.buildId.empty());
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest009: end.";
+}
+
+/**
+ * @tc.name: DfxOfflineParserTest010
+ * @tc.desc: test ParseSymbolWithFrame
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest010: start.";
+    DfxOfflineParser parser("testhap");
+#if defined(__aarch64__)
+    std::string soName = "/system/lib64/chipset-sdk-sp/libunwinder.z.so";
+#else
+    std::string soName = "/system/lib/chipset-sdk-sp/libunwinder.z.so";
+#endif
+    DfxFrame frame;
+    frame.mapName = soName;
+    ASSERT_TRUE(parser.ParseBuildIdJsSymbol(frame));
+    ASSERT_TRUE(!frame.buildId.empty());
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest010: end.";
+}
+
+/**
+ * @tc.name: DfxOfflineParserTest011
+ * @tc.desc: test ParseSoBuildIdAndJsFrameWithFrames
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest011: start.";
+    DfxOfflineParser parser("testhap");
+#if defined(__aarch64__)
+    std::string soName = "/system/lib64/chipset-sdk-sp/libunwinder.z.so";
+#else
+    std::string soName = "/system/lib/chipset-sdk-sp/libunwinder.z.so";
+#endif
+    std::vector<DfxFrame> frames;
+    DfxFrame frame;
+    frame.mapName = soName;
+    frames.emplace_back(frame);
+    ASSERT_TRUE(parser.ParseBuildIdJsSymbolWithFrames(frames));
+    ASSERT_TRUE(!frames[0].buildId.empty());
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest011: end.";
+}
+
+#if defined(__aarch64__)
+/**
+ * @tc.name: DfxOfflineParserTest012
+ * @tc.desc: test ParseNativeSymbol and ParseNativeSymbolWithFrames
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest012: start.";
+    std::string kernelStack;
+    ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
+    std::vector<DfxThreadStack> processStack;
+    ASSERT_TRUE(FormatProcessKernelStack(kernelStack, processStack));
+    DfxOfflineParser parser("testhap");
+    DfxFrame frame = processStack[0].frames[0];
+    ASSERT_TRUE(parser.ParseNativeSymbol(frame));
+    for (auto& threadStack : processStack) {
+        ASSERT_TRUE(parser.ParseNativeSymbolWithFrames(threadStack.frames));
+    }
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest012: end.";
+}
+#endif
+
+/**
+ * @tc.name: DfxOfflineParserTest013
+ * @tc.desc: test ReportDumpStats
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest013: start.";
+    ReportData reportData;
+    ASSERT_TRUE(DfxOfflineParser::ReportDumpStats(reportData));
+    DfxFrame frame;
+    uint32_t costTime = 1234;
+    DfxOfflineParser parser("testhap");
+    ASSERT_TRUE(parser.ReportDumpStats(frame, costTime, ParseCostType::PARSE_SINGLE_FRAME_TIME));
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest013: end.";
+}
+
+/**
+ * @tc.name: DfxOfflineParserTest014
+ * @tc.desc: test GetMapForFrame
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest014: start.";
+    DfxFrame frame;
+#if defined(__aarch64__)
+    frame.mapName = "/system/lib64/chipset-sdk-sp/libunwinder.z.so";
+#else
+    frame.mapName = "/system/lib/chipset-sdk-sp/libunwinder.z.so";
+#endif
+    DfxOfflineParser parser("testhap");
+    auto map = parser.GetMapForFrame(frame);
+    ASSERT_EQ(map, nullptr);
+    ASSERT_TRUE(parser.ParseBuildId(frame));
+    map = parser.GetMapForFrame(frame);
+    ASSERT_NE(map, nullptr);
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest014: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -29,6 +29,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/build:coverage_flags",
     ]
     deps = [
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "$faultloggerd_path/common/dfxutil:dfx_util",
@@ -38,8 +39,8 @@ if (defined(ohos_lite)) {
     version_script = "libjson_stack_formatter.map"
     external_deps = [
       "bounds_checking_function:libsec_shared",
-      "jsoncpp:jsoncpp",
       "hilog:libhilog",
+      "jsoncpp:jsoncpp",
     ]
 
     install_images = [

@@ -16,14 +16,19 @@
 #include "dfx_json_formatter.h"
 
 #include <cstdlib>
+#include <chrono>
+#include <future>
+#include <thread>
 #include <securec.h>
 #include "dfx_kernel_stack.h"
 #ifndef is_ohos_lite
 #include "dfx_frame_formatter.h"
 #include "dfx_offline_parser.h"
+#include "dfx_trace_dlsym.h"
 #include "json/json.h"
 #endif
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include <sys/wait.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -41,8 +46,11 @@ struct ParseSymbolOptions {
         : needParseSymbol(parseSymbol), bundleName(bundle), onlyParseBuildId(parseBuildId) {}
 };
 const int FRAME_BUF_LEN = 1024;
-MAYBE_UNUSED const int ALARM_TIME = 10;
-MAYBE_UNUSED const int WAITPID_TIMEOUT = 3000;
+MAYBE_UNUSED const int ALARM_TIME_S = 20;
+MAYBE_UNUSED const int WAITPID_TIMEOUT_MS = 3000;
+MAYBE_UNUSED const int MAX_ALL_FRAME_PARSE_TIME_MS = 3000;
+MAYBE_UNUSED const int PARSE_SO_SYMBOL_REMAIN_TIME_MS = 5000;
+MAYBE_UNUSED const int LESS_REMAIN_TIME_MS = 500;
 constexpr const char* CONNECTION_STACK = ", out stack string:";
 static std::string JsonAsString(const Json::Value& val)
 {
@@ -212,7 +220,7 @@ static std::pair<bool, std::string> ExecuteTaskByFork(ChildFuncType func)
         CleanPipe(pipefd);
         return result;
     } else if (pid == 0) {
-        alarm(ALARM_TIME);
+        alarm(ALARM_TIME_S);
         prctl(PR_SET_NAME, "processdump_parser");
         CleanFd(&pipefd[0]);
         std::string result = func();
@@ -229,7 +237,7 @@ static std::pair<bool, std::string> ExecuteTaskByFork(ChildFuncType func)
         formattedStack += std::string(temp, bytesRead);
     }
     CleanFd(&pipefd[0]);
-    int res = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
+    int res = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT_MS);
     if (res != 0 || formattedStack.empty()) {
         return result;
     }
@@ -489,13 +497,78 @@ static bool FormatKernelStackJson(std::vector<DfxThreadStack> processStack, std:
     return true;
 }
 
+void ReportDumpStats(const std::string& bundleName, ParseTime& parseTime, uint32_t threadCount)
+{
+    auto costTime = parseTime.formatKernelStackTime +
+        parseTime.parseBuildIdJsSymbolTime + parseTime.parseNativeSymbolTime;
+    if (costTime <= MAX_ALL_FRAME_PARSE_TIME_MS) {
+        return;
+    }
+    ReportData reportData;
+    reportData.parseCostType = ParseCostType::PARSE_ALL_FRAME_TIME;
+    reportData.bundleName = bundleName;
+    reportData.parseTime = parseTime;
+    reportData.costTime = costTime;
+    reportData.threadCount = threadCount;
+    DfxOfflineParser::ReportDumpStats(reportData);
+}
+
+void ParseSymbolWithDfxThreadStack(std::vector<DfxThreadStack>& processStack, const std::string& bundleName,
+    uint32_t timeout, ParseTime& parseTime)
+{
+    uint32_t beginTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
+    std::shared_ptr<DfxOfflineParser> parser = std::make_shared<DfxOfflineParser>(bundleName);
+    if (!parser) {
+        return;
+    }
+    for (auto& threadStack : processStack) {
+        parser->ParseBuildIdJsSymbolWithFrames(threadStack.frames);
+    }
+    uint32_t parseBuildIdJsSymbolTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
+    parseTime.parseBuildIdJsSymbolTime = parseBuildIdJsSymbolTime - beginTime;
+    if (timeout <= parseTime.parseBuildIdJsSymbolTime) {
+        return;
+    }
+    timeout -= parseTime.parseBuildIdJsSymbolTime;
+    if (timeout > PARSE_SO_SYMBOL_REMAIN_TIME_MS + LESS_REMAIN_TIME_MS) {
+        std::promise<void> promise;
+        std::future<void> future = promise.get_future();
+        std::thread parseNativeSymbolThread([parser, &processStack, &promise]() {
+            for (auto& threadStack : processStack) {
+                parser->ParseNativeSymbolWithFrames(threadStack.frames);
+            }
+            promise.set_value();
+        });
+        if (future.wait_for(std::chrono::milliseconds(PARSE_SO_SYMBOL_REMAIN_TIME_MS)) == std::future_status::timeout) {
+            DFXLOGE("parse so symbol timeout");
+        }
+        parseNativeSymbolThread.detach();
+    } else {
+        DFXLOGE("not enough time to parse so symbol!");
+    }
+    uint32_t parseNativeSymbolTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
+    parseTime.parseNativeSymbolTime = parseNativeSymbolTime - parseBuildIdJsSymbolTime;
+    DFXLOGI("ParseSymbolWithDfxThreadStack parseBuildIdJsSymbolTime=%{public}u ms, "
+            "parseNativeSymbolTime=%{public}u ms", parseTime.parseBuildIdJsSymbolTime, parseTime.parseNativeSymbolTime);
+    ReportDumpStats(bundleName, parseTime, static_cast<uint32_t>(processStack.size()));
+}
+
 bool FormatKernelStackImpl(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
     const ParseSymbolOptions& options)
 {
+    uint32_t timeout = static_cast<uint32_t>(ALARM_TIME_S * 1000);
+    uint32_t beginTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
     std::vector<DfxThreadStack> processStack;
-    if (!FormatProcessKernelStack(kernelStack, processStack, options.needParseSymbol, options.bundleName,
-        options.onlyParseBuildId)) {
+    if (!FormatProcessKernelStack(kernelStack, processStack)) {
         return false;
+    }
+    ParseTime parseTime;
+    parseTime.formatKernelStackTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds()) - beginTime;
+    timeout = (timeout > parseTime.formatKernelStackTime) ? timeout - parseTime.formatKernelStackTime : 0;
+    if (options.needParseSymbol && timeout > 0) {
+        DfxEnableTraceDlsym(true);
+        ParseSymbolWithDfxThreadStack(processStack, options.bundleName, timeout, parseTime);
+        DfxEnableTraceDlsym(false);
     }
     if (jsonFormat) {
         return FormatKernelStackJson(processStack, formattedStack);
@@ -517,7 +590,6 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
 
     std::function<std::string(void)> func = [&kernelStack, &jsonFormat, options]() mutable {
             std::string formattedStack;
-            options.onlyParseBuildId = false;
             (void)FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
             return formattedStack;
         };
@@ -527,6 +599,7 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
         formattedStack = ret.second;
         return true;
     }
+    options.needParseSymbol = false;
     return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
 #else
     return false;

@@ -773,49 +773,12 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest021, TestSize.Level2)
 
 /**
  * @tc.name: BacktraceLocalTest022
- * @tc.desc: test FormatProcessKernelStack with parsesymbol
+ * @tc.desc: test FormatKernelStack with parsesymbol
  * @tc.type: FUNC
  */
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest022, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest022: start.";
-    std::string res = ExecuteCommands("uname");
-    if (res.find("Linux") != std::string::npos) {
-        ASSERT_NE(res.find("Linux"), std::string::npos);
-    } else {
-        pid_t pid = GetProcessPid(FOUNDATION_NAME);
-        std::vector<int> tids;
-        std::vector<int> nstids;
-        ASSERT_TRUE(GetTidsByPid(pid, tids, nstids));
-        std::string processKernelStackInfo;
-        for (const auto& tid : tids) {
-            std::string kernelStack;
-            ASSERT_EQ(DfxGetKernelStack(tid, kernelStack), 0);
-            processKernelStackInfo += kernelStack;
-        }
-        std::vector<DfxThreadStack> processStack;
-        ASSERT_TRUE(FormatProcessKernelStack(processKernelStackInfo, processStack, true));
-        for (const auto& threadStack : processStack) {
-            ASSERT_GT(threadStack.frames.size(), 0);
-            for (auto const& frame : threadStack.frames) {
-                auto line = DfxFrameFormatter::GetFrameStr(frame);
-                ASSERT_NE(line.find("#"), std::string::npos);
-                ASSERT_NE(line.find("("), std::string::npos);
-                GTEST_LOG_(INFO) << line;
-            }
-        }
-        GTEST_LOG_(INFO) << "BacktraceLocalTest022: end.";
-    }
-}
-
-/**
- * @tc.name: BacktraceLocalTest023
- * @tc.desc: test FormatKernelStack with parsesymbol
- * @tc.type: FUNC
- */
-HWTEST_F(BacktraceLocalTest, BacktraceLocalTest023, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BacktraceLocalTest023: start.";
     std::string res = ExecuteCommands("uname");
     if (res.find("Linux") != std::string::npos) {
         ASSERT_NE(res.find("Linux"), std::string::npos);
@@ -828,7 +791,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest023, TestSize.Level2)
         ASSERT_TRUE(formattedStack.find("Tid:") != std::string::npos) << formattedStack;
         ASSERT_TRUE(formattedStack.find("backtrace_local_test") != std::string::npos) << formattedStack;
         ASSERT_TRUE(formattedStack.find("(") != std::string::npos) << formattedStack;
-        GTEST_LOG_(INFO) << "BacktraceLocalTest023: end.";
+        GTEST_LOG_(INFO) << "BacktraceLocalTest022: end.";
     }
 }
 } // namespace HiviewDFX
