@@ -93,6 +93,7 @@ HWTEST_F(FaultStackUnittest, FaultStackUnittest001, TestSize.Level0)
         unwinder.UnwindRemote(tid, true);
         process.GetKeyThread()->SetFrames(unwinder.GetFrames());
         FaultStack faultStack;
+        faultStack.Collect(process, request, unwinder);
         faultStack.Print(process, request, unwinder);
         EXPECT_TRUE(result.find("FaultStack:") != std::string::npos) << result;
         EXPECT_TRUE(result.find("sp0") != std::string::npos) << result;

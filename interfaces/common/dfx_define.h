@@ -26,7 +26,7 @@
 #define SIGLEAK_STACK_JEMALLOC 2 // When sig = 42, use si_code = 2 mark the event as jemalloc
 #define SIGLEAK_STACK_COREDUMP 3 // When sig = 42, use si_code = 3 mark the event as coredump
 #define SIGLEAK_STACK_BADFD 0xbadfd // When sig = 42, use si_code = 0xbadfd mark the event as badfd
-#define PROCESSDUMP_TIMEOUT 8
+#define PROCESSDUMP_TIMEOUT 15
 #define DUMPCATCHER_TIMEOUT 15
 
 #ifndef NAME_MAX

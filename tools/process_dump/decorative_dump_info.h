@@ -15,7 +15,6 @@
 
 #ifndef DECORATIVE_DUMP_INFO_H
 #define DECORATIVE_DUMP_INFO_H
-#include <cinttypes>
 #include <map>
 #include <memory>
 #include <set>
@@ -32,10 +31,10 @@ const uint64_t STEP = 4;
 #define PRINT_FORMAT "%08x"
 #elif defined(__aarch64__)
 const uint64_t STEP = 8;
-#define PRINT_FORMAT "%016llx"
+#define PRINT_FORMAT "%016" PRIxPTR
 #else
 const uint64_t STEP = 8;
-#define PRINT_FORMAT "%016llx"
+#define PRINT_FORMAT "%016" PRIxPTR
 #endif
 class DecorativeDumpInfo : public DumpInfo {
 public:
@@ -50,6 +49,8 @@ public:
             dumpInfo_->Print(process, request, unwinder);
         }
     }
+
+    void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override = 0;
 
     int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override
     {
@@ -72,6 +73,7 @@ protected:
 class DumpInfoHeader : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<DumpInfoHeader>(); }
 private:
     std::string GetReasonInfo(const ProcessDumpRequest& request, DfxProcess& process, DfxMaps& maps);
@@ -79,36 +81,45 @@ private:
     static std::string GetLastFatalMsg(const DfxProcess& process, const ProcessDumpRequest& request);
     static std::string UpdateFatalMessageWhenDebugSignal(const DfxProcess& process, const ProcessDumpRequest& request);
     static std::string ReadCrashObjString(const ProcessDumpRequest& request);
+    std::string headerInfo_;
 };
 
 class SubmitterStack : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<SubmitterStack>(); }
 private:
     void GetSubmitterStack(pid_t tid, uint64_t stackId, Unwinder& unwinder,
         std::vector<DfxFrame>& submitterFrames);
+    std::string stackStr_;
 };
 
 class Registers : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<Registers>(); }
+private:
+    std::string regsStr_;
 };
 
 class ExtraCrashInfo : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess &process, const ProcessDumpRequest &request, Unwinder &unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<ExtraCrashInfo>(); }
 private:
     static std::string GetCrashObjContent(const ProcessDumpRequest& request);
     static std::string ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length);
+    std::string extraCrashInfoStr_;
 };
 
 class OtherThreadDumpInfo : public DecorativeDumpInfo {
 public:
     int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess &process, const ProcessDumpRequest &request, Unwinder &unwinder) override {}
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<OtherThreadDumpInfo>(); }
 };
 
@@ -123,6 +134,7 @@ struct MemoryBlockInfo {
 class MemoryNearRegister : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<MemoryNearRegister>(); }
     void GetMemoryValues(std::set<uintptr_t>& memoryValues) override;
     void SetLiteType(bool isLite) { isLite_ = isLite; }
@@ -133,11 +145,13 @@ private:
     void UpdateContentByLite(MemoryBlockInfo& blockInfo, unsigned int pos);
     std::vector<MemoryBlockInfo> registerBlocks_;
     bool isLite_ {false};
+    std::string memoryNearRegisterStr_;
 };
 
 class FaultStack : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess &process, const ProcessDumpRequest &request, Unwinder &unwinder) override;
     void CollectStackInfo(pid_t tid, const std::vector<DfxFrame>& frames, bool needParseStack = false);
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<FaultStack>(); }
     const std::vector<uintptr_t>& GetStackValues();
@@ -148,16 +162,18 @@ private:
                                       uintptr_t prevEndAddr, uintptr_t size);
     uintptr_t AdjustAndCreateMemoryBlock(pid_t tid, size_t index, uintptr_t prevSp,
                                          uintptr_t prevEndAddr, uintptr_t size);
-    uintptr_t PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t stackStartAddr) const;
+    uintptr_t PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t stackStartAddr);
     void CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo) const;
     std::vector<MemoryBlockInfo> blocks_;
     std::vector<uintptr_t> stackValues_;
     bool isLite_ {false};
+    std::string faultStackStr_;
 };
 
 class Maps : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess &process, const ProcessDumpRequest &request, Unwinder &unwinder) override {}
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<Maps>(); }
 private:
     void SimplifyVma(DfxProcess& process, const ProcessDumpRequest& request,
@@ -172,12 +188,14 @@ using OpenFilesList = std::map<int, FDInfo>;
 class OpenFiles : public DecorativeDumpInfo {
 public:
     void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
+    void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<OpenFiles>(); }
 private:
     bool ReadLink(std::string &src, std::string &dst);
     void CollectOpenFiles(OpenFilesList &list, pid_t pid);
     void FillFdsaninfo(OpenFilesList &list, pid_t nsPid, uint64_t fdTableAddr);
     std::string DumpOpenFiles(OpenFilesList files);
+    std::string openFilesStr_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

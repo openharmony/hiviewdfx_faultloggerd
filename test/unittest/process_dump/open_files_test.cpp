@@ -58,7 +58,7 @@ int OpenFilesTest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
     OpenFilesTest::result.append(std::string(buf, len));
     return 0;
 }
- 
+
 namespace {
 /**
  * @tc.name: OpenFilesTest001
@@ -88,6 +88,7 @@ HWTEST_F(OpenFilesTest, OpenFilesTest001, TestSize.Level2)
     process.InitProcessInfo(pid, nsPid, getuid(), "");
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     OpenFiles openFiles;
+    openFiles.Collect(process, request, unwinder);
     openFiles.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "OpenFiles:",
@@ -102,4 +103,3 @@ HWTEST_F(OpenFilesTest, OpenFilesTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "OpenFilesTest001: end.";
 }
 }
- 

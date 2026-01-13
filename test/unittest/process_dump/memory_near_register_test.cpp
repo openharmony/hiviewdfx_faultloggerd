@@ -58,7 +58,7 @@ int MemoryNearRegisterTest::WriteLogFunc(int32_t fd, const char *buf, size_t len
     MemoryNearRegisterTest::result.append(std::string(buf, len));
     return 0;
 }
- 
+
 namespace {
 /**
  * @tc.name: MemoryNearRegisterTest001
@@ -90,6 +90,7 @@ HWTEST_F(MemoryNearRegisterTest, MemoryNearRegisterTest001, TestSize.Level2)
     process.SetFaultThreadRegisters(DfxRegs::CreateRemoteRegs(pid)); // can not get context, so create regs self
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     MemoryNearRegister memoryNearRegister;
+    memoryNearRegister.Collect(process, request, unwinder);
     memoryNearRegister.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Memory near registers:",
@@ -105,6 +106,7 @@ HWTEST_F(MemoryNearRegisterTest, MemoryNearRegisterTest001, TestSize.Level2)
         .extendPcLrPrinting = true,
     };
     process.SetCrashLogConfig(crashLogConfig);
+    memoryNearRegister.Collect(process, request, unwinder);
     memoryNearRegister.Print(process, request, unwinder);
     for (const std::string& keyWord : keyWords) {
         ASSERT_TRUE(CheckContent(result, keyWord, true));
@@ -114,4 +116,3 @@ HWTEST_F(MemoryNearRegisterTest, MemoryNearRegisterTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "MemoryNearRegisterTest001: end.";
 }
 }
- 

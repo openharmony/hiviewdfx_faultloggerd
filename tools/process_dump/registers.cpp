@@ -19,18 +19,22 @@ namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(Registers);
 
-void Registers::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+void Registers::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    DecorativeDumpInfo::Print(process, request, unwinder);
     // Registers of unwThread has been changed, we should print regs from request context.
     process.SetFaultThreadRegisters(DfxRegs::CreateFromUcontext(request.context));
     if (process.GetFaultThreadRegisters() == nullptr) {
         DFXLOGE("Fault thread regs is nullptr!");
         return;
     }
-    std::string regsStr = process.GetFaultThreadRegisters()->PrintRegs();
-    DfxBufferWriter::GetInstance().WriteMsg(regsStr);
-    DfxBufferWriter::GetInstance().AppendBriefDumpInfo(regsStr);
+    regsStr_ = process.GetFaultThreadRegisters()->PrintRegs();
+}
+
+void Registers::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    DecorativeDumpInfo::Print(process, request, unwinder);
+    DfxBufferWriter::GetInstance().WriteMsg(regsStr_);
+    DfxBufferWriter::GetInstance().AppendBriefDumpInfo(regsStr_);
 }
 }
 }

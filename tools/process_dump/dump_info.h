@@ -16,7 +16,6 @@
 #ifndef DUMP_INFO_H
 #define DUMP_INFO_H
 
-#include <csignal>
 #include <set>
 #include <string>
 #include "dfx_process.h"
@@ -28,9 +27,10 @@ namespace HiviewDFX {
 
 class DumpInfo {
 public:
-    virtual ~DumpInfo() {}
+    virtual ~DumpInfo() = default;
     virtual void SetDumpInfo(const std::shared_ptr<DumpInfo>& dumpInfo) {}
     virtual void Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) = 0;
+    virtual void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) = 0;
     virtual int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) = 0;
     virtual void GetMemoryValues(std::set<uintptr_t>& memoryValues) {};
 };

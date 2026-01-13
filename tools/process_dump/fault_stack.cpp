@@ -32,10 +32,9 @@ namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(FaultStack);
 
-void FaultStack::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+void FaultStack::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    DecorativeDumpInfo::Print(process, request, unwinder);
-    DfxBufferWriter::GetInstance().WriteMsg("FaultStack:\n");
+    faultStackStr_ = "FaultStack:\n";
     CollectStackInfo(process.GetKeyThread()->GetThreadInfo().nsTid, process.GetKeyThread()->GetFrames());
     if (blocks_.empty()) {
         return;
@@ -44,7 +43,7 @@ void FaultStack::Print(DfxProcess& process, const ProcessDumpRequest& request, U
     uintptr_t stackStartAddr = blocks_.at(0).startAddr;
     for (const auto& block : blocks_) {
         if (end != 0 && end < block.startAddr) {
-            DfxBufferWriter::GetInstance().WriteMsg("    ...\n");
+            faultStackStr_ += "    ...\n";
         }
         end = PrintMemoryBlock(block, stackStartAddr);
     }
@@ -54,6 +53,12 @@ void FaultStack::Print(DfxProcess& process, const ProcessDumpRequest& request, U
         GetMemoryValues(memoryValues);
         process.SetMemoryValues(memoryValues);
     }
+}
+
+void FaultStack::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    DecorativeDumpInfo::Print(process, request, unwinder);
+    DfxBufferWriter::GetInstance().WriteMsg(faultStackStr_);
 }
 
 const std::vector<uintptr_t>& FaultStack::GetStackValues()
@@ -165,17 +170,17 @@ bool FaultStack::CreateBlockForCorruptedStack(pid_t tid, const std::vector<DfxFr
     return true;
 }
 
-uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t stackStartAddr) const
+uintptr_t FaultStack::PrintMemoryBlock(const MemoryBlockInfo& info, uintptr_t stackStartAddr)
 {
     uintptr_t targetAddr = info.startAddr;
     for (uint64_t i = 0; i < static_cast<uint64_t>(info.content.size()); i++) {
         if (targetAddr == info.nameAddr) {
-            DfxBufferWriter::GetInstance().WriteFormatMsg("%s:" PRINT_FORMAT " " PRINT_FORMAT "\n",
+                faultStackStr_ += StringPrintf("%s:" PRINT_FORMAT " " PRINT_FORMAT "\n",
                 info.name.c_str(),
                 targetAddr,
                 info.content.at(i));
         } else {
-            DfxBufferWriter::GetInstance().WriteFormatMsg("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
+                faultStackStr_ += StringPrintf("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
                 targetAddr,
                 info.content.at(i));
         }

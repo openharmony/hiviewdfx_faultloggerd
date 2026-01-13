@@ -119,14 +119,6 @@ void ProcessDumper::Dump()
         SysEventReporter reporter(request_.type);
         reporter.Report(*process_, request_);
     }
-
-    if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        DumpUtils::InfoCrashUnwindResult(request_, resDump == DumpErrorCode::DUMP_ESUCCESS);
-        DumpUtils::BlockCrashProcExit(request_);
-    }
-    if (process_ != nullptr) {
-        process_->Detach();
-    }
 }
 
 DumpErrorCode ProcessDumper::DumpProcess()
@@ -380,12 +372,14 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
     // Create objects using reflection
     auto dumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[0]);
     auto prevDumpInfo = dumpInfo;
+    std::vector<std::shared_ptr<DumpInfo>> dumpInfos;
     for (size_t index = 1; index < dumpInfoComponent.size(); index++) {
         dumpInfo = DumpInfoFactory::GetInstance().CreateObject(dumpInfoComponent[index]);
         if (dumpInfo == nullptr) {
-            DFXLOGE("Failed to crreate object%{public}s.", dumpInfoComponent[index].c_str());
+            DFXLOGE("Failed to create object%{public}s.", dumpInfoComponent[index].c_str());
             continue;
         }
+        dumpInfos.push_back(dumpInfo);
         dumpInfo->SetDumpInfo(prevDumpInfo);
         prevDumpInfo = dumpInfo;
     }
@@ -394,7 +388,16 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
         return;
     }
     int unwindSuccessCnt = dumpInfo->UnwindStack(*process_, request_, *unwinder_);
+    for (const auto& info : dumpInfos) {
+        info->Collect(*process_, request_, *unwinder_);
+    }
+
     DFXLOGI("unwind success thread count(%{public}d)", unwindSuccessCnt);
+    if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
+        DumpUtils::InfoCrashUnwindResult(request_, unwindSuccessCnt > 0);
+        DumpUtils::BlockCrashProcExit(request_);
+    }
+    process_->Detach();  // crash secene
     dumpRes = unwindSuccessCnt > 0 ? ConcurrentSymbolize() : DumpErrorCode::DUMP_ESTOPUNWIND;
     if (!isJsonDump_) { // isJsonDump_ will print after format json
         dumpInfo->Print(*process_, request_, *unwinder_);

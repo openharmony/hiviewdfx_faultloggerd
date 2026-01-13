@@ -96,6 +96,7 @@ HWTEST_F(ExtraCrashInfoTest, ExtraCrashInfoTest001, TestSize.Level2)
     process.InitKeyThread(request);
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     ExtraCrashInfo extraCrashInfo;
+    extraCrashInfo.Collect(process, request, unwinder);
     extraCrashInfo.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         StringPrintf("ExtraCrashInfo(Memory start address %016" PRIx64 "):",

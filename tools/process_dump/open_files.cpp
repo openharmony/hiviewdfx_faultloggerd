@@ -45,15 +45,20 @@ struct FdTable {
 }
 REGISTER_DUMP_INFO_CLASS(OpenFiles);
 
-void OpenFiles::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+void OpenFiles::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    DecorativeDumpInfo::Print(process, request, unwinder);
     DFX_TRACE_SCOPED("GetOpenFiles");
     OpenFilesList openFies;
     CollectOpenFiles(openFies, process.GetProcessInfo().pid);
     FillFdsaninfo(openFies, process.GetProcessInfo().nsPid, request.fdTableAddr);
-    DfxBufferWriter::GetInstance().WriteMsg(DumpOpenFiles(openFies));
+    openFilesStr_ = DumpOpenFiles(openFies);
     DFXLOGI("get open files info finish");
+}
+
+void OpenFiles::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    DecorativeDumpInfo::Print(process, request, unwinder);
+    DfxBufferWriter::GetInstance().WriteMsg(openFilesStr_);
 }
 
 bool OpenFiles::ReadLink(std::string &src, std::string &dst)

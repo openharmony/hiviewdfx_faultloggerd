@@ -90,10 +90,7 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest001, TestSize.Level2)
     request.crashObj = (static_cast<uintptr_t>(type) << moveBit) |
         (reinterpret_cast<uintptr_t>(msg.c_str()) & 0x00ffffffffffffff);
 #endif
-    siginfo_t siginfo = {
-        .si_signo = SIGABRT,
-        .si_code = SI_TKILL,
-    };
+    siginfo_t siginfo = { .si_signo = SIGABRT, .si_code = SI_TKILL };
     request.siginfo = siginfo;
     GetThreadNameByTid(request.tid, request.threadName, sizeof(request.threadName));
     GetProcessName(request.processName, sizeof(request.processName));
@@ -101,6 +98,7 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest001, TestSize.Level2)
     process.InitProcessInfo(pid, nsPid, getuid(), request.processName);
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     DumpInfoHeader dumpInfoHeader;
+    dumpInfoHeader.Collect(process, request, unwinder);
     dumpInfoHeader.Print(process, request, unwinder);
     const std::vector<std::string> keyWords = {
         "Build info:", "Enabled app log configs:", "Extend pc lr printing:true",
@@ -146,6 +144,7 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest002, TestSize.Level2)
     process.InitProcessInfo(pid, nsPid, getuid(), request.processName);
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     DumpInfoHeader dumpInfoHeader;
+    dumpInfoHeader.Collect(process, request, unwinder);
     dumpInfoHeader.Print(process, request, unwinder);
     const std::vector<std::string> keyWords = {
         "Timestamp:",
@@ -159,4 +158,3 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "DumpInfoHeaderTest002: end.";
 }
 }
- 

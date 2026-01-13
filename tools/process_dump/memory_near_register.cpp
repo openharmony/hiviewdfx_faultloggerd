@@ -35,24 +35,29 @@ const char* const PC_REG_NAME = "pc";
 }
 REGISTER_DUMP_INFO_CLASS(MemoryNearRegister);
 
-void MemoryNearRegister::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+void MemoryNearRegister::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    DecorativeDumpInfo::Print(process, request, unwinder);
     pid_t tid = process.GetKeyThread()->GetThreadInfo().nsTid;
     bool extendPcLrPrinting = process.GetCrashLogConfig().extendPcLrPrinting ||
         ProcessDumpConfig::GetInstance().GetConfig().extendPcLrPrinting;
     CollectRegistersBlock(tid, process.GetFaultThreadRegisters(), unwinder.GetMaps(), extendPcLrPrinting);
-    DfxBufferWriter::GetInstance().WriteMsg("Memory near registers:\n");
+    memoryNearRegisterStr_ = "Memory near registers:\n";
     for (const auto& block : registerBlocks_) {
         uintptr_t targetAddr = block.startAddr;
-        DfxBufferWriter::GetInstance().WriteMsg(block.name + ":\n");
+        memoryNearRegisterStr_ += block.name + ":\n";
         for (size_t i = 0; i < block.content.size(); i++) {
-            DfxBufferWriter::GetInstance().WriteFormatMsg("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
+           memoryNearRegisterStr_ += StringPrintf("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
                 targetAddr,
                 block.content.at(i));
             targetAddr += STEP;
         }
     }
+}
+
+void MemoryNearRegister::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    DecorativeDumpInfo::Print(process, request, unwinder);
+    DfxBufferWriter::GetInstance().WriteMsg(memoryNearRegisterStr_);
 }
 
 void MemoryNearRegister::GetMemoryValues(std::set<uintptr_t>& memoryValues)
