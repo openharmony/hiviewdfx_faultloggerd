@@ -29,7 +29,7 @@
 #include "file_util.h"
 #include "string_printf.h"
 #include "string_util.h"
-#include "unique_fd.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -408,18 +408,18 @@ static bool GetProcessStartTime(std::string statStr, unsigned long long &startTi
 static bool GetProcessStartTime(pid_t tid, unsigned long long &startTime)
 {
     std::string path = "/proc/" + std::to_string(tid);
-    UniqueFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
-    if (dirFd == -1) {
+    SmartFd dirFd(open(path.c_str(), O_DIRECTORY | O_RDONLY));
+    if (!dirFd) {
         return false;
     }
 
-    UniqueFd statFd(openat(dirFd.Get(), "stat", O_RDONLY | O_CLOEXEC));
-    if (statFd == -1) {
+    SmartFd statFd(openat(dirFd.GetFd(), "stat", O_RDONLY | O_CLOEXEC));
+    if (!statFd) {
         return false;
     }
 
     std::string statStr;
-    if (!ReadFdToString(statFd.Get(), statStr)) {
+    if (!ReadFdToString(statFd.GetFd(), statStr)) {
         return false;
     }
 
