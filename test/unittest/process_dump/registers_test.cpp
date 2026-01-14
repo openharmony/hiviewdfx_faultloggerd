@@ -58,7 +58,7 @@ int RegistersTest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
     RegistersTest::result.append(std::string(buf, len));
     return 0;
 }
- 
+
 namespace {
 /**
  * @tc.name: RegistersTest001
@@ -81,6 +81,7 @@ HWTEST_F(RegistersTest, RegistersTest001, TestSize.Level2)
     DfxProcess process;
     process.InitProcessInfo(pid, nsPid, getuid(), "");
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
+    registers.Collect(process, request, unwinder);
     registers.Print(process, request, unwinder);
     std::vector<std::string> keyWords = {
         "Registers:",
@@ -99,4 +100,3 @@ HWTEST_F(RegistersTest, RegistersTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "RegistersTest001: end.";
 }
 }
- 

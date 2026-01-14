@@ -24,10 +24,15 @@ namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(ExtraCrashInfo);
 
+void ExtraCrashInfo::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    extraCrashInfoStr_ = GetCrashObjContent(request);
+}
+
 void ExtraCrashInfo::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
     DecorativeDumpInfo::Print(process, request, unwinder);
-    DfxBufferWriter::GetInstance().WriteMsg(GetCrashObjContent(request));
+    DfxBufferWriter::GetInstance().WriteMsg(extraCrashInfoStr_);
 }
 
 std::string ExtraCrashInfo::ReadCrashObjMemory(pid_t tid, uintptr_t addr, size_t length)

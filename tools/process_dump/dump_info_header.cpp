@@ -41,45 +41,48 @@ constexpr size_t PAGE_SIZE = 4096;
 }
 REGISTER_DUMP_INFO_CLASS(DumpInfoHeader);
 
-void DumpInfoHeader::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+void DumpInfoHeader::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    std::string headerInfo;
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
 #ifndef is_ohos_lite
         std::string buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
-        headerInfo = "Build info:" + buildInfo + "\n";
+        headerInfo_ = "Build info:" + buildInfo + "\n";
 #endif
-        headerInfo += GetCrashLogConfigInfo(request, process);
+        headerInfo_ += GetCrashLogConfigInfo(request, process);
     }
-    headerInfo += "Timestamp:" + GetCurrentTimeStr(request.timeStamp);
-    headerInfo += StringPrintf("Pid:%d\nUid:%d\n", process.GetProcessInfo().pid, process.GetProcessInfo().uid);
+    headerInfo_ += "Timestamp:" + GetCurrentTimeStr(request.timeStamp);
+    headerInfo_ += StringPrintf("Pid:%d\nUid:%d\n", process.GetProcessInfo().pid, process.GetProcessInfo().uid);
 #ifndef is_ohos_lite
     if (request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH && request.hitraceId.valid == HITRACE_ID_VALID) {
-        headerInfo += StringPrintf("HiTraceId:%" PRIx64 "\n", static_cast<uint64_t>(request.hitraceId.chainId));
+        headerInfo_ += StringPrintf("HiTraceId:%" PRIx64 "\n", static_cast<uint64_t>(request.hitraceId.chainId));
     }
 #endif
-    headerInfo += StringPrintf("Process name:%s\n", process.GetProcessInfo().processName.c_str());
+    headerInfo_ += StringPrintf("Process name:%s\n", process.GetProcessInfo().processName.c_str());
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         uint64_t lifeTimeSeconds = 0;
         int errCode = GetProcessLifeCycle(process.GetProcessInfo().pid, lifeTimeSeconds);
         process.SetLifeTime(lifeTimeSeconds);
-        headerInfo += ("Process life time:" + std::to_string(lifeTimeSeconds) + "s" + "\n");
+        headerInfo_ += ("Process life time:" + std::to_string(lifeTimeSeconds) + "s" + "\n");
         if (errCode != 0) {
             DFXLOGE("Get process lifeCycle fail, errCode: %{public}d", errCode);
             ReportCrashException(CrashExceptionCode::CRASH_LOG_EPROCESS_LIFECYCLE);
         }
         uint64_t rss = GetProcRssMemInfo(process.GetProcessInfo().pid);
         process.SetRss(rss);
-        headerInfo += StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n", rss);
-        headerInfo += ("Reason:" + GetReasonInfo(request, process, *unwinder.GetMaps()));
+        headerInfo_ += StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n", rss);
+        headerInfo_ += ("Reason:" + GetReasonInfo(request, process, *unwinder.GetMaps()));
         process.AppendFatalMessage(GetLastFatalMsg(process, request));
         auto msg = process.GetFatalMessage();
         if (!msg.empty()) {
-            headerInfo += "LastFatalMessage:" + msg + "\n";
+            headerInfo_ += "LastFatalMessage:" + msg + "\n";
         }
     }
-    DfxBufferWriter::GetInstance().AppendBriefDumpInfo(headerInfo);
-    DfxBufferWriter::GetInstance().WriteMsg(headerInfo);
+}
+
+void DumpInfoHeader::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    DfxBufferWriter::GetInstance().AppendBriefDumpInfo(headerInfo_);
+    DfxBufferWriter::GetInstance().WriteMsg(headerInfo_);
     DecorativeDumpInfo::Print(process, request, unwinder);
 }
 

@@ -30,9 +30,8 @@ namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(SubmitterStack);
 
-void SubmitterStack::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+void SubmitterStack::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    DecorativeDumpInfo::Print(process, request, unwinder);
     auto thread = process.GetKeyThread();
     std::vector<DfxFrame> submitterFrames;
     GetSubmitterStack(thread->GetThreadInfo().nsTid, request.stackId, unwinder, submitterFrames);
@@ -40,10 +39,15 @@ void SubmitterStack::Print(DfxProcess& process, const ProcessDumpRequest& reques
         return;
     }
     thread->SetSubmitterFrames(submitterFrames);
-    std::string stackStr = "========SubmitterStacktrace========\n";
-    stackStr += DumpUtils::GetStackTrace(submitterFrames);
-    DfxBufferWriter::GetInstance().WriteMsg(stackStr);
-    DfxBufferWriter::GetInstance().AppendBriefDumpInfo(stackStr);
+    stackStr_ = "========SubmitterStacktrace========\n";
+    stackStr_ += DumpUtils::GetStackTrace(submitterFrames);
+}
+
+void SubmitterStack::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    DecorativeDumpInfo::Print(process, request, unwinder);
+    DfxBufferWriter::GetInstance().WriteMsg(stackStr_);
+    DfxBufferWriter::GetInstance().AppendBriefDumpInfo(stackStr_);
 }
 
 void SubmitterStack::GetSubmitterStack(pid_t tid, uint64_t stackId, Unwinder& unwinder,

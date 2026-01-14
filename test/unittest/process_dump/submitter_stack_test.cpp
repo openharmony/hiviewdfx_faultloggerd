@@ -115,6 +115,7 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
     process.InitKeyThread(request);
     Unwinder unwinder(g_testTid, g_testTid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     SubmitterStack submitterStack;
+    submitterStack.Collect(process, request, unwinder);
     submitterStack.Print(process, request, unwinder);
 #if defined(__aarch64__)
     std::vector<std::string> keyWords = {
@@ -148,4 +149,3 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "SubmitterStackTest002: end.";
 }
 }
- 
