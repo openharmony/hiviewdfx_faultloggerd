@@ -124,7 +124,9 @@ void DfxMaps::ParseMaps(const pid_t pid, FILE* fp, int& fgetCount)
         if (map == nullptr) {
             continue;
         }
-        DfxMap::FormatMapName(pid, map->name);
+        if (isFormatPath_) {
+            DfxMap::FormatMapName(pid, map->name);
+        }
         bool isExec = map->IsMapExec();
         /* The adlt so is composed of multiple so files, therefore there are multiple text sections.
          * Different text section has different start address, to get the relPc, the traditional formula
