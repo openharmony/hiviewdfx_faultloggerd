@@ -22,7 +22,7 @@ bool CoredumpFacade::CreateCoredump(const CreateCoredumpRequest& req)
 {
     sessionService_.CreateSession(req);
     signalService_.SendStartSignal(req.targetPid);
-    constexpr int32_t maxCoredumpDelayTime = 10 * 1000;
+    constexpr int32_t maxCoredumpDelayTime = 30 * 1000;
     taskScheduler_.ScheduleCancelTime(req.targetPid, maxCoredumpDelayTime);
     return true;
 }

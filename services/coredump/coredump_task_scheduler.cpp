@@ -35,10 +35,9 @@ void CoredumpTaskScheduler::ScheduleCancelTime(SessionId sessionId, int timeoutM
     };
 
     auto endTime = session->endTime;
-    constexpr int32_t maxDelaySec = 30; // one coredump session is fail
     auto curTime = GetAbsTimeMilliSeconds();
-    int32_t delaySec = endTime > curTime ? static_cast<int32_t>((endTime - curTime) / 1000) : 0;
-    delaySec = std::min(delaySec, maxDelaySec);
+    int32_t delaySec = endTime > curTime ? static_cast<int32_t>((endTime - curTime) / NUMBER_ONE_THOUSAND) : 0;
+    delaySec = std::min(delaySec, timeoutMs / NUMBER_ONE_THOUSAND);
     session->delayTaskId = DelayTaskQueue::GetInstance().AddDelayTask(removeTask, delaySec);
 }
 
