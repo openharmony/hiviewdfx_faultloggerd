@@ -43,6 +43,7 @@ public:
     void Sort(bool less = true);
     void EnableMapIndex(bool enableMapIndex) { enableMapIndex_ = enableMapIndex; }
     void EnableOnlyExec(bool onlyExec) { onlyExec_ = onlyExec; }
+    void EnableFormatPath(bool isFormatPath) { isFormatPath_ = isFormatPath; }
     bool FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const;
     bool FindMapGroupByAddr(uintptr_t addr, std::set<DfxMap>& maps) const;
     bool FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const;
@@ -75,6 +76,7 @@ private:
     uintptr_t ArkStackStart_ = 0;
     uintptr_t ArkStackEnd_ = 0;
     uint32_t adltMapIndex_ = -1;
+    bool isFormatPath_ {true};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
