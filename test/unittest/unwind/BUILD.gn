@@ -53,6 +53,7 @@ ohos_unittest("test_unwind") {
   deps = [
     "$faultloggerd_common_path/dfxlog:dfx_hilog",
     "$faultloggerd_common_path/dfxutil:dfx_util",
+    "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
     "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
     "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder_src",
     "$faultloggerd_path/test/utils:dfx_test_util",
