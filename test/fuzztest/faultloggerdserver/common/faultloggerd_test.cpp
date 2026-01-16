@@ -25,17 +25,13 @@ using namespace OHOS::HiviewDFX;
 void SendRequestToServer(const SocketRequestData &socketRequestData, SocketFdData* socketFdData)
 {
     FaultLoggerdSocket faultLoggerdSocket;
-    if (!faultLoggerdSocket.CreateSocketFileDescriptor(0)) {
-        return;
-    }
     std::string socketNames[] = { SERVER_SOCKET_NAME, SERVER_SDKDUMP_SOCKET_NAME, SERVER_CRASH_SOCKET_NAME };
     srand(static_cast<unsigned>(time(nullptr)));
     int randomSocketIndex = rand() % 3;
-    if (faultLoggerdSocket.StartConnect(socketNames[randomSocketIndex].c_str())) {
+    if (faultLoggerdSocket.InitSocket(socketNames[randomSocketIndex].c_str(), 0)) {
         socketFdData ? faultLoggerdSocket.RequestFdsFromServer(socketRequestData, *socketFdData) :
             faultLoggerdSocket.RequestServer(socketRequestData);
     }
-    faultLoggerdSocket.CloseSocketFileDescriptor();
 }
 
 void FillRequestHeadData(RequestDataHead& head, FaultLoggerClientType clientType)

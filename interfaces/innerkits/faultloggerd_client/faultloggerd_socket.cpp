@@ -120,30 +120,32 @@ bool GetMsgFromSocket(int32_t sockFd, void* data, uint32_t dataLength)
     return faultLoggerd.GetMsgFromSocket(data, dataLength);
 }
 
-bool FaultLoggerdSocket::CreateSocketFileDescriptor(uint32_t timeout)
+bool FaultLoggerdSocket::InitSocket(const char* socketName, uint32_t timeout)
 {
-    if (socketFd_ >= 0) {
+    bool ret = InitSocketFileDescriptor(timeout);
+    if (ret) {
+        ret = StartConnect(socketName);
+    }
+    return ret;
+}
+
+bool FaultLoggerdSocket::InitSocketFileDescriptor(uint32_t timeout)
+{
+    if (smartSocketFd_) {
         LOGE(signalSafely_, "%{public}s :: Create the socket repeatedly", __func__);
         return false;
     }
-    socketFd_ = socket(AF_LOCAL, SOCK_STREAM, 0);
-    if (socketFd_ < 0) {
+    smartSocketFd_ = SmartFd(socket(AF_LOCAL, SOCK_STREAM, 0), !signalSafely_);
+    if (!smartSocketFd_) {
         LOGE(signalSafely_, "%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
         return false;
     }
+    socketFd_ = smartSocketFd_.GetFd();
     if (timeout > 0) {
         SetSocketTimeOut(timeout, SO_RCVTIMEO);
         SetSocketTimeOut(timeout, SO_SNDTIMEO);
     }
     return true;
-}
-
-void FaultLoggerdSocket::CloseSocketFileDescriptor()
-{
-    if (socketFd_ >= 0) {
-        close(socketFd_);
-        socketFd_ = -1;
-    }
 }
 
 bool FaultLoggerdSocket::SetSocketTimeOut(uint32_t timeout, int optName)

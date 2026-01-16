@@ -52,17 +52,12 @@ int32_t SendRequestToServer(const std::string& socketName, const void* requestDa
     SocketFdData* socketFdData = nullptr)
 {
     FaultLoggerdSocket faultLoggerdSocket;
-    if (!faultLoggerdSocket.CreateSocketFileDescriptor(SOCKET_TIMEOUT)) {
+    if (!faultLoggerdSocket.InitSocket(socketName.c_str(), SOCKET_TIMEOUT)) {
         return ResponseCode::CONNECT_FAILED;
     }
     int32_t retCode{ResponseCode::DEFAULT_ERROR_CODE};
-    if (!faultLoggerdSocket.StartConnect(socketName.c_str())) {
-        retCode =  ResponseCode::CONNECT_FAILED;
-    } else {
-        retCode = socketFdData ? faultLoggerdSocket.RequestFdsFromServer({requestData, requestSize},
-            *socketFdData) :  faultLoggerdSocket.RequestServer({requestData, requestSize});
-    }
-    faultLoggerdSocket.CloseSocketFileDescriptor();
+    retCode = socketFdData ? faultLoggerdSocket.RequestFdsFromServer({requestData, requestSize}, *socketFdData) :
+            faultLoggerdSocket.RequestServer({requestData, requestSize});
     return retCode;
 }
 
@@ -512,13 +507,8 @@ HWTEST_F(FaultLoggerdServiceTest, StatsClientTest01, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, FaultloggerdSocketAbnormalTest, TestSize.Level2)
 {
     FaultLoggerdSocket faultLoggerdSocket;
-    ASSERT_TRUE(faultLoggerdSocket.CreateSocketFileDescriptor(0));
-    ASSERT_FALSE(faultLoggerdSocket.StartConnect(nullptr));
+    ASSERT_FALSE(faultLoggerdSocket.InitSocket(nullptr, 0));
     ASSERT_FALSE(faultLoggerdSocket.ReadFileDescriptorFromSocket(nullptr, 0));
-    int32_t fd = -1;
-    faultLoggerdSocket.CloseSocketFileDescriptor();
-    ASSERT_FALSE(faultLoggerdSocket.StartConnect(SERVER_CRASH_SOCKET_NAME));
-    ASSERT_FALSE(faultLoggerdSocket.ReadFileDescriptorFromSocket(&fd, 0));
     constexpr int32_t maxConnection = 30;
     SmartFd sockFd = StartListen(nullptr, maxConnection);
     ASSERT_FALSE(sockFd);
@@ -597,14 +587,12 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest004, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, AbnormalTest005, TestSize.Level2)
 {
     FaultLoggerdSocket faultLoggerdSocket;
-    faultLoggerdSocket.CreateSocketFileDescriptor(0);
-    faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME);
+    faultLoggerdSocket.InitSocket(SERVER_SOCKET_NAME, 0);
     std::this_thread::sleep_for(std::chrono::seconds(4));
     FaultLoggerdStatsRequest requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
     EXPECT_EQ(faultLoggerdSocket.RequestServer({&requestData, sizeof(requestData)}),
         ResponseCode::SEND_DATA_FAILED);
-    faultLoggerdSocket.CloseSocketFileDescriptor();
 }
 
 /**
@@ -615,11 +603,9 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest005, TestSize.Level2)
 HWTEST_F(FaultLoggerdServiceTest, AbnormalTest006, TestSize.Level2)
 {
     FaultLoggerdSocket faultLoggerdSocket;
-    faultLoggerdSocket.CreateSocketFileDescriptor(0);
-    faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME);
+    faultLoggerdSocket.InitSocket(SERVER_SOCKET_NAME, 0);
     FaultLoggerdSocket faultLoggerdSocket2;
-    faultLoggerdSocket2.CreateSocketFileDescriptor(0);
-    faultLoggerdSocket2.StartConnect(SERVER_SOCKET_NAME);
+    faultLoggerdSocket2.InitSocket(SERVER_SOCKET_NAME, 0);
     std::this_thread::sleep_for(std::chrono::seconds(1));
     FaultLoggerdStatsRequest requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
@@ -627,8 +613,6 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest006, TestSize.Level2)
         ResponseCode::SEND_DATA_FAILED);
     EXPECT_EQ(faultLoggerdSocket.RequestServer({&requestData, sizeof(requestData)}),
         ResponseCode::REQUEST_SUCCESS);
-    faultLoggerdSocket.CloseSocketFileDescriptor();
-    faultLoggerdSocket2.CloseSocketFileDescriptor();
 }
 
 /**
@@ -638,19 +622,17 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest006, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdServiceTest, AbnormalTest007, TestSize.Level2)
 {
-    FaultLoggerdSocket faultLoggerdSocket;
-    faultLoggerdSocket.CreateSocketFileDescriptor(0);
-    faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME);
-    faultLoggerdSocket.CloseSocketFileDescriptor();
+    {
+        FaultLoggerdSocket faultLoggerdSocket;
+        faultLoggerdSocket.InitSocket(SERVER_SOCKET_NAME, 0);
+    }
     std::this_thread::sleep_for(std::chrono::seconds(1));
     FaultLoggerdSocket faultLoggerdSocket2;
-    faultLoggerdSocket2.CreateSocketFileDescriptor(0);
-    faultLoggerdSocket2.StartConnect(SERVER_SOCKET_NAME);
+    faultLoggerdSocket2.InitSocket(SERVER_SOCKET_NAME, 0);
     FaultLoggerdStatsRequest requestData;
     FillRequestHeadData(requestData.head, FaultLoggerClientType::DUMP_STATS_CLIENT);
     EXPECT_EQ(faultLoggerdSocket2.RequestServer({&requestData, sizeof(requestData)}),
         ResponseCode::REQUEST_SUCCESS);
-    faultLoggerdSocket2.CloseSocketFileDescriptor();
 }
 } // namespace HiviewDFX
 } // namespace OHOS
