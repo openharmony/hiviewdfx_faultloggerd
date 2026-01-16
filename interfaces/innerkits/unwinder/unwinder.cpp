@@ -16,7 +16,6 @@
 #include "unwinder.h"
 
 #include <unordered_map>
-#include <dlfcn.h>
 #include <link.h>
 
 #include "dfx_ark.h"
@@ -83,7 +82,9 @@ public:
         }
         DfxEnableTraceDlsym(true);
         maps_ = DfxMaps::Create(pid, crash);
-        maps_->EnableFormatPath(false);
+        if (maps_ != nullptr) {
+            maps_->EnableFormatPath(false);
+        }
         enableFpCheckMapExec_ = true;
         isCrash_ = crash;
         memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
