@@ -24,8 +24,10 @@
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_thread.h"
+#include "dfx_util.h"
 #include "faultlogger_client_msg.h"
 #include "procinfo.h"
+#include "proc_util.h"
 #include "dfx_maps.h"
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
@@ -103,6 +105,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.sectionMaps["PROCESS_RSS_MEMINFO"] = std::to_string(process.GetRss());
     info.sectionMaps["PROCESS_LIFETIME"] = std::to_string(process.GetLifeTime());
     info.sectionMaps["IS_ARKWEB_CORE"] = DfxMaps::IsArkWebProc() ? "true" : "false";
+    info.sectionMaps["PSS_MEMORY"] = std::to_string(IsBetaVersion() ? GetPssMemory() : 0);
     addFaultLog(&info);
     DFXLOGI("Finish report fault to FaultLogger %{public}s(%{public}d,%{public}d)",
         info.module.c_str(), info.pid, info.id);
