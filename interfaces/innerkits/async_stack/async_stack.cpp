@@ -27,6 +27,7 @@
 #include "fp_backtrace.h"
 #include "unique_stack_table.h"
 #include "unwinder.h"
+#include "parameters.h"
 
 using namespace OHOS::HiviewDFX;
 static bool g_init = false;
@@ -44,41 +45,99 @@ extern "C" void DFX_SetAsyncStackCallback(GetStackIdFunc func) __attribute__((we
 
 namespace {
 
+static void* PreloadArkWebEngineLib(const std::string arkwebEngineSandboxLibPath)
+{
+    Dl_namespace dlns;
+    Dl_namespace ndkns;
+    dlns_init(&dlns, "nweb_ns");
+    std::string bundleName = OHOS::system::GetParameter("persist.arkwebcore.package_name", "");
+    if (bundleName.empty()) {
+        DFXLOGE("Fail to get persist.arkwebcore.package_name");
+        return nullptr;
+    }
+    const std::string arkWebEngineLibPath = "/data/app/el1/bundle/public/" + bundleName + "/libs/arm64";
+
+    std::string libNsPath = arkWebEngineLibPath + ":" + arkwebEngineSandboxLibPath;
+    const std::string LIB_ARKWEB_ENGINE = "libarkweb_engine.so";
+    dlns_create(&dlns, libNsPath.c_str());
+    dlns_get("ndk", &ndkns);
+    dlns_inherit(&dlns, &ndkns, "allow_all_shared_libs");
+
+    void *webEngineHandle = dlopen_ns(&dlns, LIB_ARKWEB_ENGINE.c_str(), RTLD_NOW | RTLD_GLOBAL);
+    if (webEngineHandle == nullptr) {
+        DFXLOGE("Fail to dlopen libarkweb_engine.so");
+    }
+    return webEngineHandle;
+}
+
+static inline void* OpenAsyncLib(uint64_t mask)
+{
+    if (mask & ASYNC_TYPE_ARKWEB) {
+        const std::string arkwebEngineSandboxLibPath = "/data/storage/el1/bundle/arkwebcore/libs/arm64";
+        return PreloadArkWebEngineLib(arkwebEngineSandboxLibPath);
+    }
+    if (mask & ASYNC_TYPE_JSVM) {
+        const char* v8SharedLibPath = "/system/lib64/libv8_shared.so";
+        return dlopen(v8SharedLibPath, RTLD_LAZY | RTLD_LOCAL);
+    }
+    return nullptr;
+}
+
+static void* GetArkwebHandle(uint64_t mask)
+{
+    static void* handle = OpenAsyncLib(mask);
+    return handle;
+}
+
+static void* GetJsvmHandle(uint64_t mask)
+{
+    static void* handle = OpenAsyncLib(mask);
+    return handle;
+}
+
+void SetAsyncStackCallback(const char* funcName, CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn,
+    uint64_t mask)
+{
+    void* handle = nullptr;
+    if (mask & ASYNC_TYPE_ARKWEB) {
+        handle = GetArkwebHandle(mask);
+    } else if (mask & ASYNC_TYPE_JSVM) {
+        handle = GetJsvmHandle(mask);
+    }
+    auto genericSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(
+        dlsym(handle == nullptr ? RTLD_DEFAULT : handle, funcName));
+    if (genericSetAsyncStackFn != nullptr) {
+        genericSetAsyncStackFn(collectAsyncStackFn, setStackIdFn);
+    }
+}
+
 void UpdateAsyncStackCallbacks(uint64_t lastType, uint64_t currentType)
 {
     // libuv callback is registered by default in DfxSetAsyncStackCallback().
     // Other async sources are registered/unregistered incrementally based on type changes.
-
     struct AsyncCallback {
         const char* funcName;
         uint64_t mask;
     };
-
     const AsyncCallback callbacks[] = {
         {"EventSetAsyncStackFunc", ASYNC_TYPE_EVENTHANDLER},
         {"PromiseSetAsyncStackFunc", ASYNC_TYPE_PROMISE},
         {"CustomizeSetAsyncStackFunc", ASYNC_TYPE_CUSTOMIZE},
-        {"FFRTSetAsyncStackFunc", ASYNC_TYPE_FFRT_POOL | ASYNC_TYPE_FFRT_QUEUE}
+        {"FFRTSetAsyncStackFunc", ASYNC_TYPE_FFRT_POOL | ASYNC_TYPE_FFRT_QUEUE},
+        {"ArkWebSetAsyncStackFunc",  ASYNC_TYPE_ARKWEB},
+        {"JsvmSetAsyncStackFunc",  ASYNC_TYPE_JSVM}
     };
-
-    auto setCallbackFn = [](const char * funcName, CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn) {
-        auto genericSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(dlsym(RTLD_DEFAULT, funcName));
-        if (genericSetAsyncStackFn != nullptr) {
-            genericSetAsyncStackFn(collectAsyncStackFn, setStackIdFn);
-        }
-    };
-
     for (const auto& callback : callbacks) {
         // Whether this async type was enabled before the update (lastType).
         const bool lastEnabled = (lastType & callback.mask) != 0;
         // Whether this async type is enabled after the update (currentType).
         const bool currentEnabled = (currentType & callback.mask) != 0;
         if (lastEnabled && !currentEnabled) {
-            setCallbackFn(callback.funcName, nullptr, nullptr);
+            SetAsyncStackCallback(callback.funcName, nullptr, nullptr, callback.mask);
             continue;
         }
         if (!lastEnabled && currentEnabled) {
-            setCallbackFn(callback.funcName, DfxCollectAsyncStack, DfxSetSubmitterStackId);
+            SetAsyncStackCallback(callback.funcName, DfxCollectAsyncStack, DfxSetSubmitterStackId, callback.mask);
         }
     }
 }

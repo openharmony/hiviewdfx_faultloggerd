@@ -53,6 +53,8 @@ typedef enum {
     ASYNC_TYPE_FFRT_QUEUE       = 1ULL << 9,
     ASYNC_TYPE_EVENTHANDLER     = 1ULL << 16,
     ASYNC_TYPE_PROMISE          = 1ULL << 17,
+    ASYNC_TYPE_ARKWEB           = 1ULL << 18,
+    ASYNC_TYPE_JSVM             = 1ULL << 19,
     ASYNC_TYPE_ARKTS_WORKER     = 1ULL << 24,
     ASYNC_TYPE_ARKTS_TASKPOOL   = 1ULL << 25,
     ASYNC_TYPE_CUSTOMIZE        = 1ULL << 32
