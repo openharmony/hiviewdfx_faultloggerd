@@ -82,6 +82,14 @@ typedef struct DumpHiTraceIdStruct {
 } DumpHiTraceIdStruct;
 #endif
 
+typedef struct MuslPthread {
+    void *self;
+    void *prev;
+    void *next;
+    uintptr_t sysinfo;
+    int tid;
+} DfxMuslPthread;
+
 /**
  * @brief ProcessDump request information
  * It is used to save and transfer the current process context from signalhandler to processdump,
