@@ -106,6 +106,10 @@ if (defined(ohos_lite)) {
     ]
 
     external_deps = [ "hilog_lite:hilog_shared" ]
+    if (build_selinux) {
+      external_deps += [ "selinux:libselinux" ]
+      cflags_cc += [ "-DHAS_LIB_SELINUX" ]
+    }
   }
 } else {
   config("processdump_config") {
@@ -263,6 +267,10 @@ if (defined(ohos_lite)) {
       "ipc:ipc_core",
       "samgr:samgr_proxy",
     ]
+    if (build_selinux) {
+      external_deps += [ "selinux:libselinux" ]
+      cflags_cc += [ "-DHAS_LIB_SELINUX" ]
+    }
     version_script = "processdump.map"
     install_images = [
       "system",

@@ -19,6 +19,10 @@
 #include <sys/ptrace.h>
 #include <sys/wait.h>
 
+#if defined(HAS_LIB_SELINUX)
+#include <selinux/selinux.h>
+#endif
+
 #include "dfx_frame_formatter.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
@@ -278,6 +282,15 @@ void DumpUtils::BlockCrashProcExit(const ProcessDumpRequest& request)
         CRASH_BLOCK_EXIT_FLAG) < 0) {
         DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
     }
+}
+
+bool DumpUtils::IsSelinuxPermissive()
+{
+#if defined(HAS_LIB_SELINUX)
+    return security_getenforce() == 0;
+#else
+    return true;
+#endif
 }
 } // namespace HiviewDFX
 } // namespace OHOS

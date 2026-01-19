@@ -25,10 +25,6 @@
 #include "dfx_cutil.h"
 #include "dfx_socket_request.h"
 
-#if defined(HAS_LIB_SELINUX)
-#include <selinux/selinux.h>
-#endif
-
 using namespace testing;
 using namespace testing::ext;
 
