@@ -85,6 +85,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
     threadStack.tid = strtol(result[2].str().c_str(), nullptr, base); // 2 : second of searched element
     auto pos = kernelStack.rfind("pid=" + result[result.size() - 1].str() + "):");
     if (pos == std::string::npos) {
+        DFXLOGE("search kernel stack failed!");
         return false;
     }
     std::regex threadStatReg(
