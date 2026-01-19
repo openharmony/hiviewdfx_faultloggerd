@@ -46,6 +46,10 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest001, TestSize.Level2)
     frame.mapName = "xxx.so";
     isJsFrame = DfxOfflineParser::IsJsFrame(frame);
     ASSERT_FALSE(isJsFrame);
+    frame.mapName = "xxx";
+    frame.isJsFrame = true;
+    isJsFrame = DfxOfflineParser::IsJsFrame(frame);
+    ASSERT_TRUE(isJsFrame);
     GTEST_LOG_(INFO) << "DfxOfflineParserTest001: end.";
 }
 
@@ -308,6 +312,23 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest014, TestSize.Level2)
     map = parser.GetMapForFrame(frame);
     ASSERT_NE(map, nullptr);
     GTEST_LOG_(INFO) << "DfxOfflineParserTest014: end.";
+}
+
+/**
+ * @tc.name: DfxOfflineParserTest015
+ * @tc.desc: test ParseBuildId and ParseNativeSymbol
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest015, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest015: start.";
+    DfxFrame frame;
+    frame.mapName = "xxx";
+    frame.isJsFrame = true;
+    DfxOfflineParser parser("testhap");
+    ASSERT_FALSE(parser.ParseBuildId(frame));
+    ASSERT_FALSE(parser.ParseNativeSymbol(frame));
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest015: end.";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
