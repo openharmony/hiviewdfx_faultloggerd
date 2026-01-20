@@ -230,7 +230,7 @@ HWTEST_F(DfxCoredumpUtilTest, CoredumpConfigManager003, TestSize.Level2)
 
 /**
  * @tc.name: CoredumpController002
- * @tc.desc: test CoredumpController VerifyHap
+ * @tc.desc: test CoredumpController VerifyProcess
  * @tc.type: FUNC
  */
 HWTEST_F(DfxCoredumpUtilTest, CoredumpController002, TestSize.Level2)
@@ -239,9 +239,9 @@ HWTEST_F(DfxCoredumpUtilTest, CoredumpController002, TestSize.Level2)
     auto& val = CoredumpConfigManager::GetInstance().dumpConfig_.coredumpSwitch;
     auto oldVal = val;
     val = false;
-    EXPECT_FALSE(CoredumpController::VerifyHap());
+    EXPECT_FALSE(CoredumpController::VerifyProcess());
     val = true;
-    EXPECT_TRUE(CoredumpController::VerifyHap());
+    EXPECT_TRUE(CoredumpController::VerifyProcess());
     val = oldVal;
     GTEST_LOG_(INFO) << "CoredumpController002: end.";
 }

@@ -32,6 +32,7 @@ public:
     static std::string GetStackTrace(const std::vector<DfxFrame>& frames);
     static bool ReadTargetMemory(pid_t tid, uintptr_t addr, uintptr_t &value);
     static std::string GetSelfBundleName();
+    static bool HasCoredumpPermission();
     static void InfoCrashUnwindResult(const ProcessDumpRequest& request, bool isUnwindSucc);
     static void BlockCrashProcExit(const ProcessDumpRequest& request);
     static void WaitForFork(pid_t pid, pid_t& childPid);

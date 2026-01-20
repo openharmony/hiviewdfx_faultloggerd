@@ -17,6 +17,7 @@
 #include "coredump_mapping_manager.h"
 #include "dfx_log.h"
 #include "securec.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -122,13 +123,31 @@ void SectionHeaderTableWriter::SetShFlag(const Elf64_Phdr* programHeader, Elf64_
     }
 }
 
+bool SectionHeaderTableWriter::WriteSystemVersion(Elf64_Shdr *sectionHeader, char *versionStartAddr, size_t verLen)
+{
+    if (sectionHeader == nullptr || versionStartAddr == nullptr) {
+        return false;
+    }
+    sectionHeader->sh_name = 0x17; // 0x17 : .note.dfx.system.version offset
+    sectionHeader->sh_addr = 0x00;
+    sectionHeader->sh_type = SHT_NOTE;
+    sectionHeader->sh_flags = 0x00;
+    sectionHeader->sh_offset = static_cast<Elf64_Off>(versionStartAddr - bw_.GetBase());
+    sectionHeader->sh_size = verLen + 1;
+    return true;
+}
+
 bool SectionHeaderTableWriter::Write()
 {
+    char *versionStartAddr = bw_.GetCurrent();
+    std::string buildInfo = "Build info:" + OHOS::system::GetParameter("const.product.software.version", "Unknown");
+    bw_.Write(buildInfo.c_str(), buildInfo.length() + 1);
+
     Elf64_Ehdr *elfHeader = reinterpret_cast<Elf64_Ehdr *>(bw_.GetBase());
     Elf64_Phdr *programHeader = reinterpret_cast<Elf64_Phdr *>(bw_.GetBase() + sizeof(Elf64_Ehdr));
 
     char *strTableAddr = bw_.GetCurrent();
-    char strTable[] = "\0.note\0.shstrtab\0.load\0";
+    char strTable[] = "\0.note\0.shstrtab\0.load\0.note.dfx.system.version\0";
     if (!bw_.Write(strTable, sizeof(strTable))) {
         DFXLOGE("Wrtie strTable fail, errno:%{public}d", errno);
         return false;
@@ -140,25 +159,27 @@ bool SectionHeaderTableWriter::Write()
     elfHeader->e_shoff = static_cast<Elf64_Off>(bw_.GetCurrent() - bw_.GetBase());
     (void)memset_s(bw_.GetCurrent(), sizeof(Elf64_Shdr), 0, sizeof(Elf64_Shdr));
     bw_.Advance(sizeof(Elf64_Shdr));
+
     Elf64_Shdr *sectionHeader = reinterpret_cast<Elf64_Shdr *>(bw_.GetCurrent());
-    sectionHeader->sh_name = 0x0B; // 10 : .shstrtab offset
-    SectionHeaderFill(sectionHeader, SHT_NOTE, SHF_ALLOC, programHeader);
+    sectionHeader->sh_name = 0x01; // 0x01 : .note offset
+    SectionHeaderFill(sectionHeader, SHT_NOTE, 0x00, programHeader);
     sectionHeader += 1;
     programHeader += 1;
-    for (int i = 0; i < elfHeader->e_shnum - 3; i++) { // 3 : jump special seation header
-        sectionHeader->sh_name = 0x11;
+    for (int i = 0; i < elfHeader->e_shnum - 4; i++) { // 4 : jump special section header
+        sectionHeader->sh_name = 0x11; // 0x11 : .load offset
         Elf64_Xword shFlag = 0x00;
         SetShFlag(programHeader, shFlag);
         SectionHeaderFill(sectionHeader, SHT_PROGBITS, shFlag, programHeader);
         sectionHeader += 1;
         programHeader += 1;
     }
-    sectionHeader->sh_name = 0x01;
-    SectionHeaderFill(sectionHeader, SHT_STRTAB, 0x00, programHeader);
+    sectionHeader->sh_name = 0x07; // 0x07 : .shstrtab offset
+    SectionHeaderFill(sectionHeader, SHT_STRTAB, SHF_ALLOC, programHeader);
     sectionHeader->sh_addr = 0x00;
-
     sectionHeader->sh_offset = static_cast<Elf64_Off>(strTableAddr - bw_.GetBase());
-    sectionHeader->sh_size = 0x16;
+    sectionHeader->sh_size = sizeof(strTable);
+    sectionHeader += 1;
+    WriteSystemVersion(sectionHeader, versionStartAddr, buildInfo.length());
     sectionHeader += 1;
     bw_.SetCurrent(reinterpret_cast<char*>(sectionHeader));
     return true;
@@ -224,7 +245,7 @@ void CoredumpElfHeaderWriter::InitElfHeader(uint16_t ePhnum)
     ehdr_.e_phentsize = sizeof(Elf64_Phdr);
     ehdr_.e_phnum = ePhnum;
     ehdr_.e_shentsize = sizeof(Elf64_Shdr);
-    ehdr_.e_shnum = ePhnum + 2; // 2: jump .note ... sec
+    ehdr_.e_shnum = ePhnum + 3; // 3: jump .note ... sec
     ehdr_.e_shstrndx = ePhnum + 1;
 }
 } // namespace HiviewDFX

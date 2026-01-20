@@ -56,6 +56,7 @@ private:
     void SectionHeaderFill(Elf64_Shdr *sectionHeader, Elf64_Word shType, Elf64_Xword shFlag, Elf64_Phdr *programHeader);
     void AdjustOffset(uint8_t remain);
     static void SetShFlag(const Elf64_Phdr* programHeader, Elf64_Xword &shFlag);
+    bool WriteSystemVersion(Elf64_Shdr *sectionHeader, char *versionStartAddr, size_t verLen);
     CoredumpBufferWriter& bw_;
 };
 } // namespace HiviewDFX

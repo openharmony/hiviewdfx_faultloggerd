@@ -32,20 +32,21 @@ public:
     static bool UnlinkFile(const std::string &logPath);
     std::string GetCoredumpFileName();
     std::string GetCoredumpFilePath();
-    void SetTargetPid(int32_t targetPid) { targetPid_ = targetPid; }
+    void Init(int32_t targetPid, uint32_t uid);
     char* GetMappedMemory() const { return mappedMemory_; }
     uint64_t GetCoreFileSize() const { return coreFileSize_; }
     bool RegisterCancelCoredump(const std::string& dumpFilePath);
-    void WriteCoredumpLite();
+    void WriteNativeCoredump();
     CoredumpFileManager(const CoredumpFileManager&) = delete;
     CoredumpFileManager& operator=(const CoredumpFileManager&) = delete;
 private:
     int32_t targetPid_ {0};
+    uint32_t uid_ {0};
     int fd_ {-1};
     uint64_t coreFileSize_ {0};
     std::string bundleName_;
     char *mappedMemory_ {nullptr};
-    bool isWriteCoredumpLite_ {false};
+    bool isWriteNativeCoredump_ {false};
 };
 } // namespace HiviewDFX
 } // namespace OHOS
