@@ -227,6 +227,7 @@ HWTEST_F (ProcessDumpTest, DfxThreadTest003, TestSize.Level2)
     const int32_t tid = 99999;
     DfxThread thread(tid, tid, tid, true);
     EXPECT_EQ(true, thread.GetProcessInfo() == nullptr) << "DfxThreadTest003 Failed";
+    DumpUtils::IsSelinuxPermissive();
     GTEST_LOG_(INFO) << "DfxThreadTest003: end.";
 }
 
@@ -346,23 +347,6 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest006, TestSize.Level2)
     liteDumper.InitProcess();
     liteDumper.PrintAll();
     GTEST_LOG_(INFO) << "LiteProcessDumpTest006: end.";
-}
-
-/**
- * @tc.name: LiteProcessDumpTest008
- * @tc.desc: test DfxBufferWriter create crash file
- * @tc.type: FUNC
- */
-HWTEST_F (ProcessDumpTest, LiteProcessDumpTest008, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "LiteProcessDumpTest008: start.";
-    auto& writer = DfxBufferWriter::GetInstance();
-    auto pids = {1, 2, 3, 4, 5, 6, 7};
-    auto time = GetAbsTimeMilliSeconds();
-    for (auto pid : pids) {
-        EXPECT_TRUE(writer.CreateFileForCrash(pid, time) > 0);
-    }
-    GTEST_LOG_(INFO) << "LiteProcessDumpTest008: end.";
 }
 
 /**

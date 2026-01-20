@@ -44,7 +44,6 @@
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
 #include "dfx_log.h"
-
 #include "dfx_ptrace.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
@@ -397,7 +396,9 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
         DumpUtils::InfoCrashUnwindResult(request_, unwindSuccessCnt > 0);
         DumpUtils::BlockCrashProcExit(request_);
     }
-    process_->Detach();  // crash secene
+    if (!DumpUtils::IsSelinuxPermissive()) {
+        process_->Detach();  // crash secene
+    }
     dumpRes = unwindSuccessCnt > 0 ? ConcurrentSymbolize() : DumpErrorCode::DUMP_ESTOPUNWIND;
     if (!isJsonDump_) { // isJsonDump_ will print after format json
         dumpInfo->Print(*process_, request_, *unwinder_);

@@ -17,10 +17,6 @@
 #include <filesystem>
 #include <gtest/gtest.h>
 
-#if defined(HAS_LIB_SELINUX)
-#include <selinux/selinux.h>
-#endif
-
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <thread>

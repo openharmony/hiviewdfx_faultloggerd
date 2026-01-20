@@ -36,6 +36,7 @@ public:
     static void BlockCrashProcExit(const ProcessDumpRequest& request);
     static void WaitForFork(pid_t pid, pid_t& childPid);
     static void NotifyOperateResult(ProcessDumpRequest& request, int result);
+    static bool IsSelinuxPermissive(void);
 };
 } // namespace HiviewDFX
 } // namespace OHOS
