@@ -92,6 +92,9 @@ bool DfxOfflineParser::ParseNativeSymbol(DfxFrame& frame)
 {
     DFX_TRACE_SCOPED_DLSYM("ParseSoSymbol:%s", frame.mapName.c_str());
     counter_.Reset();
+    if (IsJsFrame(frame)) {
+        return false;
+    }
     auto elf = GetElfForFrame(frame);
     if (elf == nullptr) {
         return false;
@@ -124,6 +127,9 @@ bool DfxOfflineParser::ParseBuildId(DfxFrame& frame)
 {
     DFX_TRACE_SCOPED_DLSYM("ParseBuildId:%s", frame.mapName.c_str());
     counter_.Reset();
+    if (IsJsFrame(frame)) {
+        return false;
+    }
     auto elf = GetElfForFrame(frame);
     if (elf == nullptr) {
         return false;
@@ -138,7 +144,7 @@ bool DfxOfflineParser::ParseBuildId(DfxFrame& frame)
 
 bool DfxOfflineParser::IsJsFrame(const DfxFrame& frame)
 {
-    return DfxMaps::IsArkHapMapItem(frame.mapName) || DfxMaps::IsArkCodeMapItem(frame.mapName);
+    return DfxMaps::IsArkHapMapItem(frame.mapName) || DfxMaps::IsArkCodeMapItem(frame.mapName) || frame.isJsFrame;
 }
 
 bool DfxOfflineParser::ParseBuildIdAndNativeSymbol(DfxFrame& frame)
@@ -169,6 +175,9 @@ bool DfxOfflineParser::ParseJsSymbol(DfxFrame& frame)
 {
     DFX_TRACE_SCOPED_DLSYM("ParseJsSymbol:%s", frame.mapName.c_str());
     counter_.Reset();
+    if (!IsJsFrame(frame)) {
+        return false;
+    }
     if (dfxMaps_ == nullptr) {
         return false;
     }
