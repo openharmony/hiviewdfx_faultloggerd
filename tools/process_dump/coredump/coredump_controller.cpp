@@ -57,9 +57,9 @@ bool CoredumpController::VerifyTrustList(const std::string& bundleName)
     return false;
 }
 
-bool CoredumpController::VerifyHap()
+bool CoredumpController::VerifyProcess()
 {
-    if (VerifyTrustList(DumpUtils::GetSelfBundleName()) ||
+    if (DumpUtils::HasCoredumpPermission() || VerifyTrustList(DumpUtils::GetSelfBundleName()) ||
         (IsHwasanCoredumpEnabled() && CoredumpMappingManager::GetInstance().IsHwAsanProcess())) {
         return true;
     }

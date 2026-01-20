@@ -14,6 +14,7 @@
  */
 #include "dump_utils.h"
 
+#include <algorithm>
 #include <vector>
 #include <pthread.h>
 #include <sys/ptrace.h>
@@ -193,30 +194,52 @@ sptr<AppExecFwk::IBundleMgr> GetBundleManager()
     sptr<AppExecFwk::IBundleMgr> bundleMgrProxy = iface_cast<AppExecFwk::IBundleMgr>(remoteObject);
     return bundleMgrProxy;
 }
+
+AppExecFwk::BundleInfo* GetBundleInfo()
+{
+    static bool isInit = false;
+    static AppExecFwk::BundleInfo bundleInfo;
+    if (!isInit) {
+        auto bundleInstance = GetBundleManager();
+        if (bundleInstance == nullptr) {
+            DFXLOGE("bundleInstance is nullptr");
+            return nullptr;
+        }
+        int32_t flag = static_cast<int32_t>(AppExecFwk::GetBundleInfoFlag::GET_BUNDLE_INFO_WITH_REQUESTED_PERMISSION);
+        auto ret = bundleInstance->GetBundleInfoForSelf(flag, bundleInfo);
+        if (ret != ERR_OK) {
+            DFXLOGE("GetBundleInfoForSelf failed! ret = %{public}d", ret);
+            return nullptr;
+        }
+        isInit = true;
+    }
+    return &bundleInfo;
+}
 #endif
 
 std::string DumpUtils::GetSelfBundleName()
 {
 #ifndef is_ohos_lite
-    static std::string bundleName;
-    if (!bundleName.empty()) {
-        return bundleName;
-    }
-    auto bundleInstance = GetBundleManager();
-    if (bundleInstance == nullptr) {
-        DFXLOGE("bundleInstance is nullptr");
+    auto bundleInfo = GetBundleInfo();
+    if (bundleInfo == nullptr) {
         return "";
     }
-    AppExecFwk::BundleInfo bundleInfo;
-    auto ret = bundleInstance->GetBundleInfoForSelf(0, bundleInfo);
-    if (ret != ERR_OK) {
-        DFXLOGE("GetBundleInfoForSelf failed! ret = %{public}d", ret);
-        return "";
-    }
-    bundleName = bundleInfo.name;
-    return bundleName;
+    return bundleInfo->name;
 #endif
     return "";
+}
+
+bool DumpUtils::HasCoredumpPermission()
+{
+#ifndef is_ohos_lite
+    auto bundleInfo = GetBundleInfo();
+    if (bundleInfo == nullptr) {
+        return false;
+    }
+    const std::vector<std::string>& perms = bundleInfo->reqPermissions;
+    return std::find(perms.begin(), perms.end(), "ohos.permission.ALLOW_COREDUMP") != perms.end();
+#endif
+    return false;
 }
 
 void DumpUtils::InfoCrashUnwindResult(const ProcessDumpRequest& request, bool isUnwindSucc)

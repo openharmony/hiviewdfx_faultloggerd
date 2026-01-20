@@ -392,6 +392,7 @@ HWTEST_F(DfxCoreDumpTest, CoredumpFileManager005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CoredumpFileManager005: start.";
     CoredumpFileManager fileManager;
+    fileManager.Init(0, 0);
     auto ret = fileManager.CreateFileForCoreDump();
     EXPECT_FALSE(ret);
     GTEST_LOG_(INFO) << "CoredumpFileManager005: end.";

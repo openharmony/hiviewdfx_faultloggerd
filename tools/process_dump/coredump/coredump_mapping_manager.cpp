@@ -53,16 +53,10 @@ void CoredumpMappingManager::Parse(pid_t pid)
     }
 }
 
-bool CoredumpMappingManager::isAppSpawn_ = false;
+bool CoredumpMappingManager::isNativeProcess_ = false;
 bool CoredumpMappingManager::ShouldIncludeRegion(const DumpMemoryRegions& region)
 {
     std::string perms = region.priority;
-    if (isAppSpawn_) {
-        if (strstr(region.pathName, "jemalloc") != nullptr) {
-            return perms.find('p') != std::string::npos && perms.find('r') != std::string::npos;
-        }
-        return false;
-    }
     return perms.find('p') != std::string::npos && perms.find('r') != std::string::npos;
 }
 

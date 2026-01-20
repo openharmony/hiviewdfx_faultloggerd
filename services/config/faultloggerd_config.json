@@ -99,10 +99,10 @@
     {
       "type": 111,
       "fileNamePrefix": "coredump",
-      "maxSingleFileSizeInKB": 204800,
+      "maxSingleFileSizeInKB": 2048000,
       "overFileSizeAction": "DELETE",
-      "keepFileCount": 1,
-      "maxFileCount": 1,
+      "keepFileCount": 2,
+      "maxFileCount": 2,
       "fileExistTimeInSecond": 1296000,
       "overTimeFileDeleteType": "ACTIVE"
     }

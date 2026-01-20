@@ -122,6 +122,28 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest003, TestSize.Level2)
 }
 
 /**
+ * @tc.name: SectionHeaderTableWriter001
+ * @tc.desc: test SectionHeaderTableWriter
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoreDumpWriterTest, SectionHeaderTableWriter001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SectionHeaderTableWriter001: start.";
+    constexpr size_t bufferSize = 4096;
+    std::vector<char> buffer(bufferSize, 0);
+
+    auto bufferWriter = std::make_unique<CoredumpBufferWriter>(buffer.data(), buffer.size());
+    SectionHeaderTableWriter writer(*bufferWriter);
+
+    char ver[] = "testVer";
+    EXPECT_FALSE(writer.WriteSystemVersion(nullptr, ver, sizeof(ver)));
+    EXPECT_FALSE(writer.WriteSystemVersion(reinterpret_cast<Elf64_Shdr*>(buffer.data()), nullptr, sizeof(ver)));
+    EXPECT_TRUE(writer.WriteSystemVersion(reinterpret_cast<Elf64_Shdr*>(buffer.data()), ver, sizeof(ver)));
+
+    GTEST_LOG_(INFO) << "SectionHeaderTableWriter001: end.";
+}
+
+/**
  * @tc.name: NoteSegmentWriter001
  * @tc.desc: test NoteSegmentWriter
  * @tc.type: FUNC

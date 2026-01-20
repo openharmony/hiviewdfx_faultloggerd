@@ -376,4 +376,20 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest009, TestSize.Level2)
     GTEST_LOG_(INFO) << "LiteProcessDumpTest009: end.";
 }
 #endif
+
+/**
+ * @tc.name: GetBundleInfoUnittest001
+ * @tc.desc: test GetBundleInfo func
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDumpTest, GetBundleInfoUnittest001, TestSize.Level2) {
+    GTEST_LOG_(INFO) << "GetBundleInfoUnittest001: start.";
+#ifndef is_ohos_lite
+    auto name = DumpUtils::GetSelfBundleName();
+    EXPECT_TRUE(name.empty());
+    auto allowCoredump = DumpUtils::HasCoredumpPermission();
+    EXPECT_FALSE(allowCoredump);
+#endif
+    GTEST_LOG_(INFO) << "GetBundleInfoUnittest001: end.";
+}
 }

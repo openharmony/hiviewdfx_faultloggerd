@@ -24,7 +24,7 @@ public:
     static bool IsHwasanCoredumpEnabled();
     static bool IsCoredumpSignal(const ProcessDumpRequest& request);
     static bool IsCoredumpAllowed(const ProcessDumpRequest& request);
-    static bool VerifyHap();
+    static bool VerifyProcess();
 private:
     static bool VerifyTrustList(const std::string& bundleName);
     static std::string GetCoredumpHapList();

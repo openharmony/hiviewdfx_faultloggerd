@@ -47,9 +47,15 @@ int UnBlockSIGTERM()
 }
 }
 
-void CoredumpFileManager::WriteCoredumpLite()
+void CoredumpFileManager::Init(int32_t targetPid, uint32_t uid)
 {
-    if (!isWriteCoredumpLite_) {
+    targetPid_ = targetPid;
+    uid_ = uid;
+}
+
+void CoredumpFileManager::WriteNativeCoredump()
+{
+    if (!isWriteNativeCoredump_) {
         DFXLOGI("is write coredump lite is false");
         return;
     }
@@ -110,10 +116,10 @@ bool CoredumpFileManager::MmapForFd()
     if (!AdjustFileSize(coreFileSize_)) {
         return false;
     }
-    if (CoredumpMappingManager::isAppSpawn_) {
+    if (CoredumpMappingManager::isNativeProcess_) {
         mappedMemory_ = static_cast<char *>(mmap(nullptr, coreFileSize_, PROT_READ | PROT_WRITE,
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
-        isWriteCoredumpLite_ = true;
+        isWriteNativeCoredump_ = true;
     } else {
         mappedMemory_ = static_cast<char *>(mmap(nullptr, coreFileSize_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
     }
@@ -127,19 +133,22 @@ bool CoredumpFileManager::MmapForFd()
 
 bool CoredumpFileManager::CreateFileForCoreDump()
 {
-    if (CoredumpMappingManager::isAppSpawn_) {
-        bundleName_ = "appspawn";
-        fd_ = RequestFileDescriptor(COREDUMP_LITE);
+    constexpr long minUid = 10000; // 10000 : minimum uid for hap
+    if (uid_ < minUid) {
+        if (CoredumpConfigManager::GetInstance().GetConfig().coredumpSwitch) {
+            bundleName_ = "native";
+            fd_ = RequestFileDescriptor(COREDUMP_LITE);
+            CoredumpMappingManager::isNativeProcess_ = true;
+        }
     } else {
         bundleName_ = DumpUtils::GetSelfBundleName();
         if (bundleName_.empty()) {
             DFXLOGE("query bundleName fail");
             return false;
         }
-        if (!CoredumpController::VerifyHap()) {
+        if (!CoredumpController::VerifyProcess()) {
             return false;
         }
-
         std::string filePath = GetCoredumpFilePath();
         fd_ = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
     }
