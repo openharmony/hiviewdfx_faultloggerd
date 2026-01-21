@@ -81,10 +81,7 @@ public:
             return;
         }
         DfxEnableTraceDlsym(true);
-        maps_ = DfxMaps::Create(pid, crash);
-        if (maps_ != nullptr) {
-            maps_->EnableFormatPath(false);
-        }
+        maps_ = DfxMaps::Create(pid, crash, false);
         enableFpCheckMapExec_ = true;
         isCrash_ = crash;
         memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
