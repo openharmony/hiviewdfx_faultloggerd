@@ -44,9 +44,7 @@ class FaultLoggerdSocket {
 public:
     explicit FaultLoggerdSocket(bool signalSafely = false) : signalSafely_(signalSafely) {}
     explicit FaultLoggerdSocket(int32_t fd, bool signalSafely = false) : socketFd_(fd), signalSafely_(signalSafely) {}
-    void CloseSocketFileDescriptor();
-    bool CreateSocketFileDescriptor(uint32_t timeout);
-    bool StartConnect(const char* socketName);
+    bool InitSocket(const char* socketName, uint32_t timeout);
     bool SendFileDescriptorToSocket(const int32_t* fds, uint32_t nFds) const;
     bool ReadFileDescriptorFromSocket(int32_t* fds, uint32_t nFds) const;
     bool SendMsgToSocket(const void* data, uint32_t dataLength) const;
@@ -54,10 +52,13 @@ public:
     int32_t RequestServer(const SocketRequestData& socketRequestData) const;
     int32_t RequestFdsFromServer(const SocketRequestData& socketRequestData, SocketFdData& socketFdData) const;
 private:
+    bool InitSocketFileDescriptor(uint32_t timeout);
+    bool StartConnect(const char* socketName);
     bool ConcatenateSocketName(char* dst, uint32_t dstSize, const char* src, uint32_t srcSize) const;
     bool SetSocketTimeOut(uint32_t timeout, int optName);
     int32_t socketFd_ = -1;
     bool signalSafely_;
+    SmartFd smartSocketFd_{-1};
 };
 
 }

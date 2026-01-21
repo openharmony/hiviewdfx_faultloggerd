@@ -50,16 +50,11 @@ int32_t SendRequestToServer(const char* socketName, const SocketRequestData& soc
 {
     FaultLoggerdSocket faultLoggerdSocket(signalSafely);
     int32_t retCode{ResponseCode::DEFAULT_ERROR_CODE};
-    if (!faultLoggerdSocket.CreateSocketFileDescriptor(timeout)) {
+    if (!faultLoggerdSocket.InitSocket(socketName, timeout)) {
         return ResponseCode::CONNECT_FAILED;
     }
-    if (!faultLoggerdSocket.StartConnect(socketName)) {
-        retCode = ResponseCode::CONNECT_FAILED;
-    } else {
-        retCode = socketFdData ? faultLoggerdSocket.RequestFdsFromServer(socketRequestData, *socketFdData) :
+    retCode = socketFdData ? faultLoggerdSocket.RequestFdsFromServer(socketRequestData, *socketFdData) :
             faultLoggerdSocket.RequestServer(socketRequestData);
-    }
-    faultLoggerdSocket.CloseSocketFileDescriptor();
     return retCode;
 }
 
@@ -209,15 +204,12 @@ int32_t ReportDumpStats(struct FaultLoggerdStatsRequest *request)
 #ifndef HISYSEVENT_DISABLE
     FillRequestHeadData(request->head, FaultLoggerClientType::DUMP_STATS_CLIENT);
     FaultLoggerdSocket faultLoggerdSocket;
-    if (!faultLoggerdSocket.CreateSocketFileDescriptor(SDKDUMP_SOCKET_TIMEOUT)) {
+    if (!faultLoggerdSocket.InitSocket(GetSocketName().c_str(), SDKDUMP_SOCKET_TIMEOUT)) {
         return ResponseCode::CONNECT_FAILED;
     }
-    if (!faultLoggerdSocket.StartConnect(GetSocketName().c_str())) {
-        retCode = ResponseCode::CONNECT_FAILED;
-    } else if (!faultLoggerdSocket.SendMsgToSocket(request, sizeof (FaultLoggerdStatsRequest))) {
+    if (!faultLoggerdSocket.SendMsgToSocket(request, sizeof (FaultLoggerdStatsRequest))) {
         retCode = ResponseCode::SEND_DATA_FAILED;
     }
-    faultLoggerdSocket.CloseSocketFileDescriptor();
 #endif
     return retCode;
 }
@@ -239,15 +231,11 @@ std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeout)
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     FaultLoggerdSocket faultLoggerdSocket;
     int32_t retCode{ResponseCode::DEFAULT_ERROR_CODE};
-    if (!faultLoggerdSocket.CreateSocketFileDescriptor(COREDUMP_SOCKET_TIMEOUT)) {
+    if (!faultLoggerdSocket.InitSocket(SERVER_SOCKET_NAME, COREDUMP_SOCKET_TIMEOUT)) {
         DFXLOGE("%{public}s create socket fail", __func__);
         return "";
     }
-    if (!faultLoggerdSocket.StartConnect(SERVER_SOCKET_NAME)) {
-        retCode = ResponseCode::CONNECT_FAILED;
-    } else {
-        retCode = faultLoggerdSocket.RequestServer(socketRequestData);
-    }
+    retCode = faultLoggerdSocket.RequestServer(socketRequestData);
     if (retCode != ResponseCode::REQUEST_SUCCESS) {
         DFXLOGE("%{public}s connect server fail, retCode : %{public}d", __func__, retCode);
         return "";
