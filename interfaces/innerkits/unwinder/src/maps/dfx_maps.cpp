@@ -54,13 +54,14 @@ inline const std::string GetMapsFile(pid_t pid)
 }
 }
 
-std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, bool crash)
+std::shared_ptr<DfxMaps> DfxMaps::Create(pid_t pid, bool crash, bool formatPath)
 {
     std::string path = GetMapsFile(pid);
     if (path == "") {
         return nullptr;
     }
     auto dfxMaps = std::make_shared<DfxMaps>();
+    dfxMaps->isFormatPath_ = formatPath;
     if (!crash) {
         DFXLOGU("Create maps(%{public}s) with not crash, will only parse exec map", path.c_str());
         dfxMaps->EnableOnlyExec(true);

@@ -31,7 +31,7 @@ public:
     ~DfxMaps() = default;
 
     static std::shared_ptr<DfxMaps> CreateByBuffer(const std::string& bundleName, std::string& buffer);
-    static std::shared_ptr<DfxMaps> Create(pid_t pid = 0, bool crash = true);
+    static std::shared_ptr<DfxMaps> Create(pid_t pid = 0, bool crash = true, bool formatPath = true);
     static std::shared_ptr<DfxMaps> Create(pid_t pid, const std::string& path);
     static bool Create(const pid_t pid, std::vector<std::shared_ptr<DfxMap>>& maps, std::vector<int>& mapIndex);
 
@@ -43,7 +43,6 @@ public:
     void Sort(bool less = true);
     void EnableMapIndex(bool enableMapIndex) { enableMapIndex_ = enableMapIndex; }
     void EnableOnlyExec(bool onlyExec) { onlyExec_ = onlyExec; }
-    void EnableFormatPath(bool isFormatPath) { isFormatPath_ = isFormatPath; }
     bool FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const;
     bool FindMapGroupByAddr(uintptr_t addr, std::set<DfxMap>& maps) const;
     bool FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const;
