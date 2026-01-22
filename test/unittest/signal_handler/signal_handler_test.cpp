@@ -1071,6 +1071,16 @@ HWTEST_F(SignalHandlerTest, DfxNotifyWatchdogThreadStart001, TestSize.Level2)
 }
 
 /**
+ * @tc.name: DfxMuslPthread Test
+ * @tc.desc: add testcase DfxMuslPthread
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxMuslPthread001, TestSize.Level2)
+{
+    EXPECT_TRUE(((DfxMuslPthread*)pthread_self())->tid  == gettid());
+}
+
+/**
  * @tc.name: DfxLiteDumperTest001
  * @tc.desc: add testcase liteDump mmap success
  * @tc.type: FUNC

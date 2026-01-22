@@ -456,6 +456,11 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
         DFXLOGE("Failed to fork dummy processdump(%{public}d)", errno);
         return START_PROCESS_DUMP_FAIL;
     } else if (pid == 0) {
+        // for avoid dummy process crash but send signal to parent process
+        ((DfxMuslPthread*)pthread_self())->tid = syscall(SYS_gettid);
+        if (gettid() != syscall(SYS_gettid)) {
+            DFXLOGE("Failed to set dummy pthread!");
+        }
         if (allowNonSafeOperate) {
             TryNonSafeOperate(isCrash);
         }
