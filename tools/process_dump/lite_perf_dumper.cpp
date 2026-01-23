@@ -69,7 +69,7 @@ int LitePerfDumper::PerfProcess(LitePerfParam& lperf, int requestFd)
     return PerfRecord(pipeWriteFd, lperf);
 }
 
-int LitePerfDumper::PerfRecord(int (&pipeWriteFd)[2], LitePerfParam& lperf) const
+int LitePerfDumper::PerfRecord(const int (&pipeWriteFd)[2], LitePerfParam& lperf) const
 {
     SmartFd bufFd(pipeWriteFd[PIPE_BUF_INDEX]);
     SmartFd resFd(pipeWriteFd[PIPE_RES_INDEX]);
