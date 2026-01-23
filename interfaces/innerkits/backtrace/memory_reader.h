@@ -21,14 +21,14 @@ namespace HiviewDFX {
 class MemoryReader {
 public:
     virtual ~MemoryReader() = default;
-    virtual bool ReadMemory(const uint64_t src, void* dst, size_t dataSize) = 0;
+    virtual bool ReadMemory(const uintptr_t src, void* dst, size_t dataSize) = 0;
 };
 
 class ThreadMemoryReader : public MemoryReader {
 public:
     ThreadMemoryReader(uintptr_t stackBegin, uintptr_t stackEnd);
     ~ThreadMemoryReader() override = default;
-    bool ReadMemory(const uint64_t src, void* dst, size_t dataSize) override;
+    bool ReadMemory(const uintptr_t src, void* dst, size_t dataSize) override;
 private:
     uintptr_t stackBegin_{0};
     uintptr_t stackEnd_{0};
@@ -38,10 +38,13 @@ class ProcessMemoryReader : public MemoryReader {
 public:
     ProcessMemoryReader();
     ~ProcessMemoryReader() override = default;
-    bool ReadMemory(const uint64_t src, void* dst, size_t dataSize) override ;
+    bool ReadMemory(const uintptr_t src, void* dst, size_t dataSize) override;
 private:
+    bool ReadCharByPipe(uintptr_t src, void* dst) const;
     SmartFd writeFd_;
     SmartFd readFd_;
+    uintptr_t readablePageMask_ = 0;
+    uintptr_t readablePage_ = static_cast<uintptr_t>(-1);
 };
 }
 }

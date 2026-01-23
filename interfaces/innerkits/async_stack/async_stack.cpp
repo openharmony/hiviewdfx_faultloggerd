@@ -34,7 +34,7 @@ static bool g_init = false;
 // Filter out illegal requests
 static std::atomic<uint64_t> g_enabledAsyncType = DEFAULT_ASYNC_TYPE;
 static pthread_key_t g_stackidKey;
-static OHOS::HiviewDFX::FpBacktrace* g_fpBacktrace = nullptr;
+static std::unique_ptr<OHOS::HiviewDFX::FpBacktrace> g_fpBacktrace = nullptr;
 using SetStackIdFn = void(*)(uint64_t stackId);
 using CollectAsyncStackFn = uint64_t(*)(uint64_t type);
 using GenericSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
@@ -177,7 +177,7 @@ bool DfxInitAsyncStack()
         DFXLOGE("failed to create key for stackId.");
         return false;
     }
-    g_fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
+    g_fpBacktrace = std::unique_ptr<OHOS::HiviewDFX::FpBacktrace>(OHOS::HiviewDFX::FpBacktrace::CreateInstance());
     DfxSetAsyncStackCallback();
     g_init = true;
 #endif
@@ -201,7 +201,7 @@ extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
         DFXLOGE("failed to create key for stackId.");
         return false;
     }
-    g_fpBacktrace =  OHOS::HiviewDFX::FpBacktrace::CreateInstance();
+    g_fpBacktrace = std::unique_ptr<OHOS::HiviewDFX::FpBacktrace>(OHOS::HiviewDFX::FpBacktrace::CreateInstance());
     DfxSetAsyncStackCallback();
     g_init = true;
 #endif
