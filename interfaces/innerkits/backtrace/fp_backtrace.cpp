@@ -38,6 +38,10 @@ namespace {
 #undef LOG_TAG
 #define LOG_TAG "FpBacktrace"
 #define LOG_DOMAIN 0xD002D11
+
+uintptr_t g_arkStubBegin{0};
+uintptr_t g_arkStubEnd{0};
+std::atomic_bool g_updateArkStubFlag{false};
 }
 
 extern "C" bool ffrt_get_current_coroutine_stack(void** stackAddr, size_t* size) __attribute__((weak));
@@ -99,14 +103,19 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
     uint32_t index = 0;
     bool isJsFrame = false;
     uintptr_t registerState[] = {reinterpret_cast<uintptr_t>(startFp), 0};
-    uintptr_t sp = 0 ;
+    uintptr_t sp = 0;
     uintptr_t arkStubBegin{0};
     uintptr_t arkStubEnd{0};
-    maps_->GetArkStackRange(arkStubBegin, arkStubEnd);
+    if (!g_updateArkStubFlag.load(std::memory_order_relaxed)) {
+        maps_->GetArkStackRange(arkStubBegin, arkStubEnd);
+    } else {
+        arkStubBegin = g_arkStubBegin;
+        arkStubEnd = g_arkStubEnd;
+    }
     while (index < size) {
         constexpr auto fpIndex = 0;
         constexpr auto pcIndex = 1;
-        uintptr_t preFp = registerState[fpIndex] ;
+        uintptr_t preFp = registerState[fpIndex];
         if (isJsFrame || (registerState[pcIndex] < arkStubEnd && registerState[pcIndex] >= arkStubBegin)) {
             ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame);
             DfxArk::Instance().StepArkFrame(&memoryReader, [](void* memoryReader, uintptr_t addr, uintptr_t* val) {
@@ -197,6 +206,16 @@ FpBacktrace* FpBacktrace::CreateInstance()
     delete fpBacktraceImpl;
 #endif
     return nullptr;
+}
+
+void FpBacktrace::UpdateArkStackRange(uintptr_t arkStubBegin, uintptr_t arkStubEnd)
+{
+#if is_ohos && !is_mingw && __aarch64__
+    DFXLOGI("UpdateArkStackRange.");
+    g_arkStubBegin = arkStubBegin;
+    g_arkStubEnd = arkStubEnd;
+    g_updateArkStubFlag = true;
+#endif
 }
 }
 }

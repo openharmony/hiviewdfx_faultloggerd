@@ -23,6 +23,7 @@ namespace HiviewDFX {
 class FpBacktrace {
 public:
     static FpBacktrace* CreateInstance();
+    static void UpdateArkStackRange(uintptr_t arkStubBegin, uintptr_t arkStubEnd);
     virtual ~FpBacktrace() = default;
     virtual uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size) = 0;
     virtual DfxFrame* SymbolicAddress(void* pc) = 0;
