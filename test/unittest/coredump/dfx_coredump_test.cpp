@@ -229,6 +229,12 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator007, TestSize.Level2)
     fileManager.MmapForFd();
     generator.bw_ =
         std::make_unique<CoredumpBufferWriter>(fileManager.GetMappedMemory(), fileManager.GetCoreFileSize());
+    Elf64_Ehdr elfHeader;
+    elfHeader.e_shnum = 5;
+    elfHeader.e_phnum = 1;
+    generator.bw_->Write(&elfHeader, sizeof(Elf64_Ehdr));
+    Elf64_Phdr elf64Phdr;
+    generator.bw_->Write(&elf64Phdr, sizeof(Elf64_Phdr));
     ret = generator.WriteSectionHeader();
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << "FullCoredumpGenerator007: end.";

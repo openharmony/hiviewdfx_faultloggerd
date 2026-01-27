@@ -100,6 +100,12 @@ HWTEST_F(DfxCoreDumpWriterTest, DfxCoreDumpWriterTest003, TestSize.Level2)
 
     auto bufferWriter = std::make_unique<CoredumpBufferWriter>(buffer.data(), buffer.size());
     SectionHeaderTableWriter writer(*bufferWriter);
+    Elf64_Ehdr elfHeader;
+    elfHeader.e_shnum = 5;
+    elfHeader.e_phnum = 1;
+    bufferWriter->Write(&elfHeader, sizeof(Elf64_Ehdr));
+    Elf64_Phdr elf64Phdr;
+    bufferWriter->Write(&elf64Phdr, sizeof(Elf64_Phdr));
     bool result = writer.Write();
 
     writer.AdjustOffset(10);
