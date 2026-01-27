@@ -16,6 +16,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include <sys/syscall.h>
+
 #include "memory_reader.h"
 
 namespace OHOS {
@@ -24,7 +26,7 @@ namespace HiviewDFX {
 ThreadMemoryReader::ThreadMemoryReader(uintptr_t stackBegin, uintptr_t stackEnd) : MemoryReader(),
     stackBegin_(stackBegin), stackEnd_(stackEnd) {}
 
-bool ThreadMemoryReader::ReadMemory(const uint64_t src, void* dst, size_t dataSize)
+bool ThreadMemoryReader::ReadMemory(const uintptr_t src, void* dst, size_t dataSize)
 {
     if (src >= stackBegin_ && src < stackEnd_  && (stackEnd_ - src) > dataSize) {
         for (size_t i = 0; i < dataSize; i++) {
@@ -41,13 +43,31 @@ ProcessMemoryReader::ProcessMemoryReader() : MemoryReader()
     if (pipe2(pipe, O_CLOEXEC) == 0) {
         readFd_ = SmartFd(pipe[0], false);
         writeFd_ = SmartFd(pipe[1], false);
+        readablePageMask_ = ~static_cast<uintptr_t>(getpagesize() - 1);
     }
 }
 
-bool ProcessMemoryReader::ReadMemory(const uint64_t src, void* dst, size_t dataSize)
+bool ProcessMemoryReader::ReadCharByPipe(uintptr_t src, void* dst) const
 {
-    auto ret = write(writeFd_.GetFd(), reinterpret_cast<const void*>(src), dataSize);
-    return ret > 0 && ret == read(readFd_.GetFd(), dst, dataSize);
+    return syscall(SYS_write, writeFd_.GetFd(), reinterpret_cast<const void*>(src), sizeof(char)) == sizeof(char) &&
+        syscall(SYS_read, readFd_.GetFd(), dst, sizeof(char)) == sizeof(char);
+}
+
+bool ProcessMemoryReader::ReadMemory(const uintptr_t src, void* dst, size_t dataSize)
+{
+    for (uintptr_t i = 0; i < dataSize; i++) {
+        uintptr_t pendingSrc = src + i;
+        uintptr_t pendingDst = reinterpret_cast<uintptr_t>(dst) + i;
+        if ((pendingSrc & readablePageMask_) == readablePage_) {
+            *reinterpret_cast<unsigned char*>(pendingDst) = *reinterpret_cast<const unsigned char*>(pendingSrc);
+            continue;
+        }
+        if (!ReadCharByPipe(pendingSrc, reinterpret_cast<void*>(pendingDst))) {
+            return false;
+        }
+        readablePage_ = pendingSrc & readablePageMask_;
+    }
+    return true;
 }
 }
 }
