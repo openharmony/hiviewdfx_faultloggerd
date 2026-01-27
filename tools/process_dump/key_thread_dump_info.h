@@ -30,9 +30,11 @@ public:
     void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override {}
     int UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<KeyThreadDumpInfo>(); }
+    static uint64_t GetUnwindTimestamp() { return keyThreadUnwindTimestamp_; }
 private:
     bool GetKeyThreadStack(DfxProcess& process, Unwinder& unwinder);
     void UnwindThreadByParseStackIfNeed(std::shared_ptr<DfxThread> thread, std::shared_ptr<DfxMaps> maps);
+    static uint64_t keyThreadUnwindTimestamp_;
     std::string unwindFailTip_;
 };
 }

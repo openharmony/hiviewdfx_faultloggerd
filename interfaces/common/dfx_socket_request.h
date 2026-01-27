@@ -274,6 +274,8 @@ typedef struct FaultLoggerdStatsRequest {
     uint64_t processdumpFinishTime;
     /** the time return from dumpcatcher interface */
     uint64_t dumpCatcherFinishTime;
+    /** the timestamp key thread unwind */
+    uint64_t keyThreadUnwindTimestamp;
     /** dumpcatcher result */
     int32_t result;
     /** count of thread in target process */
