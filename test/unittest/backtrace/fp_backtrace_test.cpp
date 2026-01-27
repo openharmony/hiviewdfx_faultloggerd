@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <vector>
 #include <gtest/gtest.h>
 #include <securec.h>
 
@@ -127,9 +128,10 @@ HWTEST_F(FpBacktraceTest, FpBacktraceTestTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "FpBacktraceTestTest005: start.";
     auto fpBacktrace = FpBacktrace::CreateInstance();
     ASSERT_NE(nullptr, fpBacktrace);
-    auto testChar = std::make_unique<char>(0);
+    constexpr uint32_t heapMemoryLen = 2;
+    std::vector<uintptr_t> heapMemory(heapMemoryLen);
     void* pcArray[DEFAULT_MAX_FRAME_NUM]{0};
-    int size = fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(testChar.get()), pcArray, DEFAULT_MAX_FRAME_NUM);
+    int size = fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(heapMemory.data()), pcArray, DEFAULT_MAX_FRAME_NUM);
     ASSERT_GE(size, 0);
     uintptr_t invalidAddress = static_cast<uintptr_t>(-1);
     size = fpBacktrace->BacktraceFromFp(reinterpret_cast<void*>(invalidAddress), pcArray, DEFAULT_MAX_FRAME_NUM);
