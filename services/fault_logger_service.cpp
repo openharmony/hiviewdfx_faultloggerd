@@ -168,6 +168,7 @@ void StatsService::ReportDumpStats(const DumpStats& stat)
         "DUMPER_START_TIME", stat.processdumpStartTime - stat.signalTime,
         "WRITE_DUMP_INFO_TIME", stat.writeDumpInfoCost,
         "UNWIND_TIME", stat.processdumpFinishTime - stat.processdumpStartTime,
+        "KEY_THREAD_UNWIND_TIMESTAMP", stat.keyThreadUnwindTimestamp,
         "TARGET_PROCESS_THREAD_COUNT", stat.targetProcessThreadCount,
         "SMO_PARSE_TIME", stat.smoParseTime,
         "PSS_MEMORY", stat.pssMemory);
@@ -199,6 +200,7 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
         stats.writeDumpInfoCost = requestData.writeDumpInfoCost;
         stats.smoParseTime = requestData.smoParseTime;
         stats.pssMemory = requestData.pssMemory;
+        stats.keyThreadUnwindTimestamp = requestData.keyThreadUnwindTimestamp;
     } else if (requestData.type == DUMP_CATCHER) {
         auto task = [requestData, this] {
             auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {

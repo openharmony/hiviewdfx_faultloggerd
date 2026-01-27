@@ -47,6 +47,7 @@
 #include "dfx_ptrace.h"
 #include "dfx_process.h"
 #include "dfx_regs.h"
+#include "key_thread_dump_info.h"
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
 #endif
@@ -608,6 +609,7 @@ void ProcessDumper::ReportSigDumpStats()
     stat->processdumpFinishTime = finishTime_ == 0 ? GetTimeMillisec() : finishTime_;
     stat->writeDumpInfoCost = finishParseSymbolTime_ > 0 ? stat->processdumpFinishTime - finishParseSymbolTime_ : 0;
     stat->smoParseTime = smoParseTime_;
+    stat->keyThreadUnwindTimestamp = KeyThreadDumpInfo::GetUnwindTimestamp();
     if (IsBetaVersion()) {
         stat->pssMemory = GetPssMemory();
     }

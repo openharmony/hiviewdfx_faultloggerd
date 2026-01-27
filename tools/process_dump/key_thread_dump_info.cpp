@@ -100,6 +100,8 @@ void KeyThreadDumpInfo::Print(DfxProcess& process, const ProcessDumpRequest& req
     DfxBufferWriter::GetInstance().AppendBriefDumpInfo(dumpInfo);
 }
 
+uint64_t KeyThreadDumpInfo::keyThreadUnwindTimestamp_ = 0;
+
 int KeyThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
     DFXLOGI("unwind key thread dump start");
@@ -152,6 +154,7 @@ bool KeyThreadDumpInfo::GetKeyThreadStack(DfxProcess& process, Unwinder& unwinde
 #ifdef PARSE_LOCK_OWNER
     DumpUtils::ParseLockInfo(unwinder, tmpPid, thread->GetThreadInfo().nsTid);
 #endif
+    keyThreadUnwindTimestamp_ = GetTimeMillisec();
     DFXLOGI("%{public}s, unwind tid(%{public}d) finish ret(%{public}d).", __func__, tid, ret);
     return ret;
 }
