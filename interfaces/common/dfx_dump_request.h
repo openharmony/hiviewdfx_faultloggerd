@@ -135,6 +135,7 @@ struct ProcessDumpRequest {
     intptr_t unwindResultAddr;
     uintptr_t crashObj;
     uint64_t crashLogConfig;
+    bool isSigAction;
 #ifndef is_ohos_lite
     DumpHiTraceIdStruct hitraceId;
 #endif

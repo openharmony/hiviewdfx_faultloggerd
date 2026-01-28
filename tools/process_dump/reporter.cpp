@@ -106,6 +106,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.sectionMaps["PROCESS_LIFETIME"] = std::to_string(process.GetLifeTime());
     info.sectionMaps["IS_ARKWEB_CORE"] = DfxMaps::IsArkWebProc() ? "true" : "false";
     info.sectionMaps["PSS_MEMORY"] = std::to_string(IsBetaVersion() ? GetPssMemory() : 0);
+    info.sectionMaps["IS_SIG_ACTION"] = request.isSigAction ? "Yes" : "No";
     addFaultLog(&info);
     DFXLOGI("Finish report fault to FaultLogger %{public}s(%{public}d,%{public}d)",
         info.module.c_str(), info.pid, info.id);
