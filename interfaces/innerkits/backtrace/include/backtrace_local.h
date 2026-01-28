@@ -121,7 +121,7 @@ extern "C" {
      * @param skipFrameNum the number of frames to skip
      * @param maxFrameNums the maximum number of frames to backtrace
      * @return backtrace of the current process
-     * @warning This is non-signal safety interface for debugging purposes only.
+     * @warning This is non-async-signal-safe and non-thread-safe interface for debugging purposes only.
      *          For other scenarios, it is recommended to use interface of "GetBacktrace" or "PrintBacktrace".
     */
     const char* GetTrace(size_t skipFrameNum = 0, size_t maxFrameNums = DEFAULT_MAX_FRAME_NUM);
