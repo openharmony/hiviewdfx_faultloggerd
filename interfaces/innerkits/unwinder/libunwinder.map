@@ -54,6 +54,7 @@
       OHOS::HiviewDFX::DfxElf::GetMmapSize*;
       OHOS::HiviewDFX::DfxMap::ToString*;
       OHOS::HiviewDFX::DfxMap::GetElf*;
+      OHOS::HiviewDFX::DfxMap::ReleaseElf*;
       OHOS::HiviewDFX::DfxMap::Create*;
       OHOS::HiviewDFX::DfxMap::GetRelPc*;
       OHOS::HiviewDFX::DfxMap::UnFormatMapName*;

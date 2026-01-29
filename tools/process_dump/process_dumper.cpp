@@ -462,9 +462,13 @@ DumpErrorCode ProcessDumper::ConcurrentSymbolize()
                 smoFlag = true;
                 start = GetTimeMillisec();
             }
+            auto leftMap = left->second.map;
             while (left != right) {
                 unwinder_->ParseFrameSymbol(left->second);
                 left++;
+            }
+            if (leftMap != nullptr) {
+                leftMap->ReleaseElf();
             }
             if (smoFlag) {
                 smoParseTime_ += GetTimeMillisec() - start;

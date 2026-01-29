@@ -170,6 +170,7 @@ HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
 #endif
     shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAP_ITEM);
     EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(pc) == invalidOffset)));
+    map->ReleaseElf();
     GTEST_LOG_(INFO) << "GetRelPcTest: end.";
 }
 
