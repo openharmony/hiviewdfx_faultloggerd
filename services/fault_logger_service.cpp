@@ -75,6 +75,7 @@ bool CheckCallerUID(uint32_t callerUid)
         1201, // hiviewUid
         1212, // hidumperServiceUid
         5523, // foundationUid
+        7400, // dev_assistant
     };
     if (std::find(std::begin(whitelist), std::end(whitelist), callerUid) == std::end(whitelist)) {
         DFXLOGW("%{public}s :: CheckCallerUID :: Caller Uid(%{public}d) is unexpectly.",
