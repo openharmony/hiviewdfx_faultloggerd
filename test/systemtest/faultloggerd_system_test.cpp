@@ -1907,5 +1907,27 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest131, TestSize.Level2)
     EXPECT_TRUE(CheckCountNum(fileName, pid, "SIGSEGV")) << "FaultLoggerdSystemTest131 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest131: end.";
 }
+
+#if defined(__aarch64__)
+/**
+* @tc.name: FaultLoggerdSystemTest132
+* @tc.desc: Test FatalMessage when VMA leak.
+* @tc.type: FUNC
+*/
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest132, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest132: start.";
+    string cmd = "TestFatalMessageWhenVMALeak";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest132 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest132: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS
