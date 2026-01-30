@@ -51,7 +51,11 @@ namespace {
 std::mutex g_localMutex;
 std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap {};
 #endif
+#ifdef VERIFY_PLAT_FPGA
+constexpr std::chrono::seconds TIME_OUT = std::chrono::seconds(20);
+#else
 constexpr std::chrono::seconds TIME_OUT = std::chrono::seconds(1);
+#endif
 
 void PrintThreadStatus(int32_t tid)
 {
