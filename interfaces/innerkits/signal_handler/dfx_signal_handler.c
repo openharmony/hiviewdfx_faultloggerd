@@ -226,7 +226,7 @@ static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
     }
 }
 
-static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
+static bool FillDumpRequest(int signo, siginfo_t *si, void *context, bool isSigAction)
 {
     (void)memset_s(&g_request, sizeof(g_request), 0, sizeof(g_request));
     g_request.type = GetDumpType(signo, si);
@@ -237,6 +237,8 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context)
     g_request.reserved = 0;
     g_request.timeStamp = GetTimeMilliseconds();
     g_request.fdTableAddr = (uint64_t)fdsan_get_fd_table();
+    // Only perform dot operations on SIGSEGV
+    g_request.isSigAction = signo == SIGSEGV ? isSigAction : false;
     if (memcpy_s(g_request.appRunningUniqueId, sizeof(g_request.appRunningUniqueId),
                  g_appRunningUniqueId, sizeof(g_appRunningUniqueId)) != EOK) {
         DFXLOGE("FillDumpRequest appRunningUniqueId memcpy fail!");
@@ -314,7 +316,7 @@ static void DumpPrviRequest(int signo)
     DumpPrviProcess(signo, &g_request);
 }
 
-static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
+static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSigAction)
 {
     int pid = syscall(SYS_getpid);
     int tid = syscall(SYS_gettid);
@@ -322,7 +324,7 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
         return IsDumpSignal(signo);
     }
 
-    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
+    DFXLOGI("DFX_SignalHandler :: signo(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
             signo, si->si_code, pid, tid);
     if (signo == SIGDUMP && si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
         return IsDumpSignal(signo);
@@ -342,15 +344,15 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
     g_prevHandledSignal = signo;
 
     int savedErrno = errno;
-    if (!FillDumpRequest(signo, si, context)) {
+    if (!FillDumpRequest(signo, si, context, isSigAction)) {
         handlingTid = 0;
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        DFXLOGE("DFX_SigchainHandler :: fill dump request faild.");
+        DFXLOGE("DFX_SignalHandler :: fill dump request faild.");
         errno = savedErrno;
         return IsDumpSignal(signo);
     }
 
-    DFXLOGI("DFX_SigchainHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
+    DFXLOGI("DFX_SignalHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
         "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
 #ifndef is_ohos_lite
     if (!IsDumpSignal(signo) && IsNoNewPriv(PROC_SELF_STATUS_PATH)) {
@@ -368,9 +370,14 @@ static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
     return IsDumpSignal(signo);
 }
 
-static void DFX_SignalHandler(int signo, siginfo_t *si, void *context)
+static bool DFX_SigchainHandler(int signo, siginfo_t *si, void *context)
 {
-    DFX_SigchainHandler(signo, si, context);
+    return DFX_SignalHandler(signo, si, context, false);
+}
+
+static void DFX_SigActionHandler(int signo, siginfo_t *si, void *context)
+{
+    DFX_SignalHandler(signo, si, context, true);
     ResetAndRethrowSignalIfNeed(signo, si);
 }
 
@@ -380,7 +387,7 @@ static void InstallSigActionHandler(int signo)
     (void)memset_s(&action, sizeof(action), 0, sizeof(action));
     (void)memset_s(&g_oldSigactionList, sizeof(g_oldSigactionList), 0, sizeof(g_oldSigactionList));
     sigfillset(&action.sa_mask);
-    action.sa_sigaction = DFX_SignalHandler;
+    action.sa_sigaction = DFX_SigActionHandler;
     action.sa_flags = SA_RESTART | SA_SIGINFO | SA_ONSTACK;
     if (sigaction(signo, &action, &(g_oldSigactionList[signo])) != 0) {
         DFXLOGE("Failed to register signal(%{public}d)", signo);
