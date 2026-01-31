@@ -38,7 +38,6 @@ void SubmitterStack::Collect(DfxProcess& process, const ProcessDumpRequest& requ
     if (submitterFrames.empty()) {
         return;
     }
-    thread->SetSubmitterFrames(submitterFrames);
     stackStr_ = "========SubmitterStacktrace========\n";
     stackStr_ += DumpUtils::GetStackTrace(submitterFrames);
 }
