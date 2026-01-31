@@ -49,10 +49,6 @@ public:
     void AddFrame(const DfxFrame& frame);
     const std::vector<DfxFrame>& GetFrames() const;
     void SetFrames(const std::vector<DfxFrame>& frames);
-    void SetSubmitterFrames(const std::vector<DfxFrame>& frames)
-    {
-        submitterFrames_ = frames;
-    }
     void FillSymbol(const std::map<uint64_t, DfxFrame>& frameTable);
     std::string ToString(bool needPrintTid = true) const;
     const DfxThreadInfo& GetThreadInfo() const
@@ -85,7 +81,6 @@ private:
     ThreadStatus threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
     std::shared_ptr<DfxRegs> regs_ = nullptr;
     std::vector<DfxFrame> frames_;
-    std::vector<DfxFrame> submitterFrames_;
     bool needParseSymbol_ = true;
     std::shared_ptr<ProcessInfo> processInfo_ = nullptr;
 };

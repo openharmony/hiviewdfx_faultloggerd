@@ -103,11 +103,6 @@ std::string DfxThread::ToString(bool needPrintTid) const
         dumpThreadInfo += FomatProcessInfoToString(*processInfo_) + "\n";
     }
     dumpThreadInfo += DumpUtils::GetStackTrace(frames_);
-
-    if (!submitterFrames_.empty()) {
-        dumpThreadInfo += "========SubmitterStacktrace========\n";
-        dumpThreadInfo += DumpUtils::GetStackTrace(submitterFrames_);
-    }
     return dumpThreadInfo;
 }
 
