@@ -72,7 +72,6 @@ public:
     static int TestGetCrashObj64Kb();
     static int TestGetCrashObj65Kb();
     static int TestGetCrashObjMemory();
-    static int TestFatalMessageWhenVMALeak();
 #ifndef is_ohos_lite
     static int CrashInFFRT(const std::string &debug);
     static int CrashInLibuvWork();
