@@ -159,6 +159,8 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
         &DfxCrasher::TestGetCrashObjMemory},
     {"Deadlock", "Test deadlock and parse lock owner",
         &DfxCrasher::TestDeadlock},
+    {"TestFatalMessageWhenVMALeak", "Test FatalMessage when VMA leak.",
+        &DfxCrasher::TestFatalMessageWhenVMALeak},
 #ifndef is_ohos_lite
     {"CrashInLibuvWork", "Test async-stacktrace api in work callback crash case",
         &DfxCrasher::CrashInLibuvWork},
@@ -650,6 +652,31 @@ NOINLINE int DfxCrasher::PrintFatalMessageInLibc()
 {
     set_fatal_message("TestPrintFatalMessageInLibc");
     RaiseAbort();
+    return 0;
+}
+
+NOINLINE int DfxCrasher::TestFatalMessageWhenVMALeak()
+{
+    const char msg[] = "Test Trigger ABORT!";
+    size_t size = 1024 * 1024;
+    bool flag = false;
+    int count = 0;
+    while (true) {
+        void* ptr = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+        if (ptr == MAP_FAILED) {
+            if (flag) {
+                std::cout << "map failed, count:" << count << " size:" << size << std::endl;
+                break;
+            } else {
+                size = strlen(msg) + 1;
+                flag = true;
+                continue;
+            }
+        }
+        count++;
+    }
+    set_fatal_message(msg);
+    raise(SIGABRT);
     return 0;
 }
 
