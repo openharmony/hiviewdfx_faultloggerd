@@ -246,6 +246,43 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
     return true;
 }
 
+bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr)
+{
+    if (arkWebJitSymbolAddr == 0) {
+        return false;
+    }
+    const size_t step = 1024 * 1024;
+    size_t writeSuccessSize = 0;
+    const size_t maxTryTimes = 1000;
+    for (size_t i = 0; i < ARKWEB_JIT_SYMBOL_BUF_SIZE; i += writeSuccessSize) {
+        size_t length = (i + step) < ARKWEB_JIT_SYMBOL_BUF_SIZE ? step : ARKWEB_JIT_SYMBOL_BUF_SIZE - i;
+        arkWebJitSymbolAddr += writeSuccessSize;
+        int savedErrno = 0;
+        ssize_t writeSize = 0;
+        size_t tryTimes = 0;
+        do {
+            writeSize = write(pipeWriteFd, (void*)arkWebJitSymbolAddr, length);
+            savedErrno = errno;
+            if (writeSize == -1 && savedErrno != EINTR && savedErrno != EAGAIN) {
+                return false;
+            }
+            if (writeSize > 0) {
+                writeSuccessSize = writeSize;
+            }
+            if (tryTimes > maxTryTimes) {
+                DFXLOGW("Exceeding the maximum number of retries!");
+                break;
+            }
+            if (writeSize == -1 && savedErrno == EAGAIN) {
+                ++tryTimes;
+                usleep(1000); // 1000 : sleep 1ms try agin
+            }
+        } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
+    }
+    DFXLOGI("Finish CollectArkWebJitSymbol");
+    return true;
+}
+
 typedef struct {
     int regIndex;
     bool isPcLr;
@@ -313,7 +350,40 @@ bool CollectMemoryNearRegisters(int fd, ucontext_t *context)
     return true;
 }
 
-bool CollectMaps(const int pipeFd, const char* path)
+bool FindArkWebJitSymbol(const char* buf, size_t len, uint64_t* startAddr)
+{
+    const char subStr[] = "[anon:ARKWEB_JIT_symbol]";
+    char *pos = strstr(buf, subStr);
+    if (pos == NULL) {
+        return false;
+    }
+    while (--pos >= buf) {
+        if (*pos == '\n') {
+            break;
+        }
+    }
+    if (pos < buf || *pos != '\n') {
+        return false;
+    }
+    *startAddr = 0;
+    while (++pos < buf + len) {
+        unsigned char digit = *pos;
+        if (digit >= '0' && digit <= '9') {
+            digit -= '0';
+        } else if (digit >= 'a' && digit <= 'f') {
+            digit -= 'a' - 10; // 10 : base 10
+        } else if (digit >= 'A' && digit <= 'F') {
+            digit -= 'A' - 10; // 10 : base 10
+        } else {
+            break;
+        }
+        const uint64_t hex = 4;
+        *startAddr = (*startAddr << hex) | digit;
+    }
+    return true;
+}
+
+bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAddr)
 {
     if (path == NULL || pipeFd < 0) {
         DFXLOGI("%{public}s path or pipeFd is invalid", __func__);
@@ -328,8 +398,38 @@ bool CollectMaps(const int pipeFd, const char* path)
 
     char buf[LINE_BUF_SIZE];
     ssize_t n;
+    const int remainBufLen = 100;
+    char remainBuf[remainBufLen];
+    const int concatBufLen = 200;
+    char concatBuf[concatBufLen];
+    bool findSymbolFlag = false;
     while ((n = read(fd, buf, sizeof(buf) - 1)) > 0) {
         OHOS_TEMP_FAILURE_RETRY(write(pipeFd, buf, n));
+        if (findSymbolFlag) {
+            continue;
+        }
+        if (strcpy_s(concatBuf, concatBufLen, remainBuf) != EOK) {
+            DFXLOGE("strcpy concatBuf failed errno %{public}d", errno);
+        }
+        if (strncat_s(concatBuf, concatBufLen - 1, buf, remainBufLen - 1) != EOK) {
+            DFXLOGE("strncat concatBuf failed errno %{public}d", errno);
+        }
+        if (!FindArkWebJitSymbol(buf, LINE_BUF_SIZE, arkWebJitSymbolAddr) &&
+            !FindArkWebJitSymbol(concatBuf, concatBufLen, arkWebJitSymbolAddr)) {
+            int remainStart = n - remainBufLen + 1;
+            int ret = 0;
+            (void)memset_s(remainBuf, remainBufLen, 0, remainBufLen);
+            if (remainStart > 0) {
+                ret = strncpy_s(remainBuf, remainBufLen, buf + remainStart, remainBufLen - 1);
+            } else {
+                ret = strncpy_s(remainBuf, remainBufLen, buf, n);
+            }
+            if (ret != EOK) {
+                DFXLOGE("strcpy remainBuf failed errno %{public}d", errno);
+            }
+        } else {
+            findSymbolFlag = true;
+        }
     }
 
     close(fd);
@@ -493,6 +593,8 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr)
     WriteFileItems(pipeWriteFd, dir, path, fdsanOwners, (int)entryCount);
     closedir(dir);
     munmap(fdsanOwners, mmapSize);
+    char endOpenfiles[] = "end trans openfiles\n";
+    write(pipeWriteFd, endOpenfiles, strlen(endOpenfiles));
     return true;
 }
 
@@ -523,8 +625,10 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
     }
 
     CollectMemoryNearRegisters(pipeWriteFd, &request->context);
-    CollectMaps(pipeWriteFd, PROC_SELF_MAPS_PATH);
+    uint64_t arkWebJitSymbolAddr = 0;
+    CollectMaps(pipeWriteFd, PROC_SELF_MAPS_PATH, &arkWebJitSymbolAddr);
     CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table());
+    CollectArkWebJitSymbol(pipeWriteFd, arkWebJitSymbolAddr);
 
     close(pipeWriteFd);
     UnregisterAllocator();

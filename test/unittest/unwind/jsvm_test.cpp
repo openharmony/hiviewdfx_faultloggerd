@@ -29,6 +29,7 @@ using namespace std;
 namespace OHOS {
 namespace HiviewDFX {
 bool g_jsvmEnable = false;
+bool g_arkwebjsEnable = false;
 
 class JsvmTest : public testing::Test {
 public:
@@ -41,6 +42,12 @@ public:
         filePath = "/system/lib64/ndk/libjsvm.so";
 #endif
         g_jsvmEnable = filesystem::exists(filePath);
+#if defined(__arm__)
+        filePath = "/data/app/el1/bundle/public/com.huawei.hmos.arkwebcore/libs/arm/libwebjs_dfx.so";
+#elif defined(__aarch64__)
+        filePath = "/data/app/el1/bundle/public/com.huawei.hmos.arkwebcore/libs/arm64/libwebjs_dfx.so";
+#endif
+        g_arkwebjsEnable = filesystem::exists(filePath);
     }
 };
 
@@ -68,7 +75,6 @@ HWTEST_F(JsvmTest, JsvmTest001, TestSize.Level2)
         DfxJsvm::Instance().JsvmDestroyJsSymbolExtractor(extractorPtr);
         ASSERT_EQ(DfxJsvm::Instance().jsvmDestroyJsSymbolExtractorFn_, nullptr);
     }
-
     GTEST_LOG_(INFO) << "JsvmTest001: end.";
 }
 
@@ -113,6 +119,76 @@ HWTEST_F(JsvmTest, JsvmTest003, TestSize.Level2)
     DfxJsvm::Instance().StepJsvmFrame(obj, readMemFn, jsvmParam);
     ASSERT_EQ(DfxJsvm::Instance().stepJsvmFn_, nullptr);
     GTEST_LOG_(INFO) << "JsvmTest003: end.";
+}
+
+/**
+ * @tc.name: ArkwebJsTest001
+ * @tc.desc: test ArkwebCreateJsSymbolExtractor function
+ * @tc.type: FUNC
+ */
+HWTEST_F(JsvmTest, ArkwebJsTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ArkwebJsTest001: start.";
+    uintptr_t extractorPtr = 0;
+    if (g_jsvmEnable) {
+        DfxJsvm::Instance().ArkwebCreateJsSymbolExtractor(&extractorPtr, getpid());
+        ASSERT_NE(DfxJsvm::Instance().arkwebCreateJsSymbolExtractorFn_, nullptr);
+        DfxJsvm::Instance().ArkwebCreateJsSymbolExtractor(&extractorPtr, getpid());
+        ASSERT_NE(DfxJsvm::Instance().arkwebCreateJsSymbolExtractorFn_, nullptr);
+        DfxJsvm::Instance().ArkwebDestroyJsSymbolExtractor(extractorPtr);
+        ASSERT_NE(DfxJsvm::Instance().arkwebDestroyJsSymbolExtractorFn_, nullptr);
+        DfxJsvm::Instance().ArkwebDestroyJsSymbolExtractor(extractorPtr);
+        ASSERT_NE(DfxJsvm::Instance().arkwebDestroyJsSymbolExtractorFn_, nullptr);
+    } else {
+        DfxJsvm::Instance().ArkwebCreateJsSymbolExtractor(&extractorPtr, getpid());
+        ASSERT_EQ(DfxJsvm::Instance().arkwebCreateJsSymbolExtractorFn_, nullptr);
+        DfxJsvm::Instance().ArkwebDestroyJsSymbolExtractor(extractorPtr);
+        ASSERT_EQ(DfxJsvm::Instance().arkwebDestroyJsSymbolExtractorFn_, nullptr);
+    }
+    GTEST_LOG_(INFO) << "ArkwebJsTest001: end.";
+}
+
+/**
+ * @tc.name: ArkwebJsTest002
+ * @tc.desc: test ParseArkwebJsFrameInfo function
+ * @tc.type: FUNC
+ */
+HWTEST_F(JsvmTest, ArkwebJsTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ArkwebJsTest002: start.";
+    uintptr_t pc = 0;
+    uintptr_t extractorPtr = 0;
+    JsvmFunction *jsFunction = nullptr;
+    if (g_jsvmEnable) {
+        DfxJsvm::Instance().ParseArkwebJsFrameInfo(pc, extractorPtr, jsFunction);
+        ASSERT_NE(DfxJsvm::Instance().parseArkwebJsFrameInfoFn_, nullptr);
+        DfxJsvm::Instance().ParseArkwebJsFrameInfo(pc, extractorPtr, jsFunction);
+        ASSERT_NE(DfxJsvm::Instance().parseArkwebJsFrameInfoFn_, nullptr);
+    } else {
+        DfxJsvm::Instance().ParseArkwebJsFrameInfo(pc, extractorPtr, jsFunction);
+        ASSERT_EQ(DfxJsvm::Instance().parseArkwebJsFrameInfoFn_, nullptr);
+    }
+
+    GTEST_LOG_(INFO) << "ArkwebJsTest002: end.";
+}
+
+/**
+ * @tc.name: ArkwebJsTest003
+ * @tc.desc: test StepArkwebJsFrame function
+ * @tc.type: FUNC
+ */
+HWTEST_F(JsvmTest, ArkwebJsTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ArkwebJsTest003: start.";
+    void *obj = nullptr;
+    ReadMemFunc readMemFn = nullptr;
+    JsvmStepParam *jsvmParam = nullptr;
+    DfxJsvm::Instance().StepArkwebJsFrame(obj, readMemFn, jsvmParam);
+    int a = 0;
+    obj = &a;
+    DfxJsvm::Instance().StepArkwebJsFrame(obj, readMemFn, jsvmParam);
+    ASSERT_EQ(DfxJsvm::Instance().stepArkwebJsFn_, nullptr);
+    GTEST_LOG_(INFO) << "ArkwebJsTest003: end.";
 }
 }
 }

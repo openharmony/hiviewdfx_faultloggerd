@@ -75,6 +75,7 @@ static const int PROC_STAT_BUF_SIZE = 512;
 static const int PROC_STATM_BUF_SIZE = 512;
 static const int PRIV_STACK_FORWARD_BUF_SIZE = 32 * 8;  // 32 for print fault stack
 static const int PRIV_COPY_STACK_BUFFER_SIZE = 64 * 1024 + PRIV_STACK_FORWARD_BUF_SIZE;  // 64k for unwind stack
+static const int ARKWEB_JIT_SYMBOL_BUF_SIZE = 10 * 1024 * 1024; // 10M for read arkweb jit symbol
 
 static const char* const PROC_SELF_STATUS_PATH = "/proc/self/status";
 static const char* const PROC_SELF_TASK_PATH = "/proc/self/task";

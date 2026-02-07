@@ -295,7 +295,8 @@ bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
         return true;
     }
 
-    if (StartsWith(name, "[anon:JSVM_JIT") || StartsWith(name, "[anon:ARKWEB_JIT") || StartsWith(name, "[anon:v8")) {
+    if (StartsWith(name, "[anon:JSVM_JIT") || StartsWith(name, "[anon:ARKWEB_JIT") ||
+        StartsWith(name, "[anon:JS_V8") || StartsWith(name, "[anon:v8")) {
         return true;
     }
     if (name.empty() || name.find(':') != std::string::npos || name.front() == '[' ||

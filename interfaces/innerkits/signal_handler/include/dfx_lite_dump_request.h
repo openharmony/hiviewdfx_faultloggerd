@@ -30,8 +30,10 @@ bool CollectStatm(const struct ProcessDumpRequest *request);
 bool LiteCrashHandler(struct ProcessDumpRequest *request);
 
 bool CollectMemoryNearRegisters(int fd, ucontext_t *context);
-bool CollectMaps(const int pipeFd, const char* path);
+bool FindArkWebJitSymbol(const char* buf, size_t len, uint64_t* startAddr);
+bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAddr);
 bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr);
+bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr);
 void ResetLiteDump(void);
 #ifdef __cplusplus
 }

@@ -128,6 +128,9 @@
       OHOS::HiviewDFX::DfxJsvm::JsvmDestroyJsSymbolExtractor*;
       OHOS::HiviewDFX::DfxJsvm::ParseJsvmFrameInfo*;
       OHOS::HiviewDFX::DfxJsvm::Instance*;
+      OHOS::HiviewDFX::DfxJsvm::ArkwebCreateJsSymbolExtractor*;
+      OHOS::HiviewDFX::DfxJsvm::ArkwebDestroyJsSymbolExtractor*;
+      OHOS::HiviewDFX::DfxJsvm::ParseArkwebJsFrameInfo*;
       OHOS::HiviewDFX::DfxOfflineParser*;
       OHOS::HiviewDFX::DfxElf::GetAdltOriginSoNameByRelPc*;
       OHOS::HiviewDFX::DfxElf::GetAdltStrtab*;

@@ -1166,10 +1166,11 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest004, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, DfxLiteDumperTest005, TestSize.Level2)
 {
-    EXPECT_FALSE(CollectMaps(-1, PROC_SELF_MAPS_PATH));
-    EXPECT_FALSE(CollectMaps(-1, nullptr));
-    EXPECT_FALSE(CollectMaps(g_pipeFd[PIPE_WRITE], "/proc/99999/maps"));
-    EXPECT_TRUE(CollectMaps(g_pipeFd[PIPE_WRITE], PROC_SELF_MAPS_PATH)); // not contain MapsTag
+    uint64_t arkWebJitSymbolAddr = 0;
+    EXPECT_FALSE(CollectMaps(-1, PROC_SELF_MAPS_PATH, &arkWebJitSymbolAddr));
+    EXPECT_FALSE(CollectMaps(-1, nullptr, &arkWebJitSymbolAddr));
+    EXPECT_FALSE(CollectMaps(g_pipeFd[PIPE_WRITE], "/proc/99999/maps", &arkWebJitSymbolAddr));
+    EXPECT_TRUE(CollectMaps(g_pipeFd[PIPE_WRITE], PROC_SELF_MAPS_PATH, &arkWebJitSymbolAddr)); // not contain MapsTag
     ClosePipeFd(g_pipeFd[PIPE_WRITE]);
     std::string str;
     char buf[LINE_BUF_SIZE];

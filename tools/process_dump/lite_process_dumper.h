@@ -58,7 +58,9 @@ private:
     void PrintRegsNearMemory();
     void PrintFaultStack();
     void PrintMaps();
+    void CollectOpenFiles();
     void PrintOpenFiles();
+    void MmapJitSymbol();
 
     bool Report();
 
@@ -73,6 +75,7 @@ private:
     std::shared_ptr<Unwinder> unwinder_;
     std::shared_ptr<DfxProcess> process_;
     std::string keyThreadStackStr_;
+    std::map<int, std::string> fdFiles_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

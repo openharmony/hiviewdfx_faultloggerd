@@ -281,6 +281,23 @@ bool DfxMap::IsJsvmExecutable()
     return true;
 }
 
+bool DfxMap::IsArkWebJsExecutable()
+{
+    if (name.empty()) {
+        return false;
+    }
+    if (!StartsWith(name, "[anon:v8") && !StartsWith(name, "[anon:JS_V8")) {
+        return false;
+    }
+
+    if (!IsMapExec()) {
+        DFXLOGU("Current arkweb js map(%{public}s) is not exec", name.c_str());
+        return false;
+    }
+    DFXLOGU("Current arkweb js map: %{public}s", name.c_str());
+    return true;
+}
+
 bool DfxMap::IsVdsoMap()
 {
     if ((name == "[shmm]" || name == "[vdso]") && IsMapExec()) {

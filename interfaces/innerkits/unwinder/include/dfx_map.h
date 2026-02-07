@@ -47,6 +47,7 @@ public:
     bool IsMapExec();
     bool IsArkExecutable();
     bool IsJsvmExecutable();
+    bool IsArkWebJsExecutable();
     bool IsVdsoMap();
     const std::shared_ptr<DfxHap> GetHap();
     const std::shared_ptr<DfxElf> GetElf(pid_t pid = 0);
