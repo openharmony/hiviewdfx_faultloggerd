@@ -58,7 +58,7 @@ public:
         auto &entrys = zipFile_->GetAllEntries();
         for (const auto &entry : entrys) {
             std::string fileName = entry.first;
-            if (!EndsWith(fileName, "modules.abc")) {
+            if (!EndsWith(fileName, "modules.abc") && !EndsWith(fileName, "modules_static.abc")) {
                 continue;
             }
 

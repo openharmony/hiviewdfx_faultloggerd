@@ -46,6 +46,8 @@ public:
     bool Parse(const char* buff, size_t buffSize);
     bool IsMapExec();
     bool IsArkExecutable();
+    bool IsStaticArkExecutable(uintptr_t pc);
+    bool GetStaticArkRange(uintptr_t& start, uintptr_t& end);
     bool IsJsvmExecutable();
     bool IsArkWebJsExecutable();
     bool IsVdsoMap();

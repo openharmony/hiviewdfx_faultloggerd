@@ -21,9 +21,11 @@
 #include <securec.h>
 #include <string>
 #include <vector>
+#include "dfx_frame.h"
 
 namespace panda {
 namespace ecmascript {
+using FrameType = OHOS::HiviewDFX::FrameType;
 constexpr uint16_t FUNCTIONNAME_MAX = 1024;
 constexpr uint16_t PACKAGENAME_MAX = 1024;
 constexpr uint16_t URL_MAX = 1024;
@@ -66,11 +68,13 @@ struct ArkUnwindParam {
     uintptr_t *pc;
     uintptr_t *methodId;
     bool *isJsFrame;
+    FrameType *frameType;
+    uint64_t frameIndex;
     std::vector<uintptr_t>& jitCache;
-    ArkUnwindParam(void *ctx, ReadMemFunc readMem, uintptr_t *fp, uintptr_t *sp, uintptr_t *pc,
-        uintptr_t *methodId, bool *isJsFrame, std::vector<uintptr_t>& jitCache)
-        : ctx(ctx), readMem(readMem), fp(fp), sp(sp), pc(pc),
-          methodId(methodId), isJsFrame(isJsFrame), jitCache(jitCache) {}
+    ArkUnwindParam(void *ctx, ReadMemFunc readMem, uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, uintptr_t *methodId,
+        bool *isJsFrame, FrameType *frameType, uint64_t frameIndex, std::vector<uintptr_t>& jitCache)
+        : ctx(ctx), readMem(readMem), fp(fp), sp(sp), pc(pc), methodId(methodId),
+          isJsFrame(isJsFrame), frameType(frameType), frameIndex(frameIndex), jitCache(jitCache) {}
 };
 
 struct ArkStepParam {
@@ -78,9 +82,12 @@ struct ArkStepParam {
     uintptr_t *sp;
     uintptr_t *pc;
     bool *isJsFrame;
+    FrameType *frameType;
+    uint64_t frameIndex;
 
-    ArkStepParam(uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame)
-        : fp(fp), sp(sp), pc(pc), isJsFrame(isJsFrame) {}
+    ArkStepParam(uintptr_t *fp, uintptr_t *sp, uintptr_t *pc, bool *isJsFrame, FrameType *frameType,
+        uint64_t frameIndex)
+        : fp(fp), sp(sp), pc(pc), isJsFrame(isJsFrame), frameType(frameType), frameIndex(frameIndex) {}
 };
 }
 }
@@ -92,20 +99,6 @@ using JsFunction = panda::ecmascript::JsFunction;
 using ReadMemFunc = panda::ecmascript::ReadMemFunc;
 using ArkUnwindParam = panda::ecmascript::ArkUnwindParam;
 using ArkStepParam = panda::ecmascript::ArkStepParam;
-
-enum class ArkFunction {
-    ARK_LIB_NAME,
-    ARK_CREATE_JS_SYMBOL_EXTRACTOR,
-    ARK_DESTORY_JS_SYMBOL_EXTRACTOR,
-    ARK_CREATE_LOCAL,
-    ARK_DESTROY_LOCAL,
-    ARK_PARSE_JS_FILE_INFO,
-    ARK_PARSE_JS_FRAME_INFO_LOCAL,
-    ARK_PARSE_JS_FRAME_INFO,
-    STEP_ARK,
-    STEP_ARK_WITH_RECORD_JIT,
-    ARK_WRITE_JIT_CODE,
-};
     
 class DfxArk {
 public:
@@ -155,7 +148,7 @@ public:
      * @param jsFunction jsFunction variable
      * @return if succeed return 1, otherwise return -1
     */
-    int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t mapBase, const char* name,
+    int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t offset, const char* name,
         uintptr_t extractorPtr, JsFunction *jsFunction);
 
     /**
@@ -216,23 +209,22 @@ public:
     /**
      * @brief init ark function.
      *
-     * @param arkFunction target function.
+     * @param functionName target function name
      * @return
      */
-    bool InitArkFunction(ArkFunction arkFunction);
+    bool InitArkFunction(const char* const functionName);
 private:
     DfxArk() = default;
     ~DfxArk() = default;
     DfxArk(const DfxArk&) = delete;
     DfxArk& operator=(const DfxArk&) = delete;
-    bool GetLibArkHandle(void);
-    bool DlsymArkFunc(const char* funcName, void** dlsymFuncName);
+    bool GetLibArkHandle(const char* const libName);
+    bool DlsymArkFunc(const char* const libName, const char* const funcName, void** dlsymFuncName);
 
-    void* handle_ = nullptr;
     using StepArkFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, OHOS::HiviewDFX::ArkStepParam*);
     using StepArkWithJitFn = int (*)(OHOS::HiviewDFX::ArkUnwindParam*);
     using JitCodeWriteFileFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
-    using ParseArkFileInfoFn = int (*)(uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
+    using ParseArkFileInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
     using ParseArkFrameInfoLocalFn = int (*)(uintptr_t, uintptr_t, uintptr_t, JsFunction*);
     using ParseArkFrameInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, uint8_t*,
                                         uint64_t, uintptr_t, JsFunction*);
@@ -240,6 +232,7 @@ private:
     using ArkDestoryJsSymbolExtractorFn = int (*)(uintptr_t);
     using ArkCreateLocalFn = int (*)();
     using ArkDestroyLocalFn = int (*)();
+    void* handle_ = nullptr;
     std::mutex arkMutex_;
     StepArkFn stepArkFn_ = nullptr;
     StepArkWithJitFn stepArkWithJitFn_ = nullptr;

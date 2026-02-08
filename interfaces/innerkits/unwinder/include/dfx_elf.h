@@ -73,6 +73,7 @@ public:
     const std::vector<AdltMapInfo>& GetAdltMap() const;
     const std::string& GetAdltStrtab() const;
     std::string GetAdltOriginSoNameByRelPc(uint64_t relPc) const;
+    bool FindFuncSymbolByName(std::string funcName, ElfSymbol& elfSymbol);
 
 protected:
     void Init();

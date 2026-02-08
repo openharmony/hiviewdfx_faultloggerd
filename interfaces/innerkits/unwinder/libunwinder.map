@@ -109,6 +109,7 @@
       OHOS::HiviewDFX::DfxMap::IsMapExec*;
       OHOS::HiviewDFX::DfxMaps::IsLegalMapItem*;
       OHOS::HiviewDFX::DfxMaps::GetArkStackRange*;
+      OHOS::HiviewDFX::DfxMaps::GetStaticArkRange*;
       OHOS::HiviewDFX::DfxElf::GetMmapPtr*;
       OHOS::HiviewDFX::LocalThreadContextMix::GetInstance*;
       OHOS::HiviewDFX::LocalThreadContextMix::GetMapByPc*;

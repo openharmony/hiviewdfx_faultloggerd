@@ -75,10 +75,11 @@ HWTEST_F(ArkTest, ArkTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "ArkTest003: start.";
     uintptr_t byteCodePc = 0;
     uintptr_t mapBase = 0;
+    uintptr_t offset = 0;
     const char* name = nullptr;
     uintptr_t extractorPtr = 0;
     JsFunction *jsFunction = nullptr;
-    DfxArk::Instance().ParseArkFileInfo(byteCodePc, mapBase, name, extractorPtr, jsFunction);
+    DfxArk::Instance().ParseArkFileInfo(byteCodePc, mapBase, offset, name, extractorPtr, jsFunction);
     ASSERT_NE(DfxArk::Instance().parseArkFileInfoFn_, nullptr);
     DfxArk::Instance().parseArkFileInfoFn_ = nullptr;
     GTEST_LOG_(INFO) << "ArkTest003: end.";
@@ -140,23 +141,16 @@ HWTEST_F(ArkTest, ArkTest006, TestSize.Level2)
         uintptr_t *sp = &zero;
         uintptr_t *pc = &zero;
         bool *isJsFrame = nullptr;
-        ArkStepParam arkParam(fp, sp, pc, isJsFrame);
+        FrameType frameType = FrameType::NATIVE_FRAME;
+        ArkStepParam arkParam(fp, sp, pc, isJsFrame, &frameType, 0);
         DfxArk::Instance().StepArkFrame(obj, readMemFn, &arkParam);
         ASSERT_NE(DfxArk::Instance().stepArkFn_, nullptr);
         DfxArk::Instance().stepArkFn_ = nullptr;
-        ASSERT_NE(DfxArk::Instance().handle_, nullptr);
-        const char* arkCreateLocalFn = "ark_create_local";
-        std::unique_lock<std::mutex> lock(DfxArk::Instance().arkMutex_);
-        *reinterpret_cast<void**>(&(DfxArk::Instance().arkCreateLocalFn_)) = dlsym(DfxArk::Instance().handle_,
-                                                                                   arkCreateLocalFn);
+        DfxArk::Instance().ArkCreateLocal();
         ASSERT_NE(DfxArk::Instance().arkCreateLocalFn_, nullptr);
-        DfxArk::Instance().arkCreateLocalFn_();
         DfxArk::Instance().arkCreateLocalFn_ = nullptr;
-        const char* arkDestroyFuncName = "ark_destroy_local";
-        *reinterpret_cast<void**>(&(DfxArk::Instance().arkDestroyLocalFn_)) = dlsym(DfxArk::Instance().handle_,
-                                                                                   arkDestroyFuncName);
+        DfxArk::Instance().ArkDestroyLocal();
         ASSERT_NE(DfxArk::Instance().arkDestroyLocalFn_, nullptr);
-        DfxArk::Instance().arkDestroyLocalFn_();
         DfxArk::Instance().arkDestroyLocalFn_ = nullptr;
         exit(0);
     }
@@ -193,7 +187,8 @@ HWTEST_F(ArkTest, ArkTest007, TestSize.Level2)
     bool *isJsFrame = nullptr;
     std::vector<uintptr_t> vec;
     std::vector<uintptr_t>& jitCache = vec;
-    OHOS::HiviewDFX::ArkUnwindParam ark(ctx, readMem, fp, sp, pc, methodId, isJsFrame, jitCache);
+    FrameType frameType = FrameType::NATIVE_FRAME;
+    OHOS::HiviewDFX::ArkUnwindParam ark(ctx, readMem, fp, sp, pc, methodId, isJsFrame, &frameType, 0, jitCache);
     OHOS::HiviewDFX::ArkUnwindParam* arkPrama = &ark;
     DfxArk::Instance().StepArkFrameWithJit(arkPrama);
     ASSERT_NE(DfxArk::Instance().stepArkWithJitFn_, nullptr);

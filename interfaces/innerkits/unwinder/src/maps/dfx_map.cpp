@@ -260,6 +260,59 @@ bool DfxMap::IsArkExecutable()
     DFXLOGU("Current ark map: %{public}s", name.c_str());
     return true;
 }
+bool DfxMap::GetStaticArkRange(uintptr_t& start, uintptr_t& end)
+{
+    auto elf = GetElf();
+    if (!elf) {
+        return false;
+    }
+    ElfSymbol handleNopSymbol;
+    ElfSymbol handleExcepSymbol;
+    if (!elf->FindFuncSymbolByName("HANDLE_FAST_NOP", handleNopSymbol) ||
+        !elf->FindFuncSymbolByName("HANDLE_FAST_EXCEPTION", handleExcepSymbol)) {
+        return false;
+    }
+    if (prevMap == nullptr) {
+        return false;
+    }
+    start = handleNopSymbol.value + prevMap->begin;
+    end = handleExcepSymbol.value + handleExcepSymbol.size + prevMap->begin;
+    if (start >= end) {
+        return false;
+    }
+    return true;
+}
+bool DfxMap::IsStaticArkExecutable(uintptr_t pc)
+{
+    static uint64_t arkInterpreterBegin = 0;
+    static uint64_t arkInterpreterEnd = 0;
+    if (name.empty()) {
+        return false;
+    }
+    std::string libName = "arkruntime";
+    if (!EndsWith(name, "lib" + libName + ".so")) {
+        return false;
+    }
+
+    if (!IsMapExec()) {
+        DFXLOGU("Current static ark map(%{public}s) is not exec", name.c_str());
+        return false;
+    }
+
+    if (arkInterpreterBegin == 0 && arkInterpreterEnd == 0) {
+        uintptr_t start = 0;
+        uintptr_t end = 0;
+        if (!GetStaticArkRange(start, end)) {
+            return false;
+        }
+        arkInterpreterBegin = start;
+        arkInterpreterEnd = end;
+    }
+    if (pc >= arkInterpreterBegin && pc < arkInterpreterEnd) {
+        return true;
+    }
+    return false;
+}
 
 bool DfxMap::IsJsvmExecutable()
 {

@@ -52,6 +52,7 @@ public:
     size_t GetMapsSize() const { return maps_.size(); }
     bool GetStackRange(uintptr_t& bottom, uintptr_t& top);
     bool GetArkStackRange(uintptr_t& start, uintptr_t& end);
+    bool GetStaticArkRange(uintptr_t& start, uintptr_t& end);
 
     bool IsArkExecutedMap(uintptr_t addr);
     uint32_t filePathId_ {0}; // for maps item filePath id
