@@ -238,32 +238,30 @@ void LiteProcessDumper::PrintHeader()
 #ifndef is_ohos_lite
     buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
 #endif
-    auto& instance = DfxBufferWriter::GetInstance();
-
-    instance.WriteFormatMsg("Build info:%s\n", buildInfo.c_str());
-    instance.WriteMsg("Timestamp:" + GetCurrentTimeStr(request_.timeStamp));
-    instance.WriteFormatMsg("Pid:%d\n", request_.pid);
-    instance.WriteFormatMsg("Uid:%d\n", request_.uid);
-    instance.WriteFormatMsg("Process name:%s\n", request_.processName);
+    std::string headInfo = StringPrintf("Build info:%s\n", buildInfo.c_str());
+    headInfo += "Timestamp:" + GetCurrentTimeStr(request_.timeStamp);
+    headInfo += StringPrintf("Pid:%d\n", request_.pid);
+    headInfo += StringPrintf("Uid:%d\n", request_.uid);
+    headInfo += StringPrintf("Process name:%s\n", request_.processName);
 
     uint64_t lifeTimeSeconds;
     GetProcessLifeCycle(stat_, lifeTimeSeconds);
     process_->SetLifeTime(lifeTimeSeconds);
-    std::string tmp = "Process life time:" + std::to_string(lifeTimeSeconds) + "s" + "\n";
-    instance.WriteMsg(tmp);
+    headInfo += "Process life time:" + std::to_string(lifeTimeSeconds) + "s" + "\n";
 
     uint64_t rss = GetProcRssMemInfo(statm_);
     process_->SetRss(rss);
-    tmp = StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n", rss);
-    instance.WriteMsg(tmp);
+    headInfo += StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n", rss);
 
     if (request_.siginfo.si_pid == request_.pid) {
         request_.siginfo.si_uid = request_.uid;
     }
     std::string reason = DfxSignal::PrintSignal(request_.siginfo) + "\n";
     process_->SetReason(DfxSignal::PrintSignal(request_.siginfo));
-    instance.WriteMsg("Reason:");
-    instance.WriteMsg(reason);
+    headInfo += "Reason:" + reason;
+
+    DfxBufferWriter::GetInstance().WriteMsg(headInfo);
+    DFXLOGI("%{public}s", headInfo.c_str());
 }
 
 void LiteProcessDumper::PrintThreadInfo()
@@ -307,6 +305,7 @@ void LiteProcessDumper::PrintRegsNearMemory()
     }
     MemoryNearRegister nearRegMemory;
     nearRegMemory.SetLiteType(true);
+    nearRegMemory.Collect(*process_, request_, *unwinder_);
     nearRegMemory.Print(*process_, request_, *unwinder_);
 }
 
@@ -318,6 +317,7 @@ void LiteProcessDumper::PrintFaultStack()
     FaultStack faultStack;
     faultStack.SetLiteType(true);
     process_->GetKeyThread()->SetFrames(unwinder_->GetFrames());
+    faultStack.Collect(*process_, request_, *unwinder_);
     faultStack.Print(*process_, request_, *unwinder_);
 }
 

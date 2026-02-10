@@ -1212,5 +1212,30 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest007, TestSize.Level2)
     GetProcessName(request.processName, sizeof(request.processName));
     EXPECT_TRUE(DumpPrviProcess(signo, &request));
 }
+
+/**
+ * @tc.name: DfxLiteDumperTest008
+ * @tc.desc: add test case liteDump generate file
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest008, TestSize.Level2)
+{
+    prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        sleep(1);
+    } else {
+        int sig = SIGSEGV;
+        usleep(10000); // 10000 : sleep 10ms
+        GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to kill << process(" << pid << ")";
+        GTEST_LOG_(INFO) << "signal:" << sig;
+        kill(pid, sig);
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        bool ret = CheckCrashKeyWords(filename, pid, sig);
+        ASSERT_TRUE(ret);
+    }
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
