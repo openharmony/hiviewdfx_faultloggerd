@@ -369,6 +369,8 @@ HWTEST_F(SignalChainTest, SignalChainTest005, TestSize.Level2)
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
         GTEST_LOG_(INFO) << "SignalChainTest005: pid:" << getpid();
+        remove_all_special_handler(SIGDUMP);
+        remove_all_special_handler(SIGSEGV);
         struct signal_chain_action sigchain1 = {
             .sca_sigaction = SigchainSpecialHandlerDump1,
             .sca_mask = {},
