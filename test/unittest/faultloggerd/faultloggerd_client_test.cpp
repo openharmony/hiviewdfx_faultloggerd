@@ -128,34 +128,16 @@ HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorTest003, TestSize.Level2)
 }
 
 /**
- * @tc.name: LogFileDesClientTest01
- * @tc.desc: test the function for RequestFileDescriptorEx.
+ * @tc.name: RequestFileDescriptorEx001
+ * @tc.desc: test the function for RequestFileDescriptorEx with invalid parameter.
  * @tc.type: FUNC
  */
 HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorEx001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestFileDescriptorEx001: start.";
-    FaultLoggerdRequest faultLoggerdRequest;
-    faultLoggerdRequest.type = FaultLoggerType::CPP_CRASH;
-    faultLoggerdRequest.pid = getpid();
-    faultLoggerdRequest.tid = gettid();
-    faultLoggerdRequest.time = GetTimeMilliSeconds();
-    SmartFd sFd(RequestFileDescriptorEx(&faultLoggerdRequest));
-    ASSERT_GE(sFd.GetFd(), 0);
-    GTEST_LOG_(INFO) << "RequestFileDescriptorEx001: end.";
-}
-
-/**
- * @tc.name: RequestFileDescriptorEx002
- * @tc.desc: test the function for RequestFileDescriptorEx with invalid parameter.
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorEx002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "RequestFileDescriptorEx002: start.";
     SmartFd sFd(RequestFileDescriptorEx(nullptr));
     ASSERT_EQ(sFd.GetFd(), -1);
-    GTEST_LOG_(INFO) << "RequestFileDescriptorEx002: end.";
+    GTEST_LOG_(INFO) << "RequestFileDescriptorEx001: end.";
 }
 
 /**
@@ -166,6 +148,13 @@ HWTEST_F(FaultloggerdClientTest, RequestFileDescriptorEx002, TestSize.Level2)
 HWTEST_F(FaultloggerdClientTest, RequestSdkDumpTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestSdkDumpTest002: start.";
+    FaultLoggerdRequest faultLoggerdRequest;
+    faultLoggerdRequest.type = FaultLoggerType::CPP_CRASH;
+    faultLoggerdRequest.pid = getpid();
+    faultLoggerdRequest.tid = gettid();
+    faultLoggerdRequest.time = GetTimeMilliSeconds();
+    SmartFd sFd(RequestFileDescriptorEx(&faultLoggerdRequest));
+    ASSERT_GE(sFd.GetFd(), 0);
     int pipeFds[] = { -1, -1 };
     ASSERT_EQ(RequestSdkDump(0, 0, pipeFds), -1);
     ASSERT_EQ(RequestSdkDump(1, -1, pipeFds), -1);
