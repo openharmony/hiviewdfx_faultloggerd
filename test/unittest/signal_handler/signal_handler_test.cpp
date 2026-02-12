@@ -1067,7 +1067,9 @@ HWTEST_F(SignalHandlerTest, SetCrashLogConfig003, TestSize.Level2)
  */
 HWTEST_F(SignalHandlerTest, DfxNotifyWatchdogThreadStart001, TestSize.Level2)
 {
-    EXPECT_TRUE(DfxNotifyWatchdogThreadStart() == 0);
+    EXPECT_TRUE(DfxNotifyWatchdogThreadStart("SIGPIPE") == 0);
+    EXPECT_TRUE(DfxNotifyWatchdogThreadStart(NULL) == 0);
+    EXPECT_TRUE(DfxNotifyWatchdogThreadStart("no") == 0);
 }
 
 /**

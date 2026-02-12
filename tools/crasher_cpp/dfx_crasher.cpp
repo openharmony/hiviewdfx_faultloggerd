@@ -348,7 +348,7 @@ NOINLINE int DfxCrasher::SignalHandlerCrash(void)
 NOINLINE int DfxCrasher::TriggerPipeException(void)
 {
     setenv("HAP_DEBUGGABLE", "true", 1);
-    DfxNotifyWatchdogThreadStart();
+    DfxNotifyWatchdogThreadStart("SIGPIPE");
     int pipe[2]{-1};
     if (pipe2(pipe, 0) != 0) {
         return 0;
@@ -404,7 +404,7 @@ static void StartServer(int fd)
 NOINLINE int DfxCrasher::TriggerSocketException(void)
 {
     setenv("HAP_DEBUGGABLE", "true", 1);
-    DfxNotifyWatchdogThreadStart();
+    DfxNotifyWatchdogThreadStart("SIGPIPE");
     int pipe[2] {-1};
     if (pipe2(pipe, 0) != 0) {
         return 0;

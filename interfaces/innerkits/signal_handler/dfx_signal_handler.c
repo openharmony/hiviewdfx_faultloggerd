@@ -101,6 +101,11 @@ typedef struct ThreadCallbackItem {
     ThreadInfoCallBack callback;
 } ThreadCallbackItem;
 
+typedef struct SignalStrItem {
+    const char* signalStr;
+    int signo;
+} SignalStrItem;
+
 #define CALLBACK_ITEM_COUNT 32
 static ThreadCallbackItem g_callbackItems[CALLBACK_ITEM_COUNT];
 static void InitCallbackItems(void)
@@ -523,17 +528,39 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
     return 0;
 }
 
-int DfxNotifyWatchdogThreadStart()
+int GetSignoBySignalStr(const char* signalStr)
 {
+    if (signalStr == NULL) {
+        return 0;
+    }
+
+    SignalStrItem signalItems[] = {
+        {"SIGPIPE", SIGPIPE}
+    };
+    const int signalSize = sizeof(signalItems) / sizeof(signalItems[0]);
+    int signo = 0;
+    for (int i = 0; i < signalSize; i++) {
+        if (strcmp(signalStr, signalItems[i].signalStr) == 0) {
+            signo = signalItems[i].signo;
+            break;
+        }
+    }
+    return signo;
+}
+
+int DfxNotifyWatchdogThreadStart(const char* signalStr)
+{
+    int signo = GetSignoBySignalStr(signalStr);
     char* debuggableEnv = getenv("HAP_DEBUGGABLE");
-    if (debuggableEnv != NULL && strcmp(debuggableEnv, "true") == 0) {
+    if (signo != 0 && debuggableEnv != NULL && strcmp(debuggableEnv, "true") == 0) {
+        set_sigchain_pre_validation_ignore(1);
         struct signal_chain_action sigchain = {
             .sca_sigaction = DFX_SigchainHandler,
             .sca_mask = {},
             .sca_flags = 0,
         };
         sigfillset(&sigchain.sca_mask);
-        add_special_handler_at_last(SIGPIPE, &sigchain);
+        add_special_handler_at_last(signo, &sigchain);
     }
     if (!DFX_SetDumpableState()) {
         return -1;

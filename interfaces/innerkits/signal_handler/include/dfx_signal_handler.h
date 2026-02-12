@@ -125,11 +125,11 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value);
 
 /**
  * @brief notify watchdog thread start
- *
+ * @param signalStr name of the signal
  * @return 0 on success, -1 on error (check errno for details)
  * @warning Non-thread-safe and non-signal-safe. Call early in program initialization.
  */
-int DfxNotifyWatchdogThreadStart();
+int DfxNotifyWatchdogThreadStart(const char* signalStr);
 
 #ifdef __cplusplus
 }
