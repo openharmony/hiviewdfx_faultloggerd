@@ -423,7 +423,7 @@ bool ElfParser::ParseFuncSymbolName(const ShdrInfo& linkShdr, SymType sym, std::
     }
     uintptr_t nameOffset = static_cast<uintptr_t>(linkShdr.offset + sym.st_name);
     nameStr = std::string(static_cast<char*>(mmap_->Get()) + nameOffset, strnlen(
-        static_cast<char*>(mmap_->Get()) + nameOffset, MAX_FUNC_NAME_LEN));
+        static_cast<char*>(mmap_->Get()) + nameOffset, mmap_->Size() - nameOffset));
     return true;
 }
 
