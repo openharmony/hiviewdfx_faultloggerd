@@ -61,7 +61,7 @@ private:
     void CollectOpenFiles();
     void PrintOpenFiles();
     void MmapJitSymbol();
-
+    void MunmapJitSymbol();
     bool Report();
 
     std::shared_ptr<DfxRegs> regs_;
@@ -76,6 +76,7 @@ private:
     std::shared_ptr<DfxProcess> process_;
     std::string keyThreadStackStr_;
     std::map<int, std::string> fdFiles_;
+    void* jitSymbolMMap_ = MAP_FAILED;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

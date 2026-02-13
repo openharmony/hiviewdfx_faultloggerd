@@ -24,11 +24,19 @@
 
 namespace jsvm {
 constexpr uint16_t FUNCTION_NAME_MAX = 1024;
-
+constexpr uint16_t URL_MAX = 1024;
 using ReadMemFunc = bool (*)(void *, uintptr_t, uintptr_t *);
 
 struct JsvmFunction {
-    char functionName[FUNCTION_NAME_MAX];
+    char functionName[FUNCTION_NAME_MAX] = {0} ;
+};
+
+struct WebJsFunction {
+    char functionName[FUNCTION_NAME_MAX] = {0};
+    uint32_t offestInFunction = 0;
+    char url[URL_MAX] = {0};
+    int32_t line = 0;
+    int32_t column = 0;
 };
 
 struct JsvmStepParam {
@@ -47,6 +55,7 @@ namespace HiviewDFX {
 using JsvmFunction = jsvm::JsvmFunction;
 using ReadMemFunc = jsvm::ReadMemFunc;
 using JsvmStepParam = jsvm::JsvmStepParam;
+using WebJsFunction = jsvm::WebJsFunction;
 
 class DfxJsvm {
 public:
@@ -101,10 +110,10 @@ public:
      *
      * @param pc program counter
      * @param extractorPtr extractorPtr from ArkwebCreateJsSymbolExtractor
-     * @param JsvmFunction jsvmFunction variable
+     * @param webJsFunction webJsFunction variable
      * @return if succeed return 1, otherwise return -1
     */
-    int ParseArkwebJsFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFunction *jsvmFunction);
+    int ParseArkwebJsFrameInfo(uintptr_t pc, uintptr_t extractorPtr, WebJsFunction *webJsFunction);
 
     /**
      * @brief create arkweb js symbol extracrot
@@ -128,8 +137,8 @@ private:
     DfxJsvm(const DfxJsvm&) = delete;
     DfxJsvm& operator=(const DfxJsvm&) = delete;
     std::string GetArkwebInstallLibPath();
-    bool GetLibJsvmHandle(const char* const libName, void** handle);
-    bool DlsymJsvmFunc(const char* const libName, const char* const funcName, void** dlsymFuncName);
+    bool GetLibJsvmHandle(const char* const libName, void* &handle);
+    bool DlsymJsvmFunc(const char* const libName, const char* const funcName, void* dlsymFuncPointer);
     bool InitJsvmFunction(const char* const functionName);
     using StepJsvmFn = int (*)(void*, ReadMemFunc, JsvmStepParam*);
     using ParseJsvmFrameInfoFn = int (*)(uintptr_t, uintptr_t, JsvmFunction*);
@@ -143,7 +152,7 @@ private:
     JsvmDestroyJsSymbolExtractorFn jsvmDestroyJsSymbolExtractorFn_ = nullptr;
 
     using StepArkwebJsFn = int (*)(void*, ReadMemFunc, JsvmStepParam*);
-    using ParseArkwebJsFrameInfoFn = int (*)(uintptr_t, uintptr_t, JsvmFunction*);
+    using ParseArkwebJsFrameInfoFn = int (*)(uintptr_t, uintptr_t, WebJsFunction*);
     using ArkwebCreateJsSymbolExtractorFn = int (*)(uintptr_t*, uint32_t);
     using ArkwebDestroyJsSymbolExtractorFn = int (*)(uintptr_t);
     StepArkwebJsFn stepArkwebJsFn_ = nullptr;

@@ -90,6 +90,7 @@ static const char* const PROCESSDUMP_PATH = "/system/bin/processdump";
 #else
 static const char* const PROCESSDUMP_PATH = "/bin/processdump";
 #endif
+static const char* const ARKWEB_NATIVE_MAP = "[anon:v8";
 
 #ifndef LIKELY
 #define LIKELY(exp)       (__builtin_expect(!!(exp), true))

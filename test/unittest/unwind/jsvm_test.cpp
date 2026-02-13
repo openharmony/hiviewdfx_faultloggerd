@@ -158,7 +158,7 @@ HWTEST_F(JsvmTest, ArkwebJsTest002, TestSize.Level2)
     GTEST_LOG_(INFO) << "ArkwebJsTest002: start.";
     uintptr_t pc = 0;
     uintptr_t extractorPtr = 0;
-    JsvmFunction *jsFunction = nullptr;
+    WebJsFunction *jsFunction = nullptr;
     if (g_jsvmEnable) {
         DfxJsvm::Instance().ParseArkwebJsFrameInfo(pc, extractorPtr, jsFunction);
         ASSERT_NE(DfxJsvm::Instance().parseArkwebJsFrameInfoFn_, nullptr);

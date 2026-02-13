@@ -1372,17 +1372,19 @@ void Unwinder::Impl::FillArkwebJsFrame(DfxFrame& frame)
         DFXLOGE("create arkweb js extractor failed");
         return;
     }
-    JsvmFunction jsFunction;
-    DfxJsvm::Instance().ParseArkwebJsFrameInfo(frame.pc, arkwebJsExtractorptr_, &jsFunction);
-    frame.funcName = std::string(jsFunction.functionName);
-    if (frame.map->name == "[anon:v8]") { // interpreter frame is native frame
+    WebJsFunction webJsFunction;
+    DfxJsvm::Instance().ParseArkwebJsFrameInfo(frame.pc, arkwebJsExtractorptr_, &webJsFunction);
+    frame.funcName = std::string(webJsFunction.functionName);
+    if (StartsWith(frame.map->name, ARKWEB_NATIVE_MAP)) {
         frame.mapName = frame.map->GetElfName();
         frame.isJsFrame = false;
         frame.relPc = frame.pc - frame.map->begin;
+        frame.funcOffset = webJsFunction.offestInFunction;
     } else {
         frame.isJsFrame = true;
-        frame.mapName = "";
-        frame.map = nullptr;
+        frame.mapName = std::string(webJsFunction.url);
+        frame.line = webJsFunction.line;
+        frame.column = webJsFunction.column;
     }
     DFXLOGU("arkweb js frame funcName: %{public}s", frame.funcName.c_str());
 }
