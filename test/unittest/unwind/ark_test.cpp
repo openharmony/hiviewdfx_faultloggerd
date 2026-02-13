@@ -59,6 +59,7 @@ HWTEST_F(ArkTest, ArkTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ArkTest002: start.";
     uintptr_t extractorPtr = 0;
+    DfxArk::Instance().ArkCreateJsSymbolExtractor(&extractorPtr);
     DfxArk::Instance().ArkDestoryJsSymbolExtractor(extractorPtr);
     ASSERT_NE(DfxArk::Instance().arkDestoryJsSymbolExtractorFn_, nullptr);
     DfxArk::Instance().arkDestoryJsSymbolExtractorFn_ = nullptr;
