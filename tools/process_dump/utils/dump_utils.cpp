@@ -36,6 +36,7 @@
 #include "if_system_ability_manager.h"
 #include "iservice_registry.h"
 #include "parameters.h"
+#include "parameter.h"
 #include "system_ability_definition.h"
 #endif
 namespace OHOS {
@@ -314,6 +315,14 @@ bool DumpUtils::IsSelinuxPermissive()
 #else
     return true;
 #endif
+}
+
+std::string DumpUtils::GetBuildInfo()
+{
+#ifndef is_ohos_lite
+    return GetDisplayVersion() != nullptr ? GetDisplayVersion() : "Unknown";
+#endif
+    return "Unknown";
 }
 } // namespace HiviewDFX
 } // namespace OHOS
