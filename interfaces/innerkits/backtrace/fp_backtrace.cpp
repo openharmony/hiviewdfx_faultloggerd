@@ -42,8 +42,6 @@ namespace {
 uintptr_t g_arkStubBegin{0};
 uintptr_t g_arkStubEnd{0};
 std::atomic_bool g_updateArkStubFlag{false};
-uintptr_t g_staticArkBegin{0};
-uintptr_t g_staticArkEnd{0};
 }
 
 extern "C" bool ffrt_get_current_coroutine_stack(void** stackAddr, size_t* size) __attribute__((weak));
@@ -61,6 +59,8 @@ private:
     Unwinder unwinder_{false};
     uintptr_t mainStackBegin_{0};
     uintptr_t mainStackEnd_{0};
+    uintptr_t staticArkBegin_{0};
+    uintptr_t staticArkEnd_{0};
     std::map<void*, std::unique_ptr<DfxFrame>> cachedFrames_;
     std::mutex mutex_;
 };
@@ -82,7 +82,7 @@ bool FpBacktraceImpl::Init()
         return false;
     }
     maps_->GetStackRange(mainStackBegin_, mainStackEnd_);
-    maps_->GetStaticArkRange(g_staticArkBegin, g_staticArkEnd);
+    maps_->GetStaticArkRange(staticArkBegin_, staticArkEnd_);
     return true;
 }
 
@@ -103,7 +103,7 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
 void FpBacktraceImpl::BacktraceArkFrame(ArkStepParam &arkParam, MemoryReader& memoryReader,
     uint64_t &staticArkFrameIndex) const
 {
-    if (*(arkParam.pc) >= g_staticArkBegin && *(arkParam.pc) < g_staticArkEnd) {
+    if (*(arkParam.pc) >= staticArkBegin_ && *(arkParam.pc) < staticArkEnd_) {
         staticArkFrameIndex = 0;
         arkParam.frameIndex = staticArkFrameIndex;
         *(arkParam.frameType) = FrameType::STATIC_JS_FRAME;
@@ -138,7 +138,7 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
         constexpr auto pcIndex = 1;
         uintptr_t preFp = registerState[fpIndex];
         if (isJsFrame || (registerState[pcIndex] < arkStubEnd && registerState[pcIndex] >= arkStubBegin) ||
-            (registerState[pcIndex] < g_staticArkEnd && registerState[pcIndex] >= g_staticArkBegin)) {
+            (registerState[pcIndex] < staticArkEnd_ && registerState[pcIndex] >= staticArkBegin_)) {
             ArkStepParam arkParam(&registerState[fpIndex], &sp, &registerState[pcIndex], &isJsFrame, &frameType,
                                   staticArkFrameIndex);
             BacktraceArkFrame(arkParam, memoryReader, staticArkFrameIndex);

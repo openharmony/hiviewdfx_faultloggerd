@@ -219,7 +219,7 @@ private:
     DfxArk(const DfxArk&) = delete;
     DfxArk& operator=(const DfxArk&) = delete;
     bool GetLibArkHandle(const char* const libName);
-    bool DlsymArkFunc(const char* const libName, const char* const funcName, void** dlsymFuncName);
+    bool DlsymArkFunc(const char* const libName, const char* const funcName, void* dlsymFuncPointer);
 
     using StepArkFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, OHOS::HiviewDFX::ArkStepParam*);
     using StepArkWithJitFn = int (*)(OHOS::HiviewDFX::ArkUnwindParam*);
