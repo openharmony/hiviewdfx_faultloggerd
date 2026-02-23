@@ -351,7 +351,7 @@ bool DfxMaps::FindMapByAddr(uintptr_t addr, std::shared_ptr<DfxMap>& map) const
     if (findMapIndex >= 0) {
         map = maps_[findMapIndex];
     }
-    if (findMapIndex >= 1) {
+    if (findMapIndex >= 1 && map != nullptr && map->prevMap == nullptr) {
         map->prevMap = maps_[findMapIndex - 1];
     }
     return findMapIndex >= 0;
