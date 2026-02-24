@@ -38,6 +38,7 @@ public:
     static void WaitForFork(pid_t pid, pid_t& childPid);
     static void NotifyOperateResult(ProcessDumpRequest& request, int result);
     static bool IsSelinuxPermissive(void);
+    static std::string GetBuildInfo();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
