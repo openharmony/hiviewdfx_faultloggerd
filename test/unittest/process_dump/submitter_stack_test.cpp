@@ -64,11 +64,12 @@ int SubmitterStackTest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
 namespace {
 static bool g_done = false;
 pid_t g_testTid = 0;
-
+uint64_t g_stackId = 0;
 NOINLINE static void WorkCallback(uv_work_t* req)
 {
     g_testTid = gettid();
-    sleep(3); // 3 : sleep 3 seconds
+    g_stackId = DfxGetSubmitterStackId();
+    sleep(1); // 1 : sleep 1 seconds
 }
 
 NOINLINE static void AfterWorkCallback(uv_work_t* req, int status)
@@ -104,7 +105,7 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
         .tid = g_testTid,
         .pid = g_testTid,
         .nsPid = g_testTid,
-        .stackId = DfxGetSubmitterStackId(),
+        .stackId = g_stackId,
     };
 #if defined(__aarch64__)
     ASSERT_NE(request.stackId, 0);
