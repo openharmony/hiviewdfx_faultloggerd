@@ -29,6 +29,7 @@
 #endif
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "elapsed_time.h"
 #include <sys/wait.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
@@ -534,18 +535,16 @@ void ParseSymbolWithDfxThreadStack(std::vector<DfxThreadStack>& processStack, co
     }
     timeout -= parseTime.parseBuildIdJsSymbolTime;
     if (timeout > PARSE_SO_SYMBOL_REMAIN_TIME_MS + LESS_REMAIN_TIME_MS) {
-        std::promise<void> promise;
-        std::future<void> future = promise.get_future();
-        std::thread parseNativeSymbolThread([parser, &processStack, &promise]() {
-            for (auto& threadStack : processStack) {
-                parser->ParseNativeSymbolWithFrames(threadStack.frames);
+        auto timeRemain = static_cast<time_t>(std::chrono::milliseconds(PARSE_SO_SYMBOL_REMAIN_TIME_MS).count());
+        ElapsedTime et;
+        for (auto& threadStack : processStack) {
+            parser->ParseNativeSymbolWithFrames(threadStack.frames);
+            auto timeSpend = et.Elapsed<std::chrono::milliseconds>();
+            if (timeRemain <= timeSpend) {
+                DFXLOGE("parse so symbol timeout");
+                break;
             }
-            promise.set_value();
-        });
-        if (future.wait_for(std::chrono::milliseconds(PARSE_SO_SYMBOL_REMAIN_TIME_MS)) == std::future_status::timeout) {
-            DFXLOGE("parse so symbol timeout");
         }
-        parseNativeSymbolThread.detach();
     } else {
         DFXLOGE("not enough time to parse so symbol!");
     }
