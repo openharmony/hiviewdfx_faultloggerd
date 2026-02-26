@@ -228,6 +228,7 @@ bool LiteProcessDumper::Dump(int pid)
     InitProcess();
     Unwind();
     PrintAll();
+    MunmapJitSymbol();
     Report();
     DFXLOGI("dump finish.");
     return true;
@@ -366,16 +367,28 @@ void LiteProcessDumper::PrintOpenFiles()
 
 void LiteProcessDumper::MmapJitSymbol()
 {
-    auto jitSymbolMMap = mmap(NULL, ARKWEB_JIT_SYMBOL_BUF_SIZE,
+    jitSymbolMMap_ = mmap(NULL, ARKWEB_JIT_SYMBOL_BUF_SIZE,
         PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (jitSymbolMMap == MAP_FAILED) {
+    if (jitSymbolMMap_ == MAP_FAILED) {
         DFXLOGW("Failed to mmap!\n");
         return;
     }
-    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, jitSymbolMMap, ARKWEB_JIT_SYMBOL_BUF_SIZE, "ARKWEB_JIT_symbol");
-    if (memcpy_s(jitSymbolMMap, ARKWEB_JIT_SYMBOL_BUF_SIZE, rawData_.c_str(), rawData_.length()) != EOK) {
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE, "ARKWEB_JIT_symbol");
+    if (memcpy_s(jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE, rawData_.c_str(), rawData_.length()) != EOK) {
+        munmap(jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE);
         DFXLOGE("Failed to copy rawData_.");
     }
+}
+
+void LiteProcessDumper::MunmapJitSymbol()
+{
+    if (jitSymbolMMap_ == MAP_FAILED) {
+        return;
+    }
+    if (munmap(jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE) == -1) {
+        DFXLOGE("munmap jit symbol failed %{public}d", errno);
+    }
+    jitSymbolMMap_ = MAP_FAILED;
 }
 
 void LiteProcessDumper::PrintAll()

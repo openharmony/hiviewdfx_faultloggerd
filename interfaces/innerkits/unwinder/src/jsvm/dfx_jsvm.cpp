@@ -34,7 +34,7 @@ namespace {
 #define LOG_TAG "DfxJsvm"
 
 const char* const JSVM_LIB_NAME = "libjsvm.so";
-const std::string ARK_WEB_JS_LIB_NAME = "libwebjs_dfx.so";
+const char* const ARK_WEB_JS_LIB_NAME = "libwebjs_dfx.so";
 const char* const CREATE_JSVM_FUNC_NAME = "create_jsvm_extractor";
 const char* const DESTROY_JSVM_FUNC_NAME = "destroy_jsvm_extractor";
 const char* const PARSE_JSVM_FUNC_NAME = "jsvm_parse_js_frame_info";
@@ -47,7 +47,7 @@ const char* const STEP_ARKWEBJS_FUNC_NAME = "step_webjs";
 struct JsvmFunctionTable {
     const char* libPath;
     const char* const functionName;
-    void** funcPointer;
+    void* funcPointer;
 };
 }
 std::string DfxJsvm::GetArkwebInstallLibPath()
@@ -63,13 +63,10 @@ std::string DfxJsvm::GetArkwebInstallLibPath()
     return arkwebEngineLibPath;
 }
 
-bool DfxJsvm::GetLibJsvmHandle(const char* const libName, void** handle)
+bool DfxJsvm::GetLibJsvmHandle(const char* const libName, void* &handle)
 {
-    if (*handle != nullptr) {
-        return true;
-    }
-    *handle = dlopen(libName, RTLD_LAZY);
-    if (*handle == nullptr) {
+    handle = dlopen(libName, RTLD_LAZY);
+    if (handle == nullptr) {
         DFXLOGU("Failed to load library(%{public}s).", dlerror());
         return false;
     }
@@ -82,20 +79,14 @@ DfxJsvm& DfxJsvm::Instance()
     return instance;
 }
 
-bool DfxJsvm::DlsymJsvmFunc(const char* const libName, const char* const funcName, void** dlsymFuncName)
+bool DfxJsvm::DlsymJsvmFunc(const char* const libName, const char* const funcName, void* dlsymFuncPointer)
 {
-    if (dlsymFuncName == nullptr) {
-        return false;
-    }
-    if (*dlsymFuncName != nullptr) {
-        return true;
-    }
     void* handle = nullptr;
-    if (!GetLibJsvmHandle(libName, &handle)) {
+    if (!GetLibJsvmHandle(libName, handle)) {
         return false;
     }
-    *dlsymFuncName = dlsym(handle, (funcName));
-    if (*dlsymFuncName == nullptr) {
+    *reinterpret_cast<void**>(dlsymFuncPointer) = dlsym(handle, funcName);
+    if (dlsymFuncPointer == nullptr) {
         DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", funcName, dlerror());
         return false;
     }
@@ -105,18 +96,18 @@ bool DfxJsvm::DlsymJsvmFunc(const char* const libName, const char* const funcNam
 bool DfxJsvm::InitJsvmFunction(const char* const functionName)
 {
     std::unique_lock<std::mutex> lock(mutex_);
-    std::string arkWebLib = GetArkwebInstallLibPath() + ARK_WEB_JS_LIB_NAME;
+    std::string arkWebLib = GetArkwebInstallLibPath() + std::string(ARK_WEB_JS_LIB_NAME);
     std::vector<JsvmFunctionTable> functionTable = {
-        {JSVM_LIB_NAME, CREATE_JSVM_FUNC_NAME, reinterpret_cast<void**>(&jsvmCreateJsSymbolExtractorFn_)},
-        {JSVM_LIB_NAME, DESTROY_JSVM_FUNC_NAME, reinterpret_cast<void**>(&jsvmDestroyJsSymbolExtractorFn_)},
-        {JSVM_LIB_NAME, PARSE_JSVM_FUNC_NAME, reinterpret_cast<void**>(&parseJsvmFrameInfoFn_)},
-        {JSVM_LIB_NAME, STEP_JSVM_FUNC_NAME, reinterpret_cast<void**>(&stepJsvmFn_)},
-        {arkWebLib.c_str(), CREATE_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&arkwebCreateJsSymbolExtractorFn_)},
-        {arkWebLib.c_str(), DESTROY_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&arkwebDestroyJsSymbolExtractorFn_)},
-        {arkWebLib.c_str(), PARSE_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&parseArkwebJsFrameInfoFn_)},
-        {arkWebLib.c_str(), STEP_ARKWEBJS_FUNC_NAME, reinterpret_cast<void**>(&stepArkwebJsFn_)},
+        {JSVM_LIB_NAME, CREATE_JSVM_FUNC_NAME, reinterpret_cast<void*>(&jsvmCreateJsSymbolExtractorFn_)},
+        {JSVM_LIB_NAME, DESTROY_JSVM_FUNC_NAME, reinterpret_cast<void*>(&jsvmDestroyJsSymbolExtractorFn_)},
+        {JSVM_LIB_NAME, PARSE_JSVM_FUNC_NAME, reinterpret_cast<void*>(&parseJsvmFrameInfoFn_)},
+        {JSVM_LIB_NAME, STEP_JSVM_FUNC_NAME, reinterpret_cast<void*>(&stepJsvmFn_)},
+        {arkWebLib.c_str(), CREATE_ARKWEBJS_FUNC_NAME, reinterpret_cast<void*>(&arkwebCreateJsSymbolExtractorFn_)},
+        {arkWebLib.c_str(), DESTROY_ARKWEBJS_FUNC_NAME, reinterpret_cast<void*>(&arkwebDestroyJsSymbolExtractorFn_)},
+        {arkWebLib.c_str(), PARSE_ARKWEBJS_FUNC_NAME, reinterpret_cast<void*>(&parseArkwebJsFrameInfoFn_)},
+        {arkWebLib.c_str(), STEP_ARKWEBJS_FUNC_NAME, reinterpret_cast<void*>(&stepArkwebJsFn_)},
     };
-    for (const auto& function : functionTable) {
+    for (auto& function : functionTable) {
         if (strcmp(function.functionName, functionName) == 0) {
             return DlsymJsvmFunc(function.libPath, functionName, function.funcPointer);
         }
@@ -179,11 +170,11 @@ int DfxJsvm::ArkwebDestroyJsSymbolExtractor(uintptr_t extractorPtr)
     return -1;
 }
 
-int DfxJsvm::ParseArkwebJsFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFunction *jsvmFunction)
+int DfxJsvm::ParseArkwebJsFrameInfo(uintptr_t pc, uintptr_t extractorPtr, WebJsFunction *webJsFunction)
 {
     if ((parseArkwebJsFrameInfoFn_ != nullptr || InitJsvmFunction(PARSE_ARKWEBJS_FUNC_NAME)) &&
-        jsvmFunction != nullptr) {
-        return parseArkwebJsFrameInfoFn_(pc, extractorPtr, jsvmFunction);
+        webJsFunction != nullptr) {
+        return parseArkwebJsFrameInfoFn_(pc, extractorPtr, webJsFunction);
     }
     return -1;
 }
