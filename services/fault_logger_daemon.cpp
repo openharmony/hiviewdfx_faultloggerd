@@ -62,9 +62,7 @@ bool FaultLoggerDaemon::InitHelperServer()
         return false;
     }
 #ifndef is_ohos_lite
-    if (OHOS::HiviewDFX::IsBetaVersion()) {
-        EpollManager::GetInstance().AddListener(std::make_unique<ReadKernelSnapshotTask>());
-    }
+    EpollManager::GetInstance().AddListener(std::make_unique<ReadKernelSnapshotTask>());
 #endif
     return true;
 }

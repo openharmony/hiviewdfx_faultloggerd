@@ -187,6 +187,36 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest004, TestSize.Level2)
 
     GTEST_LOG_(INFO) << "KernelSnapshotTest004: end.";
 }
+
+/**
+ * @tc.name: KernelSnapshotTest005
+ * @tc.desc: test snapshot generation
+ * @tc.type: FUNC
+ */
+HWTEST_F(KernelSnapshotTest, KernelSnapshotTest005, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "KernelSnapshotTest005: start.";
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        BlockSignals();
+        int* p = (int*)55;
+        *p = 0;
+    }
+    waitpid(pid, 0, 0);
+    WaitCreateCrashFile("cppcrash", pid, 5);
+
+    string getHilogCmd = "hilog -x | grep -i c02d11";
+    string content = ExecuteCommands(getHilogCmd);
+    EXPECT_TRUE(content.find("Build info") != std::string::npos) << "KernelSnapshotTest005 Failed";
+    EXPECT_TRUE(content.find("Timestamp") != std::string::npos) << "KernelSnapshotTest005 Failed";
+    EXPECT_TRUE(content.find("Pid") != std::string::npos) << "KernelSnapshotTest005 Failed";
+    EXPECT_TRUE(content.find("Process name:") != std::string::npos) << "KernelSnapshotTest005 Failed";
+    EXPECT_TRUE(content.find("Reason:") != std::string::npos) << "KernelSnapshotTest005 Failed";
+    EXPECT_TRUE(content.find("Exception registers") != std::string::npos) << "KernelSnapshotTest005 Failed";
+    EXPECT_TRUE(content.find("#01") != std::string::npos) << "KernelSnapshotTest005 Failed";
+    GTEST_LOG_(INFO) << "KernelSnapshotTest005: end.";
+}
 #endif
 
 /**

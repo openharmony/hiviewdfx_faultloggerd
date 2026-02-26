@@ -90,6 +90,12 @@ std::vector<KernelSnapshotContentBuilder::SnapshotUserSection> KernelSnapshotCon
         {"Fault thread info:\n", crashData_[CrashSection::FAULT_THREAD_INFO], ""},
         {"Registers:\n", crashData_[CrashSection::CREGISTERS], ""}
     };
+    if (isPrintLog_) {
+        // No need to print registers.
+        for (size_t i = 0; i < sections.size() - 1; i++) {
+            DFXLOGI("%{public}s%{public}s", sections[i].title.c_str(), sections[i].content.c_str());
+        }
+    }
     if (isLocal_) {
         sections.emplace_back("Memory near registers:\n", crashData_[CrashSection::MEMORY_NEAR_REGISTERS], "");
         sections.emplace_back("FaultStack:\n", crashData_[CrashSection::FAULT_STACK], "");
