@@ -85,11 +85,12 @@ bool DfxJsvm::DlsymJsvmFunc(const char* const libName, const char* const funcNam
     if (!GetLibJsvmHandle(libName, handle)) {
         return false;
     }
-    *reinterpret_cast<void**>(dlsymFuncPointer) = dlsym(handle, funcName);
-    if (dlsymFuncPointer == nullptr) {
+    auto func = dlsym(handle, funcName);
+    if (func == nullptr) {
         DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", funcName, dlerror());
         return false;
     }
+    *reinterpret_cast<void**>(dlsymFuncPointer) = func;
     return true;
 }
 
