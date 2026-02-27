@@ -20,6 +20,8 @@
 #include <sys/prctl.h>
 #include <securec.h>
 #include "dfx_log.h"
+#include <unistd.h>
+#include <cmath>
 namespace OHOS {
 namespace HiviewDFX {
 UniqueStackTable* UniqueStackTable::Instance()
@@ -55,8 +57,8 @@ bool UniqueStackTable::Init()
     }
     stackTable_.tableBufMMap = retBufMMap;
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, stackTable_.tableBufMMap, stackTable_.tableSize, "async_stack_table");
-    DFXLOGD(
-        "Init totalNodes_: %{public}u, availableNodes_: %{public}u, availableIndex_: %{public}u \
+    DFXLOGI(
+        "MAPLE Init totalNodes_: %{public}u, availableNodes_: %{public}u, availableIndex_: %{public}u \
         hashStep_: %{public}" PRIu64 ", hashModulus_: %{public}u",
         stackTable_.totalNodes, stackTable_.availableNodes, stackTable_.availableIndex,
         stackTable_.hashStep, stackTable_.hashModulus);
@@ -70,6 +72,8 @@ bool UniqueStackTable::SwitchExternalBuffer(void* buffer, size_t size)
         if (snapshot_) {
             stackTable_ = std::move(*snapshot_);
             snapshot_.reset();
+            profilerInit_ = false;
+            deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
             return true;
         }
         return false;
@@ -98,6 +102,8 @@ bool UniqueStackTable::InitWithExternalBuffer(void* buffer, size_t size)
         snapshot_.reset();
         return false;
     }
+    constexpr int kb = 1024;
+    deconflictTimes_ = static_cast<int>(log2(size / (kb * kb)) * DECONFLICT_INCREASE_STEP + INIT_DECONFLICT_ALLOWED);
     stackTable_.hashModulus = stackTable_.availableNodes - 1;
     stackTable_.hashStep = (stackTable_.totalNodes / (deconflictTimes_ * 2 + 1)); // 2 : double times
     stackTable_.tableBufMMap = buffer;
@@ -107,6 +113,7 @@ bool UniqueStackTable::InitWithExternalBuffer(void* buffer, size_t size)
         hashStep_: %{public}" PRIu64 ", hashModulus_: %{public}u",
         stackTable_.totalNodes, stackTable_.availableNodes, stackTable_.availableIndex,
         stackTable_.hashStep, stackTable_.hashModulus);
+    profilerInit_ = true;
     return true;
 }
 
@@ -169,7 +176,6 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
     Node node;
     node.section.pc = thisPc;
     node.section.prevIdx = prevIdx;
-    node.section.inKernel = !!(thisPc & PC_IN_KERNEL);
     while (currentDeconflictTimes_--) {
         Node* tableNode = (Node*)tableHead + curPcIdx;
 
@@ -205,7 +211,6 @@ uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, const uintptr_t* pcs,
     uint64_t prev = 0;
     while (--reverseIndex >= 0) {
         uint64_t pc = pcs[reverseIndex];
-
         if (pc == 0) {
             continue;
         }
@@ -252,6 +257,9 @@ Node* UniqueStackTable::GetFrame(uint64_t stackId)
 bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& pcs)
 {
     std::lock_guard<std::mutex> guard(stackTableMutex_);
+    if (profilerInit_) {
+        return false;
+    }
     if (stackTable_.tableBufMMap == nullptr) {
         DFXLOGW("Hashtable not exist, failed to find frame!");
         return false;
@@ -261,8 +269,31 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
 
     Node *node = GetFrame(tailIdx);
     while (nr-- && node != nullptr) {
-        pcs.push_back(
-            node->section.inKernel ? (node->section.pc | KERNEL_PREFIX) : node->section.pc);
+        pcs.push_back(node->section.pc);
+        if (node->section.prevIdx == HEAD_NODE_INDEX) {
+            break;
+        }
+        node = GetFrame(node->section.prevIdx);
+    }
+    return true;
+}
+
+bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& pcs, bool isProfiler)
+{
+    std::lock_guard<std::mutex> guard(stackTableMutex_);
+    if (!isProfiler) {
+        return false;
+    }
+    if (stackTable_.tableBufMMap == nullptr) {
+        DFXLOGW("Hashtable not exist, failed to find frame!");
+        return false;
+    }
+    uint64_t nr = stackId.section.nr;
+    uint64_t tailIdx = stackId.section.id;
+
+    Node *node = GetFrame(tailIdx);
+    while (nr-- && node != nullptr) {
+        pcs.push_back(node->section.pc);
         if (node->section.prevIdx == HEAD_NODE_INDEX) {
             break;
         }

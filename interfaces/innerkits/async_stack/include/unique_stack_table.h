@@ -26,8 +26,8 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-#define ADDR_BIT_LENGTH        40
-#define IDX_BIT_LENGTH         23
+#define ADDR_BIT_LENGTH        39
+#define IDX_BIT_LENGTH         25
 #define KERNEL_FLAG_BIT_LENGTH 1
 #define DECONFLICT_INCREASE_STEP  3
 #define RESIZE_MULTIPLE          2
@@ -38,7 +38,7 @@ constexpr uint64_t PC_IN_KERNEL = 1ull << 63;
 constexpr uint64_t HEAD_NODE_INDEX = 0;
 // FFFFFF0000000000
 constexpr uint64_t KERNEL_PREFIX = 0xFFFFFFull << 40;
-constexpr uint8_t INIT_DECONFLICT_ALLOWED = 22;
+constexpr uint16_t INIT_DECONFLICT_ALLOWED = 22; // 8M
 
 // align
 #pragma pack(push, 4)
@@ -48,7 +48,6 @@ union Node {
     struct {
         uint64_t pc : ADDR_BIT_LENGTH;
         uint64_t prevIdx : IDX_BIT_LENGTH;
-        uint64_t inKernel : KERNEL_FLAG_BIT_LENGTH;
     } section;
 };
 
@@ -121,6 +120,7 @@ public:
     bool InitWithExternalBuffer(void* buffer, size_t size);
     uint64_t PutPcsInTable(StackId *stackId, const uintptr_t *pcs, size_t nr);
     bool GetPcsByStackId(const StackId stackId, std::vector<uintptr_t>& pcs);
+    bool GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& pcs, bool isProfiler);
     bool ImportNode(uint32_t index, const Node& node);
     size_t GetWriteSize();
 
@@ -150,10 +150,11 @@ private:
     Node* GetFrame(uint64_t stackId);
     uint64_t PutPcInSlot(uint64_t thisPc, uint64_t prevIdx);
     int32_t pid_ = 0;
-    uint8_t deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
+    uint16_t deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
     std::mutex stackTableMutex_;
     StackTable stackTable_;
     std::unique_ptr<StackTable> snapshot_;
+    bool profilerInit_ = false;
 };
 }
 }
