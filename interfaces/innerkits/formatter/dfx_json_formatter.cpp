@@ -220,7 +220,6 @@ static std::pair<bool, std::string> ExecuteTaskByFork(ChildFuncType func)
         CleanPipe(pipefd);
         return result;
     } else if (pid == 0) {
-        DFXLOGI("start in child process.");
         alarm(ALARM_TIME_S);
         prctl(PR_SET_NAME, "processdump_parser");
         CleanFd(&pipefd[0]);
@@ -520,7 +519,6 @@ void ParseSymbolWithDfxThreadStack(std::vector<DfxThreadStack>& processStack, co
     uint32_t beginTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
     std::shared_ptr<DfxOfflineParser> parser = std::make_shared<DfxOfflineParser>(bundleName);
     if (!parser) {
-        DFXLOGE("parser is nullptr!");
         return;
     }
     for (auto& threadStack : processStack) {
@@ -529,7 +527,6 @@ void ParseSymbolWithDfxThreadStack(std::vector<DfxThreadStack>& processStack, co
     uint32_t parseBuildIdJsSymbolTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
     parseTime.parseBuildIdJsSymbolTime = parseBuildIdJsSymbolTime - beginTime;
     if (timeout <= parseTime.parseBuildIdJsSymbolTime) {
-        DFXLOGE("parseBuildIdJsSymbolTime is over timeout!");
         return;
     }
     timeout -= parseTime.parseBuildIdJsSymbolTime;
@@ -572,8 +569,6 @@ bool FormatKernelStackImpl(const std::string& kernelStack, std::string& formatte
         DfxEnableTraceDlsym(true);
         ParseSymbolWithDfxThreadStack(processStack, options.bundleName, timeout, parseTime);
         DfxEnableTraceDlsym(false);
-    } else {
-        DFXLOGI("no need to parse symbol or timeout is not enough!");
     }
     if (jsonFormat) {
         return FormatKernelStackJson(processStack, formattedStack);
