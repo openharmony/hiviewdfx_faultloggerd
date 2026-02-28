@@ -206,7 +206,7 @@ std::shared_ptr<DfxElf> CompressHapElfFactory::Create()
         return nullptr;
     }
     // Do not use the Realpath function, the sandbox path Realpath function will return failure
-    if (!StartsWith(filePath_, "/proc") || !EndsWith(filePath_, ".hap")) {
+    if (filePath_.find(SANDBOX_FILE_PATH_PREFIX) == std::string::npos || !EndsWith(filePath_, ".hap")) {
         DFXLOGD("Illegal file path, please check file: %{public}s", filePath_.c_str());
         return nullptr;
     }

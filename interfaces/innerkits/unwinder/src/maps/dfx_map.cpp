@@ -403,7 +403,7 @@ void DfxMap::FormatMapName(pid_t pid, std::string& mapName)
     }
 
     // format sandbox file path, add '/proc/xxx/root' prefix
-    if (StartsWith(mapName, "/data/storage/")) {
+    if (StartsWith(mapName, SANDBOX_FILE_PATH_PREFIX)) {
         mapName = "/proc/" + std::to_string(pid) + "/root" + mapName;
     }
 }
@@ -412,7 +412,7 @@ std::string DfxMap::UnFormatMapName(const std::string& mapName)
 {
     // unformat sandbox file path, drop '/proc/xxx/root' prefix
     if (StartsWith(mapName, "/proc/")) {
-        auto startPos = mapName.find("/data/storage/");
+        auto startPos = mapName.find(SANDBOX_FILE_PATH_PREFIX);
         if (startPos != std::string::npos) {
             return mapName.substr(startPos);
         }

@@ -29,7 +29,7 @@ namespace {
 std::shared_ptr<ElfFactory> ElfFactorySelector::Select(DfxMap& map, pid_t pid)
 {
     std::shared_ptr<ElfFactory> elfFactory = nullptr;
-    if (StartsWith(map.name, "/proc") && EndsWith(map.name, ".hap")) {
+    if (map.name.find(SANDBOX_FILE_PATH_PREFIX) != std::string::npos && EndsWith(map.name, ".hap")) {
         elfFactory = std::make_shared<CompressHapElfFactory>(map.name, map.prevMap);
         map.offset -= map.prevMap->offset;
     } else if (map.IsVdsoMap()) {
