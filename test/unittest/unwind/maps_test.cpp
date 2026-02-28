@@ -320,7 +320,80 @@ HWTEST_F(MapsTest, IsLegalMapItemTest, TestSize.Level2)
     ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:JSVM_JIT]"));
     ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:ARKWEB_JIT]"));
     ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:v8]"));
+    ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:JS_V8]"));
     GTEST_LOG_(INFO) << "IsLegalMapItemTest: end.";
+}
+
+/**
+ * @tc.name: IsArkWebJsExecutableTest001
+ * @tc.desc: test IsArkWebJsExecutable function with [anon:v8] map
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, IsArkWebJsExecutableTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest001: start.";
+    std::shared_ptr<DfxMap> map = nullptr;
+    map = std::make_shared<DfxMap>(0, 0, 0, "1", "");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, "1", "[anon:v8]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_EXEC, "[anon:v8]");
+    EXPECT_TRUE(map->IsArkWebJsExecutable());
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest001: end.";
+}
+
+/**
+ * @tc.name: IsArkWebJsExecutableTest002
+ * @tc.desc: test IsArkWebJsExecutable function with [anon:JS_V8] map
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, IsArkWebJsExecutableTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest002: start.";
+    std::shared_ptr<DfxMap> map = nullptr;
+    map = std::make_shared<DfxMap>(0, 0, 0, "1", "[anon:JS_V8]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_EXEC, "[anon:JS_V8]");
+    EXPECT_TRUE(map->IsArkWebJsExecutable());
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest002: end.";
+}
+
+/**
+ * @tc.name: IsArkWebJsExecutableTest003
+ * @tc.desc: test IsArkWebJsExecutable function with non-executable map
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, IsArkWebJsExecutableTest003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest003: start.";
+    std::shared_ptr<DfxMap> map = nullptr;
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_READ, "[anon:v8]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_WRITE, "[anon:JS_V8]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_READ | PROT_WRITE, "[anon:v8]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest003: end.";
+}
+
+/**
+ * @tc.name: IsArkWebJsExecutableTest004
+ * @tc.desc: test IsArkWebJsExecutable function with invalid map names
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, IsArkWebJsExecutableTest004, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest004: start.";
+    std::shared_ptr<DfxMap> map = nullptr;
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_EXEC, "[anon:JSVM_JIT]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_EXEC, "[anon:ARKWEB_JIT]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_EXEC, "libv8_shared.so");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    map = std::make_shared<DfxMap>(0, 0, 0, PROT_EXEC, "[anon:ArkTS Code]");
+    EXPECT_FALSE(map->IsArkWebJsExecutable());
+    GTEST_LOG_(INFO) << "IsArkWebJsExecutableTest004: end.";
 }
 
 /**

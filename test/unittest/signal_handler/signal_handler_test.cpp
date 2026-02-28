@@ -23,6 +23,7 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
+#include <sys/mman.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
@@ -1238,6 +1239,65 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest008, TestSize.Level2)
         bool ret = CheckCrashKeyWords(filename, pid, sig);
         ASSERT_TRUE(ret);
     }
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest009
+ * @tc.desc: test FindArkWebJitSymbol function
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest009, TestSize.Level2)
+{
+    uint64_t startAddr = 0;
+    char buf1[] = "\n7f8a12345000-7f8a12346000 rw-p 00000000 00:00 0          [anon:JS_JIT_symbol]\n";
+    EXPECT_TRUE(FindArkWebJitSymbol(buf1, sizeof(buf1), &startAddr));
+    EXPECT_EQ(startAddr, 0x7f8a12345000);
+
+    startAddr = 0;
+    char buf2[] = "no symbol here";
+    EXPECT_FALSE(FindArkWebJitSymbol(buf2, sizeof(buf2), &startAddr));
+
+    startAddr = 0;
+    char buf3[] = "\n7f8aabcdef000-7f8aabcde0000 rw-p 00000000 00:00 0          [anon:JS_JIT_symbol]";
+    EXPECT_TRUE(FindArkWebJitSymbol(buf3, sizeof(buf3), &startAddr));
+    EXPECT_EQ(startAddr, 0x7f8aabcdef000);
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest010
+ * @tc.desc: test CollectMaps with arkWebJitSymbolAddr parameter
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest010, TestSize.Level2)
+{
+    uint64_t arkWebJitSymbolAddr = 0;
+    EXPECT_TRUE(CollectMaps(g_pipeFd[PIPE_WRITE], PROC_SELF_MAPS_PATH, &arkWebJitSymbolAddr));
+    ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+    char buf[LINE_BUF_SIZE];
+    std::string str;
+    while (read(g_pipeFd[PIPE_READ], buf, sizeof(buf)) > 0) {
+        str += buf;
+    }
+    EXPECT_FALSE(str.empty());
+}
+
+/**
+ * @tc.name: DfxLiteDumperTest011
+ * @tc.desc: test CollectOpenFiles with end marker
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, DfxLiteDumperTest011, TestSize.Level2)
+{
+    char buf[LINE_BUF_SIZE];
+    EXPECT_TRUE(CollectOpenFiles(g_pipeFd[PIPE_WRITE], (uint64_t)fdsan_get_fd_table()));
+    ClosePipeFd(g_pipeFd[PIPE_WRITE]);
+    std::string str;
+    while (read(g_pipeFd[PIPE_READ], buf, sizeof(buf)) > 0) {
+        str += buf;
+    }
+    EXPECT_TRUE(str.find("OpenFiles") != std::string::npos);
+    EXPECT_TRUE(str.find("end trans openfiles") != std::string::npos);
+    DeInitPipe();
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

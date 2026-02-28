@@ -119,8 +119,9 @@ public:
         }
 #endif
         if (arkwebJsExtractorptr_ != 0) {
-            DfxJsvm::Instance().ArkwebDestroyJsSymbolExtractor(arkwebJsExtractorptr_);
+            DfxJsvm::Instance().JsvmDestroyJsSymbolExtractor(arkwebJsExtractorptr_);
         }
+        DfxJsvm::Instance().Clear();
     }
 
     inline void EnableUnwindCache(bool enableCache)
@@ -768,16 +769,9 @@ bool Unwinder::Impl::StepV8Frame(StepFrame& frame, const std::shared_ptr<DfxMap>
         ", frameType: "+ std::to_string(static_cast<uint8_t>(frame.frameType));
     ElapsedTime counter(timeLimitCheck, 20); // 20 : limit cost time 20 ms
     JsvmStepParam jsvmParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsFrame);
-    if (needStepJsvmStack) {
-        if (DfxJsvm::Instance().StepJsvmFrame(memory_.get(), &(Unwinder::AccessMem), &jsvmParam) < 0) {
-            DFXLOGE("Failed to step jsvm frame");
-            return false;
-        }
-    } else if (needStepArkwebStak) {
-        if (DfxJsvm::Instance().StepArkwebJsFrame(memory_.get(), &(Unwinder::AccessMem), &jsvmParam) < 0) {
-            DFXLOGE("Failed to step arkweb js frame");
-            return false;
-        }
+    if (DfxJsvm::Instance().StepJsvmFrame(memory_.get(), &(Unwinder::AccessMem), &jsvmParam) < 0) {
+        DFXLOGE("Failed to step jsvm frame");
+        return false;
     }
     regs_->SetPc(StripPac(frame.pc, pacMask_));
     regs_->SetSp(frame.sp);
@@ -1407,25 +1401,29 @@ void Unwinder::Impl::FillArkwebJsFrame(DfxFrame& frame)
     }
     DFX_TRACE_SCOPED_DLSYM("FillArkwebJsFrame:%s", frame.map->name.c_str());
     DFXLOGU("FillArkwebJsFrame, map name: %{public}s", frame.map->name.c_str());
-    uint32_t pid = pid_ <= 0 ? getpid() : pid_;
+    int32_t pid = pid_ <= 0 ? getpid() : pid_;
+    if (pid <= 0) {
+        DFXLOGE("pid can not less than 0, return directly!");
+        return;
+    }
     if (arkwebJsExtractorptr_ == 0 &&
-        DfxJsvm::Instance().ArkwebCreateJsSymbolExtractor(&arkwebJsExtractorptr_, pid) == -1) {
+        DfxJsvm::Instance().JsvmCreateJsSymbolExtractor(&arkwebJsExtractorptr_, static_cast<uint32_t>(pid)) == -1) {
         DFXLOGE("create arkweb js extractor failed");
         return;
     }
-    WebJsFunction webJsFunction;
-    DfxJsvm::Instance().ParseArkwebJsFrameInfo(frame.pc, arkwebJsExtractorptr_, &webJsFunction);
-    frame.funcName = std::string(webJsFunction.functionName);
+    JsvmFunction jsFunction;
+    DfxJsvm::Instance().ParseJsvmFrameInfo(frame.pc, arkwebJsExtractorptr_, &jsFunction);
+    frame.funcName = std::string(jsFunction.functionName);
     if (StartsWith(frame.map->name, ARKWEB_NATIVE_MAP)) {
         frame.mapName = frame.map->GetElfName();
         frame.isJsFrame = false;
         frame.relPc = frame.pc - frame.map->begin;
-        frame.funcOffset = webJsFunction.offestInFunction;
+        frame.funcOffset = jsFunction.offsetInFunction;
     } else {
         frame.isJsFrame = true;
-        frame.mapName = std::string(webJsFunction.url);
-        frame.line = webJsFunction.line;
-        frame.column = webJsFunction.column;
+        frame.mapName = std::string(jsFunction.url);
+        frame.line = jsFunction.line;
+        frame.column = jsFunction.column;
     }
     DFXLOGU("arkweb js frame funcName: %{public}s", frame.funcName.c_str());
 }

@@ -373,7 +373,7 @@ void LiteProcessDumper::MmapJitSymbol()
         DFXLOGW("Failed to mmap!\n");
         return;
     }
-    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE, "ARKWEB_JIT_symbol");
+    prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE, "JS_JIT_symbol");
     if (memcpy_s(jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE, rawData_.c_str(), rawData_.length()) != EOK) {
         munmap(jitSymbolMMap_, ARKWEB_JIT_SYMBOL_BUF_SIZE);
         jitSymbolMMap_ = MAP_FAILED;
