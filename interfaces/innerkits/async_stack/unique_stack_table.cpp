@@ -57,8 +57,8 @@ bool UniqueStackTable::Init()
     }
     stackTable_.tableBufMMap = retBufMMap;
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, stackTable_.tableBufMMap, stackTable_.tableSize, "async_stack_table");
-    DFXLOGI(
-        "MAPLE Init totalNodes_: %{public}u, availableNodes_: %{public}u, availableIndex_: %{public}u \
+    DFXLOGD(
+        "Init totalNodes_: %{public}u, availableNodes_: %{public}u, availableIndex_: %{public}u \
         hashStep_: %{public}" PRIu64 ", hashModulus_: %{public}u",
         stackTable_.totalNodes, stackTable_.availableNodes, stackTable_.availableIndex,
         stackTable_.hashStep, stackTable_.hashModulus);
