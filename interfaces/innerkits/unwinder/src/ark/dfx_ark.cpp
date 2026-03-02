@@ -48,7 +48,7 @@ const char* const ARK_WRITE_JIT_CODE = "ark_write_jit_code";
 struct ArkFunctionTable {
     const char* const libName;
     const char* const functionName;
-    void** funcPointer;
+    void* funcPointer;
 };
 }
 
@@ -71,23 +71,17 @@ DfxArk& DfxArk::Instance()
     return instance;
 }
 
-bool DfxArk::DlsymArkFunc(const char* const libName, const char* const funcName, void** dlsymFuncName)
+bool DfxArk::DlsymArkFunc(const char* const libName, const char* const funcName, void* dlsymFuncPointer)
 {
-    if (dlsymFuncName == nullptr) {
-        return false;
-    }
-    if (*dlsymFuncName != nullptr) {
-        return true;
-    }
-
     if (!GetLibArkHandle(libName)) {
         return false;
     }
-    *dlsymFuncName = dlsym(handle_, (funcName));
-    if (*dlsymFuncName == nullptr) {
+    auto func = dlsym(handle_, funcName);
+    if (func == nullptr) {
         DFXLOGE("Failed to dlsym(%{public}s), error: %{public}s", funcName, dlerror());
         return false;
     }
+    *reinterpret_cast<void**>(dlsymFuncPointer) = func;
     return true;
 }
 
@@ -95,18 +89,18 @@ bool DfxArk::InitArkFunction(const char* const functionName)
 {
     std::unique_lock<std::mutex> lock(arkMutex_);
     std::vector<ArkFunctionTable> functionTable = {
-        {ARK_LIB_NAME, ARK_CREATE_JS_SYMBOL_EXTRACTOR, reinterpret_cast<void**>(&arkCreateJsSymbolExtractorFn_)},
-        {ARK_LIB_NAME, ARK_DESTORY_JS_SYMBOL_EXTRACTOR, reinterpret_cast<void**>(&arkDestoryJsSymbolExtractorFn_)},
-        {ARK_LIB_NAME, ARK_CREATE_LOCAL, reinterpret_cast<void**>(&arkCreateLocalFn_)},
-        {ARK_LIB_NAME, ARK_DESTROY_LOCAL, reinterpret_cast<void**>(&arkDestroyLocalFn_)},
-        {ARK_LIB_NAME, ARK_PARSE_JS_FILE_INFO, reinterpret_cast<void**>(&parseArkFileInfoFn_)},
-        {ARK_LIB_NAME, ARK_PARSE_JS_FRAME_INFO_LOCAL, reinterpret_cast<void**>(&parseArkFrameInfoLocalFn_)},
-        {ARK_LIB_NAME, ARK_PARSE_JS_FRAME_INFO, reinterpret_cast<void**>(&parseArkFrameInfoFn_)},
-        {ARK_LIB_NAME, STEP_ARK, reinterpret_cast<void**>(&stepArkFn_)},
-        {ARK_LIB_NAME, STEP_ARK_WITH_RECORD_JIT, reinterpret_cast<void**>(&stepArkWithJitFn_)},
-        {ARK_LIB_NAME, ARK_WRITE_JIT_CODE, reinterpret_cast<void**>(&jitCodeWriteFileFn_)},
+        {ARK_LIB_NAME, ARK_CREATE_JS_SYMBOL_EXTRACTOR, reinterpret_cast<void*>(&arkCreateJsSymbolExtractorFn_)},
+        {ARK_LIB_NAME, ARK_DESTORY_JS_SYMBOL_EXTRACTOR, reinterpret_cast<void*>(&arkDestoryJsSymbolExtractorFn_)},
+        {ARK_LIB_NAME, ARK_CREATE_LOCAL, reinterpret_cast<void*>(&arkCreateLocalFn_)},
+        {ARK_LIB_NAME, ARK_DESTROY_LOCAL, reinterpret_cast<void*>(&arkDestroyLocalFn_)},
+        {ARK_LIB_NAME, ARK_PARSE_JS_FILE_INFO, reinterpret_cast<void*>(&parseArkFileInfoFn_)},
+        {ARK_LIB_NAME, ARK_PARSE_JS_FRAME_INFO_LOCAL, reinterpret_cast<void*>(&parseArkFrameInfoLocalFn_)},
+        {ARK_LIB_NAME, ARK_PARSE_JS_FRAME_INFO, reinterpret_cast<void*>(&parseArkFrameInfoFn_)},
+        {ARK_LIB_NAME, STEP_ARK, reinterpret_cast<void*>(&stepArkFn_)},
+        {ARK_LIB_NAME, STEP_ARK_WITH_RECORD_JIT, reinterpret_cast<void*>(&stepArkWithJitFn_)},
+        {ARK_LIB_NAME, ARK_WRITE_JIT_CODE, reinterpret_cast<void*>(&jitCodeWriteFileFn_)},
     };
-    for (const auto& function : functionTable) {
+    for (auto& function : functionTable) {
         if (strcmp(function.functionName, functionName) == 0) {
             return DlsymArkFunc(function.libName, functionName, function.funcPointer);
         }

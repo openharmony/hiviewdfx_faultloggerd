@@ -240,6 +240,12 @@ private:
         std::shared_ptr<DfxMap> map = nullptr;
         std::shared_ptr<RegLocState> rs = nullptr;
     };
+    struct ArkMapRange {
+        uintptr_t arkMapStart = 0;
+        uintptr_t arkMapEnd = 0;
+        uintptr_t staticArkMapStart = 0;
+        uintptr_t staticArkMapEnd = 0;
+    };
     void Init();
     void Clear();
     void Destroy();
@@ -251,6 +257,7 @@ private:
     }
     bool GetMainStackRangeInner(uintptr_t& stackBottom, uintptr_t& stackTop);
     bool GetArkStackRangeInner(uintptr_t& arkMapStart, uintptr_t& arkMapEnd);
+    bool GetStaticArkStackRange(uintptr_t& arkMapStart, uintptr_t& arkMapEnd);
     bool CheckAndReset(void* ctx);
     void DoPcAdjust(uintptr_t& pc);
     void AddFrame(const StepFrame& frame, std::shared_ptr<DfxMap> map);
@@ -268,6 +275,7 @@ private:
     bool UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc);
 #if defined(ENABLE_MIXSTACK)
     bool StepArkJsFrame(StepFrame& frame, uint64_t frameIndex = 0);
+    int UnwindArkFrameByFp(StepFrame& frame, const ArkMapRange& arkMapRange, uint64_t& frameIndex);
 #endif
     bool StepV8Frame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind);
     inline void SetLocalStackCheck(void* ctx, bool check) const
@@ -569,6 +577,14 @@ bool Unwinder::Impl::GetArkStackRangeInner(uintptr_t& arkMapStart, uintptr_t& ar
     return true;
 }
 
+bool Unwinder::Impl::GetStaticArkStackRange(uintptr_t& arkMapStart, uintptr_t& arkMapEnd)
+{
+    if (maps_ == nullptr || !maps_->GetStaticArkRange(arkMapStart, arkMapEnd)) {
+        return false;
+    }
+    return true;
+}
+
 bool Unwinder::Impl::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 {
     if (gettid() == getpid()) {
@@ -840,6 +856,30 @@ bool Unwinder::Impl::Unwind(void *ctx, size_t maxFrameNum, size_t skipFrameNum)
     return (frames_.size() > 0);
 }
 
+#if defined(ENABLE_MIXSTACK)
+int Unwinder::Impl::UnwindArkFrameByFp(StepFrame& frame, const ArkMapRange& arkMapRange, uint64_t& frameIndex)
+{
+    bool isStaticArkInterpreter = (frame.pc >= arkMapRange.staticArkMapStart) &&
+        (frame.pc < arkMapRange.staticArkMapEnd);
+    bool isArkInterpreter = (frame.pc >= arkMapRange.arkMapStart) && (frame.pc < arkMapRange.arkMapEnd);
+    bool isArkFrame = (frame.frameType == FrameType::STATIC_JS_FRAME) || (frame.frameType == FrameType::JS_FRAME);
+    if (!isStaticArkInterpreter && !isArkInterpreter && !isArkFrame) {
+        return 1; // if it is not an ark frame, return 1 directly
+    }
+    if (isStaticArkInterpreter) {
+        frame.frameType = FrameType::STATIC_JS_FRAME;
+        frameIndex = 0;
+    }
+    if (!StepArkJsFrame(frame, frameIndex)) {
+        DFXLOGE("Failed to step ark Js frame, pc: %{private}p", reinterpret_cast<void *>(frame.pc));
+        lastErrorData_.SetAddrAndCode(frame.pc, UNW_ERROR_STEP_ARK_FRAME);
+        return -1;
+    }
+    frameIndex++;
+    return 0;
+}
+#endif
+
 bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameNum, bool enableArk)
 {
     if (regs_ == nullptr) {
@@ -849,14 +889,14 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
     pcs_.clear();
     bool needAdjustPc = false;
     bool resetFrames = false;
-    MAYBE_UNUSED bool isGetArkRange = false;
-    MAYBE_UNUSED uintptr_t arkMapStart = 0;
-    MAYBE_UNUSED uintptr_t arkMapEnd = 0;
+    ArkMapRange arkMapRange;
     if (enableArk) {
-        isGetArkRange = GetArkStackRangeInner(arkMapStart, arkMapEnd);
+        GetArkStackRangeInner(arkMapRange.arkMapStart, arkMapRange.arkMapEnd);
+        GetStaticArkStackRange(arkMapRange.staticArkMapStart, arkMapRange.staticArkMapEnd);
     }
 
     StepFrame frame;
+    MAYBE_UNUSED uint64_t frameIndex = 0;
     do {
         if (!resetFrames && skipFrameNum != 0 && (pcs_.size() == skipFrameNum)) {
             DFXLOGU("pcs size: %{public}zu, will be reset pcs", pcs_.size());
@@ -877,12 +917,13 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
         needAdjustPc = true;
         pcs_.emplace_back(frame.pc);
 #if defined(ENABLE_MIXSTACK)
-        if (enableArk && isGetArkRange && ((frame.pc >= arkMapStart && frame.pc < arkMapEnd) ||
-            frame.frameType == FrameType::JS_FRAME)) {
-            if (StepArkJsFrame(frame)) {
+        if (enableArk) {
+            int ret = UnwindArkFrameByFp(frame, arkMapRange, frameIndex);
+            if (ret == 0) {
                 continue;
+            } else if (ret == -1) {
+                break;
             }
-            break;
         }
 #endif
 
