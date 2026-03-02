@@ -235,6 +235,22 @@ HWTEST_F(AsyncStackTest, AsyncStackTest006, TestSize.Level2)
     ASSERT_EQ(g_eventHandlerClearCalls.load(), 1);
     ASSERT_EQ(reinterpret_cast<void*>(g_lastEventHandlerCollect), nullptr);
     ASSERT_EQ(reinterpret_cast<void*>(g_lastEventHandlerSetId), nullptr);
+
+    // Enable ASYNC_TYPE_ARKWEB
+    uint64_t lastType = DfxSetAsyncStackType(ASYNC_TYPE_ARKWEB);
+    ASSERT_EQ(lastType, DEFAULT_ASYNC_TYPE);
+
+    // Disable ASYNC_TYPE_ARKWEB
+    lastType = DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    ASSERT_EQ(lastType, ASYNC_TYPE_ARKWEB);
+
+    // Enable ASYNC_TYPE_JSVM
+    lastType = DfxSetAsyncStackType(ASYNC_TYPE_JSVM);
+    ASSERT_EQ(lastType, DEFAULT_ASYNC_TYPE);
+
+    // Disable ASYNC_TYPE_JSVM
+    lastType = DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    ASSERT_EQ(lastType, ASYNC_TYPE_JSVM);
 #endif
     GTEST_LOG_(INFO) << "AsyncStackTest006: end.";
 }
