@@ -45,8 +45,7 @@ void DumpInfoHeader::Collect(DfxProcess& process, const ProcessDumpRequest& requ
 {
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
 #ifndef is_ohos_lite
-        std::string buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
-        headerInfo_ = "Build info:" + buildInfo + "\n";
+        headerInfo_ = "Build info:" + DumpUtils::GetBuildInfo() + "\n";
 #endif
         headerInfo_ += GetCrashLogConfigInfo(request, process);
     }

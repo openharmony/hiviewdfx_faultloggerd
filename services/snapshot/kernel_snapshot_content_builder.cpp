@@ -15,6 +15,7 @@
 
 #include "kernel_snapshot_content_builder.h"
 
+#include "parameter.h"
 #include "parameters.h"
 
 #include "dfx_log.h"
@@ -33,12 +34,6 @@ std::string FormatTimestamp(const std::string& timestamp)
         time = 0;
     }
     return GetCurrentTimeStr(time);
-}
-
-std::string GetBuildInfo()
-{
-    static std::string buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
-    return buildInfo;
 }
 } // namespace
 
@@ -85,7 +80,7 @@ size_t KernelSnapshotContentBuilder::ComputeTotalLength() const
 std::vector<KernelSnapshotContentBuilder::SnapshotUserSection> KernelSnapshotContentBuilder::BuildSections()
 {
     std::vector<KernelSnapshotContentBuilder::SnapshotUserSection> sections = {
-        {"Build info: ", GetBuildInfo(), "\n"},
+        {"Build info: ", GetDisplayVersion() != nullptr ? GetDisplayVersion() : "Unknown", "\n"},
         {"Timestamp: ", FormatTimestamp(crashData_[CrashSection::TIME_STAMP]), ""},
         {"Pid: ", crashData_[CrashSection::PID], "\n"},
         {"Uid: ", crashData_[CrashSection::UID], "\n"},
