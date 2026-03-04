@@ -178,7 +178,11 @@ DumpErrorCode ProcessDumper::DumpPreparation()
         return DumpErrorCode::DUMP_EATTACH;
     }
     std::future<DumpErrorCode> initTask;
-    if (!isCoreDump_) {
+    bool isCoreDump = false;
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+    isCoreDump = coredumpManager_ != nullptr;
+#endif
+    if (!isCoreDump) {
         initTask = AsyncInitialization();
     }
     if (ReadVmPid() <= 0) {
@@ -187,7 +191,7 @@ DumpErrorCode ProcessDumper::DumpPreparation()
         return DumpErrorCode::DUMP_EREADPID;
     }
 #if defined(__aarch64__) && !defined(is_ohos_lite)
-    if (isCoreDump_) {
+    if (coredumpManager_) {
         coredumpManager_->DumpMemoryForPid(process_->GetVmPid());
         return DumpErrorCode::DUMP_COREDUMP;
     }
@@ -556,7 +560,6 @@ bool ProcessDumper::InitDfxProcess()
     if (CoredumpController::IsCoredumpAllowed(request_)) {
         coredumpManager_ = std::make_unique<CoredumpManager>();
         coredumpManager_->ProcessRequest(request_);
-        isCoreDump_ = true;
     }
 #endif
     DumpUtils::NotifyOperateResult(request_, OPE_SUCCESS);
@@ -566,7 +569,7 @@ bool ProcessDumper::InitDfxProcess()
     }
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__) && !defined(is_ohos_lite)
-    if (isCoreDump_) {
+    if (coredumpManager_) {
         coredumpManager_->TriggerCoredump();
     }
 #endif
@@ -581,8 +584,12 @@ int ProcessDumper::ReadVmPid()
     ptrace(PTRACE_CONT, request_.tid, 0, 0);
     DumpUtils::WaitForFork(request_.tid, childPid);
     ptrace(PTRACE_CONT, childPid, NULL, NULL);
+    bool isCoredumpSignal = false;
+#if defined(__aarch64__) && !defined(is_ohos_lite)
+    isCoredumpSignal = CoredumpController::IsCoredumpSignal(request_);
+#endif
     // freeze and coredump detach target processdump after fork child to fork vm process
-    if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH || isCoreDump_) {
+    if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH || isCoredumpSignal) {
         if (initUnwinderFinishFuture_.valid()) {
             initUnwinderFinishFuture_.get();
         }
