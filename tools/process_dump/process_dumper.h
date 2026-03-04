@@ -81,7 +81,6 @@ private:
 
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
     bool isJsonDump_ = false;
-    bool isCoreDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
     std::future<void> initUnwinderFinishFuture_;
 #if defined(__aarch64__) && !defined(is_ohos_lite)
