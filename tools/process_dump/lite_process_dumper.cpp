@@ -25,6 +25,7 @@
 
 #include "decorative_dump_info.h"
 #include "dfx_buffer_writer.h"
+#include "dfx_cutil.h"
 #include "dfx_dump_request.h"
 #include "dfx_exception.h"
 #include "dfx_log.h"
@@ -32,7 +33,7 @@
 #include "dfx_process.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
-#include "dfx_cutil.h"
+#include "dump_utils.h"
 #ifndef is_ohos_lite
 #include "faultlog_client.h"
 #endif
@@ -220,13 +221,9 @@ bool LiteProcessDumper::Dump(int pid)
 
 void LiteProcessDumper::PrintHeader()
 {
-    std::string buildInfo = "Unknown";
-#ifndef is_ohos_lite
-    buildInfo = OHOS::system::GetParameter("const.product.software.version", "Unknown");
-#endif
     auto& instance = DfxBufferWriter::GetInstance();
 
-    instance.WriteFormatMsg("Build info:%s\n", buildInfo.c_str());
+    instance.WriteFormatMsg("Build info:%s\n",  DumpUtils::GetBuildInfo().c_str());
     instance.WriteMsg("Timestamp:" + GetCurrentTimeStr(request_.timeStamp));
     instance.WriteFormatMsg("Pid:%d\n", request_.pid);
     instance.WriteFormatMsg("Uid:%d\n", request_.uid);

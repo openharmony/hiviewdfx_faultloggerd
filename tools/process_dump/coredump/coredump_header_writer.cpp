@@ -16,6 +16,7 @@
 
 #include "coredump_mapping_manager.h"
 #include "dfx_log.h"
+#include "dump_utils.h"
 #include "securec.h"
 #include "parameters.h"
 
@@ -140,7 +141,7 @@ bool SectionHeaderTableWriter::WriteSystemVersion(Elf64_Shdr *sectionHeader, cha
 bool SectionHeaderTableWriter::Write()
 {
     char *versionStartAddr = bw_.GetCurrent();
-    std::string buildInfo = "Build info:" + OHOS::system::GetParameter("const.product.software.version", "Unknown");
+    std::string buildInfo = "Build info:" + DumpUtils::GetBuildInfo();
     bw_.Write(buildInfo.c_str(), buildInfo.length() + 1);
 
     Elf64_Ehdr *elfHeader = reinterpret_cast<Elf64_Ehdr *>(bw_.GetBase());
