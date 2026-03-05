@@ -28,10 +28,9 @@ namespace OHOS {
 namespace HiviewDFX {
 #define ADDR_BIT_LENGTH        39
 #define IDX_BIT_LENGTH         25
-#define KERNEL_FLAG_BIT_LENGTH 1
 #define DECONFLICT_INCREASE_STEP  3
 #define RESIZE_MULTIPLE          2
-#define NR_BIT_LENGTH          41
+#define NR_BIT_LENGTH          39
 constexpr uint32_t INITIAL_TABLE_SIZE = 1 * 1024 * 1024;
 constexpr uint32_t MAX_NODES_CNT = 1 << IDX_BIT_LENGTH ;
 constexpr uint64_t PC_IN_KERNEL = 1ull << 63;
