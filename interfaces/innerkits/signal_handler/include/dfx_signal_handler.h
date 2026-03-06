@@ -111,6 +111,7 @@ enum CrashLogConfigType : uint8_t {
     EXTEND_PRINT_PC_LR = 0,    // extern PC/LR registers in crash logs
     CUT_OFF_LOG_FILE,          // log file size limits
     SIMPLIFY_PRINT_MAPS,       // simplified process maps
+    MERGE_APP_CRASH_LOG,       // merge app log to cppcrash log
 };
 
 /**

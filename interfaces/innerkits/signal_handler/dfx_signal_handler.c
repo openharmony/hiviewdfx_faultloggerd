@@ -502,7 +502,7 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
         errno = EPERM;
         return -1;
     }
-    if ((type == EXTEND_PRINT_PC_LR || type == SIMPLIFY_PRINT_MAPS) && value > 1) {
+    if ((type == EXTEND_PRINT_PC_LR || type == SIMPLIFY_PRINT_MAPS || type == MERGE_APP_CRASH_LOG) && value > 1) {
         DFXLOGE("invalid value %{public}u", value);
         errno = EINVAL;
         return -1;
@@ -511,6 +511,8 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
     const int moveBit = 32;
     const uint64_t cutOffLogMask = 0xffffffff;
     const uint64_t simplifyVmaMask = 0xfffffffffffffffd;
+    const uint64_t mergeAppLogMask = 0xfffffffffffffffb;
+    const uint64_t mergeLogBitOffset = 2;
     switch (type) {
         case EXTEND_PRINT_PC_LR:
             g_crashLogConfig = (g_crashLogConfig & extendPrintPcLrMask) + value;
@@ -520,6 +522,9 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
             break;
         case SIMPLIFY_PRINT_MAPS:
             g_crashLogConfig = (g_crashLogConfig & simplifyVmaMask) + (value << 1);
+            break;
+        case MERGE_APP_CRASH_LOG:
+            g_crashLogConfig = (g_crashLogConfig & mergeAppLogMask) | (value << mergeLogBitOffset);
             break;
         default:
             errno = EINVAL;

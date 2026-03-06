@@ -15,6 +15,7 @@
 
 #include "process_dumper.h"
 
+#include <fstream>
 #include <algorithm>
 #include <cerrno>
 #include <chrono>
@@ -81,6 +82,11 @@ namespace {
 #define LOG_TAG "DfxProcessDump"
 const char * const OTHER_THREAD_DUMP_INFO = "OtherThreadDumpInfo";
 MAYBE_UNUSED constexpr int PROCESSDUMP_REMAIN_TIME = 2500;
+constexpr size_t TIME_BUFFER_SIZE = 64U;
+constexpr size_t APP_CRASH_LOG_MAX_READ_SIZE = 100 * 1024;      // 100k
+constexpr uint64_t APP_CRASH_WAIT_TIME = 5000;        // 5s waiting
+constexpr const char* const SAND_FILE_APP_LOG_PATH_PREFIX = "/data/storage/el2/log/";
+constexpr const char* const APP_CRASH_LOG_SUFFIX = "_CppCrash_AppMerge.log";
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 void SigAlarmCallBack()
@@ -116,6 +122,9 @@ void ProcessDumper::Dump()
     // if the process no longer exists before dumping, do not report sysevent
     if (process_ != nullptr && resDump != DumpErrorCode::DUMP_ENOMAP &&
         resDump != DumpErrorCode::DUMP_EREADPID) {
+        if (needMergeLog_ && mergeLogThread_.joinable()) {
+            mergeLogThread_.join();
+        }
         SysEventReporter reporter(request_.type);
         reporter.Report(*process_, request_);
     }
@@ -403,11 +412,76 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
     }
     if (!DumpUtils::IsSelinuxPermissive()) {
         process_->Detach();  // crash scene
+        crashDetachTime_ = GetTimeMillisec();
+    }
+
+    if (process_ != nullptr && process_->GetCrashLogConfig().mergeAppLog) {
+        EnableMergeAppLog();
+        mergeLogThread_ = std::thread(&ProcessDumper::ReadAppLog, this);
     }
     dumpRes = unwindSuccessCnt > 0 ? ConcurrentSymbolize() : DumpErrorCode::DUMP_ESTOPUNWIND;
     if (!isJsonDump_) { // isJsonDump_ will print after format json
         dumpInfo->Print(*process_, request_, *unwinder_);
     }
+}
+
+void ProcessDumper::ReadAppLog()
+{
+    DFXLOGI("ReadAppLog");
+    std::string bundleName = DumpUtils::GetSelfBundleName();
+    std::string logfile = std::string(SAND_FILE_APP_LOG_PATH_PREFIX) + bundleName + APP_CRASH_LOG_SUFFIX;
+    uint64_t leftTime = APP_CRASH_WAIT_TIME - (GetTimeMillisec() - crashDetachTime_);
+    if (leftTime > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(leftTime));
+    }
+    mergeLogString_ = ReadFileWithTimeHeader(logfile);
+}
+
+std::string ProcessDumper::GetFileModificationTime(const struct stat& fileInfo)
+{
+    char timeBuffer[TIME_BUFFER_SIZE] = {0};
+    struct tm timeStruct = {0};
+    if (localtime_r(&fileInfo.st_mtime, &timeStruct) != nullptr) {
+        std::strftime(timeBuffer, sizeof(timeBuffer), "%Y-%m-%d %H:%M:%S", &timeStruct);
+    }
+    return "Last Modified: " + std::string(timeBuffer) + "\n";
+}
+
+std::string ProcessDumper::ReadFileContent(const std::string& filePath, size_t fileSize)
+{
+    std::ifstream file(filePath, std::ios::binary | std::ios::in);
+    if (!file.is_open()) {
+        DFXLOGE("Open file failed: %{public}s", filePath.c_str());
+        return "";
+    }
+
+    size_t readLen = std::min(fileSize, static_cast<size_t>(APP_CRASH_LOG_MAX_READ_SIZE));
+    std::string content;
+    if (readLen > 0) {
+        content.resize(readLen);
+        file.read(&content[0], static_cast<std::streamsize>(readLen));
+        content.resize(static_cast<size_t>(file.gcount()));
+    }
+    return content;
+}
+
+std::string ProcessDumper::ReadFileWithTimeHeader(const std::string& filePath)
+{
+    if (filePath.empty()) {
+        return "Error: File path empty";
+    }
+
+    struct stat fileInfo = {0};
+    if (stat(filePath.c_str(), &fileInfo) != 0) {
+        std::string errMsg = "Error: File not found or stat failed. Path:" + filePath +
+                             ", errno:" + std::to_string(errno) + ", desc: " + strerror(errno);
+        DFXLOGE("readFileWithTimeHeader error msg:%{public}s", errMsg.c_str());
+        return errMsg;
+    }
+
+    std::string result = GetFileModificationTime(fileInfo);
+    result += ReadFileContent(filePath, static_cast<size_t>(fileInfo.st_size));
+    return result;
 }
 
 DumpErrorCode ProcessDumper::WaitParseSymbols()
