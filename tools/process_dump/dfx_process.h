@@ -38,6 +38,7 @@ struct CrashLogConfig {
     bool extendPcLrPrinting = false;
     bool simplifyVmaPrinting = false;
     uint32_t logFileCutoffSizeBytes = 0;
+    bool mergeAppLog = false;
 };
 class DfxProcess final {
 public:
