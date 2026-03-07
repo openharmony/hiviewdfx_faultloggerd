@@ -73,7 +73,7 @@ private:
     DumpErrorCode DumpPreparation();
     void FillAllThreadNativeSymbol();
     void ReadAppLog();
-    std:string ReadFileWithTimeHeader(const std::string& filePath);
+    std::string ReadFileWithTimeHeader(const std::string& filePath);
     std::string GetFileModificationTime(const struct stat& fileInfo);
     std::string ReadFileContent(const std::string& filePath, size_t fileSize);
     void EnableMergeAppLog()
@@ -102,7 +102,7 @@ private:
     uint64_t smoParseTime_ = 0;
     bool needMergeLog_ = false;
     uint64_t crashDetachTime_ = 0;
-    std:string mergeLogString_ = "";
+    std::string mergeLogString_ = "";
     std::thread mergeLogThread_;
 };
 } // namespace HiviewDFX
