@@ -100,6 +100,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.sectionMaps["PROCESS_LIFETIME"] = std::to_string(process.GetLifeTime());
     info.sectionMaps["IS_ARKWEB_CORE"] = DfxMaps::IsArkWebProc() ? "true" : "false";
     info.sectionMaps["IS_SIG_ACTION"] = request.isSigAction ? "Yes" : "No";
+    
     std::string mergeLog = OHOS::HiviewDFX::ProcessDumper::GetInstance().GetMergeLog();
     if (!mergeLog.empty()) {
         DFXLOGI("APPMergeLog:%{public}s", mergeLog.c_str());
