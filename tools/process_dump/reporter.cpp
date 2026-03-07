@@ -105,6 +105,12 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
         DFXLOGI("Current abort crash(pid=%{public}d) info has lastfatalmessage: %{public}s", info.pid,
             info.summary.find("LastFatalMessage:") != std::string::npos ? "true" : "false");
     }
+
+    std::string mergeLog = OHOS::HiviewDFX::ProcessDumper::GetInstance().GetMergeLog();
+    if (!mergeLog.empty()) {
+        DFXLOGI("APPMergeLog:%{public}s", mergeLog.c_str());
+        info.sectionMaps["MERGE_LOG"] = mergeLog;
+    }
     addFaultLog(&info);
     DFXLOGI("Finish report fault to FaultLogger %{public}s(%{public}d,%{public}d)",
         info.module.c_str(), info.pid, info.id);
