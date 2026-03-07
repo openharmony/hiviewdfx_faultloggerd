@@ -100,11 +100,10 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.sectionMaps["PROCESS_LIFETIME"] = std::to_string(process.GetLifeTime());
     info.sectionMaps["IS_ARKWEB_CORE"] = DfxMaps::IsArkWebProc() ? "true" : "false";
     info.sectionMaps["IS_SIG_ACTION"] = request.isSigAction ? "Yes" : "No";
-    
-    std::string mergeLog = OHOS::HiviewDFX::ProcessDumper::GetInstance().GetMergeLog();
-    if (!mergeLog.empty()) {
-        DFXLOGI("APPMergeLog:%{public}s", mergeLog.c_str());
-        info.sectionMaps["MERGE_LOG"] = mergeLog;
+
+    if (info.reason.find("SIGABRT") != std::string::npos) {
+        DFXLOGI("Current abort crash(pid=%{public}d) info has lastfatalmessage: %{public}s", info.pid,
+            info.summary.find("LastFatalMessage:") != std::string::npos ? "true" : "false");
     }
     addFaultLog(&info);
     DFXLOGI("Finish report fault to FaultLogger %{public}s(%{public}d,%{public}d)",
