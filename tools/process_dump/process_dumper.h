@@ -48,6 +48,10 @@ public:
     static ProcessDumper &GetInstance();
     void Dump();
     void ReportSigDumpStats();
+    std::string GetMergeLog()
+    {
+        return mergeLogString_;
+    }
 
 private:
     ProcessDumper() = default;
@@ -68,6 +72,14 @@ private:
     DumpErrorCode ConcurrentSymbolize();
     DumpErrorCode DumpPreparation();
     void FillAllThreadNativeSymbol();
+    void ReadAppLog();
+    std::string ReadFileWithTimeHeader(const std::string& filePath);
+    std::string GetFileModificationTime(const struct stat& fileInfo);
+    std::string ReadFileContent(const std::string& filePath, size_t fileSize);
+    void EnableMergeAppLog()
+    {
+        needMergeLog_ = true;
+    }
 
 private:
     void SetProcessdumpTimeout(siginfo_t &si);
@@ -88,6 +100,10 @@ private:
 #endif
     uint64_t finishParseSymbolTime_ = 0;
     uint64_t smoParseTime_ = 0;
+    bool needMergeLog_ = false;
+    uint64_t crashDetachTime_ = 0;
+    std::string mergeLogString_ = "";
+    std::thread mergeLogThread_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
