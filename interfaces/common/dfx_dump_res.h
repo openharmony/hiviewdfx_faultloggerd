@@ -76,6 +76,8 @@ enum DumpErrorCode : int32_t {
     DUMP_ESYMBOL_PARSE_TIMEOUT,
     /** coredump flow just exit*/
     DUMP_COREDUMP,
+    /** main thread stack has been written to bufFd, other threads still collecting */
+    DUMP_EMAIN_THREAD_DONE,
 };
 
 class DfxDumpRes {

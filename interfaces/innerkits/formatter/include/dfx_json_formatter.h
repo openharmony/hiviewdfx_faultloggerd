@@ -46,10 +46,12 @@ public:
      * @param jsonFormat whether return json format stack, default false
      * @param needParseSymbol input set whether to resolve function symbol
      * @param bundleName app package name
+     * @param fallbackMainThreadStack fallback main thread stack (formatted frame string)
      * @return if succeed return true, otherwise return false
      */
     static bool FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat = false,
-        bool needParseSymbol = false, const std::string& bundleName = "");
+        bool needParseSymbol = false, const std::string& bundleName = "",
+        const std::string& fallbackMainThreadStack = "");
 #endif
 };
 } // namespace HiviewDFX

@@ -41,6 +41,7 @@ public:
     void SetWriteResFd(SmartFd fd);
     void SetWriteFunc(BufferWriteFunc func);
     bool WriteDumpRes(int32_t dumpRes);
+    bool WriteMainThreadDone();
 
     void WriteMsg(const std::string& msg);
     void WriteFormatMsg(const char *format, ...);

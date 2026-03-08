@@ -125,6 +125,12 @@ int KeyThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpRequest
         ReportCrashException(CrashExceptionCode::CRASH_UNWIND_ESTACK);
         process.AppendFatalMessage(unwindFailTip_);
     }
+
+    // Write main thread stack (unsymbolized) to pipe immediately for early return on timeout
+    if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+        Print(process, request, unwinder);
+        DfxBufferWriter::GetInstance().WriteMainThreadDone();
+    }
     return result;
 }
 
