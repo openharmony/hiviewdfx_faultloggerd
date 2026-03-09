@@ -43,6 +43,8 @@ public:
 private:
     bool ReadPipeData(int pid);
     void ReadRequest(int pipeReadFd);
+    void SetProcessdumpTimeout(siginfo_t &si);
+    void FormatJsonInfoIfNeed();
     void ReadStat(int pipeReadFd);
     void ReadStatm(int pipeReadFd);
     void ReadStack(int pipeReadFd);
@@ -67,7 +69,6 @@ private:
     void MmapJitSymbol();
     void MunmapJitSymbol();
     bool Report();
-    void FormatJsonInfoIfNeed();
 
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> dfxMaps_;
@@ -86,6 +87,8 @@ private:
     std::string keyThreadStackStr_;
     std::map<int, std::string> fdFiles_;
     void* jitSymbolMMap_ = MAP_FAILED;
+    bool isJsonDump_ = false;
+    uint64_t expectedDumpFinishTime_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

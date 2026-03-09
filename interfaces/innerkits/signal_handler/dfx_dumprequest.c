@@ -716,12 +716,22 @@ bool DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
         return false;
     }
     UpdateSanBoxProcess(request);
-    if (!MMapMemoryOnce()) {
+    int mmapSize = PRIV_COPY_STACK_BUFFER_SIZE + PROC_STAT_BUF_SIZE + PROC_STATM_BUF_SIZE +
+        sizeof(int) + MAX_DUMP_THREAD_NUM * (sizeof(ThreadDumpRequest) + THREAD_STACK_BUFFER_SIZE);
+    bool isDumpCatch = request->type == DUMP_TYPE_DUMP_CATCH;
+    if (isDumpCatch) {
+        mmapSize = PRIV_COPY_STACK_BUFFER_SIZE +
+        sizeof(int) + MAX_DUMP_THREAD_NUM * (sizeof(ThreadDumpRequest) + THREAD_STACK_BUFFER_SIZE);
+    }
+    ResetLiteDump();
+    if (!MMapMemoryOnce(mmapSize)) {
         DFXLOGE("Failed mmap memory to lite dump");
         return false;
     }
-    CollectStat(request);
-    CollectStatm(request);
+    if (!isDumpCatch) {
+        CollectStat(request);
+        CollectStatm(request);
+    }
     CollectStack(request);
     pid_t pid = ForkBySyscall();
     if (pid == 0) {
@@ -729,8 +739,8 @@ bool DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
         _exit(0);
     }
     int ret = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
-    UnmapMemoryOnce();
-#endif
+    UnmapMemoryOnce(mmapSize);
     DFXLOGI("lite process exit code %{public}d", ret);
+#endif
     return true;
 }

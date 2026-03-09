@@ -197,8 +197,8 @@ bool DfxMaps::ParseByBuffer(const std::string& bundleName, std::string& buffer)
     std::string line;
     int fgetCount = 0;
     while (std::getline(iss, line)) {
-        if (line == "OpenFiles:") {
-            DFXLOGI("find open file start, end prase_maps");
+        if (line == "Parse_Maps_Finish") {
+            DFXLOGI("find end prase_maps");
             std::string rest;
             rest.assign(std::istreambuf_iterator<char>(iss),
                         std::istreambuf_iterator<char>());
