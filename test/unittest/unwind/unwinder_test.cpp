@@ -1136,6 +1136,24 @@ HWTEST_F(UnwinderTest, UnwindTest0016, TestSize.Level2)
     EXPECT_TRUE(maps != nullptr);
     GTEST_LOG_(INFO) << "UnwindTest0016: end.";
 }
+
+/**
+ * @tc.name: UnwindTest0017
+ * @tc.desc: test Unwind GetLockInfo
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindTest0017, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindTest0017: start.";
+    std::vector<DfxFrame> frames;
+    auto unwinder = std::make_shared<Unwinder>();
+    unwinder->SetFrames(frames);
+    int tid = 0;
+    std::vector<char> buffer(sizeof(pthread_mutex_t), 0);
+    bool cur = unwinder->GetLockInfo(tid, buffer.data(), sizeof(pthread_mutex_t));
+    EXPECT_FALSE(cur);
+    GTEST_LOG_(INFO) << "UnwindTest0017: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
 
