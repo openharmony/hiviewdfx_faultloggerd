@@ -64,6 +64,7 @@ public:
     static int TestSigHook();
     static int StackCorruption();
     static int StackCorruption2();
+    static int TriggerLrCorruption();
 
     static int RecursiveFunc(int curLevel, int targetLevel, int midLevel);
     static int PrintFatalMessageInLibc();

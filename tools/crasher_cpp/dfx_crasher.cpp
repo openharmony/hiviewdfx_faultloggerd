@@ -128,6 +128,7 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
     {"SigHook", "register sigsegv signal handler", &DfxCrasher::TestSigHook},
     {"StackCorruption", "reset values stored on stack", &DfxCrasher::StackCorruption},
     {"StackCorruption2", "reset values stored in the middle of the stack", &DfxCrasher::StackCorruption2},
+    {"TriggerLrCorruption", "trigger incorrect lr and return", &DfxCrasher::TriggerLrCorruption},
 
 #ifdef HAS_CRASH_EXAMPLES
     {"NullPointerDeref0", "nullpointer fault testcase 0", &TestNullPointerDereferenceCrash0},
@@ -438,6 +439,26 @@ NOINLINE int DfxCrasher::TriggerSocketException(void)
     if (send(sockFd.GetFd(), message, strlen(message), 0) == -1) {
         std::cout << "Client send failed" <<std::endl;
     }
+    return 0;
+}
+
+NOINLINE int DfxCrasher::TriggerLrCorruption(void) __attribute__((optnone))
+{
+#if defined(__aarch64__)
+    __asm__ volatile(
+        "mov x0, x30\n"
+        "orr x0, x0, #(1 << 55)\n"
+        "mov x30, x0\n"
+        "ret\n"
+        : : : "x0", "x30", "memory"
+    );
+
+    __asm__ volatile(
+        "mov x0, #0x1\n"
+        ".word 0xA8C07BE0\n"
+        : : : "x0", "memory"
+    );
+#endif
     return 0;
 }
 

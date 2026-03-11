@@ -807,7 +807,8 @@ bool Unwinder::Impl::UnwindFrame(void *ctx, StepFrame& frame, bool& needAdjustPc
     if (!StepInner(false, frame, ctx)) {
         return false;
     }
-    if (frame.pc == prevPc && frame.sp == prevSp) {
+    // The first frame may not have been updated on the pc and sp, when lr fall back
+    if (frame.pc == prevPc && frame.sp == prevSp && frames_.size() > 1) {
         if (pid_ >= 0) {
             MAYBE_UNUSED UnwindContext* uctx = reinterpret_cast<UnwindContext *>(ctx);
             DFXLOGU("pc and sp is same, tid: %{public}d", uctx->pid);
