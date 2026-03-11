@@ -36,7 +36,7 @@ const char* const FOUNDATION_PROCESS_NAME = "foundation";
 const char* const HIVIEW_PROCESS_NAME = "/system/bin/hiview";
 const char* const REGS_KEY_WORD = "Registers:\n";
 
-using RecordAppExitReason = int (*)(int reason, const char *exitMsg);
+using RecordAppWithReason = int (*)(int pid, int uid, int exitReason, int killId, const char *exitMsg);
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -186,15 +186,17 @@ void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpR
         return;
     }
 
-    RecordAppExitReason recordAppExitReason = (RecordAppExitReason)dlsym(handle.get(), "RecordAppExitReason");
-    if (recordAppExitReason == nullptr) {
-        DFXLOGW("Failed to dlsym RecordAppExitReason, %{public}s\n", dlerror());
+    RecordAppWithReason recordAppWithReason = (RecordAppWithReason)dlsym(handle.get(), "RecordAppWithReason");
+    if (recordAppWithReason == nullptr) {
+        DFXLOGW("Failed to dlsym RecordAppWithReason, %{public}s\n", dlerror());
         return;
     }
 
     // defined in interfaces/inner_api/ability_manager/include/ability_state.h
     const int cppCrashExitReason = 2;
-    recordAppExitReason(cppCrashExitReason, process.GetReason().c_str());
+    // defined in interfaces/native/innerkits/include/xcollie/process_kill_reason.h
+    const int killId = 2004;
+    recordAppWithReason(request.pid, request.uid, cppCrashExitReason, killId, process.GetReason().c_str());
 }
 
 std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxRegs> regs)
