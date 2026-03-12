@@ -22,8 +22,8 @@ namespace OHOS {
 namespace HiviewDFX {
 class KernelSnapshotContentBuilder {
 public:
-    explicit KernelSnapshotContentBuilder(CrashMap& crashData, bool isLocal = false)
-        : crashData_(crashData), isLocal_(isLocal) {}
+    explicit KernelSnapshotContentBuilder(CrashMap& crashData, bool isLocal = false, bool isPrintLog = false)
+        : crashData_(crashData), isLocal_(isLocal), isPrintLog_(isPrintLog) {}
     std::string GenerateSummary();
 
     KernelSnapshotContentBuilder(const KernelSnapshotContentBuilder&) = delete;
@@ -48,6 +48,7 @@ private:
 
     CrashMap& crashData_;
     bool isLocal_;
+    bool isPrintLog_;
     std::vector<SnapshotUserSection> contentSections_;
 };
 } // namespace HiviewDFX

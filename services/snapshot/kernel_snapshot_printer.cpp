@@ -32,7 +32,7 @@ bool KernelSnapshotPrinter::OutputToFile(const std::string& filePath, CrashMap& 
         return false;
     }
 
-    std::string outputCont = KernelSnapshotContentBuilder(output, true).GenerateSummary();
+    std::string outputCont = KernelSnapshotContentBuilder(output, true, true).GenerateSummary();
     if (fwrite(outputCont.c_str(), sizeof(char), outputCont.length(), file.get()) != outputCont.length()) {
         DFXLOGE("write file failed %{public}s errno %{public}d", filePath.c_str(), errno);
         return false;
