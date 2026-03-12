@@ -892,6 +892,7 @@ bool DfxDumpCatcher::Impl::DoReadRes(int& pollRet, DumpCatcherPipeData& pipeData
         // Save unsymbolized main thread stack as timeout fallback, clear bufMsg for subsequent symbolized data
         pipeData.mainThreadStackMsg = std::move(pipeData.bufMsg);
         pipeData.bufMsg = "";
+        DFXLOGI("Read main thread unsymbolic user stack done");
         return false;  // continue polling, wait for final result
     }
 

@@ -22,11 +22,13 @@
 #include "decorative_dump_info.h"
 #include "dfx_process.h"
 #include "dfx_define.h"
+#include "dfx_dump_res.h"
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "key_thread_dump_info.h"
 #include "procinfo.h"
 #include "multithread_constructor.h"
+#include "smart_fd.h"
 
 
 using namespace OHOS::HiviewDFX;
@@ -41,15 +43,25 @@ public:
     void SetUp() override;
     static int WriteLogFunc(int32_t fd, const char *buf, size_t len);
     static std::string result;
+    static int fds[PIPE_NUM_SZ];
+    static SmartFd readFd;
+    static SmartFd writeFd;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
 
 std::string ThreadDumpInfoTest::result = "";
+int ThreadDumpInfoTest::fds[PIPE_NUM_SZ] = {-1, -1};
+SmartFd ThreadDumpInfoTest::readFd;
+SmartFd ThreadDumpInfoTest::writeFd;
 
 void ThreadDumpInfoTest::SetUpTestCase(void)
 {
     result = "";
+    ASSERT_EQ(pipe2(fds, O_NONBLOCK), 0);
+    ThreadDumpInfoTest::readFd = SmartFd{fds[PIPE_READ]};
+    ThreadDumpInfoTest::writeFd = SmartFd{fds[PIPE_WRITE]};
+    DfxBufferWriter::GetInstance().SetWriteResFd(std::move(writeFd));
 }
 
 void ThreadDumpInfoTest::SetUp(void)
@@ -109,7 +121,9 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest001, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    dumpInfo.Print(process, request, unwinder);
+    int32_t resCode = 0;
+    EXPECT_EQ(read(readFd.GetFd(), &resCode, sizeof(resCode)), sizeof(int32_t));
+    EXPECT_EQ(resCode, DUMP_EMAIN_THREAD_DONE);
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(tid),
@@ -165,7 +179,9 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest002, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    dumpInfo.Print(process, request, unwinder);
+    int32_t resCode = 0;
+    EXPECT_EQ(read(readFd.GetFd(), &resCode, sizeof(resCode)), sizeof(int32_t));
+    EXPECT_EQ(resCode, DUMP_EMAIN_THREAD_DONE);
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(g_childTid),
@@ -387,7 +403,10 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     dumpInfo.UnwindStack(process, request, unwinder);
-    dumpInfo.Print(process, request, unwinder);
+    int32_t resCode = 0;
+    ssize_t nread = read(readFd.GetFd(), &resCode, sizeof(resCode));
+    EXPECT_EQ(nread, sizeof(int32_t));
+    EXPECT_EQ(resCode, DUMP_EMAIN_THREAD_DONE);
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(tid),

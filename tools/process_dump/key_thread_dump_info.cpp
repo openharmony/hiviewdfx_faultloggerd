@@ -130,6 +130,7 @@ int KeyThreadDumpInfo::UnwindStack(DfxProcess& process, const ProcessDumpRequest
     if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         Print(process, request, unwinder);
         DfxBufferWriter::GetInstance().WriteMainThreadDone();
+        DFXLOGI("Write main thread unsymbolic user stack done.");
     }
     return result;
 }

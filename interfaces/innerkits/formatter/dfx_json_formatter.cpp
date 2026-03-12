@@ -481,7 +481,6 @@ static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedSt
     return frames;
 }
 
-// 应用主线程栈优先级逻辑
 static void ApplyMainThreadStackPriority(std::vector<DfxThreadStack>& processStack,
     const std::string& mainThreadUserStack, const std::string& fallbackMainThreadStack, int32_t pid)
 {
@@ -655,7 +654,6 @@ bool FormatKernelStackImpl(const FormatKernelStackParams& params)
         return false;
     }
 
-    // 应用主线程栈优先级逻辑
     ApplyMainThreadStackPriority(processStack, mainThreadUserStack,
         params.fallbackMainThreadStack, params.pid);
 
