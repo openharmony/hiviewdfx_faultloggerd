@@ -438,8 +438,8 @@ void ProcessDumper::ReadAppLog()
     }
 
     mergeLogString_ = ReadFileWithTimeHeader(logfile);
-    DFXLOGI("ReadAppLog finished. Path: %{public}s, Content size: %{public}zu, elapsedTime: %{public}lu",
-            logfile.c_str(), mergeLogString_.size(), elapsedTime);
+    DFXLOGI("ReadAppLog finished. Path: %{public}s, Content size: %{public}zu",
+            logfile.c_str(), mergeLogString_.size());
 }
 
 std::string ProcessDumper::GetFileModificationTime(const struct stat& fileInfo)
