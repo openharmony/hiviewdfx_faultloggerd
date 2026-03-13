@@ -26,11 +26,15 @@
 #include "dfx_thread.h"
 #include "dump_utils.h"
 #include <pthread.h>
-#include "process_dumper.h"
 #include "dfx_util.h"
 #include "dfx_test_util.h"
 #include "dfx_socket_request.h"
+#undef private
+#define private public
+#include "process_dumper.h"
 #include "lite_process_dumper.h"
+#undef private
+#define private private
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -477,7 +481,9 @@ HWTEST_F(ProcessDumpTest, ProcessDumperReadAppLogTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ProcessDumperReadAppLogTest001: start.";
     ProcessDumper& dumper = ProcessDumper::GetInstance();
+    dumper.mergeLogString_ = "";
     dumper.ReadAppLog();
+    EXPECT_FALSE(dumper.mergeLogString_.empty());
     GTEST_LOG_(INFO) << "ProcessDumperReadAppLogTest001: end.";
 }
 }
