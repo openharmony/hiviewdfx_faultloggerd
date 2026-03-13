@@ -108,7 +108,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
 
     std::string mergeLog = OHOS::HiviewDFX::ProcessDumper::GetInstance().GetMergeLog();
     if (!mergeLog.empty()) {
-        DFXLOGI("APPMergeLog:%{public}s", mergeLog.c_str());
+        DFXLOGI("APPMergeLog loaded, size: %{public}zu", mergeLog.size());
         info.sectionMaps["MERGE_LOG"] = mergeLog;
     }
     addFaultLog(&info);

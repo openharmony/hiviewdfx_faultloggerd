@@ -427,14 +427,19 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
 
 void ProcessDumper::ReadAppLog()
 {
-    DFXLOGI("ReadAppLog");
     std::string bundleName = DumpUtils::GetSelfBundleName();
     std::string logfile = std::string(SAND_FILE_APP_LOG_PATH_PREFIX) + bundleName + APP_CRASH_LOG_SUFFIX;
-    uint64_t leftTime = APP_CRASH_WAIT_TIME - (GetTimeMillisec() - crashDetachTime_);
-    if (leftTime > 0) {
+
+    uint64_t currentTime = GetTimeMillisec();
+    uint64_t elapsedTime = (currentTime > crashDetachTime) ? (currentTime - crashDetachTime) : 0;
+    if (elapsedTime < APP_CRASH_WAIT_TIME) {
+        uint64_t leftTime = APP_CRASH_WAIT_TIME - elapsedTime;
         std::this_thread::sleep_for(std::chrono::milliseconds(leftTime));
     }
+
     mergeLogString_ = ReadFileWithTimeHeader(logfile);
+    DFXLOGI("ReadAppLog finished. Path: %{public}s, Content size: %{public}zu, elapsedTime: %{public}lu",
+            logfile.c_str(), mergeLogString_.size(), elapsedTime);
 }
 
 std::string ProcessDumper::GetFileModificationTime(const struct stat& fileInfo)
