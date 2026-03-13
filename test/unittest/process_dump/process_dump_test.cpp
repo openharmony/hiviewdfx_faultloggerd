@@ -401,7 +401,7 @@ HWTEST_F(ProcessDumpTest, GetBundleInfoUnittest001, TestSize.Level2) {
 HWTEST_F(ProcessDumpTest, ProcessDumperFileTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ProcessDumperFileTest001: start.";
-    ProcessDumper dumper;
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
     struct stat fileInfo = {0};
     fileInfo.st_mtime = 1700000000;
 
@@ -420,7 +420,7 @@ HWTEST_F(ProcessDumpTest, ProcessDumperFileTest001, TestSize.Level0)
 HWTEST_F(ProcessDumpTest, ProcessDumperFileTest002, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ProcessDumperFileTest002: start.";
-    ProcessDumper dumper;
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
     std::string tempFile = "/data/test_read_file.log";
     std::string content = "test file content";
 
@@ -448,7 +448,7 @@ HWTEST_F(ProcessDumpTest, ProcessDumperFileTest002, TestSize.Level0)
 HWTEST_F(ProcessDumpTest, ProcessDumperFileTest003, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ProcessDumperFileTest003: start.";
-    ProcessDumper dumper;
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
     std::string tempFile = "/data/test_header_file.log";
     std::string content = "log content";
 
@@ -476,7 +476,7 @@ HWTEST_F(ProcessDumpTest, ProcessDumperFileTest003, TestSize.Level0)
 HWTEST_F(ProcessDumpTest, ProcessDumperReadAppLogTest001, TestSize.Level0)
 {
     GTEST_LOG_(INFO) << "ProcessDumperReadAppLogTest001: start.";
-    ProcessDumper dumper;
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
     dumper.ReadAppLog();
     GTEST_LOG_(INFO) << "ProcessDumperReadAppLogTest001: end.";
 }
