@@ -375,6 +375,71 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest009, TestSize.Level2)
     EXPECT_EQ(writer.GetFaultloggerdRequestType(), FaultLoggerType::CPP_CRASH);
     GTEST_LOG_(INFO) << "LiteProcessDumpTest009: end.";
 }
+
+/**
+ * @tc.name: LiteProcessDumpTest010
+ * @tc.desc: test CollectOpenFiles function
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest010: start.";
+    LiteProcessDumper liteDumper;
+    std::string testData = "OpenFiles:\n0->/dev/null FILE 123\n1->/dev/urandom FILE 456\nend trans openfiles\n";
+    liteDumper.rawData_ = testData;
+    liteDumper.CollectOpenFiles();
+    EXPECT_FALSE(liteDumper.fdFiles_.empty());
+    EXPECT_TRUE(liteDumper.rawData_.find("end trans openfiles") == std::string::npos);
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest010: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest011
+ * @tc.desc: test MmapJitSymbol function
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest011: start.";
+    LiteProcessDumper liteDumper;
+    liteDumper.rawData_ = "test jit symbol data";
+    liteDumper.MmapJitSymbol();
+    EXPECT_NE(liteDumper.jitSymbolMMap_, MAP_FAILED);
+    liteDumper.MunmapJitSymbol();
+    EXPECT_EQ(liteDumper.jitSymbolMMap_, MAP_FAILED);
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest011: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest012
+ * @tc.desc: test PrintOpenFiles function
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest012: start.";
+    LiteProcessDumper liteDumper;
+    liteDumper.fdFiles_[0] = "0->/dev/null FILE 123\n";
+    liteDumper.fdFiles_[1] = "1->/dev/urandom FILE 456\n";
+    liteDumper.PrintOpenFiles();
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest012: end.";
+}
+
+/**
+ * @tc.name: LiteProcessDumpTest013
+ * @tc.desc: test CollectOpenFiles with no end marker
+ * @tc.type: FUNC
+ */
+HWTEST_F (ProcessDumpTest, LiteProcessDumpTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest013: start.";
+    LiteProcessDumper liteDumper;
+    std::string testData = "0->/dev/null FILE 123\n1->/dev/urandom FILE 456\n";
+    liteDumper.rawData_ = testData;
+    liteDumper.CollectOpenFiles();
+    EXPECT_EQ(liteDumper.fdFiles_.size(), 2);
+    GTEST_LOG_(INFO) << "LiteProcessDumpTest013: end.";
+}
 #endif
 
 /**

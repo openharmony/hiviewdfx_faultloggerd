@@ -352,7 +352,7 @@ bool CollectMemoryNearRegisters(int fd, ucontext_t *context)
 
 bool FindArkWebJitSymbol(const char* buf, size_t len, uint64_t* startAddr)
 {
-    const char subStr[] = "[anon:ARKWEB_JIT_symbol]";
+    const char subStr[] = "[anon:JS_JIT_symbol]";
     char *pos = strstr(buf, subStr);
     if (pos == NULL) {
         return false;
