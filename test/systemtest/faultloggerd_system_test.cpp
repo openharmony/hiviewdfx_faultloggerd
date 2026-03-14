@@ -1928,6 +1928,35 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest132, TestSize.Level2)
     EXPECT_TRUE(CheckCppCrashAllLabelKeywords(fileName, pid)) << "FaultLoggerdSystemTest132 Failed";
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest132: end.";
 }
+
+/**
+ * @tc.name: FaultLoggerdSystemTest133
+ * @tc.desc: test Cpp crasher application: TriggerLrCorruption, and check all label keywords
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest133, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest133: start.";
+    string cmd = "TriggerLrCorruption";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    string key[] = {
+        "Failed to unwind stack, try to get unreliable call stack"};
+    EXPECT_EQ(CheckKeyWords(fileName, key, 1, -1), 0);
+    string log[] = {
+        "Pid:" + to_string(pid), "Uid", ":crasher", "SIGSEGV", "Tid:", "#00", "Registers:", REGISTERS, "FaultStack:",
+        "Maps:", "/crasher"
+    };
+    int minRegIdx = 6; // 6 : index of first REGISTERS - 1
+    int expectNum = sizeof(log) / sizeof(log[0]);
+    EXPECT_TRUE(CheckKeyWords(fileName, log, expectNum, minRegIdx) == expectNum) << "FaultLoggerdSystemTest133 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest133: end.";
+}
 #endif
 } // namespace HiviewDFX
 } // namespace OHOS
