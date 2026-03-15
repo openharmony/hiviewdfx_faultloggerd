@@ -17,6 +17,10 @@ if (defined(ohos_lite)) {
   import("//build/lite/config/component/lite_component.gni")
   import("//build/lite/config/test.gni")
 
+  config("unittest_private_config") {
+    cflags_cc = [ "-Dprivate=public" ]
+  }
+
   if (ohos_build_type == "debug") {
     unittest("test_processdump") {
       output_extension = "bin"
@@ -43,8 +47,6 @@ if (defined(ohos_lite)) {
       ]
       sources += [ "$c_utils_src_path/directory_ex.cpp" ]
 
-      cflags_cc = [ "-Dprivate=public" ]
-
       deps = [
         "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
         "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
@@ -53,6 +55,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/common/cutil:dfx_cutil",
       ]
 
+      configs = [ ":unittest_private_config" ]
       external_deps = [ "hilog_lite:hilog_shared" ]
     }
   }
