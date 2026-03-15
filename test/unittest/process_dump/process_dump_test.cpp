@@ -26,15 +26,11 @@
 #include "dfx_thread.h"
 #include "dump_utils.h"
 #include <pthread.h>
+#include "process_dumper.h"
 #include "dfx_util.h"
 #include "dfx_test_util.h"
 #include "dfx_socket_request.h"
-#undef private
-#define private public
-#include "process_dumper.h"
 #include "lite_process_dumper.h"
-#undef private
-#define private private
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
