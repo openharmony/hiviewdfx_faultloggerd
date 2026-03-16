@@ -19,6 +19,8 @@
 #include <chrono>
 #include <future>
 #include <thread>
+#include <regex>
+#include <sstream>
 #include <securec.h>
 #include "dfx_kernel_stack.h"
 #ifndef is_ohos_lite
@@ -411,6 +413,90 @@ bool DfxJsonFormatter::FormatJsonStack(std::string& jsonStack, std::string& outS
 }
 
 #ifdef __aarch64__
+
+struct FormatKernelStackParams {
+    const std::string& kernelStack;
+    std::string& formattedStack;
+    bool jsonFormat;
+    ParseSymbolOptions options;
+    const std::string& fallbackMainThreadStack;
+    int32_t pid;
+};
+
+static std::string ExtractMainThreadUserStack(std::string& kernelStack)
+{
+    const std::string marker = "\nMain thread user stack (unsymbolized):\n";
+    size_t pos = kernelStack.find(marker);
+    if (pos == std::string::npos) {
+        return "";
+    }
+
+    std::string userStack = kernelStack.substr(pos + marker.length());
+    kernelStack = kernelStack.substr(0, pos);
+    return userStack;
+}
+
+static size_t FindMainThreadIndex(const std::vector<DfxThreadStack>& processStack, int32_t pid)
+{
+    for (size_t i = 0; i < processStack.size(); ++i) {
+        if (processStack[i].tid == pid) {
+            return i;
+        }
+    }
+    return std::string::npos;
+}
+
+static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedStack)
+{
+    std::vector<DfxFrame> frames;
+    std::istringstream iss(formattedStack);
+    std::string line;
+    size_t index = 0;
+
+    while (std::getline(iss, line)) {
+        if (line.empty() || line[0] != '#') {
+            continue;
+        }
+
+        DfxFrame frame;
+        frame.index = index++;
+
+        size_t pcPos = line.find("pc");
+        if (pcPos != std::string::npos) {
+            size_t pcStart = pcPos + 3;
+            size_t pcEnd = line.find_first_not_of("0123456789abcdefABCDEF", pcStart);
+            if (pcEnd != std::string::npos) {
+                std::string pcStr = line.substr(pcStart, pcEnd - pcStart);
+                frame.relPc = strtoull(pcStr.c_str(), nullptr, 16); // 16 : hex
+            }
+
+            size_t soPos = line.find('/', pcEnd);
+            if (soPos != std::string::npos) {
+                frame.mapName = line.substr(soPos);
+            }
+        }
+
+        frames.emplace_back(frame);
+    }
+    return frames;
+}
+
+static void ApplyMainThreadStackPriority(std::vector<DfxThreadStack>& processStack,
+    const std::string& mainThreadUserStack, const std::string& fallbackMainThreadStack, int32_t pid)
+{
+    size_t mainThreadIdx = FindMainThreadIndex(processStack, pid);
+    if (mainThreadIdx == std::string::npos) {
+        return;
+    }
+
+    if (!mainThreadUserStack.empty()) {
+        processStack[mainThreadIdx].frames = ParseFormattedFrames(mainThreadUserStack);
+    } else if (processStack[mainThreadIdx].frames.size() <= 3 && // 3 : three stack frames
+               !fallbackMainThreadStack.empty()) {
+        processStack[mainThreadIdx].frames = ParseFormattedFrames(fallbackMainThreadStack);
+    }
+}
+
 static bool FormatKernelStackStr(const std::vector<DfxThreadStack>& processStack, std::string& formattedStack)
 {
     if (processStack.empty()) {
@@ -555,47 +641,72 @@ void ParseSymbolWithDfxThreadStack(std::vector<DfxThreadStack>& processStack, co
     ReportDumpStats(bundleName, parseTime, static_cast<uint32_t>(processStack.size()));
 }
 
-bool FormatKernelStackImpl(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
-    const ParseSymbolOptions& options)
+bool FormatKernelStackImpl(const FormatKernelStackParams& params)
 {
     uint32_t timeout = static_cast<uint32_t>(ALARM_TIME_S * 1000);
     uint32_t beginTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
+
+    std::string cleanKernelStack = params.kernelStack;
+    std::string mainThreadUserStack = ExtractMainThreadUserStack(cleanKernelStack);
+
     std::vector<DfxThreadStack> processStack;
-    if (!FormatProcessKernelStack(kernelStack, processStack)) {
+    if (!FormatProcessKernelStack(cleanKernelStack, processStack)) {
         return false;
     }
+
+    ApplyMainThreadStackPriority(processStack, mainThreadUserStack,
+        params.fallbackMainThreadStack, params.pid);
+
     ParseTime parseTime;
     parseTime.formatKernelStackTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds()) - beginTime;
     timeout = (timeout > parseTime.formatKernelStackTime) ? timeout - parseTime.formatKernelStackTime : 0;
-    if (options.needParseSymbol && timeout > 0) {
+    if (params.options.needParseSymbol && timeout > 0) {
         DfxEnableTraceDlsym(true);
-        ParseSymbolWithDfxThreadStack(processStack, options.bundleName, timeout, parseTime);
+        ParseSymbolWithDfxThreadStack(processStack, params.options.bundleName, timeout, parseTime);
         DfxEnableTraceDlsym(false);
     } else {
         DFXLOGI("no need to parse symbol or timeout is not enough!");
     }
-    if (jsonFormat) {
-        return FormatKernelStackJson(processStack, formattedStack);
+    if (params.jsonFormat) {
+        return FormatKernelStackJson(processStack, params.formattedStack);
     } else {
-        return FormatKernelStackStr(processStack, formattedStack);
+        return FormatKernelStackStr(processStack, params.formattedStack);
     }
 }
 
 #endif
 
 bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::string& formattedStack, bool jsonFormat,
-    bool needParseSymbol, const std::string& bundleName)
+    bool needParseSymbol, const std::string& bundleName, const std::string& fallbackMainThreadStack)
 {
 #ifdef __aarch64__
     ParseSymbolOptions options(needParseSymbol, bundleName);
-    if (!needParseSymbol) {
-        return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
+    int32_t pid = 0;
+    std::regex pidPattern(R"(pid=(\d+))");
+    std::smatch pidMatch;
+    if (std::regex_search(kernelStack, pidMatch, pidPattern) && pidMatch.size() > 1) {
+        pid = std::stoi(pidMatch[1].str());
     }
 
-    std::function<std::string(void)> func = [&kernelStack, &jsonFormat, options]() mutable {
+    FormatKernelStackParams params {
+        .kernelStack = kernelStack,
+        .formattedStack = formattedStack,
+        .jsonFormat = jsonFormat,
+        .options = options,
+        .fallbackMainThreadStack = fallbackMainThreadStack,
+        .pid = pid
+    };
+
+    if (!needParseSymbol) {
+        return FormatKernelStackImpl(params);
+    }
+
+    std::function<std::string(void)> func = [params]() mutable {
             std::string formattedStack;
-            (void)FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
-            return formattedStack;
+            FormatKernelStackParams localParams = params;
+            localParams.formattedStack = formattedStack;
+            (void)FormatKernelStackImpl(localParams);
+            return localParams.formattedStack;
         };
 
     auto ret = ExecuteTaskByFork(func);
@@ -604,7 +715,9 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
         return true;
     }
     options.needParseSymbol = false;
-    return FormatKernelStackImpl(kernelStack, formattedStack, jsonFormat, options);
+    FormatKernelStackParams noSymbolParams = params;
+    noSymbolParams.options = options;
+    return FormatKernelStackImpl(noSymbolParams);
 #else
     return false;
 #endif

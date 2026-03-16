@@ -24,6 +24,7 @@
 #include "crash_exception.h"
 #include "dfx_log.h"
 #include "dfx_define.h"
+#include "dfx_dump_res.h"
 #include "dfx_exception.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
@@ -62,6 +63,11 @@ bool DfxBufferWriter::WriteDumpRes(int32_t dumpRes)
         return false;
     }
     return true;
+}
+
+bool DfxBufferWriter::WriteMainThreadDone()
+{
+    return WriteDumpRes(DumpErrorCode::DUMP_EMAIN_THREAD_DONE);
 }
 
 void DfxBufferWriter::WriteFormatMsg(const char *format, ...)
