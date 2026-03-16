@@ -266,6 +266,7 @@ private:
     bool AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>& map);
     bool UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind);
     bool ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>& rs);
+    void StepToNextFpIfNeed();
     void UpdateRegsState(StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs);
     bool CheckFrameValid(const StepFrame& frame, const std::shared_ptr<DfxMap>& map, uintptr_t prevSp);
     bool GetCrashLastFrame(StepFrame& frame);
@@ -1073,6 +1074,25 @@ bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>
     return true;
 }
 
+void Unwinder::Impl::StepToNextFpIfNeed()
+{
+#if defined(__aarch64__)
+    if (memory_ == nullptr || regs_ == nullptr) {
+        return;
+    }
+    uintptr_t fpStepPc = 0;
+    uintptr_t pcPtr = regs_->GetFp() + sizeof(uintptr_t);
+    memory_->Read<uintptr_t>(pcPtr, &fpStepPc, false);
+    // if the pc which is step by fp is duplicated with the current frame, update fp val to next frame
+    if (regs_->GetPc() == fpStepPc) {
+        auto fp = regs_->GetFp();
+        uintptr_t nextFp;
+        memory_->Read<uintptr_t>(fp, &nextFp, false);
+        regs_->SetFp(nextFp);
+    }
+#endif
+}
+
 void Unwinder::Impl::UpdateRegsState(
     StepFrame& frame, void* ctx, bool& unwinderResult, std::shared_ptr<RegLocState>& rs)
 {
@@ -1094,13 +1114,7 @@ void Unwinder::Impl::UpdateRegsState(
     } else {
         if (enableLrFallback_ && (frames_.size() == 1 && !isResetFrames_) && regs_->SetPcFromReturnAddress(memory_)) {
             unwinderResult = true;
-#if defined(__aarch64__)
-            // update fp val to next frame
-            auto fp = *(regs_->GetReg(REG_FP));
-            uintptr_t nextFp;
-            memory_->Read<uintptr_t>(fp, &nextFp, false);
-            regs_->SetFp(nextFp);
-#endif
+            StepToNextFpIfNeed();
             if (pid_ != UNWIND_TYPE_CUSTOMIZE) {
                 DFXLOGW("Failed to step first frame, lr fallback");
             }
