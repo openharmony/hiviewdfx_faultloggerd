@@ -97,7 +97,7 @@ state=S, utime=15, stime=17, priority=-14, nice=-10, clk=100
 
 const char* MOCK_USER_MIX_STACK = R"(Tid:12926, Name:main
 state=S, utime=15, stime=17, priority=-14, nice=-10, clk=100
-#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1(81437328e14b7fba0bac6c92e21735b9)
+#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1(epoll_wait(bool)+44)(81437328e14b7fba0bac6c92e21735b9)
 #01 at symbol1 packageName (/path/to/test1.js:123:456)
 #02 at symbol2 (/path/to/test2.js:666:888)
 #03 pc 000000000002fab0 /system/lib64/chipset-sdk-sp/libeventhandler.z.so(e420922c45b941e4aeddead6353246b9)
@@ -221,6 +221,7 @@ HWTEST_F(DfxJsonFormatterTest, FormatKernelStackWithJsStack, TestSize.Level1)
     bool ret = DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, false, false, "");
     EXPECT_TRUE(ret);
     GTEST_LOG_(INFO) << formattedStack;
+    EXPECT_TRUE(formattedStack.find("epoll_wait") != std::string::npos);
     EXPECT_TRUE(formattedStack.find("libeventhandler.z.so") != std::string::npos);
     EXPECT_TRUE(formattedStack.find("symbol1") != std::string::npos);
     EXPECT_TRUE(formattedStack.find("symbol2") != std::string::npos);
@@ -228,6 +229,28 @@ HWTEST_F(DfxJsonFormatterTest, FormatKernelStackWithJsStack, TestSize.Level1)
     EXPECT_TRUE(formattedStack.find("/path/to/test2.js") != std::string::npos);
     EXPECT_TRUE(formattedStack.find("123:456") != std::string::npos);
     EXPECT_TRUE(formattedStack.find("666:888") != std::string::npos);
+}
+
+/**
+ * @tc.name: FormatKernelStackJsonWithJsStack
+ * @tc.desc: test kernel stack with main thread mix stack fallback.
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxJsonFormatterTest, FormatKernelStackJsonWithJsStack, TestSize.Level1)
+{
+    std::string kernelStack = std::string(MOCK_KERNEL_VALID_STACK) +
+        "\nMain thread user stack (unsymbolized):\n" + MOCK_USER_MIX_STACK;
+    std::string formattedStack;
+    bool ret = DfxJsonFormatter::FormatKernelStack(kernelStack, formattedStack, true, false, "");
+    EXPECT_TRUE(ret);
+    GTEST_LOG_(INFO) << formattedStack;
+    EXPECT_TRUE(formattedStack.find("\"symbol\":\"epoll_wait(bool)\"") != std::string::npos);
+    EXPECT_TRUE(formattedStack.find("\"offset\":44") != std::string::npos);
+    EXPECT_TRUE(formattedStack.find("\"buildId\":\"81437328e14b7fba0bac6c92e21735b9\"") != std::string::npos);
+    EXPECT_TRUE(formattedStack.find("\"line\":123") != std::string::npos);
+    EXPECT_TRUE(formattedStack.find("\"column\":456") != std::string::npos);
+    EXPECT_TRUE(formattedStack.find("\"symbol\":\"symbol1\"") != std::string::npos);
+    EXPECT_TRUE(formattedStack.find("\"packageName\":\"packageName\"") != std::string::npos);
 }
 #endif
 } // namespace HiviewDFX

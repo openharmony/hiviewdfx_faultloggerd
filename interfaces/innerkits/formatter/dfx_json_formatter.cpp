@@ -16,6 +16,7 @@
 #include "dfx_json_formatter.h"
 
 #include <cstdlib>
+#include <cerrno>
 #include <chrono>
 #include <future>
 #include <thread>
@@ -435,11 +436,17 @@ static int32_t ExtractPidFromKernelStack(const std::string& kernelStack)
         numEnd++;
     }
 
-    if (numEnd == numStart || numEnd - numStart > 5) { // 5 : max pid string length
+    if (numEnd == numStart) {
         return 0;
     }
 
-    return std::stoi(kernelStack.substr(numStart, numEnd - numStart));
+    errno = 0;
+    char* endPtr = nullptr;
+    long pid = std::strtol(kernelStack.c_str() + numStart, &endPtr, 10); // 10 : decimal
+    if (errno == ERANGE || pid < 0 || pid > INT32_MAX || endPtr != kernelStack.c_str() + numEnd) {
+        return 0;
+    }
+    return static_cast<int32_t>(pid);
 }
 
 static std::string ExtractMainThreadUserStack(std::string& kernelStack)
@@ -514,22 +521,25 @@ static bool ParseJsFrameStr(const std::string& line, DfxFrame& frame)
         return false;
     }
     frame.isJsFrame = true;
-    size_t symbolStart = line.find_first_not_of(' ', atPos + 3); // 3 : symbol offset
-    size_t symbolEnd = line.find('(', symbolStart);
-    if (symbolEnd != std::string::npos && symbolStart < symbolEnd) {
-        frame.funcName = line.substr(symbolStart, symbolEnd - symbolStart);
+    size_t symbolStart = line.find_first_not_of(' ', atPos + 3); // 3 : " at" length
+    if (symbolStart == std::string::npos) {
+        return true;
     }
-    size_t fileStart = line.find('(', symbolEnd);
-    size_t fileEnd = line.find(')', fileStart);
-    if (fileEnd != std::string::npos && fileStart < fileEnd) {
-        if (symbolEnd != std::string::npos && fileStart > symbolEnd) {
-            size_t pkgStart = line.find_first_not_of(' ', symbolEnd);
-            size_t pkgEnd = line.find_last_of(' ', fileStart - 1);
-            if (pkgStart < pkgEnd) {
-                frame.packageName = line.substr(pkgStart, pkgEnd - pkgStart);
-            }
-        }
-        std::string fileInfo = line.substr(fileStart + 1, fileEnd - fileStart - 1);
+    size_t parenPos = line.find('(', symbolStart);
+    if (parenPos == std::string::npos) {
+        return true;
+    }
+    std::string beforeParen = line.substr(symbolStart, parenPos - symbolStart - 1);
+    size_t firstSpace = beforeParen.find(' ');
+    if (firstSpace != std::string::npos) {
+        frame.funcName = beforeParen.substr(0, firstSpace);
+        frame.packageName = beforeParen.substr(firstSpace + 1);
+    } else {
+        frame.funcName = beforeParen;
+    }
+    size_t parenEnd = line.find(')', parenPos);
+    if (parenEnd != std::string::npos) {
+        std::string fileInfo = line.substr(parenPos + 1, parenEnd - parenPos - 1);
         ParseFileInfo(fileInfo, frame.mapName, frame.line, frame.column);
     }
     return true;
@@ -541,15 +551,50 @@ static bool ParseNativeFrameStr(const std::string& line, DfxFrame& frame)
     if (pcPos == std::string::npos) {
         return false;
     }
-    size_t pcStart = pcPos + 3;
+    size_t pcStart = pcPos + 3; // 3 : pc offset
     size_t pcEnd = line.find_first_not_of("0123456789abcdefABCDEF", pcStart);
-    if (pcEnd != std::string::npos) {
-        std::string pcStr = line.substr(pcStart, pcEnd - pcStart);
-        frame.relPc = strtoull(pcStr.c_str(), nullptr, 16); // 16 : hex
+    if (pcEnd == std::string::npos) {
+        return true;
     }
+    std::string pcStr = line.substr(pcStart, pcEnd - pcStart);
+    frame.relPc = strtoull(pcStr.c_str(), nullptr, 16); // 16 : hex
     size_t soPos = line.find('/', pcEnd);
-    if (soPos != std::string::npos) {
+    if (soPos == std::string::npos) {
+        return true;
+    }
+    size_t firstParen = line.find('(', soPos);
+    if (firstParen == std::string::npos) {
         frame.mapName = line.substr(soPos);
+        return true;
+    }
+    frame.mapName = line.substr(soPos, firstParen - soPos);
+    size_t firstParenEnd = firstParen;
+    int parenCount = 1;
+    while (parenCount > 0 && firstParenEnd + 1 < line.size()) {
+        firstParenEnd++;
+        if (line[firstParenEnd] == '(') {
+            parenCount++;
+        } else if (line[firstParenEnd] == ')') {
+            parenCount--;
+        }
+    }
+    if (firstParenEnd >= line.size()) {
+        return true;
+    }
+    std::string firstContent = line.substr(firstParen + 1, firstParenEnd - firstParen - 1);
+    size_t plusPos = firstContent.find('+');
+    if (plusPos == std::string::npos) {
+        frame.buildId = firstContent;
+        return true;
+    }
+    frame.funcName = firstContent.substr(0, plusPos);
+    frame.funcOffset = strtoull(firstContent.substr(plusPos + 1).c_str(), nullptr, 10); // 10 : decimal
+    size_t secondParen = line.find('(', firstParenEnd);
+    if (secondParen != std::string::npos) {
+        size_t secondParenEnd = line.find(')', secondParen);
+        if (secondParenEnd != std::string::npos) {
+            frame.buildId = line.substr(secondParen + 1, secondParenEnd - secondParen - 1);
+        }
     }
     return true;
 }
@@ -570,6 +615,7 @@ static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedSt
         frame.index = index++;
 
         if (!ParseJsFrameStr(line, frame) && !ParseNativeFrameStr(line, frame)) {
+            DFXLOGW("Failed to parse frame: %{public}s", line.c_str());
             continue;
         }
 
@@ -578,7 +624,14 @@ static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedSt
     return frames;
 }
 
-
+/**
+ * @brief main thread stack choose policy function.
+ *
+ * @param pid  process id
+ * @param processStack  input/output process stack
+ * @param mainThreadUserStack  input process main thread user stack
+ * @param fallbackMainThreadStack  input fallback process main thread user stack
+ */
 static void ApplyMainThreadStackPriority(const int32_t pid, std::vector<DfxThreadStack>& processStack,
     const std::string& mainThreadUserStack, const std::string& fallbackMainThreadStack)
 {
