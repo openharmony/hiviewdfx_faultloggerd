@@ -413,6 +413,10 @@ bool DfxJsonFormatter::FormatJsonStack(std::string& jsonStack, std::string& outS
 }
 
 #ifdef __aarch64__
+static const int PC_LEN = 32;
+static const int FRAME_NAME_LEN = 256;
+static const int FUNC_INFO_LEN = 512;
+
 struct FormatKernelStackParams {
     const std::string& kernelStack;
     std::string& formattedStack;
@@ -472,6 +476,10 @@ static size_t FindMainThreadIndex(const std::vector<DfxThreadStack>& processStac
     return std::string::npos;
 }
 
+/**
+ * @brief Parse thread info from stack content.
+ * Format: "Tid:12926, Name:main\nstate=S, utime=15, stime=17, priority=-14, nice=-10, clk=100"
+ */
 static bool ParseThreadInfoFromStack(const std::string& stackContent, int32_t pid,
     std::string& threadName, std::string& threadStat)
 {
@@ -497,7 +505,11 @@ static bool ParseThreadInfoFromStack(const std::string& stackContent, int32_t pi
     return false;
 }
 
-static void ParseFileInfo(const std::string& fileInfo, std::string& fileName, int32_t& line, int32_t& column)
+/**
+ * @brief Parse file info from JS stack frame.
+ * Format: "/path/to/file.js:123:456" -> fileName="/path/to/file.js", line=123, column=456
+ */
+static void ParseJsFileInfo(const std::string& fileInfo, std::string& fileName, int32_t& line, int32_t& column)
 {
     size_t colonPos2 = fileInfo.rfind(':');
     if (colonPos2 == std::string::npos) {
@@ -514,82 +526,80 @@ static void ParseFileInfo(const std::string& fileInfo, std::string& fileName, in
     fileName = fileInfo.substr(0, colonPos1);
 }
 
+/**
+ * @brief Parse JS frame string.
+ * Format: "#01 at symbol1 packageName (/path/to/test1.js:123:456)" or "#01 at symbol1 (/path/to/test1.js:123:456)"
+ * packageName is optional.
+ */
 static bool ParseJsFrameStr(const std::string& line, DfxFrame& frame)
 {
-    size_t atPos = line.find(" at");
-    if (atPos == std::string::npos) {
+    char funcName[FRAME_NAME_LEN] = {0};
+    char packageName[FRAME_NAME_LEN] = {0};
+    char fileInfo[FUNC_INFO_LEN] = {0};
+    int matched = sscanf_s(line.c_str(), "%*s at %255s %255s (%511[^)])",
+        funcName, sizeof(funcName), packageName, sizeof(packageName), fileInfo, sizeof(fileInfo));
+    if (matched < 1) {
         return false;
     }
+
     frame.isJsFrame = true;
-    size_t symbolStart = line.find_first_not_of(' ', atPos + 3); // 3 : " at" length
-    if (symbolStart == std::string::npos) {
-        return true;
+    frame.funcName = funcName;
+    if (matched >= 2) { // 2 : has packageName or fileInfo
+        if (matched == 2 && fileInfo[0] == '\0') {
+            matched = sscanf_s(line.c_str(), "%*s at %255s (%511[^)])",
+                funcName, sizeof(funcName), fileInfo, sizeof(fileInfo));
+            frame.funcName = funcName;
+        } else if (matched >= 3) { // 3 : has both packageName and fileInfo
+            frame.packageName = packageName;
+        }
     }
-    size_t parenPos = line.find('(', symbolStart);
-    if (parenPos == std::string::npos) {
-        return true;
+    if (fileInfo[0] != '\0') {
+        ParseJsFileInfo(fileInfo, frame.mapName, frame.line, frame.column);
     }
-    std::string beforeParen = line.substr(symbolStart, parenPos - symbolStart - 1);
-    size_t firstSpace = beforeParen.find(' ');
-    if (firstSpace != std::string::npos) {
-        frame.funcName = beforeParen.substr(0, firstSpace);
-        frame.packageName = beforeParen.substr(firstSpace + 1);
-    } else {
-        frame.funcName = beforeParen;
-    }
-    size_t parenEnd = line.find(')', parenPos);
-    if (parenEnd != std::string::npos) {
-        std::string fileInfo = line.substr(parenPos + 1, parenEnd - parenPos - 1);
-        ParseFileInfo(fileInfo, frame.mapName, frame.line, frame.column);
-    }
+
     return true;
 }
 
+/**
+ * @brief Parse native frame string.
+ * Format examples:
+ * - "#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1"
+ * - "#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1(81437328e14b7fba0bac6c92e21735b9)"
+ * - "#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1(epoll_wait+84)(81437328e14b7fba0bac6c92e21735b9)"
+ * - "#03 pc 000000000002fab0 /system/lib64/libeventhandler.z.so(WaitFor(long, bool)+276)(e420922c...)"
+ * funcName, funcOffset, and buildId are optional.
+ */
 static bool ParseNativeFrameStr(const std::string& line, DfxFrame& frame)
 {
-    size_t pcPos = line.find("pc");
-    if (pcPos == std::string::npos) {
+    char pcStr[PC_LEN] = {0};
+    char mapName[FRAME_NAME_LEN] = {0};
+    int matched = sscanf_s(line.c_str(), "%*s pc %31s %255[^(]", pcStr, sizeof(pcStr), mapName, sizeof(mapName));
+    if (matched < 2) { // 2 : at least pc and mapName
         return false;
     }
-    size_t pcStart = pcPos + 3; // 3 : pc offset
-    size_t pcEnd = line.find_first_not_of("0123456789abcdefABCDEF", pcStart);
-    if (pcEnd == std::string::npos) {
-        return true;
-    }
-    std::string pcStr = line.substr(pcStart, pcEnd - pcStart);
-    frame.relPc = strtoull(pcStr.c_str(), nullptr, 16); // 16 : hex
-    size_t soPos = line.find('/', pcEnd);
-    if (soPos == std::string::npos) {
-        return true;
-    }
-    size_t firstParen = line.find('(', soPos);
+    frame.relPc = strtoull(pcStr, nullptr, 16); // 16 : hex
+    frame.mapName = mapName;
+    size_t firstParen = line.find('(');
     if (firstParen == std::string::npos) {
-        frame.mapName = line.substr(soPos);
         return true;
     }
-    frame.mapName = line.substr(soPos, firstParen - soPos);
-    size_t firstParenEnd = firstParen;
+    size_t pos = firstParen;
     int parenCount = 1;
-    while (parenCount > 0 && firstParenEnd + 1 < line.size()) {
-        firstParenEnd++;
-        if (line[firstParenEnd] == '(') {
-            parenCount++;
-        } else if (line[firstParenEnd] == ')') {
-            parenCount--;
-        }
+    while (++pos < line.size() && parenCount > 0) {
+        parenCount += (line[pos] == '(') ? 1 : (line[pos] == ')' ? -1 : 0);
     }
-    if (firstParenEnd >= line.size()) {
+    if (parenCount != 0) {
         return true;
     }
-    std::string firstContent = line.substr(firstParen + 1, firstParenEnd - firstParen - 1);
-    size_t plusPos = firstContent.find('+');
+    std::string firstContent = line.substr(firstParen + 1, pos - firstParen - 2); // 2 : exclude ')'
+    size_t plusPos = firstContent.rfind('+');
     if (plusPos == std::string::npos) {
         frame.buildId = firstContent;
         return true;
     }
     frame.funcName = firstContent.substr(0, plusPos);
     frame.funcOffset = strtoull(firstContent.substr(plusPos + 1).c_str(), nullptr, 10); // 10 : decimal
-    size_t secondParen = line.find('(', firstParenEnd);
+    size_t secondParen = line.find('(', pos);
     if (secondParen != std::string::npos) {
         size_t secondParenEnd = line.find(')', secondParen);
         if (secondParenEnd != std::string::npos) {
@@ -599,6 +609,10 @@ static bool ParseNativeFrameStr(const std::string& line, DfxFrame& frame)
     return true;
 }
 
+/**
+ * @brief Parse formatted stack frames from stack string.
+ * Supports both JS and native frame formats. Each line starting with '#' is parsed as a frame.
+ */
 static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedStack)
 {
     std::vector<DfxFrame> frames;
