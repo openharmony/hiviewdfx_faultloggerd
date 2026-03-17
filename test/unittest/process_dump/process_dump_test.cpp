@@ -457,4 +457,94 @@ HWTEST_F(ProcessDumpTest, GetBundleInfoUnittest001, TestSize.Level2) {
 #endif
     GTEST_LOG_(INFO) << "GetBundleInfoUnittest001: end.";
 }
+
+/**
+ * @tc.name: ProcessDumperFileTest001
+ * @tc.desc: test GetFileModificationTime
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDumpTest, ProcessDumperFileTest001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "ProcessDumperFileTest001: start.";
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
+    struct stat fileInfo = {0};
+    fileInfo.st_mtime = 1700000000;
+
+    std::string timeStr = dumper.GetFileModificationTime(fileInfo);
+    EXPECT_FALSE(timeStr.empty());
+    EXPECT_NE(timeStr.find("Last Modified:"), std::string::npos);
+    GTEST_LOG_(INFO) << "GetFileModificationTime output: " << timeStr;
+    GTEST_LOG_(INFO) << "ProcessDumperFileTest001: end.";
+}
+
+/**
+ * @tc.name: ProcessDumperFileTest002
+ * @tc.desc: test ReadFileContent success and fail
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDumpTest, ProcessDumperFileTest002, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "ProcessDumperFileTest002: start.";
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
+    std::string tempFile = "/data/test_read_file.log";
+    std::string content = "test file content";
+
+    FILE* fp = fopen(tempFile.c_str(), "w");
+    if (fp != nullptr) {
+        fprintf(fp, "%s", content.c_str());
+        fclose(fp);
+    }
+
+    std::string readContent = dumper.ReadFileContent(tempFile, content.size());
+    EXPECT_EQ(readContent, content);
+
+    std::string emptyContent = dumper.ReadFileContent("/data/not_exist_file.log", 100);
+    EXPECT_EQ(emptyContent, "");
+
+    unlink(tempFile.c_str());
+    GTEST_LOG_(INFO) << "ProcessDumperFileTest002: end.";
+}
+
+/**
+ * @tc.name: ProcessDumperFileTest003
+ * @tc.desc: test ReadFileWithTimeHeader
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDumpTest, ProcessDumperFileTest003, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "ProcessDumperFileTest003: start.";
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
+    std::string tempFile = "/data/test_header_file.log";
+    std::string content = "log content";
+
+    FILE* fp = fopen(tempFile.c_str(), "w");
+    if (fp != nullptr) {
+        fprintf(fp, "%s", content.c_str());
+        fclose(fp);
+    }
+
+    std::string result = dumper.ReadFileWithTimeHeader(tempFile);
+    EXPECT_NE(result.find("Last Modified:"), std::string::npos);
+    EXPECT_NE(result.find(content), std::string::npos);
+
+    EXPECT_EQ(dumper.ReadFileWithTimeHeader(""), "Error: File path empty");
+
+    unlink(tempFile.c_str());
+    GTEST_LOG_(INFO) << "ProcessDumperFileTest003: end.";
+}
+
+/**
+ * @tc.name: ProcessDumperReadAppLogTest001
+ * @tc.desc: test ReadAppLog path logic
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDumpTest, ProcessDumperReadAppLogTest001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "ProcessDumperReadAppLogTest001: start.";
+    ProcessDumper& dumper = ProcessDumper::GetInstance();
+    dumper.mergeLogString_ = "";
+    dumper.ReadAppLog();
+    EXPECT_FALSE(dumper.mergeLogString_.empty());
+    GTEST_LOG_(INFO) << "ProcessDumperReadAppLogTest001: end.";
+}
 }
