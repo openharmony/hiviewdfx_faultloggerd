@@ -16,10 +16,10 @@
 #include "dfx_json_formatter.h"
 
 #include <cstdlib>
+#include <cerrno>
 #include <chrono>
 #include <future>
 #include <thread>
-#include <regex>
 #include <sstream>
 #include <securec.h>
 #include "dfx_kernel_stack.h"
@@ -413,6 +413,9 @@ bool DfxJsonFormatter::FormatJsonStack(std::string& jsonStack, std::string& outS
 }
 
 #ifdef __aarch64__
+static const int PC_LEN = 32;
+static const int FRAME_NAME_LEN = 256;
+static const int FUNC_INFO_LEN = 512;
 
 struct FormatKernelStackParams {
     const std::string& kernelStack;
@@ -422,6 +425,33 @@ struct FormatKernelStackParams {
     const std::string& fallbackMainThreadStack;
     int32_t pid;
 };
+
+static int32_t ExtractPidFromKernelStack(const std::string& kernelStack)
+{
+    const char* pidMarker = "pid=";
+    size_t pos = kernelStack.find(pidMarker);
+    if (pos == std::string::npos) {
+        return 0;
+    }
+
+    size_t numStart = pos + strlen(pidMarker);
+    size_t numEnd = numStart;
+    while (numEnd < kernelStack.size() && isdigit(static_cast<unsigned char>(kernelStack[numEnd]))) {
+        numEnd++;
+    }
+
+    if (numEnd == numStart) {
+        return 0;
+    }
+
+    errno = 0;
+    char* endPtr = nullptr;
+    long pid = std::strtol(kernelStack.c_str() + numStart, &endPtr, 10); // 10 : decimal
+    if (errno == ERANGE || pid < 0 || pid > INT32_MAX || endPtr != kernelStack.c_str() + numEnd) {
+        return 0;
+    }
+    return static_cast<int32_t>(pid);
+}
 
 static std::string ExtractMainThreadUserStack(std::string& kernelStack)
 {
@@ -446,6 +476,143 @@ static size_t FindMainThreadIndex(const std::vector<DfxThreadStack>& processStac
     return std::string::npos;
 }
 
+/**
+ * @brief Parse thread info from stack content.
+ * Format: "Tid:12926, Name:main\nstate=S, utime=15, stime=17, priority=-14, nice=-10, clk=100"
+ */
+static bool ParseThreadInfoFromStack(const std::string& stackContent, int32_t pid,
+    std::string& threadName, std::string& threadStat)
+{
+    std::istringstream iss(stackContent);
+    std::string line;
+    while (std::getline(iss, line)) {
+        if (line.find("Tid:") == std::string::npos) {
+            continue;
+        }
+        std::string tidMarker = "Tid:" + std::to_string(pid);
+        if (line.find(tidMarker) == std::string::npos) {
+            return false;
+        }
+        size_t namePos = line.find("Name:");
+        if (namePos != std::string::npos) {
+            threadName = line.substr(namePos + 5); // 5 : thread name offset
+        }
+        if (std::getline(iss, line) && line.find("state=") != std::string::npos) {
+            threadStat = line;
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @brief Parse file info from JS stack frame.
+ * Format: "/path/to/file.js:123:456" -> fileName="/path/to/file.js", line=123, column=456
+ */
+static void ParseJsFileInfo(const std::string& fileInfo, std::string& fileName, int32_t& line, int32_t& column)
+{
+    size_t colonPos2 = fileInfo.rfind(':');
+    if (colonPos2 == std::string::npos) {
+        fileName = fileInfo;
+        return;
+    }
+    column = std::atoi(fileInfo.substr(colonPos2 + 1).c_str());
+    size_t colonPos1 = fileInfo.rfind(':', colonPos2 - 1);
+    if (colonPos1 == std::string::npos) {
+        fileName = fileInfo;
+        return;
+    }
+    line = std::atoi(fileInfo.substr(colonPos1 + 1, colonPos2 - colonPos1 - 1).c_str());
+    fileName = fileInfo.substr(0, colonPos1);
+}
+
+/**
+ * @brief Parse JS frame string.
+ * Format: "#01 at symbol1 packageName (/path/to/test1.js:123:456)" or "#01 at symbol1 (/path/to/test1.js:123:456)"
+ * packageName is optional.
+ */
+static bool ParseJsFrameStr(const std::string& line, DfxFrame& frame)
+{
+    char funcName[FRAME_NAME_LEN] = {0};
+    char packageName[FRAME_NAME_LEN] = {0};
+    char fileInfo[FUNC_INFO_LEN] = {0};
+    int matched = sscanf_s(line.c_str(), "%*s at %255s %255s (%511[^)])",
+        funcName, sizeof(funcName), packageName, sizeof(packageName), fileInfo, sizeof(fileInfo));
+    if (matched < 1) {
+        return false;
+    }
+
+    frame.isJsFrame = true;
+    frame.funcName = funcName;
+    if (matched >= 2) { // 2 : has packageName or fileInfo
+        if (matched == 2 && fileInfo[0] == '\0') {
+            matched = sscanf_s(line.c_str(), "%*s at %255s (%511[^)])",
+                funcName, sizeof(funcName), fileInfo, sizeof(fileInfo));
+            frame.funcName = funcName;
+        } else if (matched >= 3) { // 3 : has both packageName and fileInfo
+            frame.packageName = packageName;
+        }
+    }
+    if (fileInfo[0] != '\0') {
+        ParseJsFileInfo(fileInfo, frame.mapName, frame.line, frame.column);
+    }
+
+    return true;
+}
+
+/**
+ * @brief Parse native frame string.
+ * Format examples:
+ * - "#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1"
+ * - "#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1(81437328e14b7fba0bac6c92e21735b9)"
+ * - "#00 pc 0000000000173b8c /system/lib/ld-musl-aarch64.so.1(epoll_wait+84)(81437328e14b7fba0bac6c92e21735b9)"
+ * - "#03 pc 000000000002fab0 /system/lib64/libeventhandler.z.so(WaitFor(long, bool)+276)(e420922c...)"
+ * funcName, funcOffset, and buildId are optional.
+ */
+static bool ParseNativeFrameStr(const std::string& line, DfxFrame& frame)
+{
+    char pcStr[PC_LEN] = {0};
+    char mapName[FRAME_NAME_LEN] = {0};
+    int matched = sscanf_s(line.c_str(), "%*s pc %31s %255[^(]", pcStr, sizeof(pcStr), mapName, sizeof(mapName));
+    if (matched < 2) { // 2 : at least pc and mapName
+        return false;
+    }
+    frame.relPc = strtoull(pcStr, nullptr, 16); // 16 : hex
+    frame.mapName = mapName;
+    size_t firstParen = line.find('(');
+    if (firstParen == std::string::npos) {
+        return true;
+    }
+    size_t pos = firstParen;
+    int parenCount = 1;
+    while (++pos < line.size() && parenCount > 0) {
+        parenCount += (line[pos] == '(') ? 1 : (line[pos] == ')' ? -1 : 0);
+    }
+    if (parenCount != 0) {
+        return true;
+    }
+    std::string firstContent = line.substr(firstParen + 1, pos - firstParen - 2); // 2 : exclude ')'
+    size_t plusPos = firstContent.rfind('+');
+    if (plusPos == std::string::npos) {
+        frame.buildId = firstContent;
+        return true;
+    }
+    frame.funcName = firstContent.substr(0, plusPos);
+    frame.funcOffset = strtoull(firstContent.substr(plusPos + 1).c_str(), nullptr, 10); // 10 : decimal
+    size_t secondParen = line.find('(', pos);
+    if (secondParen != std::string::npos) {
+        size_t secondParenEnd = line.find(')', secondParen);
+        if (secondParenEnd != std::string::npos) {
+            frame.buildId = line.substr(secondParen + 1, secondParenEnd - secondParen - 1);
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief Parse formatted stack frames from stack string.
+ * Supports both JS and native frame formats. Each line starting with '#' is parsed as a frame.
+ */
 static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedStack)
 {
     std::vector<DfxFrame> frames;
@@ -461,19 +628,9 @@ static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedSt
         DfxFrame frame;
         frame.index = index++;
 
-        size_t pcPos = line.find("pc");
-        if (pcPos != std::string::npos) {
-            size_t pcStart = pcPos + 3;
-            size_t pcEnd = line.find_first_not_of("0123456789abcdefABCDEF", pcStart);
-            if (pcEnd != std::string::npos) {
-                std::string pcStr = line.substr(pcStart, pcEnd - pcStart);
-                frame.relPc = strtoull(pcStr.c_str(), nullptr, 16); // 16 : hex
-            }
-
-            size_t soPos = line.find('/', pcEnd);
-            if (soPos != std::string::npos) {
-                frame.mapName = line.substr(soPos);
-            }
+        if (!ParseJsFrameStr(line, frame) && !ParseNativeFrameStr(line, frame)) {
+            DFXLOGW("Failed to parse frame: %{public}s", line.c_str());
+            continue;
         }
 
         frames.emplace_back(frame);
@@ -481,19 +638,50 @@ static std::vector<DfxFrame> ParseFormattedFrames(const std::string& formattedSt
     return frames;
 }
 
-static void ApplyMainThreadStackPriority(std::vector<DfxThreadStack>& processStack,
-    const std::string& mainThreadUserStack, const std::string& fallbackMainThreadStack, int32_t pid)
+/**
+ * @brief main thread stack choose policy function.
+ *
+ * @param pid  process id
+ * @param processStack  input/output process stack
+ * @param mainThreadUserStack  input process main thread user stack
+ * @param fallbackMainThreadStack  input fallback process main thread user stack
+ */
+static void ApplyMainThreadStackPriority(const int32_t pid, std::vector<DfxThreadStack>& processStack,
+    const std::string& mainThreadUserStack, const std::string& fallbackMainThreadStack)
 {
+    std::string updateThreadName;
+    std::string updateThreadStat;
     size_t mainThreadIdx = FindMainThreadIndex(processStack, pid);
     if (mainThreadIdx == std::string::npos) {
+        DFXLOGW("input kernel stack do not have main thread kernel stack.");
+        const std::string& stackSource = !mainThreadUserStack.empty() ? mainThreadUserStack : fallbackMainThreadStack;
+        if (stackSource.empty()) {
+            return;
+        }
+        if (!ParseThreadInfoFromStack(stackSource, pid, updateThreadName, updateThreadStat)) {
+            return;
+        }
+        DfxThreadStack mainThread;
+        mainThread.tid = pid;
+        mainThread.threadName = updateThreadName;
+        mainThread.threadStat = updateThreadStat;
+        mainThread.frames = ParseFormattedFrames(stackSource);
+        processStack.push_back(mainThread);
         return;
     }
 
-    if (!mainThreadUserStack.empty()) {
+    if (!mainThreadUserStack.empty() &&
+        ParseThreadInfoFromStack(mainThreadUserStack, pid, updateThreadName, updateThreadStat)) {
+        processStack[mainThreadIdx].threadName = updateThreadName;
+        processStack[mainThreadIdx].threadStat = updateThreadStat;
         processStack[mainThreadIdx].frames = ParseFormattedFrames(mainThreadUserStack);
-    } else if (processStack[mainThreadIdx].frames.size() <= 3 && // 3 : three stack frames
-               !fallbackMainThreadStack.empty()) {
+        DFXLOGI("change to format main thread user stack.");
+    } else if (processStack[mainThreadIdx].frames.size() <= 3 && !fallbackMainThreadStack.empty() && // 3 : 3 frames
+        ParseThreadInfoFromStack(fallbackMainThreadStack, pid, updateThreadName, updateThreadStat)) {
+        processStack[mainThreadIdx].threadName = updateThreadName;
+        processStack[mainThreadIdx].threadStat = updateThreadStat;
         processStack[mainThreadIdx].frames = ParseFormattedFrames(fallbackMainThreadStack);
+        DFXLOGI("change to format fallback main thread user stack.");
     }
 }
 
@@ -646,16 +834,15 @@ bool FormatKernelStackImpl(const FormatKernelStackParams& params)
     uint32_t timeout = static_cast<uint32_t>(ALARM_TIME_S * 1000);
     uint32_t beginTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds());
 
-    std::string cleanKernelStack = params.kernelStack;
-    std::string mainThreadUserStack = ExtractMainThreadUserStack(cleanKernelStack);
+    std::string pureKernelStack = params.kernelStack;
+    std::string mainThreadUserStack = ExtractMainThreadUserStack(pureKernelStack);
 
     std::vector<DfxThreadStack> processStack;
-    if (!FormatProcessKernelStack(cleanKernelStack, processStack)) {
+    if (!FormatProcessKernelStack(pureKernelStack, processStack)) {
         return false;
     }
 
-    ApplyMainThreadStackPriority(processStack, mainThreadUserStack,
-        params.fallbackMainThreadStack, params.pid);
+    ApplyMainThreadStackPriority(params.pid, processStack, mainThreadUserStack, params.fallbackMainThreadStack);
 
     ParseTime parseTime;
     parseTime.formatKernelStackTime = static_cast<uint32_t>(GetAbsTimeMilliSeconds()) - beginTime;
@@ -681,12 +868,7 @@ bool DfxJsonFormatter::FormatKernelStack(const std::string& kernelStack, std::st
 {
 #ifdef __aarch64__
     ParseSymbolOptions options(needParseSymbol, bundleName);
-    int32_t pid = 0;
-    std::regex pidPattern(R"(pid=(\d+))");
-    std::smatch pidMatch;
-    if (std::regex_search(kernelStack, pidMatch, pidPattern) && pidMatch.size() > 1) {
-        pid = std::stoi(pidMatch[1].str());
-    }
+    int32_t pid = ExtractPidFromKernelStack(kernelStack);
 
     FormatKernelStackParams params {
         .kernelStack = kernelStack,
