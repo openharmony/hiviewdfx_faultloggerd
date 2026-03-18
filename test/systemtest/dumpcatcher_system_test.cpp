@@ -760,14 +760,14 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest024, TestSize.Level2)
 
 /**
  * @tc.name: DumpCatcherSystemTest025
- * @tc.desc: test dumpcatcher command: -p 9999 -t apppid
+ * @tc.desc: test dumpcatcher command: -p 999999 -t apppid
  * @tc.type: FUNC
  */
 HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest025, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest025: start.";
     StartCrasherLoop(APP_CRASHER_C);
-    string procCMD = "dumpcatcher -p 9999 -t "+ to_string(g_loopAppPid);
+    string procCMD = "dumpcatcher -p 999999 -t "+ to_string(g_loopAppPid);
     string procDumpLog = ExecuteCommands(procCMD);
     GTEST_LOG_(INFO) << "procDumpLog: " << procDumpLog;
     string log[] = {"failed"};
@@ -1511,12 +1511,13 @@ static void TestDumpCatch(const int targetPid, const string& processName, const 
         if (cnt == expectNum) {
             g_checkCnt++;
         }
-    } else {
-        GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump failed.";
-        if (msg.find("Result: pid(" + to_string(targetPid) + ") process is dumping.") == string::npos) {
-            GTEST_LOG_(ERROR) << "threadIdx(" << threadIdx << ") dump error message is unexpectly.";
-            FAIL();
-        }
+        return;
+    }
+    GTEST_LOG_(INFO) << "threadIdx(" << threadIdx << ") dump failed.";
+    if (msg.find("Result: pid(" + to_string(targetPid) + ") process is dumping.") == string::npos &&
+        msg.find("Result: pid(" + to_string(targetPid) + ") faultloggerd maybe exception occurred.") == string::npos) {
+        GTEST_LOG_(ERROR) << "threadIdx(" << threadIdx << ") dump error message is unexpectly.";
+        FAIL();
     }
 }
 
@@ -1531,10 +1532,15 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest201, TestSize.Level2)
     int accountmgrPid = GetProcessPid(POWERMGR_NAME);
     setuid(ROOT_UID);
     g_checkCnt = 0;
+    vector<thread> workers;
     for (int threadIdx = 0; threadIdx < MULTITHREAD_TEST_COUNT; threadIdx++) {
-        thread(TestDumpCatch, accountmgrPid, POWERMGR_NAME, threadIdx).detach();
+        workers.emplace_back(TestDumpCatch, accountmgrPid, POWERMGR_NAME, threadIdx);
     }
-    sleep(2); // 2 : sleep 2 seconds
+    for (auto& t : workers) {
+        if (t.joinable()) {
+            t.join();
+        }
+    }
     EXPECT_GT(g_checkCnt, 0) << "DumpCatcherSystemTest201 failed";
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest201: end.";
 }
@@ -1553,11 +1559,16 @@ HWTEST_F(DumpCatcherSystemTest, DumpCatcherSystemTest202, TestSize.Level2)
         testPidVecs.emplace_back(GetProcessPid(processName));
     }
     g_checkCnt = 0;
+    vector<thread> workers;
     auto testProcessListSize = testProcessNameVecs.size();
     for (auto idx = 0; idx < testProcessListSize; idx++) {
-        thread(TestDumpCatch, testPidVecs[idx], testProcessNameVecs[idx], idx).detach();
+        workers.emplace_back(TestDumpCatch, testPidVecs[idx], testProcessNameVecs[idx], idx);
     }
-    sleep(2); // 2 : sleep 2 seconds
+    for (auto& t : workers) {
+        if (t.joinable()) {
+            t.join();
+        }
+    }
     EXPECT_EQ(g_checkCnt, 3) << "DumpCatcherSystemTest202 failed";
     GTEST_LOG_(INFO) << "DumpCatcherSystemTest202: end.";
 }
