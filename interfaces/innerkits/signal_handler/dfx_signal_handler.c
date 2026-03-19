@@ -177,6 +177,23 @@ static void FillLastFatalMessageLocked(int32_t signo)
         lastFatalMessage = GetLastFatalMessage();
     }
 
+    if (lastFatalMessage != NULL && strcmp(lastFatalMessage, "LOG_EXPIRED") == 0) {
+        DFXLOGW("LastFatalMessage expired.");
+        struct CrashDumpException exception;
+        (void)memset_s(&exception, sizeof(struct CrashDumpException), 0, sizeof(struct CrashDumpException));
+        exception.pid = g_request.pid;
+        exception.uid = (int32_t)(g_request.uid);
+        exception.error = CRASH_LOG_EFATALMSG;
+        exception.time = (int64_t)(GetTimeMilliseconds());
+        if (strncpy_s(exception.message, sizeof(exception.message), GetCrashDescription(CRASH_LOG_EFATALMSG),
+            sizeof(exception.message) - 1) != 0) {
+            DFXLOGE("strcpy exception message fail");
+            return;
+        }
+        ReportException(&exception);
+        return;
+    }
+
     g_request.msg.type = MESSAGE_FATAL;
     g_request.msg.addr = (uintptr_t)lastFatalMessage;
 }
