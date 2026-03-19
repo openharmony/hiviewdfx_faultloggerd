@@ -94,7 +94,7 @@ private:
     static constexpr size_t DEFAULT_MAX_STRING_LEN = 2048;
     bool isJsonDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
-    std::future<void> initUnwinderFinishFuture_;
+    std::future<void> createMapsFuture_;
 #if defined(__aarch64__) && !defined(is_ohos_lite)
     std::unique_ptr<CoredumpManager> coredumpManager_;
 #endif
@@ -104,6 +104,7 @@ private:
     uint64_t crashDetachTime_ = 0;
     std::string mergeLogString_ = "";
     std::thread mergeLogThread_;
+    std::shared_ptr<DfxMaps> dfxMaps_ = nullptr;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
