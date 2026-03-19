@@ -269,7 +269,8 @@ bool DfxMaps::IsArkHapMapItem(const std::string& name)
     if (name.empty()) {
         return false;
     }
-    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp") || EndsWith(name, ".hqf")) {
+    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp") || EndsWith(name, ".hqf")
+        || StartsWith(name, "[anon:ArkTS Code:/") || EndsWith(name, ".abc")) {
         return true;
     }
     return false;
@@ -280,7 +281,7 @@ bool DfxMaps::IsArkCodeMapItem(const std::string& name)
     if (name.empty()) {
         return false;
     }
-    if (StartsWith(name, "[anon:ArkTS Code") || EndsWith(name, ".abc")) {
+    if (StartsWith(name, "[anon:ArkTS Code") && !StartsWith(name, "[anon:ArkTS Code:/")) {
         return true;
     }
     return false;
