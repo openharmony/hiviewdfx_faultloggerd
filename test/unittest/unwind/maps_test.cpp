@@ -30,14 +30,18 @@ namespace HiviewDFX {
 namespace {
 const string INVALID_MAP_NAME = "/system/lib64/init/libinit_context111.z.so";
 const string ADLT_MAP_NAME = "/system/lib/libadlt_app.so";
+const string ARK_HAP_MAP_NAME = "/system/app/SceneBoard/SceneBoard.hap";
+const string ARK_HAP_MAP_NAME_HSP = "/system/app/SceneBoard/pcmode.hsp";
+const string ARK_HAP_MAP_NAME_HQF = "/system/app/test/test.hqf";
+const string ARK_HAP_MAP_NAME_ANON = "[anon:ArkTS Code:/system/etc/abc/arkui/node.abc]";
+const string ARK_HAP_MAP_NAME_ABC = "/system/etc/abc/arkui/node.abc";
+const string ARK_CODE_MAP_NAME = "[anon:ArkTS Code:libdialog.z.so/Dialog.js]";
 #ifdef __arm__
 const string MAPS_FILE = "/data/test/resource/testdata/testmaps_32";
 const string VALID_MAP_NAME = "/system/lib/init/libinit_context.z.so";
 const string VALID_MAP_ITEM = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context.z.so";
 const string INVALID_MAP_ITEM = "f6d83000-f6d84000 r--p 00001000 b3:07 1892 /system/lib/init/libinit_context111.z.so";
 const string VDSO_MAP_ITEM = "f7c21000-f7c22000 r-xp 00000000 00:00 0                                  [vdso]";
-const string ARK_HAP_MAP_NAME = "/system/app/SceneBoard/SceneBoard.hap";
-const string ARK_CODE_MAP_NAME = "[anon:ArkTS Code:libdialog.z.so/Dialog.js]";
 #define ADLT_MAP_LOAD_BASE 0xa0400000
 #else
 const string MAPS_FILE = "/data/test/resource/testdata/testmaps_64";
@@ -46,8 +50,6 @@ const string VALID_MAP_ITEM = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 /s
 const string INVALID_MAP_ITEM = "7f0ab40000-7f0ab41000 r--p 00000000 b3:07 1882 \
     /system/lib64/init/libinit_context111.z.so";
 const string VDSO_MAP_ITEM = "7f8b9df000-7f8b9e0000 r-xp 00000000 00:00 0                              [vdso]";
-const string ARK_HAP_MAP_NAME = "/system/app/SceneBoard/SceneBoard.hap";
-const string ARK_CODE_MAP_NAME = "[anon:ArkTS Code:libdialog.z.so/Dialog.js]";
 #define ADLT_MAP_LOAD_BASE 0x5aa0400000
 #endif
 }
@@ -315,6 +317,10 @@ HWTEST_F(MapsTest, IsLegalMapItemTest, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsLegalMapItemTest: start.";
     ASSERT_TRUE(DfxMaps::IsArkHapMapItem(ARK_HAP_MAP_NAME));
+    ASSERT_TRUE(DfxMaps::IsArkHapMapItem(ARK_HAP_MAP_NAME_HSP));
+    ASSERT_TRUE(DfxMaps::IsArkHapMapItem(ARK_HAP_MAP_NAME_HQF));
+    ASSERT_TRUE(DfxMaps::IsArkHapMapItem(ARK_HAP_MAP_NAME_ANON));
+    ASSERT_TRUE(DfxMaps::IsArkHapMapItem(ARK_HAP_MAP_NAME_ABC));
     ASSERT_TRUE(DfxMaps::IsArkCodeMapItem(ARK_CODE_MAP_NAME));
     ASSERT_TRUE(DfxMaps::IsLegalMapItem(ARK_CODE_MAP_NAME));
     ASSERT_TRUE(DfxMaps::IsLegalMapItem("[anon:JSVM_JIT]"));
