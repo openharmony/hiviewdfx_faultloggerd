@@ -17,6 +17,7 @@
 
 #include <cinttypes>
 #include <mutex>
+#include <shared_mutex>
 #include <memory>
 #include <string>
 #include <vector>
@@ -48,7 +49,13 @@ union Node {
         uint64_t pc : ADDR_BIT_LENGTH;
         uint64_t prevIdx : IDX_BIT_LENGTH;
     } section;
-};
+
+    inline bool CompareExchangeStrong(uint64_t desired, uint64_t& expected)
+    {
+        return __atomic_compare_exchange_n(&value, &expected, desired,
+            false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE);
+    }
+}__attribute__((aligned(8)));
 
 struct UniStackNode {
     uint32_t index;
@@ -145,12 +152,17 @@ public:
         return reinterpret_cast<Node *>(stackTable_.tableBufMMap);
     }
 
+    inline bool IsTableValid() const
+    {
+        return stackTable_.tableBufMMap != nullptr;
+    }
+
 private:
     Node* GetFrame(uint64_t stackId);
     uint64_t PutPcInSlot(uint64_t thisPc, uint64_t prevIdx);
     int32_t pid_ = 0;
     uint16_t deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
-    std::mutex stackTableMutex_;
+    mutable std::shared_mutex structureMutex_;
     StackTable stackTable_;
     std::unique_ptr<StackTable> snapshot_;
     bool profilerInit_ = false;

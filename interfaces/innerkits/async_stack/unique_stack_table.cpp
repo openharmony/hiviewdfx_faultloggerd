@@ -32,9 +32,9 @@ UniqueStackTable* UniqueStackTable::Instance()
 
 bool UniqueStackTable::Init()
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
+    std::unique_lock<std::shared_mutex> writelock(structureMutex_);
     // index 0 for reserved
-    if (stackTable_.tableBufMMap != nullptr) {
+    if (IsTableValid()) {
         return true;
     }
     stackTable_.availableIndex = 1;
@@ -68,7 +68,7 @@ bool UniqueStackTable::Init()
 bool UniqueStackTable::SwitchExternalBuffer(void* buffer, size_t size)
 {
     if (buffer == nullptr) {
-        std::lock_guard<std::mutex> guard(stackTableMutex_);
+        std::unique_lock<std::shared_mutex> writelock(structureMutex_);
         if (snapshot_) {
             stackTable_ = std::move(*snapshot_);
             snapshot_.reset();
@@ -83,7 +83,7 @@ bool UniqueStackTable::SwitchExternalBuffer(void* buffer, size_t size)
 
 bool UniqueStackTable::InitWithExternalBuffer(void* buffer, size_t size)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
+    std::unique_lock<std::shared_mutex> writelock(structureMutex_);
     if (snapshot_) {
         DFXLOGW("External buffer already initialized!\n");
         return false;
@@ -119,8 +119,8 @@ bool UniqueStackTable::InitWithExternalBuffer(void* buffer, size_t size)
 
 bool UniqueStackTable::Resize()
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
-    if (stackTable_.tableBufMMap == nullptr) {
+    std::unique_lock<std::shared_mutex> writelock(structureMutex_);
+    if (!IsTableValid()) {
         DFXLOGW("[%{public}d]: Hashtable not exist, fatal error!", __LINE__);
         return false;
     }
@@ -165,31 +165,31 @@ bool UniqueStackTable::Resize()
 
 uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 {
-    Node *tableHead = reinterpret_cast<Node *>(stackTable_.tableBufMMap);
-    if (stackTable_.hashModulus == 0) {
-        DFXLOGW("The value of the hashModulus_ is zero\n");
+    Node *tableHead = GetHeadNode();
+    if (tableHead == nullptr || stackTable_.hashModulus == 0) {
+        DFXLOGW("Invalid table state\n");
         return 0;
     }
     uint64_t curPcIdx = (((thisPc >> 2) ^ (prevIdx << 4)) % stackTable_.hashModulus) + stackTable_.availableIndex;
-    uint8_t currentDeconflictTimes_ = deconflictTimes_;
+    uint8_t currentDeconflictTimes = deconflictTimes_;
 
     Node node;
     node.section.pc = thisPc;
     node.section.prevIdx = prevIdx;
-    while (currentDeconflictTimes_--) {
+    while (currentDeconflictTimes--) {
         Node* tableNode = (Node*)tableHead + curPcIdx;
 
         // empty case
-        if (tableNode->value == 0) {
-            tableNode->value = node.value;
+        uint64_t expected = 0;
+        if (tableNode->CompareExchangeStrong(node.value, expected)) {
             return curPcIdx;
         }
         // already inserted
-        if (tableNode->value == node.value) {
+        if (expected == node.value) {
             return curPcIdx;
         }
 
-        curPcIdx += currentDeconflictTimes_ * stackTable_.hashStep + 1;
+        curPcIdx += currentDeconflictTimes * stackTable_.hashStep + 1;
         if (stackTable_.availableNodes == 0) {
             return 0;
         }
@@ -203,8 +203,8 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 
 uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, const uintptr_t* pcs, size_t nr)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
-    if (stackTable_.tableBufMMap == nullptr) {
+    std::shared_lock<std::shared_mutex> readlock(structureMutex_);
+    if (!IsTableValid()) {
         return 0;
     }
     int64_t reverseIndex = static_cast<int64_t>(nr);
@@ -227,8 +227,8 @@ uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, const uintptr_t* pcs,
 
 size_t UniqueStackTable::GetWriteSize()
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
-    if (stackTable_.tableBufMMap == nullptr) {
+    std::shared_lock<std::shared_mutex> readlock(structureMutex_);
+    if (!IsTableValid()) {
         DFXLOGW("[%{public}d]: Hashtable not exist, fatal error!", __LINE__);
         return 0;
     }
@@ -244,7 +244,7 @@ size_t UniqueStackTable::GetWriteSize()
 
 Node* UniqueStackTable::GetFrame(uint64_t stackId)
 {
-    Node *tableHead = reinterpret_cast<Node *>(stackTable_.tableBufMMap);
+    Node *tableHead = GetHeadNode();
     if (stackId >= stackTable_.totalNodes) {
         // should not occur
         DFXLOGW("Failed to find frame by index: %{public}" PRIu64 "", stackId);
@@ -256,11 +256,11 @@ Node* UniqueStackTable::GetFrame(uint64_t stackId)
 
 bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& pcs)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
+    std::shared_lock<std::shared_mutex> readlock(structureMutex_);
     if (profilerInit_) {
         return false;
     }
-    if (stackTable_.tableBufMMap == nullptr) {
+    if (!IsTableValid()) {
         DFXLOGW("Hashtable not exist, failed to find frame!");
         return false;
     }
@@ -280,11 +280,11 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
 
 bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& pcs, bool isProfiler)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
+    std::shared_lock<std::shared_mutex> readlock(structureMutex_);
     if (!isProfiler) {
         return false;
     }
-    if (stackTable_.tableBufMMap == nullptr) {
+    if (!IsTableValid()) {
         DFXLOGW("Hashtable not exist, failed to find frame!");
         return false;
     }
@@ -304,8 +304,8 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
 
 bool UniqueStackTable::ImportNode(uint32_t index, const Node& node)
 {
-    std::lock_guard<std::mutex> guard(stackTableMutex_);
-    Node *tableHead = reinterpret_cast<Node *>(stackTable_.tableBufMMap);
+    std::unique_lock<std::shared_mutex> writelock(structureMutex_);
+    Node *tableHead = GetHeadNode();
     if (index >= stackTable_.tableSize) {
         return false;
     }
