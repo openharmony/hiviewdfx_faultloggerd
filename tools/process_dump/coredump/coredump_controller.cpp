@@ -25,6 +25,7 @@ namespace HiviewDFX {
 namespace {
     constexpr const char* const COREDUMP_HAP_LIST = "const.dfx.coredump.hap_list";
     constexpr const char* const HWASAN_COREDUMP_ENABLE = "faultloggerd.priv.hwasan_coredump.enabled";
+    constexpr const char* const MDM_COREDUMP_DISABLED = "persist.edm.coredump_disable";
 }
 
 std::string CoredumpController::GetCoredumpHapList()
@@ -37,6 +38,12 @@ bool CoredumpController::IsHwasanCoredumpEnabled()
 {
     static bool isHwasanCoredumpEnabled = OHOS::system::GetParameter(HWASAN_COREDUMP_ENABLE, "false") == "true";
     return isHwasanCoredumpEnabled;
+}
+
+bool CoredumpController::IsMdmCoredumpDisabled()
+{
+    static bool isMdmCoredumpDisabled = OHOS::system::GetParameter(MDM_COREDUMP_DISABLED, "false") == "true";
+    return isMdmCoredumpDisabled;
 }
 
 bool CoredumpController::IsCoredumpSignal(const ProcessDumpRequest& request)
@@ -69,6 +76,11 @@ bool CoredumpController::VerifyProcess()
 
 bool CoredumpController::IsCoredumpAllowed(const ProcessDumpRequest& request)
 {
+    if (IsMdmCoredumpDisabled()) {
+        DFXLOGI("Coredump is disabled by MDM policy");
+        return false;
+    }
+
     if (IsCoredumpSignal(request) || (request.siginfo.si_signo == SIGABRT && IsHwasanCoredumpEnabled())) {
         return true;
     }
