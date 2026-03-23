@@ -31,8 +31,8 @@ public:
     // for local
     Unwinder(bool needMaps = true);
     // for remote
-    Unwinder(int pid, bool crash = true);
-    Unwinder(int pid, int nspid, bool crash);
+    Unwinder(int pid, bool crash = true, std::shared_ptr<DfxMaps> maps = nullptr);
+    Unwinder(int pid, int nspid, bool crash, std::shared_ptr<DfxMaps> maps = nullptr);
     // for customized
     Unwinder(std::shared_ptr<UnwindAccessors> accessors, bool local = false);
     ~Unwinder() = default;

@@ -162,20 +162,16 @@ DumpErrorCode ProcessDumper::DumpProcess()
 
 std::future<DumpErrorCode> ProcessDumper::AsyncInitialization()
 {
-    std::promise<void> initUnwinderFinish;
-    initUnwinderFinishFuture_ = initUnwinderFinish.get_future();
-    return std::async(std::launch::async, [this, initFinish = std::move(initUnwinderFinish)] () mutable {
-        DumpErrorCode dumpRes = DumpErrorCode::DUMP_ESUCCESS;
-        if (!InitUnwinder(dumpRes)) {
-            initFinish.set_value();
-            return dumpRes;
-        }
+    std::promise<void> createMapsFinish;
+    createMapsFuture_ = createMapsFinish.get_future();
+    return std::async(std::launch::async, [this, initFinish = std::move(createMapsFinish)] () mutable {
+        dfxMaps_ = DfxMaps::Create(request_.nsPid, request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH, false);
         initFinish.set_value();
         if (!DfxBufferWriter::GetInstance().InitBufferWriter(request_)) {
             DFXLOGE("Failed to init buffer writer.");
             return DumpErrorCode::DUMP_EGETFD;
         }
-        return dumpRes;
+        return DumpErrorCode::DUMP_ESUCCESS;
     });
 }
 
@@ -205,8 +201,15 @@ DumpErrorCode ProcessDumper::DumpPreparation()
         return DumpErrorCode::DUMP_COREDUMP;
     }
 #endif
+    DumpErrorCode dumpRes = DumpErrorCode::DUMP_ESUCCESS;
     if (initTask.valid()) {
-        return initTask.get(); // wait init task finish
+        dumpRes = initTask.get(); // wait init task finish
+        if (dumpRes != DumpErrorCode::DUMP_ESUCCESS) {
+            return dumpRes;
+        }
+    }
+    if (!InitUnwinder(dumpRes)) {
+        return dumpRes;
     }
     return DumpErrorCode::DUMP_ESUCCESS;
 }
@@ -601,7 +604,7 @@ bool ProcessDumper::InitUnwinder(DumpErrorCode &dumpRes)
     UnwinderConfig::SetEnableLoadSymbolLazily(true);
 #endif
     bool crash = request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH;
-    unwinder_ = std::make_shared<Unwinder>(request_.pid, request_.nsPid, crash);
+    unwinder_ = std::make_shared<Unwinder>(process_->GetVmPid(), process_->GetVmPid(), crash, dfxMaps_);
     unwinder_->EnableParseNativeSymbol(false);
     if (unwinder_->GetMaps() == nullptr) {
         ReportCrashException(CrashExceptionCode::CRASH_LOG_EMAPLOS);
@@ -669,8 +672,8 @@ int ProcessDumper::ReadVmPid()
 #endif
     // freeze and coredump detach target processdump after fork child to fork vm process
     if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH || isCoredumpSignal) {
-        if (initUnwinderFinishFuture_.valid()) {
-            initUnwinderFinishFuture_.get();
+        if (createMapsFuture_.valid()) {
+            createMapsFuture_.get();
         }
         process_->Detach();
         DFXLOGI("ptrace detach all tids");

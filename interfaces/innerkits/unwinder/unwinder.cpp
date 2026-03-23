@@ -61,27 +61,27 @@ public:
     }
 
     // for remote
-    Impl(int pid, bool crash) : pid_(pid)
+    Impl(int pid, bool crash, std::shared_ptr<DfxMaps> maps) : pid_(pid)
     {
         if (pid <= 0) {
             DFXLOGE("pid(%{public}d) error", pid);
             return;
         }
         DfxEnableTraceDlsym(true);
-        maps_ = DfxMaps::Create(pid, crash);
+        maps_ = maps == nullptr ? DfxMaps::Create(pid, crash) : maps;
         enableFpCheckMapExec_ = true;
         memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
         Init();
     }
 
-    Impl(int pid, int nspid, bool crash) : pid_(nspid)
+    Impl(int pid, int nspid, bool crash, std::shared_ptr<DfxMaps> maps) : pid_(nspid)
     {
         if (pid <= 0 || nspid <= 0) {
             DFXLOGE("pid(%{public}d) or nspid(%{public}d) error", pid, nspid);
             return;
         }
         DfxEnableTraceDlsym(true);
-        maps_ = DfxMaps::Create(pid, crash, false);
+        maps_ = maps == nullptr ? DfxMaps::Create(pid, crash, false) : maps;
         enableFpCheckMapExec_ = true;
         isCrash_ = crash;
         memory_ = std::make_shared<DfxMemory>(UNWIND_TYPE_REMOTE);
@@ -328,11 +328,13 @@ Unwinder::Unwinder(bool needMaps) : impl_(std::make_shared<Impl>(needMaps))
 }
 
 // for remote
-Unwinder::Unwinder(int pid, bool crash) : impl_(std::make_shared<Impl>(pid, crash))
+Unwinder::Unwinder(int pid, bool crash, std::shared_ptr<DfxMaps> maps)
+    : impl_(std::make_shared<Impl>(pid, crash, maps))
 {
 }
 
-Unwinder::Unwinder(int pid, int nspid, bool crash) : impl_(std::make_shared<Impl>(pid, nspid, crash))
+Unwinder::Unwinder(int pid, int nspid, bool crash, std::shared_ptr<DfxMaps> maps)
+    : impl_(std::make_shared<Impl>(pid, nspid, crash, maps))
 {
 }
 
@@ -1366,7 +1368,8 @@ void Unwinder::Impl::ParseFrameSymbol(DfxFrame& frame)
     if (frame.map == nullptr) {
         return;
     }
-    auto elf = frame.map->GetElf();
+    pid_t pid = pid_ <= 0 ? getpid() : pid_;
+    auto elf = frame.map->GetElf(pid);
     if (elf == nullptr) {
         return;
     }
@@ -1388,9 +1391,10 @@ void Unwinder::Impl::FillFrame(DfxFrame& frame, bool needSymParse)
     std::string mapName = frame.map->GetElfName();
     frame.mapName = mapName;
     DFX_TRACE_SCOPED_DLSYM("FillFrame:%s", frame.mapName.c_str());
+    pid_t pid = pid_ <= 0 ? getpid() : pid_;
+    auto elf = frame.map->GetElf(pid);
     frame.relPc = frame.map->GetRelPc(frame.pc);
     frame.mapOffset = frame.map->offset;
-    auto elf = frame.map->GetElf();
     if (elf == nullptr) {
         return;
     }
