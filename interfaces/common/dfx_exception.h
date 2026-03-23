@@ -60,6 +60,7 @@ enum CrashExceptionCode : int32_t {
     CRASH_LOG_EHILOGLOS,                /* Hilog not found */
     CRASH_LOG_ESUMMARYLOS,              /* Fault Summary not found */
     CRASH_LOG_EPROCESS_LIFECYCLE,       /* Process lifecycle is null */
+    CRASH_LOG_EFATALMSG,                /* Fatal message expired */
 
     CRASH_UNKNOWN = 500,                /* Unknown reason */
 };
@@ -103,6 +104,7 @@ static inline const char* GetCrashDescription(int32_t errCode)
         { CRASH_LOG_EHILOGLOS,       "Hilog not found." },
         { CRASH_LOG_ESUMMARYLOS,     "Fault Summary not found." },
         { CRASH_LOG_EPROCESS_LIFECYCLE, "Life Cycle timestamp invalid"},
+        { CRASH_LOG_EFATALMSG,       "Fatal message expired" },
     };
     for (uint8_t i = 0; i < sizeof(crashExceptions) / sizeof(crashExceptions[0]); i++) {
         if (errCode == crashExceptions[i].errCode) {
