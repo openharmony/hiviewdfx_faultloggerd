@@ -43,7 +43,6 @@ public:
     void Report(DfxProcess& process, const ProcessDumpRequest &request);
 private:
     void ReportToHiview(DfxProcess& process, const ProcessDumpRequest &request);
-    void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request);
     std::string GetRegsString(std::shared_ptr<DfxRegs> regs);
     SmartFd TranferCrashInfoToHiview(const std::string& cppCrashInfo);
     std::string GetSummary(DfxProcess& process);
@@ -53,6 +52,8 @@ class AddrSanitizerReporter : public Reporter {
 public:
     void Report(DfxProcess& process, const ProcessDumpRequest &request);
 };
+
+void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request);
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

@@ -62,11 +62,6 @@ void CppCrashReporter::Report(DfxProcess& process, const ProcessDumpRequest &req
     } else {
         DFXLOGW("Do not to report to hiview, because hiview is crashed.");
     }
-    if (process.GetProcessInfo().processName.find(FOUNDATION_PROCESS_NAME) == std::string::npos) {
-        ReportToAbilityManagerService(process, request);
-    } else {
-        DFXLOGW("Do not to report to AbilityManagerService, because foundation is crashed.");
-    }
 }
 
 void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequest &request)
@@ -163,8 +158,12 @@ SmartFd CppCrashReporter::TranferCrashInfoToHiview(const std::string& cppCrashIn
     return readFd;
 }
 
-void CppCrashReporter::ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request)
+void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request)
 {
+    if (process.GetProcessInfo().processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
+        DFXLOGW("Do not to report to AbilityManagerService, because foundation is crashed.");
+        return;
+    }
     std::shared_ptr<void> handle(dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE), [] (void* handle) {
         if (handle != nullptr) {
             dlclose(handle);
