@@ -39,4 +39,26 @@ if (!defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+
+  ohos_source_set("dfx_limited_src_cfi") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
+    public_configs = [ ":dfx_limited_config" ]
+    sources = [
+      "faultlog_client.c",
+    ]
+    defines = [ "DFX_LOG_HILOG_BASE" ]
+    deps = [
+      "$faultloggerd_common_path/cutil:dfx_cutil_cfi",
+    ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "c_utils:utils",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
 }

@@ -45,13 +45,18 @@ if (defined(ohos_lite)) {
 
   ohos_shared_library("libdfx_procinfo") {
     branch_protector_ret = "pac_ret"
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
     public_configs = [
       ":dfx_procinfo_config",
       "$faultloggerd_path/common/build:coverage_flags",
     ]
     sources = [ "procinfo.cpp" ]
 
-    deps = [ "$faultloggerd_path/common/dfxutil:dfx_util" ]
+    deps = [ "$faultloggerd_path/common/dfxutil:dfx_util_cfi" ]
     version_script = "libprocinfo.map"
     external_deps = [
       "bounds_checking_function:libsec_shared",

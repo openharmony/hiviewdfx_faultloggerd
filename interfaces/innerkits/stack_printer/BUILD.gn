@@ -25,6 +25,11 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libstack_printer") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }    
     sources = [ "src/stack_printer.cpp" ]
 
     public_configs = [ ":stack_printer_config" ]

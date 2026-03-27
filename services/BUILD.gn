@@ -149,6 +149,11 @@ if (defined(ohos_lite)) {
   }
 
   ohos_executable("faultloggerd") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
     install_enable = true
     configs = [
       ":faultloggerd_config",
@@ -156,7 +161,6 @@ if (defined(ohos_lite)) {
     ]
     sources = faultloggerd_sources
     sources += [ "main.cpp" ]
-    cflags = [ "-fstack-protector-strong" ]
     cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
     defines = [ "DFX_ENABLE_TRACE" ]
 
@@ -166,10 +170,10 @@ if (defined(ohos_lite)) {
       ":faultloggerd.para.dac",
       ":faultloggerd_config.json",
       ":fault_coredump.json",
-      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
+      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_path/common/dfxutil:dfx_util",
-      "$faultloggerd_path/common/trace:dfx_trace",
+      "$faultloggerd_path/common/dfxutil:dfx_util_cfi",
+      "$faultloggerd_path/common/trace:dfx_trace_cfi",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     ]
 

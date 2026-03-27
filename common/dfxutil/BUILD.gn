@@ -70,6 +70,25 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  ohos_static_library("dfx_util_cfi") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }    
+    sources = dfx_util_sources
+    public_configs = [ ":dfx_util_config" ]
+    deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_cfi" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "c_utils:utils",
+      "hilog:libhilog",
+      "init:libbegetutil",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
   ohos_static_library("dfx_util_static") {
     sources = dfx_util_sources
     include_dirs = [ "$faultloggerd_common_path/dfxlog" ]

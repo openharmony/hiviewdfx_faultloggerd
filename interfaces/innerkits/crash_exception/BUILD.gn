@@ -43,6 +43,11 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("crash_exception") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
     sources = crash_exception_sources
     public_configs = [ ":crash_exception_config" ]
     version_script = "libcrash_exception.map"
