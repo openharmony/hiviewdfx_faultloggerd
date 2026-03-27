@@ -413,7 +413,7 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
         DumpUtils::BlockCrashProcExit(request_);
         ReportToAbilityManagerService(*process_, request_);
     }
-    if (!DumpUtils::IsSelinuxPermissive()) {
+    if (!DumpUtils::IsSelinuxPermissive() && request_.uid > 10000) { // 10000 : min app uid
         process_->Detach();  // crash scene
         crashDetachTime_ = GetTimeMillisec();
     }
