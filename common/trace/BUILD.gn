@@ -47,6 +47,26 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
+  ohos_source_set("dfx_trace_dlsym_cfi") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
+    public_configs = [ ":dfx_trace_config" ]
+    defines = [
+      "DFX_ENABLE_TRACE",
+      "is_ohos=${is_ohos}",
+      "is_mingw=${is_mingw}",
+    ]
+    sources = [ "dfx_trace_dlsym.cpp" ]
+    if (is_ohos && !is_mingw) {
+      external_deps = [ "bounds_checking_function:libsec_shared" ]
+    }
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
   ohos_source_set("dfx_trace_dlsym_static") {
     public_configs = [ ":dfx_trace_config" ]
     defines = [
@@ -68,6 +88,23 @@ if (defined(ohos_lite)) {
     defines = [ "DFX_ENABLE_TRACE" ]
     sources = [ "dfx_trace.cpp" ]
     cflags = [ "-fstack-protector-strong" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "hitrace:hitrace_meter",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }
+
+  ohos_source_set("dfx_trace_cfi") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
+    public_configs = [ ":dfx_trace_config" ]
+    defines = [ "DFX_ENABLE_TRACE" ]
+    sources = [ "dfx_trace.cpp" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "hitrace:hitrace_meter",

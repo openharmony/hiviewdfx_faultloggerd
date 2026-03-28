@@ -238,10 +238,10 @@ if (defined(ohos_lite)) {
     }
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog",
-      "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_common_path/trace:dfx_trace",
-      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
+      "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
+      "$faultloggerd_common_path/trace:dfx_trace_cfi",
+      "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
@@ -249,7 +249,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/stack_printer:libstack_printer",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
-      "$faultloggerd_frameworks_path/limited:dfx_limited_src",
+      "$faultloggerd_frameworks_path/limited:dfx_limited_src_cfi",
     ]
 
     external_deps = [

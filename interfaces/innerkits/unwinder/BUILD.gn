@@ -165,6 +165,11 @@ if (defined(ohos_lite)) {
 
   ohos_shared_library("libunwinder") {
     branch_protector_ret = "pac_ret"
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
@@ -185,9 +190,9 @@ if (defined(ohos_lite)) {
     sources += dfx_dwarf_sources
 
     deps = [
-      "$faultloggerd_common_path/dfxlog:dfx_hilog",
-      "$faultloggerd_common_path/dfxutil:dfx_util",
-      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
+      "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym_cfi",
     ]
 
     version_script = "libunwinder.map"

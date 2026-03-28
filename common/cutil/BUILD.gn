@@ -39,4 +39,17 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
+
+  ohos_static_library("dfx_cutil_cfi") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
+    sources = [ "dfx_cutil.c" ]
+    public_configs = [ ":dfx_cutil_config" ]
+    external_deps = [ "bounds_checking_function:libsec_shared" ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+  }  
 }
