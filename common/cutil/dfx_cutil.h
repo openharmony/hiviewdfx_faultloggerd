@@ -40,6 +40,10 @@ AT_SYMBOL_HIDDEN bool IsNoNewPriv(const char* statusPath);
 
 AT_SYMBOL_HIDDEN bool SafeStrtol(const char* numStr, long* out, int base);
 
+AT_SYMBOL_HIDDEN void SafeDelayOneMillSec(void);
+
+AT_SYMBOL_HIDDEN int TidToNstid(const int pid, const int tid);
+
 #ifdef __cplusplus
 }
 #endif

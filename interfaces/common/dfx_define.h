@@ -75,6 +75,7 @@ static const int PROC_STAT_BUF_SIZE = 512;
 static const int PROC_STATM_BUF_SIZE = 512;
 static const int PRIV_STACK_FORWARD_BUF_SIZE = 32 * 8;  // 32 for print fault stack
 static const int PRIV_COPY_STACK_BUFFER_SIZE = 64 * 1024 + PRIV_STACK_FORWARD_BUF_SIZE;  // 64k for unwind stack
+static const int THREAD_STACK_BUFFER_SIZE = 64 * 1024;  // 64k for unwind stack
 static const int ARKWEB_JIT_SYMBOL_BUF_SIZE = 10 * 1024 * 1024; // 10M for read arkweb jit symbol
 
 static const char* const PROC_SELF_STATUS_PATH = "/proc/self/status";
@@ -86,6 +87,7 @@ static const char* const PROC_SELF_EXE_PATH = "/proc/self/exe";
 static const char* const PROC_SELF_SMAPS_ROLLUP_PATH = "/proc/self/smaps_rollup";
 static const char* const ADLT_PATH_NAME_START = "/system/lib/libadlt";
 static const char* const SANDBOX_FILE_PATH_PREFIX = "/data/storage/";
+static const char* const NSPID_STR_NAME = "NSpid:";
 #ifdef DFX_LOG_HILOG_BASE
 static const char* const PROCESSDUMP_PATH = "/system/bin/processdump";
 #else

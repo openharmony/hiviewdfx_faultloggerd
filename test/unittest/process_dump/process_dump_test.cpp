@@ -43,7 +43,7 @@ class ProcessDumpTest : public testing::Test {
 public:
     void SetUp() override
     {
-        pipe(g_pipeFd);
+        pipe2(g_pipeFd, O_NONBLOCK);
         int newSize = 1024 * 1024; // 1MB
         fcntl(g_pipeFd[PIPE_WRITE], F_SETPIPE_SZ, newSize);
     }

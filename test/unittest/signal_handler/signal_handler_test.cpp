@@ -1183,6 +1183,18 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest005, TestSize.Level2)
 }
 
 /**
+ * @tc.name: WriteStack001
+ * @tc.desc: test WriteStack
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, WriteStack001, TestSize.Level2)
+{
+    MMapMemoryOnce();
+    EXPECT_TRUE(WriteStack(g_pipeFd[PIPE_WRITE]));
+    UnmapMemoryOnce();
+}
+
+/**
  * @tc.name: DfxLiteDumperTest006
  * @tc.desc: add test case liteDump open files
  * @tc.type: FUNC

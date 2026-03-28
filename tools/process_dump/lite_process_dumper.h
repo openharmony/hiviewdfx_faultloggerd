@@ -46,14 +46,18 @@ private:
     void ReadStat(int pipeReadFd);
     void ReadStatm(int pipeReadFd);
     void ReadStack(int pipeReadFd);
+    void ReadOtherThreadStack(int pipeReadFd);
+    bool LoopReadPipe(int pipeReadFd, void* buf, size_t length);
     void ReadMemoryNearRegister(int pipeReadFd, ProcessDumpRequest request);
 
     void InitProcess();
     void Unwind();
+    void UnwindOtherThread();
 
     void PrintAll();
     void PrintHeader();
     void PrintThreadInfo();
+    void PrintOtherThreadInfo();
     void PrintRegisters();
     void PrintRegsNearMemory();
     void PrintFaultStack();
@@ -63,16 +67,21 @@ private:
     void MmapJitSymbol();
     void MunmapJitSymbol();
     bool Report();
+    void FormatJsonInfoIfNeed();
 
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> dfxMaps_;
 
+    int otherThreadNum_ = 0;
     std::vector<uint8_t> stackBuf_;
+    std::vector<std::vector<uint8_t>> otherThreadStackBuf_;
     std::string stat_;
     std::string statm_;
     ProcessDumpRequest request_ {};
+    std::vector<ThreadDumpRequest> otherThreadRequest_;
     std::string rawData_;
     std::shared_ptr<Unwinder> unwinder_;
+    std::vector<std::shared_ptr<Unwinder>> otherThreadUnwinder_;
     std::shared_ptr<DfxProcess> process_;
     std::string keyThreadStackStr_;
     std::map<int, std::string> fdFiles_;

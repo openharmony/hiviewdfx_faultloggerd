@@ -141,6 +141,18 @@ struct ProcessDumpRequest {
 #endif
 };
 
+typedef struct ThreadDumpRequest {
+    /** thread id */
+    int32_t tid;
+    /** namespace thread id */
+    int32_t nsTid;
+    /** thread name */
+    char threadName[NAME_BUF_LEN];
+    /** current thread context */
+    ucontext_t context;
+} ThreadDumpRequest;
+
+static const int MAX_DUMP_THREAD_NUM = 500;
 static const int CRASH_BLOCK_EXIT_FLAG  = 0x13579BDF;
 static const int CRASH_UNWIND_SUCCESS_FLAG = 0x2468ACEF;
 #ifdef __cplusplus

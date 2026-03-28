@@ -88,6 +88,16 @@ public:
         crashInfoJson_ = crashInfoJson;
     }
 
+    const std::string& GetLogSource() const
+    {
+        return logSource_;
+    }
+
+    void SetLogSource(const std::string& logSource)
+    {
+        logSource_ = logSource;
+    }
+
     void SetVmPid(pid_t pid)
     {
         vmPid_ = pid;
@@ -165,6 +175,7 @@ private:
     uint64_t lifeTime_{0};
     std::map<int, int> kvThreads_;
     std::string crashInfoJson_ = "";
+    std::string logSource_ = "";
     pid_t vmPid_ = 0;
     std::set<uintptr_t> memoryValues_;
     std::map<uint64_t, DfxFrame> nativeFramesTable_;
