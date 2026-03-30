@@ -105,6 +105,16 @@
       "maxFileCount": 2,
       "fileExistTimeInSecond": 1296000,
       "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 112,
+      "fileNamePrefix": "nativeheap",
+      "maxSingleFileSizeInKB": 102400,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }
