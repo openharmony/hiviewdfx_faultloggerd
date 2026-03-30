@@ -54,6 +54,11 @@ if (defined(ohos_lite)) {
     ]
 
     branch_protector_ret = "pac_ret"
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
     sources = [ "dfx_crasher.c" ]
     external_deps = [ "hilog:libhilog" ]
     part_name = "faultloggerd"

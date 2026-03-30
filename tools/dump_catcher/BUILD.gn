@@ -55,6 +55,11 @@ if (defined(ohos_lite)) {
 
   ohos_executable("dumpcatcher") {
     if (build_variant == "root") {
+      sanitize = {
+          cfi = true
+          cfi_cross_dso = true
+          debug = false
+      }
       configs = [
         ":dumpcatcher_config",
         "$faultloggerd_path/common/build:coverage_flags",
@@ -68,10 +73,10 @@ if (defined(ohos_lite)) {
       cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
 
       deps = [
-        "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src",
+        "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",
         "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
-        "$faultloggerd_path/common/dfxlog:dfx_hilog",
-        "$faultloggerd_path/common/dfxutil:dfx_util",
+        "$faultloggerd_path/common/dfxlog:dfx_hilog_cfi",
+        "$faultloggerd_path/common/dfxutil:dfx_util_cfi",
         "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "$faultloggerd_path/interfaces/innerkits/formatter:libjson_stack_formatter",

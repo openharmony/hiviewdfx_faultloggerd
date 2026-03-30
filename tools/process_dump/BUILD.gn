@@ -206,6 +206,11 @@ if (defined(ohos_lite)) {
 
   ohos_executable("processdump") {
     install_enable = true
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
     configs = [
       ":processdump_config",
       "$faultloggerd_path/common/build:coverage_flags",
