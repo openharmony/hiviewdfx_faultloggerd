@@ -269,7 +269,9 @@ bool DfxMaps::IsArkHapMapItem(const std::string& name)
     if (name.empty()) {
         return false;
     }
-    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp") || EndsWith(name, ".hqf")) {
+    // For example:"[anon:ArkTS Code:/system/etc/abc/arkui/node.abc]"
+    if (EndsWith(name, ".hap") || EndsWith(name, ".hsp") || EndsWith(name, ".hqf")
+        || StartsWith(name, "[anon:ArkTS Code:/") || EndsWith(name, ".abc")) {
         return true;
     }
     return false;
@@ -280,7 +282,8 @@ bool DfxMaps::IsArkCodeMapItem(const std::string& name)
     if (name.empty()) {
         return false;
     }
-    if (StartsWith(name, "[anon:ArkTS Code") || EndsWith(name, ".abc")) {
+    // For example:"[anon:ArkTS Code:libdialog.z.so/Dialog.js]"
+    if (StartsWith(name, "[anon:ArkTS Code") && !StartsWith(name, "[anon:ArkTS Code:/")) {
         return true;
     }
     return false;
