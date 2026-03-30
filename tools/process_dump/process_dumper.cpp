@@ -633,6 +633,7 @@ bool ProcessDumper::InitDfxProcess()
     }
     process_ = std::make_shared<DfxProcess>();
     process_->InitProcessInfo(request_.pid, request_.nsPid, request_.uid, std::string(request_.processName));
+    process_->SetLogSource("processdump");
     if (!process_->InitKeyThread(request_)) {
         DumpUtils::NotifyOperateResult(request_, OPE_FAIL);
         return false;

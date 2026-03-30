@@ -24,6 +24,7 @@
 #endif
 
 #include "decorative_dump_info.h"
+#include "dump_info_json_formatter.h"
 #include "dfx_buffer_writer.h"
 #include "dfx_cutil.h"
 #include "dfx_dump_request.h"
@@ -98,6 +99,67 @@ void LiteProcessDumper::ReadStack(int pipeReadFd)
         return;
     }
     DFXLOGI("read stack success");
+    ReadOtherThreadStack(pipeReadFd);
+}
+
+void LiteProcessDumper::ReadOtherThreadStack(int pipeReadFd)
+{
+    if (!LoopReadPipe(pipeReadFd, &otherThreadNum_, sizeof(int))) {
+        DFXLOGE("read otherThreadNum_ fail %{public}d", errno);
+        return;
+    }
+    if (otherThreadNum_ <= 0 || otherThreadNum_ > MAX_DUMP_THREAD_NUM) {
+        DFXLOGE("lite proc dump otherThreadNum_ %{public}d invalid", otherThreadNum_);
+        return;
+    }
+
+    otherThreadRequest_.resize(otherThreadNum_);
+    otherThreadStackBuf_.resize(otherThreadNum_);
+    for (int i = 0; i < otherThreadNum_; ++i) {
+        if (!LoopReadPipe(pipeReadFd, &otherThreadRequest_[i], sizeof(ThreadDumpRequest))) {
+            DFXLOGE("read thread request fail %{public}d", errno);
+            return;
+        }
+
+        otherThreadStackBuf_[i].resize(THREAD_STACK_BUFFER_SIZE);
+        if (!LoopReadPipe(pipeReadFd, otherThreadStackBuf_[i].data(), THREAD_STACK_BUFFER_SIZE)) {
+            DFXLOGE("read thread stack fail %{public}d", errno);
+            return;
+        }
+    }
+    DFXLOGI("read %{public}d other thread stack success", otherThreadNum_);
+}
+
+bool LiteProcessDumper::LoopReadPipe(int pipeReadFd, void* buf, size_t length)
+{
+    const size_t step = 1024 * 1024;
+    size_t readSuccessSize = 0;
+    const size_t maxTryTimes = 1000;
+    for (size_t i = 0; i < length; i += readSuccessSize) {
+        size_t len = (i + step) < length ? step : length - i;
+        int savedErrno = 0;
+        ssize_t readSize = 0;
+        size_t tryTimes = 0;
+        do {
+            readSize = read(pipeReadFd, static_cast<char*>(buf) + readSuccessSize, len);
+            savedErrno = errno;
+            if (readSize == -1 && savedErrno != EINTR && savedErrno != EAGAIN) {
+                return false;
+            }
+            if (readSize > 0) {
+                readSuccessSize = readSize;
+            }
+            if (tryTimes > maxTryTimes) {
+                DFXLOGW("LoopReadPipe exceeding the maximum number of retries!");
+                return false;
+            }
+            if (readSize == -1 && savedErrno == EAGAIN) {
+                ++tryTimes;
+                usleep(1000); // 1000 : sleep 1ms try agin
+            }
+        } while (readSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
+    }
+    return true;
 }
 
 MemoryBlockInfo ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr, unsigned int count, unsigned int forward)
@@ -201,14 +263,45 @@ void LiteProcessDumper::Unwind()
     unwinder_->SetRegs(DfxRegs::CreateFromUcontext(request_.context));
     unwinder_->SetMaps(dfxMaps_);
     unwinder_->Unwind(&request_.context);
+    UnwindOtherThread();
+}
+
+void LiteProcessDumper::UnwindOtherThread()
+{
+    if (otherThreadNum_ == 0) {
+        DFXLOGE("no other thread stack");
+        return;
+    }
+    auto& instance = LocalThreadContextMix::GetInstance();
+    instance.SetStackForward(0);
+    otherThreadUnwinder_.resize(otherThreadNum_);
+    for (int i = 0; i < otherThreadNum_; ++i) {
+        instance.SetStackBuf(otherThreadStackBuf_[i]);
+        instance.CopyRegister(&otherThreadRequest_[i].context);
+
+        otherThreadUnwinder_[i] = std::make_shared<Unwinder>(instance.CreateAccessors(), true);
+        otherThreadUnwinder_[i]->EnableFillFrames(true);
+        otherThreadUnwinder_[i]->SetRegs(DfxRegs::CreateFromUcontext(otherThreadRequest_[i].context));
+        otherThreadUnwinder_[i]->SetMaps(dfxMaps_);
+        otherThreadUnwinder_[i]->Unwind(&otherThreadRequest_[i].context);
+        auto &thread = process_->GetOtherThreads();
+        thread[i]->SetThreadName(otherThreadRequest_[i].threadName);
+        thread[i]->SetFrames(otherThreadUnwinder_[i]->GetFrames());
+    }
 }
 
 void LiteProcessDumper::InitProcess()
 {
     process_ = std::make_shared<DfxProcess>();
     process_->InitProcessInfo(request_.pid, request_.nsPid, request_.uid, request_.processName);
+    process_->SetLogSource("liteprocessdump");
     process_->SetFaultThreadRegisters(regs_);
     process_->InitKeyThread(request_, false);
+    for (int i = 0; i < otherThreadNum_; ++i) {
+        auto thread = DfxThread::Create(request_.pid, otherThreadRequest_[i].tid, otherThreadRequest_[i].nsTid,
+            request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
+        process_->GetOtherThreads().push_back(thread);
+    }
 }
 
 bool LiteProcessDumper::Dump(int pid)
@@ -273,6 +366,29 @@ void LiteProcessDumper::PrintThreadInfo()
     faultThreadInfo += StringPrintf("Tid:%d, Name:%s\n", request_.tid, request_.threadName);
     keyThreadStackStr_ = unwinder_->GetFramesStr(unwinder_->GetFrames());
     faultThreadInfo += keyThreadStackStr_;
+    instance.WriteMsg(faultThreadInfo);
+    std::istringstream iss(faultThreadInfo);
+    std::string line;
+    while (std::getline(iss, line)) {
+        DFXLOGI("%{public}s", line.c_str());
+    }
+}
+
+void LiteProcessDumper::PrintOtherThreadInfo()
+{
+    std::string faultThreadInfo;
+    faultThreadInfo += "Other thread info:\n";
+    for (int i = 0; i < otherThreadNum_; ++i) {
+        if (otherThreadUnwinder_[i] == nullptr) {
+            continue;
+        }
+        faultThreadInfo += StringPrintf("Tid:%d, Name:%s\n",
+            otherThreadRequest_[i].tid, otherThreadRequest_[i].threadName);
+        keyThreadStackStr_ = otherThreadUnwinder_[i]->GetFramesStr(otherThreadUnwinder_[i]->GetFrames());
+        faultThreadInfo += keyThreadStackStr_;
+    }
+
+    auto& instance = DfxBufferWriter::GetInstance();
     instance.WriteMsg(faultThreadInfo);
     std::istringstream iss(faultThreadInfo);
     std::string line;
@@ -397,6 +513,7 @@ void LiteProcessDumper::PrintAll()
     PrintHeader();
     PrintThreadInfo();
     PrintRegisters();
+    PrintOtherThreadInfo();
     PrintRegsNearMemory();
     PrintFaultStack();
     PrintMaps();
@@ -406,31 +523,22 @@ void LiteProcessDumper::PrintAll()
 
 bool LiteProcessDumper::Report()
 {
-    if (DfxMaps::IsArkWebProc()) {
-        SysEventReporter reporter(request_.type);
-        reporter.Report(*process_, request_);
+    FormatJsonInfoIfNeed();
+    SysEventReporter reporter(request_.type);
+    reporter.Report(*process_, request_);
+    return true;
+}
+
+void LiteProcessDumper::FormatJsonInfoIfNeed()
+{
+    if (request_.type != ProcessDumpType::DUMP_TYPE_CPP_CRASH || process_ == nullptr) {
+        return;
     }
-    std::string isArkWeb = std::string("isArkWeb:") + (DfxMaps::IsArkWebProc() ? "true" : "false") + ";";
-    std::string reason = DfxSignal::PrintSignal(request_.siginfo) + "\n";
-    std::string summary = "litehandler:" + isArkWeb + reason + keyThreadStackStr_;
-#ifndef HISYSEVENT_DISABLE
-    HiSysEventParam params[] = {
-        {.name = "PID", .t = HISYSEVENT_INT32, .v = { .i32 = request_.pid}, .arraySize = 0},
-        {.name = "UID", .t = HISYSEVENT_INT32, .v = { .i32 = request_.uid}, .arraySize = 0},
-        {.name = "PROCESS_NAME", .t = HISYSEVENT_STRING,
-            .v = {.s = const_cast<char*>(request_.processName)}, .arraySize = 0},
-        {.name = "HAPPEN_TIME", .t = HISYSEVENT_UINT64, .v = {.ui64 = GetTimeMilliSeconds()}, .arraySize = 0},
-        {.name = "SUMMARY", .t = HISYSEVENT_STRING, .v = {.s = const_cast<char*>(summary.c_str())}, .arraySize = 0},
-    };
-    int ret = OH_HiSysEvent_Write("RELIABILITY", "CPP_CRASH_NO_LOG",
-                                  HISYSEVENT_FAULT, params, sizeof(params) / sizeof(params[0]));
-    DFXLOGI("Report pid %{public}d lite dump event ret %{public}d", request_.pid, ret);
-    return ret == 0;
-#else
-    DFXLOGI("Not supported lite dump event report");
-    return true;
-#endif
-    return true;
+
+    std::string jsonInfo;
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request_, *process_, jsonInfo);
+    process_->SetCrashInfoJson(jsonInfo);
+    DFXLOGI("Finish GetJsonFormatInfo len %{public}" PRIuPTR "", jsonInfo.length());
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -362,14 +362,6 @@ static void RestoreDumpState(bool isTracerStatusModified)
     }
 }
 
-static void SafeDelayOneMillSec(void)
-{
-    struct timespec ts;
-    ts.tv_sec = 0;
-    ts.tv_nsec = 1000000; // 1000000 : 1ms
-    OHOS_TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
-}
-
 static int WaitProcessExitTimeout(pid_t pid, int timeoutMs)
 {
     int status = 1; // abnomal exit code

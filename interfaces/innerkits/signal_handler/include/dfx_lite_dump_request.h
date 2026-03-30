@@ -25,6 +25,11 @@ bool MMapMemoryOnce();
 void UnmapMemoryOnce();
 void UpdateSanBoxProcess(struct ProcessDumpRequest *request);
 bool CollectStack(const struct ProcessDumpRequest *request);
+bool CollectOtherThreadStack(const struct ProcessDumpRequest *request);
+void SignalRequestThread(const struct ProcessDumpRequest *request);
+int WaitTimeout(int timeoutMs);
+void InitSignalHandler();
+void DfxBacktraceLocalSignalHandler(int sig, siginfo_t *si, void *context);
 bool CollectStat(const struct ProcessDumpRequest *request);
 bool CollectStatm(const struct ProcessDumpRequest *request);
 bool LiteCrashHandler(struct ProcessDumpRequest *request);
@@ -34,6 +39,9 @@ bool FindArkWebJitSymbol(const char* buf, size_t len, uint64_t* startAddr);
 bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAddr);
 bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr);
 bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr);
+bool WriteStack(const int pipeWriteFd);
+bool WriteOtherThreadStack(const int pipeWriteFd);
+bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length);
 void ResetLiteDump(void);
 #ifdef __cplusplus
 }

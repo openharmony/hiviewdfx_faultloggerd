@@ -100,6 +100,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.sectionMaps["PROCESS_LIFETIME"] = std::to_string(process.GetLifeTime());
     info.sectionMaps["IS_ARKWEB_CORE"] = DfxMaps::IsArkWebProc() ? "true" : "false";
     info.sectionMaps["IS_SIG_ACTION"] = request.isSigAction ? "Yes" : "No";
+    info.sectionMaps["LOG_SOURCE"] = process.GetLogSource();
 
     if (info.reason.find("SIGABRT") != std::string::npos) {
         DFXLOGI("Current abort crash(pid=%{public}d) info has lastfatalmessage: %{public}s", info.pid,

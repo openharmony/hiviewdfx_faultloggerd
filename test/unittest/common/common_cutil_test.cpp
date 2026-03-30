@@ -174,6 +174,18 @@ HWTEST_F(CommonCutilTest, SafeStrtol001, TestSize.Level2)
     EXPECT_EQ(num, 123);
     GTEST_LOG_(INFO) << "SafeStrtol001: end.";
 }
+
+/**
+ * @tc.name: SafeStrtol001
+ * @tc.desc: test TidToNstid functions
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, TidToNstid001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "TidToNstid001: start.";
+    EXPECT_EQ(TidToNstid(getpid(), gettid()), -1);
+    GTEST_LOG_(INFO) << "TidToNstid001: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

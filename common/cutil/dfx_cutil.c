@@ -148,3 +148,59 @@ bool SafeStrtol(const char* numStr, long* out, int base)
     *out = val;
     return true;
 }
+
+void SafeDelayOneMillSec(void)
+{
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 1000000; // 1000000 : 1ms
+    OHOS_TEMP_FAILURE_RETRY(nanosleep(&ts, &ts));
+}
+
+int TidToNstid(const int pid, const int tid)
+{
+    int nstid = -1;
+    char path[PATH_LEN] = {0};
+    int ret = -1;
+    if (pid == syscall(SYS_getpid)) {
+        ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/self/task/%d/status", tid);
+    } else {
+        ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/task/%d/status", pid, tid);
+    }
+    if (ret < 0) {
+        return nstid;
+    }
+
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
+    if (fd < 0) {
+        return nstid;
+    }
+
+    char buf[LINE_BUF_SIZE] = {0};
+    int i = 0;
+    char b;
+    ssize_t nRead = 0;
+    while (nRead >= 0) {
+        nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
+        if (nRead <= 0 || b == '\0') {
+            break;
+        }
+
+        if (b == '\n' || i == LINE_BUF_SIZE) {
+            if (strncmp(buf, NSPID_STR_NAME, strlen(NSPID_STR_NAME)) != 0) {
+                i = 0;
+                (void)memset_s(buf, sizeof(buf), '\0', sizeof(buf));
+                continue;
+            }
+            int tmpPid = -1;
+            if (sscanf_s(buf, "%*[^0-9]%d%*[^0-9]%d", &tmpPid, &nstid) != 2) { // 2 args
+                nstid = -1;
+            }
+            break;
+        }
+        buf[i] = b;
+        i++;
+    }
+    close(fd);
+    return nstid;
+}
