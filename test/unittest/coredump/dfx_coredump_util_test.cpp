@@ -393,4 +393,39 @@ HWTEST_F(DfxCoredumpUtilTest, CoredumpJsonUtil001, TestSize.Level2)
 
     GTEST_LOG_(INFO) << "CoredumpJsonUtil001: end.";
 }
+
+/**
+ * @tc.name: CoredumpController006
+ * @tc.desc: test CoredumpController IsMdmCoredumpDisabled
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoredumpUtilTest, CoredumpController006, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CoredumpController006: start.";
+    bool ret = CoredumpController::IsMdmCoredumpDisabled();
+    EXPECT_FALSE(ret);
+
+    GTEST_LOG_(INFO) << "CoredumpController006: end.";
+}
+
+/**
+ * @tc.name: CoredumpController007
+ * @tc.desc: test CoredumpController IsCoredumpAllowed with MDM Policy
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoredumpUtilTest, CoredumpController007, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CoredumpController007: start.";
+    ProcessDumpRequest request;
+    request.siginfo.si_signo = 42;
+    request.siginfo.si_code = 3;
+
+    if (CoredumpController::IsMdmCoredumpDisabled()) {
+        EXPECT_FALSE(CoredumpController::IsCoredumpAllowed(request));
+    } else {
+        EXPECT_TRUE(CoredumpController::IsCoredumpAllowed(request));
+    }
+
+    GTEST_LOG_(INFO) << "CoredumpController007: end.";
+}
 }

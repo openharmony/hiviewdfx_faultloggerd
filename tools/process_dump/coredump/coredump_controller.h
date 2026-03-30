@@ -25,6 +25,7 @@ public:
     static bool IsCoredumpSignal(const ProcessDumpRequest& request);
     static bool IsCoredumpAllowed(const ProcessDumpRequest& request);
     static bool VerifyProcess();
+    static bool IsMdmCoredumpDisabled();
 private:
     static bool VerifyTrustList(const std::string& bundleName);
     static std::string GetCoredumpHapList();
