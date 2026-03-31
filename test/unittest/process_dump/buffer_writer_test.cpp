@@ -85,26 +85,35 @@ HWTEST_F(BufferWriterTest, BufferWriterTest001, TestSize.Level2)
 
 /**
  * @tc.name: WriteMainThreadDoneSuccess
- * @tc.desc: Verify WriteMainThreadDone writes correct intermediate result code
+ * @tc.desc: Verify WriteMainThreadDone writes correct intermediate result code with data length
  * @tc.type: FUNC
  */
 HWTEST_F(BufferWriterTest, WriteMainThreadDoneSuccess, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "WriteMainThreadDoneSuccess: start.";
-    int fds[PIPE_NUM_SZ] = {-1, -1};
-    ASSERT_EQ(pipe2(fds, O_NONBLOCK), 0);
-    auto readFd = SmartFd{fds[PIPE_READ]};
-    auto writeFd = SmartFd{fds[PIPE_WRITE]};
+    int resfds[PIPE_NUM_SZ] = {-1, -1};
+    ASSERT_EQ(pipe2(resfds, O_NONBLOCK), 0);
+    auto resReadFd = SmartFd{resfds[PIPE_READ]};
+    auto resWriteFd = SmartFd{resfds[PIPE_WRITE]};
+    int buffds[PIPE_NUM_SZ] = {-1, -1};
+    ASSERT_EQ(pipe2(buffds, O_NONBLOCK), 0);
+    auto bufWriteFd = SmartFd{buffds[PIPE_WRITE]};
 
-    DfxBufferWriter::GetInstance().SetWriteResFd(std::move(writeFd));
+    DfxBufferWriter::GetInstance().SetWriteBufFd(std::move(bufWriteFd));
+    DfxBufferWriter::GetInstance().SetWriteResFd(std::move(resWriteFd));
+
+    // Simulate writing some data
+    std::string testData = "Test stack data";
+    DfxBufferWriter::GetInstance().WriteMsg(testData);
+
     bool result = DfxBufferWriter::GetInstance().WriteMainThreadDone();
-
     EXPECT_TRUE(result);
 
-    int32_t resCode = 0;
-    ssize_t nread = read(readFd.GetFd(), &resCode, sizeof(resCode));
-    EXPECT_EQ(nread, sizeof(int32_t));
-    EXPECT_EQ(resCode, DUMP_EMAIN_THREAD_DONE);
+    DumpResMessage resMsg;
+    ssize_t nread = read(resReadFd.GetFd(), &resMsg, sizeof(resMsg));
+    EXPECT_EQ(nread, sizeof(DumpResMessage));
+    EXPECT_EQ(resMsg.code, DUMP_EMAIN_THREAD_DONE);
+    EXPECT_EQ(resMsg.dataLen, testData.size());
     GTEST_LOG_(INFO) << "WriteMainThreadDoneSuccess: end.";
 }
 }

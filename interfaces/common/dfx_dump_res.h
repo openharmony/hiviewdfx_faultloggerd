@@ -15,6 +15,7 @@
 #ifndef DFX_DUMP_RES_H
 #define DFX_DUMP_RES_H
 
+#include <algorithm>
 #include <cinttypes>
 #include <string>
 
@@ -78,6 +79,15 @@ enum DumpErrorCode : int32_t {
     DUMP_COREDUMP,
     /** main thread stack has been written to bufFd, other threads still collecting */
     DUMP_EMAIN_THREAD_DONE,
+};
+
+/**
+ * @brief Dump result message with data length
+ * Used for communication between process_dump and dump_catcher
+ */
+struct DumpResMessage {
+    int32_t code;       // Error code from DumpErrorCode
+    uint32_t dataLen;   // Length of data in bufFd (bytes)
 };
 
 class DfxDumpRes {
