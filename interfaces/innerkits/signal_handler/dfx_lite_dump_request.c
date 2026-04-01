@@ -106,7 +106,7 @@ pid_t GetProcId(const char *statusPath, const char *item)
     char b;
     ssize_t nRead = 0;
     while (nRead >= 0) {
-        nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, &b, sizeof(char)));
+        nRead = OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, fd, &b, sizeof(char)));
         if (nRead <= 0 || b == '\0') {
             DFXLOGE("GetRealPid:: read failed! pid:(%{public}d), errno:(%{public}d), nRead(%{public}zd), \
                 readchar(%{public}02X).", pid, errno, nRead, b);
@@ -127,7 +127,7 @@ pid_t GetProcId(const char *statusPath, const char *item)
         buf[i] = b;
         i++;
     }
-    close(fd);
+    syscall(SYS_close, fd);
     return pid;
 }
 
@@ -243,13 +243,13 @@ void SignalRequestThread(const struct ProcessDumpRequest *request)
                 g_threadSentCount++;
             }
             if (g_threadSentCount >= MAX_DUMP_THREAD_NUM) {
-                close(fd);
+                syscall(SYS_close, fd);
                 return;
             }
             pos += d->reclen;
         }
     }
-    close(fd);
+    syscall(SYS_close, fd);
 }
 
 int WaitTimeout(int timeoutMs)
@@ -335,13 +335,13 @@ bool CollectStat(const struct ProcessDumpRequest *request)
 
     char* stat = (char*)g_mmapSpace + g_mmapPos;
     stat[PROC_STAT_BUF_SIZE - 1] = '\0';
-    ssize_t n = read(fd, stat, PROC_STAT_BUF_SIZE - 1);
+    ssize_t n = syscall(SYS_read, fd, stat, PROC_STAT_BUF_SIZE - 1);
     g_mmapPos += PROC_STAT_BUF_SIZE;
     if (n > 0) {
         stat[n] = '\0';
     }
     DFXLOGI("finish collect proc stat");
-    close(fd);
+    syscall(SYS_close, fd);
     return true;
 }
 
@@ -372,13 +372,13 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
     char* statm = (char*)g_mmapSpace + g_mmapPos;
     statm[PROC_STAT_BUF_SIZE - 1] = '\0';
 
-    ssize_t n = read(fd, statm, PROC_STATM_BUF_SIZE - 1);
+    ssize_t n = syscall(SYS_read, fd, statm, PROC_STATM_BUF_SIZE - 1);
     g_mmapPos += PROC_STATM_BUF_SIZE;
     if (n > 0) {
         statm[n] = '\0';
     }
     DFXLOGI("finish collect proc stam");
-    close(fd);
+    syscall(SYS_close, fd);
     return true;
 }
 
@@ -397,7 +397,7 @@ bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr)
         ssize_t writeSize = 0;
         size_t tryTimes = 0;
         do {
-            writeSize = write(pipeWriteFd, (void*)arkWebJitSymbolAddr, length);
+            writeSize = syscall(SYS_write, pipeWriteFd, (void*)arkWebJitSymbolAddr, length);
             savedErrno = errno;
             if (writeSize == -1 && savedErrno != EINTR && savedErrno != EAGAIN) {
                 return false;
@@ -421,7 +421,7 @@ bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr)
 
 bool WriteStack(const int pipeWriteFd)
 {
-    if (write(pipeWriteFd, g_mmapSpace, TOTAL_MEMORY_SIZE) != TOTAL_MEMORY_SIZE) {
+    if (syscall(SYS_write, pipeWriteFd, g_mmapSpace, TOTAL_MEMORY_SIZE) != TOTAL_MEMORY_SIZE) {
         DFXLOGE("failed to write mmap buf %{public}d", errno);
         return false;
     }
@@ -451,7 +451,7 @@ bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length)
         ssize_t writeSize = 0;
         size_t tryTimes = 0;
         do {
-            writeSize = write(pipeWriteFd, buf, len);
+            writeSize = syscall(SYS_write, pipeWriteFd, buf, len);
             savedErrno = errno;
             if (writeSize == -1 && savedErrno != EINTR && savedErrno != EAGAIN) {
                 return false;
@@ -592,7 +592,7 @@ bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAd
     const int concatBufLen = 200;
     char concatBuf[concatBufLen];
     bool findSymbolFlag = false;
-    while ((n = read(fd, buf, sizeof(buf) - 1)) > 0) {
+    while ((n = syscall(SYS_read, fd, buf, sizeof(buf) - 1)) > 0) {
         LoopWritePipe(pipeFd, buf, n);
         if (findSymbolFlag) {
             continue;
@@ -621,7 +621,7 @@ bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAd
         }
     }
 
-    close(fd);
+    syscall(SYS_close, fd);
     return true;
 }
 
@@ -799,15 +799,16 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
         return false;
     }
 
-    if (write(pipeWriteFd, request, sizeof(struct ProcessDumpRequest)) != sizeof(struct ProcessDumpRequest)) {
+    if (syscall(SYS_write, pipeWriteFd, request, sizeof(struct ProcessDumpRequest)) !=
+        sizeof(struct ProcessDumpRequest)) {
         DFXLOGE("failed to write dump request %{public}d", errno);
-        close(pipeWriteFd);
+        syscall(SYS_close, pipeWriteFd);
         UnregisterAllocator();
         return false;
     }
 
     if (!WriteStack(pipeWriteFd)) {
-        close(pipeWriteFd);
+        syscall(SYS_close, pipeWriteFd);
         UnregisterAllocator();
         return false;
     }
@@ -817,7 +818,7 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
     CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table());
     CollectArkWebJitSymbol(pipeWriteFd, arkWebJitSymbolAddr);
 
-    close(pipeWriteFd);
+    syscall(SYS_close, pipeWriteFd);
     UnregisterAllocator();
     DFXLOGI("finish %{public}s", __func__);
     return true;
