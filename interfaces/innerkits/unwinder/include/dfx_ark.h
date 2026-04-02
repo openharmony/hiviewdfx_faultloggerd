@@ -149,7 +149,7 @@ public:
      * @return if succeed return 1, otherwise return -1
     */
     int ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t offset, const char* name,
-        uintptr_t extractorPtr, JsFunction *jsFunction);
+        uintptr_t extractorPtr, JsFunction *jsFunction, bool needTranslate = true);
 
     /**
      * @brief parse ark file info by local
@@ -224,7 +224,7 @@ private:
     using StepArkFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, OHOS::HiviewDFX::ArkStepParam*);
     using StepArkWithJitFn = int (*)(OHOS::HiviewDFX::ArkUnwindParam*);
     using JitCodeWriteFileFn = int (*)(void*, OHOS::HiviewDFX::ReadMemFunc, int, const uintptr_t* const, const size_t);
-    using ParseArkFileInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, JsFunction*);
+    using ParseArkFileInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, const char*, uintptr_t, bool, JsFunction*);
     using ParseArkFrameInfoLocalFn = int (*)(uintptr_t, uintptr_t, uintptr_t, JsFunction*);
     using ParseArkFrameInfoFn = int (*)(uintptr_t, uintptr_t, uintptr_t, uint8_t*,
                                         uint64_t, uintptr_t, JsFunction*);
