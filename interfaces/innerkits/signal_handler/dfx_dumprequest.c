@@ -456,6 +456,14 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
         if (allowNonSafeOperate) {
             TryNonSafeOperate(isCrash);
         }
+        /**
+         * Setup fd safe region to avoid unexpected conflicts (e.g., hook, tracker)
+         * Note: These fds are intentionally not closed as this is a temporary process.
+         * All fds will be automatically cleaned up when the process exits.
+         */
+        for (int i = 0; i < 32; i++) { // 32 : number of reserved fds
+            open("/dev/null", O_RDONLY);
+        }
         if (!InitPipe()) {
             DFXLOGE("init pipe fail");
             syscall(SYS_exit, errno);
@@ -555,7 +563,7 @@ static bool ReadPipeTimeout(int fd, uint64_t timeout, uint32_t* value)
     do {
         pollRet = poll(pfds, 1, timeout);
         if ((pollRet > 0) && (pfds[0].revents && POLLIN)) {
-            if (OHOS_TEMP_FAILURE_RETRY(read(fd, value, sizeof(uint32_t))) ==
+            if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, fd, value, sizeof(uint32_t))) ==
                 (long int)(sizeof(uint32_t))) {
                 return true;
             }
@@ -602,7 +610,7 @@ void SetKernelSnapshot(bool enable)
     }
     do {
         char val[10] = {0}; // 10 : to save diecatch val
-        if (read(dieCatchFd, val, sizeof(val)) < 0) {
+        if (syscall(SYS_read, dieCatchFd, val, sizeof(val)) < 0) {
             DFXLOGE("Failed to read unexpecterd_die_catch %{public}d", errno);
             break;
         }
@@ -627,7 +635,7 @@ void SetKernelSnapshot(bool enable)
             DFXLOGE("Failed to format unexpecterd_die_catch val %{public}d", errno);
             break;
         }
-        if (write(dieCatchFd, val, sizeof(val)) < 0) {
+        if (syscall(SYS_write, dieCatchFd, val, sizeof(val)) < 0) {
             DFXLOGE("Failed to write unexpecterd_die_catch %{public}d", errno);
         }
     } while (false);

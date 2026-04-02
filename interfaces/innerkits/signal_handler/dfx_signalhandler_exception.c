@@ -97,7 +97,7 @@ int ReportException(struct CrashDumpException* exception)
         return ret;
     }
     do {
-        if (OHOS_TEMP_FAILURE_RETRY(write(fd, exception, sizeof(struct CrashDumpException))) !=
+        if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, fd, exception, sizeof(struct CrashDumpException))) !=
             (long)sizeof(struct CrashDumpException)) {
             DFXLOGE("Failed to write request message to socket, errno(%{public}d).", errno);
             break;

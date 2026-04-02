@@ -40,7 +40,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     }
 
     char name[NAME_BUF_LEN] = {0};
-    ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(read(fd, name, NAME_BUF_LEN - 1));
+    ssize_t nRead = OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, fd, name, NAME_BUF_LEN - 1));
     if (nRead <= 0) {
         syscall(SYS_close, fd);
         return false;
@@ -110,13 +110,13 @@ bool IsNoNewPriv(const char* statusPath)
         return false;
     }
     char buf[LINE_BUF_SIZE];
-    ssize_t n = read(fd, buf, sizeof(buf) - 1);
+    ssize_t n = syscall(SYS_read, fd, buf, sizeof(buf) - 1);
     if (n <= 0) {
-        close(fd);
+        syscall(SYS_close, fd);
         return false;
     }
     buf[sizeof(buf) - 1] = '\0';
-    close(fd);
+    syscall(SYS_close, fd);
 
     const char key[] = "NoNewPrivs";
     char *p = strstr(buf, key);
