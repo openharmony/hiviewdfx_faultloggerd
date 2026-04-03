@@ -64,7 +64,7 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request, bool isAttatch
     keyThread_->SetThreadRegs(DfxRegs::CreateFromUcontext(request.context));
     if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) { // dumpcatch set target thread to key thread
         pid_t dumpCatchTargetTid = request.siginfo.si_value.sival_int == 0 ?
-            request.nsPid : request.siginfo.si_value.sival_int;
+            request.pid : request.siginfo.si_value.sival_int;
         DFXLOGE("dumpCatchTargetTid(%{public}d).", dumpCatchTargetTid);
         if (dumpCatchTargetTid != tid) {
             otherThreads_.emplace_back(keyThread_);

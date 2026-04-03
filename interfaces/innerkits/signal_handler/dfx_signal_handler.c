@@ -377,7 +377,7 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
     DFXLOGI("DFX_SignalHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
         "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
 #ifndef is_ohos_lite
-    if (!IsDumpSignal(signo) && IsNoNewPriv(PROC_SELF_STATUS_PATH)) {
+    if (signo != SIGLEAK_STACK && IsNoNewPriv(PROC_SELF_STATUS_PATH)) {
         DumpPrviRequest(signo);
     } else {
 #endif

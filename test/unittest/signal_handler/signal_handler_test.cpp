@@ -1096,23 +1096,22 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest001, TestSize.Level2)
     EXPECT_GT(GetProcId("/proc/thread-self/status", "Pid:"), 0);
 
     UpdateSanBoxProcess(nullptr);
-    EXPECT_TRUE(MMapMemoryOnce());
+    int mmapSize = PRIV_COPY_STACK_BUFFER_SIZE + PROC_STAT_BUF_SIZE + PROC_STATM_BUF_SIZE +
+        sizeof(int) + MAX_DUMP_THREAD_NUM * (sizeof(ThreadDumpRequest) + THREAD_STACK_BUFFER_SIZE);
+    EXPECT_TRUE(MMapMemoryOnce(mmapSize));
     ProcessDumpRequest request {};
     UpdateSanBoxProcess(&request);
     request.pid = getpid();
     EXPECT_TRUE(CollectStat(&request));
     EXPECT_TRUE(CollectStatm(&request));
     EXPECT_TRUE(CollectStack(&request));
-
-    EXPECT_FALSE(CollectStat(&request));
-    EXPECT_FALSE(CollectStatm(&request));
-
+    EXPECT_TRUE(WriteStack(g_pipeFd[PIPE_WRITE]));
     ResetLiteDump();
     request.pid = 99999;
     EXPECT_FALSE(CollectStat(&request));
     EXPECT_FALSE(CollectStatm(&request));
     EXPECT_TRUE(CollectStack(&request));
-    UnmapMemoryOnce();
+    UnmapMemoryOnce(mmapSize);
 }
 
 /**
@@ -1128,7 +1127,6 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest002, TestSize.Level2)
     EXPECT_FALSE(CollectStat(&request));
     EXPECT_FALSE(CollectStatm(&request));
     EXPECT_FALSE(CollectStack(&request));
-    UnmapMemoryOnce();
 }
 
 /**
@@ -1180,18 +1178,6 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest005, TestSize.Level2)
     while (read(g_pipeFd[PIPE_READ], buf, sizeof(buf)) > 0) {
         str += buf;
     }
-}
-
-/**
- * @tc.name: WriteStack001
- * @tc.desc: test WriteStack
- * @tc.type: FUNC
- */
-HWTEST_F(SignalHandlerTest, WriteStack001, TestSize.Level2)
-{
-    MMapMemoryOnce();
-    EXPECT_TRUE(WriteStack(g_pipeFd[PIPE_WRITE]));
-    UnmapMemoryOnce();
 }
 
 /**

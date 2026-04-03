@@ -21,8 +21,8 @@
 extern "C" {
 #endif
 pid_t GetProcId(const char *statusPath, const char *item);
-bool MMapMemoryOnce();
-void UnmapMemoryOnce();
+bool MMapMemoryOnce(int mmapSize);
+void UnmapMemoryOnce(int mmapSize);
 void UpdateSanBoxProcess(struct ProcessDumpRequest *request);
 bool CollectStack(const struct ProcessDumpRequest *request);
 bool CollectOtherThreadStack(const struct ProcessDumpRequest *request);

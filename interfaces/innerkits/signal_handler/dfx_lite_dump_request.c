@@ -81,9 +81,7 @@ static _Atomic(int) g_threadCompletedCount = 0;
 static int g_threadSentCount = 0;
 static const int LOCALDUMP_TIMEOUT = 1000; // 1000 : 1 sec timeout
 
-static const int TOTAL_MEMORY_SIZE = PRIV_COPY_STACK_BUFFER_SIZE + PROC_STAT_BUF_SIZE + PROC_STATM_BUF_SIZE;
-static const int TOTAL_MEMORY_SIZE_WITH_THREAD = TOTAL_MEMORY_SIZE +
-    sizeof(int) + MAX_DUMP_THREAD_NUM * (sizeof(ThreadDumpRequest) + THREAD_STACK_BUFFER_SIZE);
+static int g_totalMemorySize = 0;
 static const int FILE_PATH_LEN = 256;
 static const char * const PID_STR_NAME = "Pid:";
 static const char * const THREAD_SELF_STATUS_PATH = "/proc/thread-self/status";
@@ -131,25 +129,26 @@ pid_t GetProcId(const char *statusPath, const char *item)
     return pid;
 }
 
-bool MMapMemoryOnce()
+bool MMapMemoryOnce(int mmapSize)
 {
     DFXLOGI("lite dump start mmap memory");
-    g_mmapSpace = mmap(NULL, TOTAL_MEMORY_SIZE_WITH_THREAD, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    g_mmapSpace = mmap(NULL, mmapSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (g_mmapSpace == MAP_FAILED) {
         DFXLOGE("lite dump mmap failed %{public}d", errno);
         return false;
     }
+    g_totalMemorySize = mmapSize;
     DFXLOGI("lite dump finish mmap memory");
     return true;
 }
 
-void UnmapMemoryOnce()
+void UnmapMemoryOnce(int mmapSize)
 {
     if (g_mmapSpace == MAP_FAILED) {
         return;
     }
     DFXLOGI("lite dump start unmap memory");
-    if (munmap(g_mmapSpace, TOTAL_MEMORY_SIZE_WITH_THREAD) == -1) {
+    if (munmap(g_mmapSpace, mmapSize) == -1) {
         DFXLOGE("lite dump munmap failed %{public}d", errno);
     } else {
         DFXLOGI("lite dump finish unmap memory");
@@ -168,7 +167,7 @@ bool CollectStack(const struct ProcessDumpRequest *request)
         return false;
     }
 #if defined(__aarch64__)
-    if (g_mmapPos + PRIV_COPY_STACK_BUFFER_SIZE > TOTAL_MEMORY_SIZE) {
+    if (g_mmapPos + PRIV_COPY_STACK_BUFFER_SIZE > g_totalMemorySize) {
         DFXLOGE("collect statck mmap space is over flow");
         return false;
     }
@@ -306,6 +305,11 @@ void InitSignalHandler()
     sigemptyset(&mask);
     sigaddset(&mask, SIGLOCAL_DUMP);
     sigprocmask(SIG_UNBLOCK, &mask, NULL);
+    g_threadSentCount = 0;
+#if defined(__aarch64__)
+    g_threadStartCount = 0;
+#endif
+    g_threadCompletedCount = 0;
 }
 
 bool CollectStat(const struct ProcessDumpRequest *request)
@@ -314,7 +318,7 @@ bool CollectStat(const struct ProcessDumpRequest *request)
         DFXLOGE("mmap failed");
         return false;
     }
-    if (g_mmapPos + PROC_STAT_BUF_SIZE > TOTAL_MEMORY_SIZE) {
+    if (g_mmapPos + PROC_STAT_BUF_SIZE > g_totalMemorySize) {
         DFXLOGE("collect stat memory size over flow");
         return false;
     }
@@ -351,7 +355,7 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
         DFXLOGE("mmap failed");
         return false;
     }
-    if (g_mmapPos + PROC_STATM_BUF_SIZE > TOTAL_MEMORY_SIZE) {
+    if (g_mmapPos + PROC_STATM_BUF_SIZE > g_totalMemorySize) {
         DFXLOGE("collect statm mmap space is over flow");
         return false;
     }
@@ -421,7 +425,7 @@ bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr)
 
 bool WriteStack(const int pipeWriteFd)
 {
-    if (syscall(SYS_write, pipeWriteFd, g_mmapSpace, TOTAL_MEMORY_SIZE) != TOTAL_MEMORY_SIZE) {
+    if (syscall(SYS_write, pipeWriteFd, g_mmapSpace, g_mmapPos) != g_mmapPos) {
         DFXLOGE("failed to write mmap buf %{public}d", errno);
         return false;
     }
@@ -621,6 +625,8 @@ bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAd
         }
     }
 
+    char mapEndFlag[] = "Parse_Maps_Finish\n";
+    OHOS_TEMP_FAILURE_RETRY(write(pipeFd, mapEndFlag, strlen(mapEndFlag)));
     syscall(SYS_close, fd);
     return true;
 }
@@ -812,10 +818,15 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
         UnregisterAllocator();
         return false;
     }
-    CollectMemoryNearRegisters(pipeWriteFd, &request->context);
+    if (request->type != DUMP_TYPE_DUMP_CATCH) {
+        CollectMemoryNearRegisters(pipeWriteFd, &request->context);
+    }
+
     uint64_t arkWebJitSymbolAddr = 0;
     CollectMaps(pipeWriteFd, PROC_SELF_MAPS_PATH, &arkWebJitSymbolAddr);
-    CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table());
+    if (request->type != DUMP_TYPE_DUMP_CATCH) {
+        CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table());
+    }
     CollectArkWebJitSymbol(pipeWriteFd, arkWebJitSymbolAddr);
 
     syscall(SYS_close, pipeWriteFd);
