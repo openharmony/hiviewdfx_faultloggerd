@@ -15,6 +15,7 @@
 #ifndef DFX_ASYNC_STACK_H
 #define DFX_ASYNC_STACK_H
 
+#include <cstdint>
 #include <inttypes.h>
 #include <unistd.h>
 
@@ -57,10 +58,13 @@ typedef enum {
     ASYNC_TYPE_JSVM             = 1ULL << 19,
     ASYNC_TYPE_ARKTS_WORKER     = 1ULL << 24,
     ASYNC_TYPE_ARKTS_TASKPOOL   = 1ULL << 25,
+    ASYNC_TYPE_PROFILER         = 1ULL << 30,
+    ASYNC_TYPE_UNKNOWN          = 1ULL << 31,
     ASYNC_TYPE_CUSTOMIZE        = 1ULL << 32
 } AsyncType;
 
 constexpr uint64_t DEFAULT_ASYNC_TYPE = ASYNC_TYPE_LIBUV_QUEUE | ASYNC_TYPE_LIBUV_TIMER;
+constexpr uint64_t DFX_INVALID_STACK_ID = 0;
 
 /**
  * @brief set the currently enabled async type and return the last asynchronous type value
@@ -107,6 +111,24 @@ void DfxSetSubmitterStackId(uint64_t stackId);
  * @return if succeed return true, otherwise return false
 */
 bool DfxInitProfilerAsyncStack(void* buffer, size_t size);
+
+typedef enum {
+    MODE_LAST_STACKTRACE,
+    MODE_CHAINED_STACKTRACE,
+} DfxAsyncMode;
+
+typedef struct DfxAsyncCtx {
+    uint64_t type;
+    uint64_t id;
+} DfxAsyncCtx;
+
+DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode);
+
+int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz);
+
+void ReleaseAsyncContext(uint64_t stackId);
+
+void DfxPrintChainedStackTrace();
 #ifdef __cplusplus
 }
 #endif

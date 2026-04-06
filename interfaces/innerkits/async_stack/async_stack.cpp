@@ -21,6 +21,9 @@
 #include <threads.h>
 #include <mutex>
 #include <atomic>
+#include <cstdio>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include "dfx_frame_formatter.h"
 #include "dfx_log.h"
@@ -28,20 +31,26 @@
 #include "unique_stack_table.h"
 #include "unwinder.h"
 #include "parameters.h"
+#include "async_context_manager.h"
 
 using namespace OHOS::HiviewDFX;
 static bool g_init = false;
 #if defined(__aarch64__)
 // Filter out illegal requests
 static std::atomic<uint64_t> g_enabledAsyncType = DEFAULT_ASYNC_TYPE;
+constexpr uint64_t UNSUPPORTED_CHAINED_STACK_TYPE = ASYNC_TYPE_JSVM | ASYNC_TYPE_ARKWEB;
+
 static pthread_key_t g_stackidKey;
 static std::unique_ptr<OHOS::HiviewDFX::FpBacktrace> g_fpBacktrace = nullptr;
 using SetStackIdFn = void(*)(uint64_t stackId);
 using CollectAsyncStackFn = uint64_t(*)(uint64_t type);
 using GenericSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
+using GenericSetReleaseAsyncStackFn = void(*)(SetStackIdFn setStackIdFn);
 
 typedef uint64_t(*GetStackIdFunc)(void);
 extern "C" void DFX_SetAsyncStackCallback(GetStackIdFunc func) __attribute__((weak));
+
+static DfxAsyncMode g_mode = MODE_LAST_STACKTRACE;
 
 namespace {
 
@@ -143,6 +152,93 @@ void UpdateAsyncStackCallbacks(uint64_t lastType, uint64_t currentType)
 }
 } // namespace
 
+extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
+{
+    if (mode == g_mode) {
+        return g_mode;
+    }
+    
+    if (mode == MODE_CHAINED_STACKTRACE) {
+        if (!DfxAsyncContextManager::Instance()->Init()) {
+            DFXLOGE("SetAsyncStackMode init async context manager failed");
+            return g_mode;
+        }
+        auto releaseFuncEH =
+        reinterpret_cast<GenericSetReleaseAsyncStackFn>(dlsym(RTLD_DEFAULT, "EventSetReleaseAsyncStackFunc"));
+        if (releaseFuncEH != nullptr) {
+            releaseFuncEH(ReleaseAsyncContext);
+        } else {
+            DFXLOGE("failed to set EventSetReleaseAsyncContext.");
+        }
+
+        auto releaseFuncUV =
+            reinterpret_cast<GenericSetReleaseAsyncStackFn>(dlsym(RTLD_DEFAULT, "LibuvSetReleaseAsyncContextFunc"));
+        if (releaseFuncUV != nullptr) {
+            releaseFuncUV(ReleaseAsyncContext);
+        } else {
+            DFXLOGE("failed to set LibuvSetReleaseAsyncContextFunc.");
+        }
+
+        auto uvSetAsyncStackFn =
+            reinterpret_cast<GenericSetAsyncStackFn>(dlsym(RTLD_DEFAULT, "LibuvSetAsyncStackFunc"));
+        if (uvSetAsyncStackFn != nullptr) {
+            uvSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
+        } else {
+            DFXLOGE("failed to set LibuvSetAsyncStackFunc.");
+        }
+
+        auto releaseFuncFFRT =
+            reinterpret_cast<GenericSetReleaseAsyncStackFn>(dlsym(RTLD_DEFAULT, "FFRTSetAsyncStackReleaseFunc"));
+        if (releaseFuncFFRT != nullptr) {
+            releaseFuncFFRT(ReleaseAsyncContext);
+        } else {
+            DFXLOGE("failed to set FFRTSetAsyncStackReleaseFunc.");
+        }
+        UpdateAsyncStackCallbacks(0, g_enabledAsyncType);
+    } else {
+        DfxAsyncContextManager::Instance()->DeInit();
+    }
+    DfxAsyncMode prev = g_mode;
+    g_mode = mode;
+    DFXLOGI("SetAsyncStackMode %{public}d", (int)g_mode);
+    return prev;
+}
+
+extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
+{
+    DfxAsyncContext* ctx = DfxAsyncContextManager::Instance()->GetCurrentContext();
+    if (sz == 0 || ctx == nullptr) {
+        return 0;
+    }
+    int32_t count = 0;
+    size_t loopCount = sz > DEFAULT_MAX_ASYNC_CHAIN_LAYERS ? DEFAULT_MAX_ASYNC_CHAIN_LAYERS : sz;
+    for (size_t i = 0; i < loopCount; i++) {
+        if (ctx->ctxs[i].id == 0) {
+            break;
+        }
+        buffer[i].type = ctx->ctxs[i].type;
+        buffer[i].id = ctx->ctxs[i].id;
+        count++;
+    }
+    return count;
+}
+
+extern "C" void ReleaseAsyncContext(uint64_t stackId)
+{
+    if (g_mode == MODE_CHAINED_STACKTRACE) {
+        return;
+    }
+
+    DfxAsyncContextManager::Instance()->RecycleAsyncContext((DfxAsyncContext*)stackId);
+}
+
+extern "C" void DfxPrintChainedStackTrace(void)
+{
+    if (g_mode == MODE_CHAINED_STACKTRACE) {
+        DfxAsyncContextManager::Instance()->PrintChainStack();
+    }
+}
+
 static inline uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
 {
     size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, depth);
@@ -156,31 +252,43 @@ static inline uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
 extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
 {
     if (!g_init || g_fpBacktrace == nullptr) {
-        return 0;
+        return DFX_INVALID_STACK_ID;
     }
     uint64_t isTargetType = type & g_enabledAsyncType;
     if (isTargetType == 0) {
-        return 0;
+        return DFX_INVALID_STACK_ID;
     }
     const uint32_t depth = 16;
     void* pcArray[depth] = {0};
-    return CollectStackByFp(pcArray, depth);
+    uint64_t stackId = CollectStackByFp(pcArray, depth);
+    if ((g_mode == MODE_CHAINED_STACKTRACE) &&
+        !(type & UNSUPPORTED_CHAINED_STACK_TYPE) &&
+        (type != ASYNC_TYPE_PROFILER)) {
+        stackId = (uint64_t)DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type);
+    }
+    return stackId;
 }
 
 extern "C" uint64_t DfxCollectStackWithDepth(uint64_t type, size_t depth)
 {
     if (!g_init || g_fpBacktrace == nullptr) {
-        return 0;
+        return DFX_INVALID_STACK_ID;
     }
     uint64_t isTargetType = type & g_enabledAsyncType;
     if (isTargetType == 0) {
-        return 0;
+        return DFX_INVALID_STACK_ID;
     }
     // Maximum collection of 256 frames
     const uint32_t maxSize = 256;
     const uint32_t realDepth = depth > maxSize ? maxSize : static_cast<uint32_t>(depth);
     void* pcArray[maxSize] = {0};
-    return CollectStackByFp(pcArray, realDepth);
+    uint64_t stackId = CollectStackByFp(pcArray, realDepth);
+    if ((g_mode == MODE_CHAINED_STACKTRACE) &&
+        !(type & UNSUPPORTED_CHAINED_STACK_TYPE) &&
+        (type != ASYNC_TYPE_PROFILER)) {
+        stackId = (uint64_t)DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type);
+    }
+    return stackId;
 }
 
 extern "C" uint64_t DfxSetAsyncStackType(uint64_t asyncType)
@@ -195,7 +303,12 @@ extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
     if (!g_init) {
         return;
     }
-    pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(stackId));
+
+    if (g_mode == MODE_LAST_STACKTRACE) {
+        pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(stackId));
+    } else {
+        DfxAsyncContextManager::Instance()->HandleSetStackId(stackId);
+    }
 }
 
 void DfxSetAsyncStackCallback(void)
