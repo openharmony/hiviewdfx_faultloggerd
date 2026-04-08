@@ -44,6 +44,7 @@ if (defined(ohos_lite)) {
     sources = [
       "async_stack.cpp",
       "unique_stack_table.cpp",
+      "async_context_manager.cpp",
     ]
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",

@@ -27,7 +27,8 @@
 #include <securec.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
+#include <iostream>
+#include <chrono>
 #include "async_stack.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
@@ -254,5 +255,101 @@ HWTEST_F(AsyncStackTest, AsyncStackTest006, TestSize.Level2)
 #endif
     GTEST_LOG_(INFO) << "AsyncStackTest006: end.";
 }
+
+/**
+ * @tc.name: AsyncStackTest007
+ * @tc.desc: test incremental (un)register callbacks via DfxSetAsyncStackType
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest007, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "AsyncStackTestWithChainedMode: start.";
+    DfxInitAsyncStack();
+    GTEST_LOG_(INFO) << "DfxCollectAsyncStack: start.";
+    auto start = std::chrono::steady_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        uint64_t stackId = DfxCollectAsyncStack(0);
+        ReleaseAsyncContext(stackId);
+    }
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    GTEST_LOG_(INFO) << "DfxCollectAsyncStack: end. cost: " << duration.count() << "ns" << std::endl;
+
+    GTEST_LOG_(INFO) << "DfxSetSubmitterStackId: start.";
+    start = std::chrono::steady_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        uint64_t stackId = DfxCollectAsyncStack(0);
+        DfxSetSubmitterStackId(stackId);
+        DfxSetSubmitterStackId(0);
+        ReleaseAsyncContext(stackId);
+    }
+    end = std::chrono::steady_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    GTEST_LOG_(INFO) << "DfxSetSubmitterStackId: end. cost: " << duration.count() << "ns" << std::endl;
+
+    GTEST_LOG_(INFO) << "GetCurrentChainedAsyncContext: start.";
+    DfxCollectAsyncStack(0);
+    DfxCollectAsyncStack(0);
+    DfxCollectAsyncStack(0);
+    DfxCollectAsyncStack(0);
+    uint64_t stackId5 = DfxCollectAsyncStack(0);
+    DfxSetSubmitterStackId(stackId5);
+    start = std::chrono::steady_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        DfxAsyncCtx buffer[5];
+        GetCurrentChainedAsyncContext(buffer, 5);
+    }
+    end = std::chrono::steady_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    GTEST_LOG_(INFO) << "GetCurrentChainedAsyncContext: end. cost: " << duration.count() << "ns" << std::endl;
+#endif
+}
+
+/**
+ * @tc.name: AsyncStackTest008
+ * @tc.desc: test incremental (un)register callbacks via DfxSetAsyncStackType
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest008, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "AsyncStackTestWithLastStackMode: start.";
+    DfxInitAsyncStack();
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    GTEST_LOG_(INFO) << "DfxCollectAsyncStack: start.";
+    auto start = std::chrono::steady_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        uint64_t stackId = DfxCollectAsyncStack(0);
+        ReleaseAsyncContext(stackId);
+    }
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    GTEST_LOG_(INFO) << "DfxCollectAsyncStack: end. cost: " << duration.count() << "ns" << std::endl;
+
+    GTEST_LOG_(INFO) << "DfxSetSubmitterStackId: start.";
+    start = std::chrono::steady_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        uint64_t stackId = DfxCollectAsyncStack(0);
+        DfxSetSubmitterStackId(stackId);
+        DfxSetSubmitterStackId(0);
+        ReleaseAsyncContext(stackId);
+    }
+    end = std::chrono::steady_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    GTEST_LOG_(INFO) << "DfxSetSubmitterStackId: end. cost: " << duration.count() << "ns" << std::endl;
+
+    GTEST_LOG_(INFO) << "DfxGetSubmitterStackId: start.";
+    uint64_t stackId = DfxCollectAsyncStack(0);
+    DfxSetSubmitterStackId(stackId);
+    start = std::chrono::steady_clock::now();
+    for (int i = 0; i < 10000000; i++) {
+        DfxGetSubmitterStackId();
+    }
+    end = std::chrono::steady_clock::now();
+    duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    GTEST_LOG_(INFO) << "DfxGetSubmitterStackId: end. cost: " << duration.count() << "ns" << std::endl;
+#endif
+}
 } // namespace HiviewDFX
-} // namepsace OHOS
+} // namespace OHOS

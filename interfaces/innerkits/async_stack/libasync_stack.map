@@ -11,6 +11,11 @@
       DfxInitProfilerAsyncStack;
       DfxSetAsyncStackType;
       DfxCollectStackWithDepth;
+      DfxCollectAsyncStack;
+      SetAsyncStackMode;
+      GetCurrentChainedAsyncContext;
+      ReleaseAsyncContext;
+      DfxPrintChainedStackTrace;
     };
   local:
     *;
