@@ -29,7 +29,7 @@ if (defined(ohos_lite)) {
         cfi = true
         cfi_cross_dso = true
         debug = false
-    }    
+    }
     sources = [ "src/stack_printer.cpp" ]
 
     public_configs = [ ":stack_printer_config" ]

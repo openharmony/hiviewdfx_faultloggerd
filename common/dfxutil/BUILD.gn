@@ -75,7 +75,7 @@ if (defined(ohos_lite)) {
         cfi = true
         cfi_cross_dso = true
         debug = false
-    }    
+    }
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_cfi" ]

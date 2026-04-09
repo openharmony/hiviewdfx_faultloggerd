@@ -77,7 +77,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
         dlerror();
         return;
     }
-    auto addFaultLog = reinterpret_cast<void (*)(FaultDFXLOGIInner*)>(dlsym(handle.get(), "AddFaultLog"));
+    auto addFaultLog = reinterpret_cast<void (*)(void*)>(dlsym(handle.get(), "AddFaultLog"));
     if (addFaultLog == nullptr) {
         DFXLOGW("Failed to dlsym AddFaultLog, %{public}s\n", dlerror());
         dlerror();

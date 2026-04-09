@@ -16,6 +16,11 @@ import("//build/ohos.gni")
 
 if (!defined(ohos_lite)) {
   ohos_executable("crashvalidator") {
+    sanitize = {
+        cfi = true
+        cfi_cross_dso = true
+        debug = false
+    }
     include_dirs = [
       ".",
       "$faultloggerd_common_path/dfxutil",
