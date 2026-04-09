@@ -42,6 +42,7 @@ public:
     void SetWriteFunc(BufferWriteFunc func);
     bool WriteDumpRes(int32_t dumpRes);
     bool WriteMainThreadDone();
+    void ResetDataLen() { currentDataLen_ = 0; }
 
     void WriteMsg(const std::string& msg);
     void WriteFormatMsg(const char *format, ...);
@@ -55,6 +56,7 @@ public:
     void RemoveFileIfNeed(const std::string& dirPath) const;
 private:
     static int DefaultWrite(int32_t fd, const char *buf, const size_t len);
+    bool WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen);
 
     DfxBufferWriter() = default;
     DISALLOW_COPY_AND_MOVE(DfxBufferWriter);
@@ -64,6 +66,7 @@ private:
     SmartFd resFd_;
     std::string briefDumpInfo_;
     ProcessDumpRequest request_;
+    uint32_t currentDataLen_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

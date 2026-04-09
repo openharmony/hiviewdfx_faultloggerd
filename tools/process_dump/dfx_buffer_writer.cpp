@@ -48,26 +48,44 @@ void DfxBufferWriter::WriteMsg(const std::string& msg)
     constexpr size_t step = 1024 * 1024;
     for (size_t i = 0; i < msg.size(); i += step) {
         size_t length = (i + step) < msg.size() ? step : msg.size() - i;
-        writeFunc_(bufFd_.GetFd(), msg.substr(i, length).c_str(), length);
+        int cnt = writeFunc_(bufFd_.GetFd(), msg.substr(i, length).c_str(), length);
+        if (cnt > 0) {
+            currentDataLen_ += static_cast<uint32_t>(cnt);
+        } else {
+            DFXLOGW("Write message failed.");
+            break;
+        }
     }
 }
 
 bool DfxBufferWriter::WriteDumpRes(int32_t dumpRes)
 {
+    return WriteDumpResWithLen(dumpRes, currentDataLen_);
+}
+
+bool DfxBufferWriter::WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen)
+{
     if (!resFd_) {
         return false;
     }
-    ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_.GetFd(), &dumpRes, sizeof(dumpRes)));
-    if (nwrite != static_cast<ssize_t>(sizeof(dumpRes))) {
+    DumpResMessage resMsg = {
+        .code = dumpRes,
+        .dataLen = dataLen
+    };
+    ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_.GetFd(), &resMsg, sizeof(resMsg)));
+    if (nwrite != static_cast<ssize_t>(sizeof(resMsg))) {
         DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
         return false;
     }
+    DFXLOGI("WriteDumpRes: code=%{public}d, dataLen=%{public}u", dumpRes, dataLen);
     return true;
 }
 
 bool DfxBufferWriter::WriteMainThreadDone()
 {
-    return WriteDumpRes(DumpErrorCode::DUMP_EMAIN_THREAD_DONE);
+    bool ret = WriteDumpResWithLen(DumpErrorCode::DUMP_EMAIN_THREAD_DONE, currentDataLen_);
+    currentDataLen_ = 0;
+    return ret;
 }
 
 void DfxBufferWriter::WriteFormatMsg(const char *format, ...)

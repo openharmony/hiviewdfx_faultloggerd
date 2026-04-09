@@ -414,8 +414,8 @@ bool DfxJsonFormatter::FormatJsonStack(std::string& jsonStack, std::string& outS
 
 #ifdef __aarch64__
 static const int PC_LEN = 32;
-static const int FRAME_NAME_LEN = 256;
-static const int FUNC_INFO_LEN = 512;
+static const int FRAME_NAME_LEN = 1024;
+static const int FUNC_INFO_LEN = 1024;
 
 struct FormatKernelStackParams {
     const std::string& kernelStack;

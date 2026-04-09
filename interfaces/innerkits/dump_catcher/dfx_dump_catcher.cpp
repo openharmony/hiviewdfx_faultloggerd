@@ -88,6 +88,9 @@ struct DumpCatcherPipeData {
     std::string bufMsg = "";
     std::string resMsg = "";
     std::string mainThreadStackMsg = "";  // unsymbolized main thread stack, used as fallback on timeout
+    uint32_t mainThreadStackExpectLen = 0;
+    uint32_t mainThreadStackCurLen = 0;
+    bool isMainThreadStackPacket = false;  // true when waiting for first packet completion
 } ;
 
 static bool IsLinuxKernel()
@@ -876,27 +879,53 @@ bool DfxDumpCatcher::Impl::DoReadBuf(DumpCatcherPipeData& pipeData)
     }
     DFXLOGD("%{public}s :: nread: %{public}zu", __func__, nread);
     pipeData.bufMsg.append(buffer.data(), static_cast<size_t>(nread));
+    pipeData.mainThreadStackCurLen += static_cast<uint32_t>(nread);
+
+    // Check if first packet is complete (only when isFirstPacket flag is set)
+    if (pipeData.isMainThreadStackPacket && pipeData.mainThreadStackCurLen == pipeData.mainThreadStackExpectLen) {
+        pipeData.mainThreadStackMsg = std::move(pipeData.bufMsg);
+        pipeData.bufMsg.clear();
+        pipeData.mainThreadStackCurLen = 0;
+        pipeData.mainThreadStackExpectLen = 0;
+        pipeData.isMainThreadStackPacket = false;
+        DFXLOGI("First packet complete in DoReadBuf, saved to mainThreadStackMsg");
+    }
+
     return true;
 }
 
 bool DfxDumpCatcher::Impl::DoReadRes(int& pollRet, DumpCatcherPipeData& pipeData)
 {
-    int32_t res = DumpErrorCode::DUMP_ESUCCESS;
-    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(pipeData.resFd.GetFd(), &res, sizeof(res)));
-    if (nread <= 0 || nread != sizeof(res)) {
-        DFXLOGW("%{public}s :: read error", __func__);
+    DumpResMessage resMsg;
+    ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(pipeData.resFd.GetFd(), &resMsg, sizeof(resMsg)));
+    if (nread <= 0 || nread != sizeof(resMsg)) {
+        DFXLOGW("%{public}s :: read error, nread=%{public}zd", __func__, nread);
         return false;
     }
 
-    if (res == DumpErrorCode::DUMP_EMAIN_THREAD_DONE) {
-        // Save unsymbolized main thread stack as timeout fallback, clear bufMsg for subsequent symbolized data
-        pipeData.mainThreadStackMsg = std::move(pipeData.bufMsg);
-        pipeData.bufMsg = "";
-        DFXLOGI("Read main thread unsymbolic user stack done");
-        return false;  // continue polling, wait for final result
+    DFXLOGI("DoReadRes: code=%{public}d, dataLen=%{public}u, currentLen=%{public}u",
+            resMsg.code, resMsg.dataLen, pipeData.mainThreadStackCurLen);
+
+    if (resMsg.code == DumpErrorCode::DUMP_EMAIN_THREAD_DONE) {
+        pipeData.mainThreadStackExpectLen = resMsg.dataLen;
+        pipeData.isMainThreadStackPacket = true;
+
+        // Check if first packet already complete
+        if (pipeData.mainThreadStackCurLen == pipeData.mainThreadStackExpectLen) {
+            pipeData.mainThreadStackMsg = std::move(pipeData.bufMsg);
+            pipeData.bufMsg.clear();
+            pipeData.mainThreadStackCurLen = 0;
+            pipeData.mainThreadStackExpectLen = 0;
+            pipeData.isMainThreadStackPacket = false;
+            DFXLOGI("First packet complete in DoReadRes, saved to mainThreadStackMsg");
+        } else {
+            DFXLOGI("First packet incomplete: %{public}u/%{public}u, will complete in DoReadBuf",
+                    pipeData.mainThreadStackCurLen, pipeData.mainThreadStackExpectLen);
+        }
+        return false;  // continue polling
     }
 
-    switch (res) {
+    switch (resMsg.code) {
         case DUMP_ESUCCESS:
             pollRet = DUMP_POLL_OK;
             break;
@@ -911,7 +940,7 @@ bool DfxDumpCatcher::Impl::DoReadRes(int& pollRet, DumpCatcherPipeData& pipeData
             break;
     }
 
-    pipeData.resMsg.append("Result: " + DfxDumpRes::ToString(res) + "\n");
+    pipeData.resMsg.append("Result: " + DfxDumpRes::ToString(resMsg.code) + "\n");
     return true;
 }
 

@@ -135,7 +135,8 @@ void DfxSigDumpHandler::RunThread()
         } else if (dumpInfo.empty()) {
             res = DUMP_ENOINFO;
         }
-        ssize_t nres = OHOS_TEMP_FAILURE_RETRY(write(resFd.GetFd(), &res, sizeof(res)));
+        DumpResMessage resMsg {res, dumpInfo.length()};
+        ssize_t nres = OHOS_TEMP_FAILURE_RETRY(write(resFd.GetFd(), &resMsg, sizeof(resMsg)));
         if (nres != sizeof(res)) {
             DFXLOGE("Pid %{public}d Write Res Pipe Failed(%{public}d), nres(%{public}zd)", pid, errno, nres);
         }

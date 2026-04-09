@@ -121,9 +121,9 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest001, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    int32_t resCode = 0;
-    EXPECT_EQ(read(readFd.GetFd(), &resCode, sizeof(resCode)), sizeof(int32_t));
-    EXPECT_EQ(resCode, DUMP_EMAIN_THREAD_DONE);
+    DumpResMessage dumpRes;
+    EXPECT_EQ(read(readFd.GetFd(), &dumpRes, sizeof(dumpRes)), sizeof(dumpRes));
+    EXPECT_EQ(dumpRes.code, DUMP_EMAIN_THREAD_DONE);
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(tid),
@@ -179,9 +179,9 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest002, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     EXPECT_GT(dumpInfo.UnwindStack(process, request, unwinder), 0);
-    int32_t resCode = 0;
-    EXPECT_EQ(read(readFd.GetFd(), &resCode, sizeof(resCode)), sizeof(int32_t));
-    EXPECT_EQ(resCode, DUMP_EMAIN_THREAD_DONE);
+    DumpResMessage dumpRes;
+    EXPECT_EQ(read(readFd.GetFd(), &dumpRes, sizeof(dumpRes)), sizeof(dumpRes));
+    EXPECT_EQ(dumpRes.code, DUMP_EMAIN_THREAD_DONE);
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(g_childTid),
@@ -403,10 +403,9 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
     dumpInfo.UnwindStack(process, request, unwinder);
-    int32_t resCode = 0;
-    ssize_t nread = read(readFd.GetFd(), &resCode, sizeof(resCode));
-    EXPECT_EQ(nread, sizeof(int32_t));
-    EXPECT_EQ(resCode, DUMP_EMAIN_THREAD_DONE);
+    DumpResMessage dumpRes;
+    EXPECT_EQ(read(readFd.GetFd(), &dumpRes, sizeof(dumpRes)), sizeof(dumpRes));
+    EXPECT_EQ(dumpRes.code, DUMP_EMAIN_THREAD_DONE);
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(tid),
