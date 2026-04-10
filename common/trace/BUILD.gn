@@ -51,6 +51,7 @@ if (defined(ohos_lite)) {
     sanitize = {
         cfi = true
         cfi_cross_dso = true
+        cfi_vcall_icall_only = true
         debug = false
     }
     public_configs = [ ":dfx_trace_config" ]
@@ -100,6 +101,7 @@ if (defined(ohos_lite)) {
     sanitize = {
         cfi = true
         cfi_cross_dso = true
+        cfi_vcall_icall_only = true
         debug = false
     }
     public_configs = [ ":dfx_trace_config" ]
