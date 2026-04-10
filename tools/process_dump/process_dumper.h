@@ -105,6 +105,8 @@ private:
     std::string mergeLogString_ = "";
     std::thread mergeLogThread_;
     std::shared_ptr<DfxMaps> dfxMaps_ = nullptr;
+    pthread_t amsReportThread_ {0};
+    bool isReportToAmsThreadCreated_ {false};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

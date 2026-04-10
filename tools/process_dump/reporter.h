@@ -53,7 +53,8 @@ public:
     void Report(DfxProcess& process, const ProcessDumpRequest &request);
 };
 
-void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request);
+void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request, pthread_t *outThread,
+    bool& isCreateThreadSucc);
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif
