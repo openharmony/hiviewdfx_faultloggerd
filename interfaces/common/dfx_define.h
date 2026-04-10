@@ -70,6 +70,7 @@ static const unsigned int SPECIAL_REG_MEM_SIZE = 64;
 
 static const int DECIMAL_BASE = 10;
 static const int HEX_BASE = 16;
+static const int MIN_HAP_UID = 10000;
 
 static const int PROC_STAT_BUF_SIZE = 512;
 static const int PROC_STATM_BUF_SIZE = 512;

@@ -128,6 +128,9 @@ void ProcessDumper::Dump()
         SysEventReporter reporter(request_.type);
         reporter.Report(*process_, request_);
     }
+    if (isReportToAmsThreadCreated_ && request_.uid < MIN_HAP_UID) {
+        pthread_join(amsReportThread_, nullptr);
+    }
 }
 
 DumpErrorCode ProcessDumper::DumpProcess()
@@ -411,9 +414,9 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         DumpUtils::InfoCrashUnwindResult(request_, unwindSuccessCnt > 0);
         DumpUtils::BlockCrashProcExit(request_);
-        ReportToAbilityManagerService(*process_, request_);
+        ReportToAbilityManagerService(*process_, request_, &amsReportThread_, isReportToAmsThreadCreated_);
     }
-    if (!DumpUtils::IsSelinuxPermissive() && request_.uid > 10000) { // 10000 : min app uid
+    if (!DumpUtils::IsSelinuxPermissive() && request_.uid > MIN_HAP_UID) {
         process_->Detach();  // crash scene
         crashDetachTime_ = GetTimeMillisec();
     }
