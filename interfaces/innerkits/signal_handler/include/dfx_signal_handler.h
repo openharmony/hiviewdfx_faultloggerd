@@ -112,6 +112,7 @@ enum CrashLogConfigType : uint8_t {
     CUT_OFF_LOG_FILE,          // log file size limits
     SIMPLIFY_PRINT_MAPS,       // simplified process maps
     MERGE_APP_CRASH_LOG,       // merge app log to cppcrash log
+    SET_MINIDUMP,              // set process enable/disable minidump
 };
 
 /**

@@ -13,6 +13,9 @@
  * limitations under the License.
  */
 #include "dfx_signal_handler.h"
+#ifndef is_ohos_lite
+#include "faultlog_client.h"
+#endif
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
@@ -513,6 +516,15 @@ void DFX_ResetCrashObj(uintptr_t crashObj)
 #endif
 }
 
+static int DFX_SetMinidump(uint32_t config)
+{
+    DFXLOGI("set minidump config: %{public}u", config);
+#ifndef is_ohos_lite
+    return RequestSetMiniDump(config);
+#endif
+    return -1;
+}
+
 int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
 {
     if (!g_hasInit) {
@@ -543,6 +555,12 @@ int DFX_SetCrashLogConfig(uint8_t type, uint32_t value)
         case MERGE_APP_CRASH_LOG:
             g_crashLogConfig = (g_crashLogConfig & mergeAppLogMask) | (value << mergeLogBitOffset);
             break;
+        case SET_MINIDUMP: {
+            const uint64_t minidumpMask = 0xfffffffffffffff7ULL;
+            g_crashLogConfig = (g_crashLogConfig & minidumpMask) | ((uint64_t)(value != 0) << 3); // 3 : minidump off
+            DFX_SetMinidump(value);
+            break;
+        }
         default:
             errno = EINVAL;
             return -1;

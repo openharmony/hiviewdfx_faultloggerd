@@ -97,6 +97,8 @@ typedef enum FaultLoggerClientType : int8_t {
     LIMITED_PROCESS_DUMP_CLIENT,
     /** For request limited process file descriptor of pipe */
     PIPE_FD_LIMITED_CLIENT,
+    /** for set minidump able */
+    MINIDUMP_CLIENT,
 } FaultLoggerClientType;
 
 typedef struct RequestDataHead {
@@ -229,6 +231,17 @@ typedef struct LiteDumpFdRequestData {
     /** process name */
     char processName[128]; // 128 : proc name len
 } __attribute__((packed)) LiteDumpFdRequestData;
+
+typedef struct MiniDumpRequestData {
+    /** request data head **/
+    RequestDataHead head;
+    /** process id */
+    int32_t pid;
+    /** user id */
+    uid_t uid;
+    /** enable minidump */
+    int8_t enableMinidump;
+} __attribute__((packed)) MiniDumpRequestData;
 
 /**
  * @brief  request information

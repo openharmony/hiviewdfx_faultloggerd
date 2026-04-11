@@ -108,6 +108,7 @@ if (defined(ohos_lite)) {
     "$faultloggerd_services_path/coredump/coredump_session_state.cpp",
     "$faultloggerd_services_path/coredump/coredump_signal_service.cpp",
     "$faultloggerd_services_path/coredump/coredump_task_scheduler.cpp",
+    "$faultloggerd_services_path/minidump/minidump_manager_service.cpp",
     "$faultloggerd_services_path/fault_logger_pipe.cpp",
     "$faultloggerd_services_path/kernel_snapshot_task.cpp",
   ]
@@ -124,6 +125,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/interfaces/innerkits/signal_handler",
       "$faultloggerd_services_path/",
       "$faultloggerd_services_path/coredump",
+      "$faultloggerd_services_path/minidump",
     ]
   }
   ohos_static_library("faultloggerd_test_src") {

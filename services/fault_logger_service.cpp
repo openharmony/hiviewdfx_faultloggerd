@@ -34,6 +34,7 @@
 #ifndef is_ohos_lite
 #include "dfx_cutil.h"
 #include "fault_logger_pipe.h"
+#include "minidump_manager_service.h"
 #endif
 
 #ifndef HISYSEVENT_DISABLE
@@ -672,6 +673,39 @@ int32_t LiteProcDumperService::OnRequest(const std::string& socketName, int32_t 
 
     LaunchProcessDump(requestData.pid);
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
+    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+    return responseData;
+}
+
+bool MiniDumpService::Filter(const std::string &socketName, int32_t connectionFd,
+    const MiniDumpRequestData &requestData)
+{
+    struct ucred creds{};
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return false;
+    }
+
+    DFXLOGW("minidump success to check request credential request:%{public}d, cred:%{public}d, fd:%{public}d",
+        requestData.uid, creds.uid, connectionFd);
+    return true;
+}
+
+int32_t MiniDumpService::OnRequest(const std::string &socketName, int32_t connectionFd,
+    const MiniDumpRequestData &requestData)
+{
+    DFXLOGI("onRequest receive minidump");
+    DFX_TRACE_SCOPED("MiniDumpServiceOnRequest");
+
+    if (!Filter(socketName, connectionFd, requestData)) {
+        return ResponseCode::REQUEST_REJECT;
+    }
+
+    auto ret = MinidumpManagerService::GetInstance().SetMiniDump(requestData.pid, requestData.enableMinidump);
+
+    int32_t responseData = ResponseCode::DEFAULT_ERROR_CODE;
+    if (ret == 0) {
+        responseData = ResponseCode::REQUEST_SUCCESS;
+    }
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     return responseData;
 }
