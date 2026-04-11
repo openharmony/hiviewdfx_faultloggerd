@@ -40,7 +40,6 @@ namespace {
 #define LOG_TAG "DfxMap"
 
 const char* const MAP_ARKWEB_CORE_PREFIX = "/data/storage/el1/bundle/arkwebcore/";
-const char* const ARKWEB_CORE_REAL_PATH = "/data/app/el1/bundle/public/com.huawei.hmos.arkwebcore/";
 const char* const SANDBOX_PATH_PREFIX = "/data/storage/el1/bundle/";
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 
@@ -454,7 +453,7 @@ void DfxMap::FormatMapName(const std::string& bundleName, std::string& mapName, 
     }
     // arkwebcore process get real path
     if (StartsWith(mapName, MAP_ARKWEB_CORE_PREFIX)) {
-        mapName = ARKWEB_CORE_REAL_PATH + mapName.substr(strlen(MAP_ARKWEB_CORE_PREFIX));
+        mapName = GetArkWebCorePathPrefix() + mapName.substr(strlen(MAP_ARKWEB_CORE_PREFIX));
         if (isArkWeb) {
             return;
         }
