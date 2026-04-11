@@ -46,6 +46,7 @@ if (defined(ohos_lite)) {
     sanitize = {
         cfi = true
         cfi_cross_dso = true
+        cfi_vcall_icall_only = true
         debug = false
     }
     sources = crash_exception_sources
