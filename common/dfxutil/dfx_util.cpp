@@ -193,6 +193,17 @@ bool IsOversea()
 }
 #endif
 
+std::string GetArkWebCorePathPrefix()
+{
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC) && !defined(is_host)
+    static const std::string prefix = "/data/app/el1/bundle/public/" +
+        OHOS::system::GetParameter("persist.arkwebcore.package_name", "Unknown") + "/";
+    return prefix;
+#else
+    return "";
+#endif
+}
+
 off_t GetFileSize(int fd)
 {
     if (fd < 0) {

@@ -306,6 +306,19 @@ HWTEST_F(CommonTest, SafeStrtolCpp001, TestSize.Level2)
     EXPECT_EQ(num, 123);
     GTEST_LOG_(INFO) << "SafeStrtolCpp001: end.";
 }
+
+/**
+ * @tc.name: GetArkWebCorePathPrefix001
+ * @tc.desc: test GetArkWebCorePathPrefix function
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonTest, GetArkWebCorePathPrefix001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "GetArkWebCorePathPrefix001: start.";
+    std::string prefix = GetArkWebCorePathPrefix();
+    EXPECT_TRUE(prefix.find("arkwebcore") != std::string::npos);
+    GTEST_LOG_(INFO) << "GetArkWebCorePathPrefix001: end.";
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS
