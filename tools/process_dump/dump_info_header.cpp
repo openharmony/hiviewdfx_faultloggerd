@@ -124,6 +124,7 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
     constexpr uint32_t extendPcLrMask = 0x1;
     constexpr uint32_t simplifyVmaMask = 0x2;
     constexpr uint32_t mergeAppLogMask = 0x4;
+    constexpr uint32_t minidumpLogMask = 0x8;
     CrashLogConfig crashLogConfig;
     std::string crashLogConfigInfo;
     if ((request.crashLogConfig & extendPcLrMask) == extendPcLrMask) {
@@ -143,6 +144,10 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
     if ((request.crashLogConfig & mergeAppLogMask) == mergeAppLogMask) {
         crashLogConfig.mergeAppLog = true;
         crashLogConfigInfo += "Merge app log printing:true\n";
+    }
+    if ((request.crashLogConfig & minidumpLogMask) == minidumpLogMask) {
+        crashLogConfig.minidumpLog = true;
+        crashLogConfigInfo += "Enable minidump log:true\n";
     }
     if (!crashLogConfigInfo.empty()) {
         crashLogConfigInfo = "Enabled app log configs:\n" + crashLogConfigInfo;

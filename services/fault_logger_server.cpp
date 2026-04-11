@@ -56,6 +56,7 @@ bool SocketServer::Init()
     AddService(PIPE_FD_LITEPERF_CLIENT, std::make_unique<LitePerfPipeService>());
     AddService(LIMITED_PROCESS_DUMP_CLIENT, std::make_unique<LiteProcDumperService>());
     AddService(PIPE_FD_LIMITED_CLIENT, std::make_unique<LiteProcDumperPipeService>());
+    AddService(MINIDUMP_CLIENT, std::make_unique<MiniDumpService>());
     if (!AddServerListener(SERVER_SDKDUMP_SOCKET_NAME)) {
         return false;
     }

@@ -25,6 +25,7 @@
 #include "fault_logger_server.h"
 
 #ifndef is_ohos_lite
+#include "minidump_manager_service.h"
 #include "kernel_snapshot_task.h"
 #endif
 
@@ -62,6 +63,7 @@ bool FaultLoggerDaemon::InitHelperServer()
         return false;
     }
 #ifndef is_ohos_lite
+    MinidumpManagerService::GetInstance().Init();
     EpollManager::GetInstance().AddListener(std::make_unique<ReadKernelSnapshotTask>());
 #endif
     return true;
