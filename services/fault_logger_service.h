@@ -144,6 +144,14 @@ private:
     static  std::map<int, int> launchLiteDumpPipeMap_;
 };
 
+class MiniDumpService : public FaultLoggerService<MiniDumpRequestData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const MiniDumpRequestData& requestData) override;
+private:
+    static bool Filter(const std::string& socketName, int32_t connectionFd, const MiniDumpRequestData& requestData);
+};
+
 class PipeService : public FaultLoggerService<PipFdRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,

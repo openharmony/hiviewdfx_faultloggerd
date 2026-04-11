@@ -30,6 +30,7 @@ group("unittest") {
       "backtrace:unittest",
       "crash_exception:unittest",
       "coredump:unittest",
+      "minidump:unittest",
       "dump_catcher:unittest",
       "formatter:unittest",
       "kernel_snapshot:unittest",

@@ -85,6 +85,7 @@ if (defined(ohos_lite)) {
     "./coredump/coredump_session_state.cpp",
     "./coredump/coredump_signal_service.cpp",
     "./coredump/coredump_task_scheduler.cpp",
+    "./minidump/minidump_manager_service.cpp",
     "fault_logger_pipe.cpp",
     "kernel_snapshot_task.cpp",
   ]
@@ -95,6 +96,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       ".",
       "./coredump",
+      "./minidump",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxlog",
       "$faultloggerd_path/common/dfxutil",

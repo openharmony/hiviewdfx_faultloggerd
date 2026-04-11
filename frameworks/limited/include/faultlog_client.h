@@ -45,6 +45,13 @@ AT_SYMBOL_HIDDEN int32_t RequestLimitedDelPipeFd(int pid);
 */
 AT_SYMBOL_HIDDEN int32_t RequestLimitedProcessDump(int pid);
 
+/**
+ * @brief set minidump
+ * @param able true to enable minidump, false to disable minidump
+ * @return if success return 0, otherwise return the error code
+ */
+int32_t RequestSetMiniDump(bool able);
+
 #ifdef __cplusplus
 }
 #endif

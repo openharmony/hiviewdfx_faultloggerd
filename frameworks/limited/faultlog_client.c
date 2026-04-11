@@ -261,3 +261,13 @@ int32_t RequestLimitedProcessDump(int pid)
     return DEFAULT_ERROR_CODE;
 #endif
 }
+
+int32_t RequestSetMiniDump(bool able)
+{
+    MiniDumpRequestData request = {0};
+    request.head.clientType = MINIDUMP_CLIENT;
+    request.head.clientPid = getpid();
+    request.pid = getpid();
+    request.enableMinidump = (int8_t)able;
+    return RequestServer(&request, sizeof(request), NULL);
+}

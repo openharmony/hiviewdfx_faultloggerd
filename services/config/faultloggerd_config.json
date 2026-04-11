@@ -115,6 +115,15 @@
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 113,
+      "fileNamePrefix": "minidump",
+      "maxSingleFileSizeInKB": 102400,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 5,
+      "maxFileCount": 5,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }
