@@ -319,7 +319,6 @@ DumpErrorCode ProcessDumper::ReadRequestAndCheck()
     return DumpErrorCode::DUMP_ESUCCESS;
 }
 
-
 void ProcessDumper::UpdateConfigByRequest()
 {
     if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
@@ -400,9 +399,10 @@ void ProcessDumper::PrintDumpInfo(DumpErrorCode& dumpRes)
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         DumpUtils::InfoCrashUnwindResult(request_, unwindSuccessCnt > 0);
         DumpUtils::BlockCrashProcExit(request_);
+        ReportToAbilityManagerService(*process_, request_);
     }
-    if (!DumpUtils::IsSelinuxPermissive()) {
-        process_->Detach();  // crash secene
+    if (!DumpUtils::IsSelinuxPermissive() && request_.uid > 10000) { // 10000 : min app uid
+        process_->Detach();  // crash scene
     }
     dumpRes = unwindSuccessCnt > 0 ? ConcurrentSymbolize() : DumpErrorCode::DUMP_ESTOPUNWIND;
     if (!isJsonDump_) { // isJsonDump_ will print after format json
