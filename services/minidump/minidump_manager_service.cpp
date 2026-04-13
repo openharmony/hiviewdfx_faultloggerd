@@ -84,9 +84,9 @@ bool FinalizeMinidumpFile(const std::string& tmpPath)
     return true;
 }
 
-const char* DumpTypeToString(int dump_type)
+const char* DumpTypeToString(int dumpType)
 {
-    switch (dump_type) {
+    switch (dumpType) {
         case __PDUMP_TYPE_CALLSTACK:  return "callstack";
         case __PDUMP_TYPE_MINIDUMP:   return "minidump";
         case __PDUMP_TYPE_COREDUMP:   return "coredump";
@@ -94,9 +94,9 @@ const char* DumpTypeToString(int dump_type)
     }
 }
 
-const char* DataTypeToString(int data_type)
+const char* DataTypeToString(int dataType)
 {
-    switch (data_type) {
+    switch (dataType) {
         case __DATA_TYPE_WORK_START:  return "WORK_START";
         case __DATA_TYPE_WORK_END:    return "WORK_END";
         default:                      return "UNKNOWN";
@@ -129,19 +129,19 @@ MinidumpManagerService& MinidumpManagerService::GetInstance()
 bool MinidumpManagerService::Init()
 {
     DFXLOGI("minidump manager init");
-    pFd_ = open("/dev/pdump", O_RDONLY);
+    pFd_ = open("/dev/pdump", O_NONBLOCK);
     if (pFd_ < 0) {
         DFXLOGE("failed to open /dev/pdump, errno=%{public}d", errno);
         return false;
     }
 
-    struct __pdump_init_arg_s init_arg = {0};
-    init_arg.target_pid = __PDUMP_PID_FROM_CONFIG;
-    init_arg.children_only = false;
-    init_arg.read_nonblock = true;
-    init_arg.dump_type_flag = __PDUMP_TYPE_FLAG_MINIDUMP;
+    struct __pdump_init_arg_s initArg = {0};
+    initArg.target_pid = __PDUMP_PID_FROM_CONFIG;
+    initArg.children_only = false;
+    initArg.read_nonblock = false;
+    initArg.dump_type_flag = __PDUMP_TYPE_FLAG_MINIDUMP;
 
-    int ret = ioctl(pFd_, __PDUMP_IOCTL_INIT, &init_arg);
+    int ret = ioctl(pFd_, __PDUMP_IOCTL_INIT, &initArg);
     if (ret < 0) {
         DFXLOGE("failed to ioctl init pdump, errno=%{public}d", errno);
         close(pFd_);
