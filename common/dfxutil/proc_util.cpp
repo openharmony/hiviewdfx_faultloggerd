@@ -219,6 +219,16 @@ bool ParseProcInfo(pid_t pid, ProcessInfo& info)
     return ParseStat(path, info);
 }
 
+bool ParseProcInfo(pid_t pid, pid_t tid, ProcessInfo& info)
+{
+    std::string path = "/proc/" + std::to_string(pid) + "/task/" + std::to_string(tid) + "/stat";
+    if (ParseStat(path, info)) {
+        return true;
+    }
+    path = "/proc/" + std::to_string(tid) + "/stat";
+    return ParseStat(path, info);
+}
+
 std::string FomatProcessInfoToString(const ProcessInfo& info)
 {
     std::string formatStr;
