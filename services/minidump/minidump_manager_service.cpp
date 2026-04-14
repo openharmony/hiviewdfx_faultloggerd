@@ -35,6 +35,7 @@ constexpr size_t BUFFER_SIZE = 4096;
 constexpr const char* const MINIDUMP_PATH = "/data/log/faultlog/temp/";
 constexpr const char* const MINIDUMP_PREFIX = "minidump-";
 constexpr const char* const MINIDUMP_EXT = ".dmp";
+constexpr uint32_t MAX_PDUMP_THREAD_COUNT = 400;
 
 std::string GenerateMinidumpFilename(pid_t pid)
 {
@@ -140,6 +141,7 @@ bool MinidumpManagerService::Init()
     initArg.children_only = false;
     initArg.read_nonblock = false;
     initArg.dump_type_flag = __PDUMP_TYPE_FLAG_MINIDUMP;
+    initArg.config.nr_threads_max = MAX_PDUMP_THREAD_COUNT;
 
     int ret = ioctl(pFd_, __PDUMP_IOCTL_INIT, &initArg);
     if (ret < 0) {
