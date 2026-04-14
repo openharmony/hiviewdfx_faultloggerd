@@ -72,8 +72,8 @@ HWTEST_F(ProcessDumpConfigTest, ProcessDumpConfigTest001, TestSize.Level2)
     ASSERT_EQ(dumpInfoMemLeak, config.dumpInfo[ProcessDumpType::DUMP_TYPE_MEM_LEAK]);
 
     std::vector<std::string> dumpInfoFdSan = {
-        "KeyThreadDumpInfo", "DumpInfoHeader", "Registers",
-        "MemoryNearRegister", "FaultStack", "Maps", "OpenFiles",
+        "KeyThreadDumpInfo", "DumpInfoHeader", "SubmitterStack",
+        "Registers", "MemoryNearRegister", "FaultStack", "Maps", "OpenFiles",
     };
     ASSERT_EQ(dumpInfoFdSan, config.dumpInfo[ProcessDumpType::DUMP_TYPE_FDSAN]);
 

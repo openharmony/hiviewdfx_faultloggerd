@@ -79,6 +79,7 @@ public:
     static int CrashInLibuvWork();
     static int CrashInLibuvTimer();
     static int CrashInLibuvWorkDone();
+    static int FdsanInLibuvWork();
 #endif
     static int TestDeadlock();
 
