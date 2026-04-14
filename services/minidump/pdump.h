@@ -78,7 +78,7 @@ struct __pdump_work_data_s {
 	unsigned int dump_type;
 	/* pid of the target process */
 	pid_t pid;
-	/* the pipe fd for reading out data*/
+	/* the pipe fd for reading out data */
 	int pipefd;
 	int reserved;
 };
@@ -101,15 +101,22 @@ struct __pdump_data_s {
 	} data;
 };
 
-union __pdump_init_config_u {
-	struct {
-		/* streams to dump for session, bitwise flags of enum __minidump_stream_type */
-		__u64 target_stream_flags;
-	} minidump_config;
+struct __pdump_minidump_init_config_s {
+	/* streams to dump for session, bitwise flags of enum __minidump_stream_type */
+	__u64 target_stream_flags;
+};
 
-	struct {
-		__u64 coredump_filter;
-	} coredump_config;
+struct __pdump_coredump_init_config_s {
+	__u64 coredump_filter;
+};
+
+struct __pdump_init_config_s {
+	/* maxnium number of threads to dump for one process */
+	__u32 nr_threads_max;
+	__u32 reserved;
+
+	struct __pdump_minidump_init_config_s minidump_config;
+	struct __pdump_coredump_init_config_s coredump_config;
 };
 
 #define __PDUMP_PID_NO_RESTRICT ((pid_t)-1)
@@ -117,20 +124,22 @@ union __pdump_init_config_u {
 struct __pdump_init_arg_s {
 	/* flags of __PDUMP_TYPE_FLAG_XXX */
 	unsigned int dump_type_flag;
-	/* pid of target process to dump,
+	/*
+	 * pid of target process to dump,
 	 * when specified as -1 (__PDUMP_PID_NO_RESTRICT), any processes will be dumped,
 	 * when specified as 0 (__PDUMP_PID_FROM_CONFIG), only the processes configured
 	 * through __PDUMP_IOCTL_SET_DUMPABLE will be dumped, otherwise,
-	 * only the process matches this pid will be dumped */
+	 * only the process matches this pid will be dumped
+	 */
 	pid_t target_pid;
 	/* only dump children processes */
 	bool children_only;
 	/* comm of the target processes */
 	char target_comm[__PDUMP_MAX_COMM_LEN];
-	/* read records in nonblock mode, set to true when using epoll  */
+	/* set pipefd to nonblock mode */
 	bool read_nonblock;
 
-	union __pdump_init_config_u config;
+	struct __pdump_init_config_s config;
 };
 
 struct __pdump_livedump_arg_s {
