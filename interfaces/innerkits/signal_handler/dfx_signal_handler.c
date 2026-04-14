@@ -268,7 +268,8 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context, bool isSigA
                  g_appRunningUniqueId, sizeof(g_appRunningUniqueId)) != EOK) {
         DFXLOGE("FillDumpRequest appRunningUniqueId memcpy fail!");
     }
-    if (!IsDumpSignal(signo) && g_getStackIdCallback != NULL) {
+    if ((g_request.type == DUMP_TYPE_CPP_CRASH || g_request.type == DUMP_TYPE_FDSAN) &&
+        g_getStackIdCallback != NULL) {
         g_request.stackId = g_getStackIdCallback();
         DFXLOGI("g_GetStackIdFunc %{private}p.", (void*)g_request.stackId);
     }
