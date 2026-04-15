@@ -44,7 +44,7 @@ DfxThread::DfxThread(pid_t pid, pid_t tid, pid_t nsTid, bool readStat) : regs_(n
     InitThreadInfo(pid, tid, nsTid);
 
     if (readStat) {
-        std::string path = "/proc/" + std::to_string(tid) + "/stat";
+        std::string path = "/proc/" + std::to_string(pid) + "/task/" + std::to_string(tid) + "/stat";
         processInfo_ = std::make_shared<ProcessInfo>();
         if (!ParseStat(path, *processInfo_)) {
             processInfo_ = nullptr;

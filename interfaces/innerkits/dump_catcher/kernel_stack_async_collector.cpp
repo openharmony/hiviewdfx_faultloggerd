@@ -176,13 +176,13 @@ void KernelStackAsyncCollector::CollectKernelStackTask(int pid, std::promise<Ker
     std::string kernelStackInfo;
     int kernelRet = 0;
     bool isMainThread = true;
-    std::function<bool(int)> stackTask = [&kernelStackInfo, &kernelRet, &isMainThread](int tid) {
+    std::function<bool(int)> stackTask = [pid, &kernelStackInfo, &kernelRet, &isMainThread](int tid) {
         if (tid <= 0) {
             return false;
         }
         ProcessInfo info;
         std::string threadStat = "";
-        if (ParseProcInfo(tid, info)) {
+        if (ParseProcInfo(pid, tid, info)) {
             threadStat = FomatProcessInfoToString(info) + "\n";
         }
         std::string tidKernelStackInfo;
