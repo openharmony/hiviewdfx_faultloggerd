@@ -204,3 +204,9 @@ int TidToNstid(const int pid, const int tid)
     close(fd);
     return nstid;
 }
+
+bool IsMiniDumpEnable(uint64_t crashLogConfig)
+{
+    const uint64_t minidumpLogMask = 0x8;
+    return (crashLogConfig & minidumpLogMask) == minidumpLogMask;
+}
