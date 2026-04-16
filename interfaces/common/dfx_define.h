@@ -20,7 +20,7 @@
 #include <stdio.h>
 
 #define SIGDUMP 35
-#define SIGDUMP_MINIDUMP 6 // When sig=35, use si_code = 6 mark the event as minidump
+#define SIGDUMP_CODE_MINIDUMP 6 // When sig=35, use si_code = 6 mark the event as minidump
 #define SIGLOCAL_DUMP 38
 #define SIGLEAK_STACK 42
 #define SIGLEAK_STACK_FDSAN 1 // When sig = 42, use si_code = 1 mark the event as fdsan

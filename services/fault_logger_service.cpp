@@ -726,7 +726,7 @@ bool MiniDumpService::SendMinidumpSignal(pid_t pid)
     DFXLOGI("send sigdump minidump to %{public}d", pid);
     siginfo_t si{0};
     si.si_signo = SIGDUMP;
-    si.si_code = -SIGDUMP_MINIDUMP;
+    si.si_code = -SIGDUMP_CODE_MINIDUMP;
     if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
         DFXLOGE("Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
             si.si_signo, errno);
