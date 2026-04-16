@@ -346,13 +346,13 @@ static bool PreSigdumpCheck(int signo, siginfo_t *si)
     if (signo != SIGDUMP || si == NULL) {
         return true;
     }
-    if (signo == SIGDUMP && si->si_code == -SIGDUMP_MINIDUMP) {
+    if (si->si_code == -SIGDUMP_CODE_MINIDUMP) {
         DFXLOGI("DFX_RestoreDumpableState");
         DFX_RestoreDumpableState();
         return false;
     }
 
-    if (signo == SIGDUMP && si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
+    if (si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
         return false;
     }
     return true;
