@@ -244,6 +244,7 @@ if (defined(ohos_lite)) {
     }
 
     deps = [
+      "$faultloggerd_common_path/cutil:dfx_cutil_cfi",
       "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
       "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
       "$faultloggerd_common_path/trace:dfx_trace_cfi",

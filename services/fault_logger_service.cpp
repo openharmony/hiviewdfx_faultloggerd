@@ -102,6 +102,14 @@ bool CheckRequestCredential(int32_t connectionFd, int32_t requestPid)
     }
     return true;
 }
+
+std::string GetRealCmdLine(pid_t pid)
+{
+    std::string cmdlinePath = "/proc/" + std::to_string(pid) + "/cmdline";
+    std::string cmdLineCont;
+    LoadStringFromFile(cmdlinePath, cmdLineCont);
+    return cmdLineCont.c_str(); // clear zero char
+}
 }
 
 #ifndef HISYSEVENT_DISABLE
@@ -249,6 +257,9 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
         return ResponseCode::ABNORMAL_SERVICE;
     }
 #ifndef is_ohos_lite
+    if (requestData.minidump == true) {
+        MiniDumpService::RestoreDumpable(requestData.pid);
+    }
     TempFileManager::RecordFileCreation(requestData.type, requestData.pid);
 #endif
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
@@ -708,6 +719,42 @@ int32_t MiniDumpService::OnRequest(const std::string &socketName, int32_t connec
     }
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     return responseData;
+}
+
+bool MiniDumpService::SendMinidumpSignal(pid_t pid)
+{
+    DFXLOGI("send sigdump minidump to %{public}d", pid);
+    siginfo_t si{0};
+    si.si_signo = SIGDUMP;
+    si.si_code = -SIGDUMP_MINIDUMP;
+    if (syscall(SYS_rt_sigqueueinfo, pid, si.si_signo, &si) != 0) {
+        DFXLOGE("Failed to SYS_rt_sigqueueinfo signal(%{public}d), errno(%{public}d).",
+            si.si_signo, errno);
+        return false;
+    }
+    return true;
+}
+
+bool MiniDumpService::RestoreDumpable(pid_t pid)
+{
+    if (pid <= 0) {
+        return false;
+    }
+    DFXLOGI("ready restore dumpable to %{public}d later", pid);
+    std::string cmdLine = GetRealCmdLine(pid);
+    if (cmdLine.empty()) {
+        return false;
+    }
+    auto task = [pid, cmdLine]() {
+        if (cmdLine == GetRealCmdLine(pid)) {
+            SendMinidumpSignal(pid);
+        } else {
+            DFXLOGI("cmdline changed, don't send sig minidump to %{public}d", pid);
+        }
+    };
+    constexpr int delaySec = 30;
+    DelayTaskQueue::GetInstance().AddDelayTask(task, delaySec);
+    return true;
 }
 #endif
 }

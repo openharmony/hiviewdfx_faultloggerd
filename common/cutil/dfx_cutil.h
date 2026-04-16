@@ -44,6 +44,8 @@ AT_SYMBOL_HIDDEN void SafeDelayOneMillSec(void);
 
 AT_SYMBOL_HIDDEN int TidToNstid(const int pid, const int tid);
 
+AT_SYMBOL_HIDDEN bool IsMiniDumpEnable(uint64_t crashLogConfig);
+
 #ifdef __cplusplus
 }
 #endif

@@ -257,6 +257,8 @@ typedef struct FaultLoggerdRequest {
     int32_t tid;
     /** time of current request */
     uint64_t time;
+    /** minidump */
+    int32_t minidump;
 } __attribute__((packed)) FaultLoggerdRequest;
 
 /**

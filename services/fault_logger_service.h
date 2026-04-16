@@ -148,8 +148,10 @@ class MiniDumpService : public FaultLoggerService<MiniDumpRequestData> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const MiniDumpRequestData& requestData) override;
+    static bool RestoreDumpable(pid_t pid);
 private:
     static bool Filter(const std::string& socketName, int32_t connectionFd, const MiniDumpRequestData& requestData);
+    static bool SendMinidumpSignal(pid_t pid);
 };
 
 class PipeService : public FaultLoggerService<PipFdRequestData> {

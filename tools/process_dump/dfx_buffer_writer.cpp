@@ -28,6 +28,7 @@
 #include "dfx_exception.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
+#include "dfx_cutil.h"
 #include "directory_ex.h"
 #include "faultloggerd_client.h"
 
@@ -219,7 +220,8 @@ bool DfxBufferWriter::InitBufferWriter(const ProcessDumpRequest& request)
             .pid = request_.pid,
             .type = GetFaultloggerdRequestType(),
             .tid = request_.tid,
-            .time = request_.timeStamp
+            .time = request_.timeStamp,
+            .minidump = IsMiniDumpEnable(request.crashLogConfig)
         };
         bufferFd = SmartFd {RequestFileDescriptorEx(&faultloggerdRequest)};
         if (!bufferFd) {
