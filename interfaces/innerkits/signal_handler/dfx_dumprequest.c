@@ -356,7 +356,11 @@ static bool SetDumpState(void)
 
 static void RestoreDumpState(bool isTracerStatusModified)
 {
-    DFX_RestoreDumpableState();
+    // if minidump is enable, keep dump enable status
+    if (!IsMiniDumpEnable(g_request->crashLogConfig)) {
+        DFX_RestoreDumpableState();
+    }
+
     if (isTracerStatusModified == true) {
         prctl(PR_SET_PTRACER, 0);
     }

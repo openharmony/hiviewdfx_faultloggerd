@@ -22,6 +22,7 @@
 #include "dfx_log.h"
 #include "dfx_signal.h"
 #include "dfx_util.h"
+#include "dfx_cutil.h"
 #include "dump_utils.h"
 #include "crash_exception.h"
 #include "string_printf.h"
@@ -124,7 +125,6 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
     constexpr uint32_t extendPcLrMask = 0x1;
     constexpr uint32_t simplifyVmaMask = 0x2;
     constexpr uint32_t mergeAppLogMask = 0x4;
-    constexpr uint32_t minidumpLogMask = 0x8;
     CrashLogConfig crashLogConfig;
     std::string crashLogConfigInfo;
     if ((request.crashLogConfig & extendPcLrMask) == extendPcLrMask) {
@@ -145,7 +145,7 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
         crashLogConfig.mergeAppLog = true;
         crashLogConfigInfo += "Merge app log printing:true\n";
     }
-    if ((request.crashLogConfig & minidumpLogMask) == minidumpLogMask) {
+    if (IsMiniDumpEnable(request.crashLogConfig)) {
         crashLogConfig.minidumpLog = true;
         crashLogConfigInfo += "Enable minidump log:true\n";
     }
