@@ -176,7 +176,7 @@ HWTEST_F(CommonCutilTest, SafeStrtol001, TestSize.Level2)
 }
 
 /**
- * @tc.name: SafeStrtol001
+ * @tc.name: TidToNstid001
  * @tc.desc: test TidToNstid functions
  * @tc.type: FUNC
  */
@@ -185,6 +185,44 @@ HWTEST_F(CommonCutilTest, TidToNstid001, TestSize.Level2)
     GTEST_LOG_(INFO) << "TidToNstid001: start.";
     EXPECT_EQ(TidToNstid(getpid(), gettid()), -1);
     GTEST_LOG_(INFO) << "TidToNstid001: end.";
+}
+
+/**
+ * @tc.name: IsMiniDumpEnable001
+ * @tc.desc: test IsMiniDumpEnable with minidump bit set
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, IsMiniDumpEnable001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsMiniDumpEnable001: start.";
+    uint64_t crashLogConfig = 0x8;
+    EXPECT_TRUE(IsMiniDumpEnable(crashLogConfig));
+    crashLogConfig = 0x0;
+    EXPECT_FALSE(IsMiniDumpEnable(crashLogConfig));
+    crashLogConfig = 0x1;
+    EXPECT_FALSE(IsMiniDumpEnable(crashLogConfig));
+    crashLogConfig = 0x7;
+    EXPECT_FALSE(IsMiniDumpEnable(crashLogConfig));
+    GTEST_LOG_(INFO) << "IsMiniDumpEnable001: end.";
+}
+
+/**
+ * @tc.name: IsMiniDumpEnable002
+ * @tc.desc: test IsMiniDumpEnable with combined config bits
+ * @tc.type: FUNC
+ */
+HWTEST_F(CommonCutilTest, IsMiniDumpEnable002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsMiniDumpEnable002: start.";
+    uint64_t crashLogConfig = 0xF;
+    EXPECT_TRUE(IsMiniDumpEnable(crashLogConfig));
+    crashLogConfig = 0x9;
+    EXPECT_TRUE(IsMiniDumpEnable(crashLogConfig));
+    crashLogConfig = 0xA;
+    EXPECT_TRUE(IsMiniDumpEnable(crashLogConfig));
+    crashLogConfig = 0x3;
+    EXPECT_FALSE(IsMiniDumpEnable(crashLogConfig));
+    GTEST_LOG_(INFO) << "IsMiniDumpEnable002: end.";
 }
 }
 } // namespace HiviewDFX

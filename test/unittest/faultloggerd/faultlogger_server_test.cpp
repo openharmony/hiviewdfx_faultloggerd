@@ -19,6 +19,7 @@
 #include <securec.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
 
@@ -26,6 +27,7 @@
 #include "dfx_socket_request.h"
 #include "dfx_util.h"
 #include "dfx_test_util.h"
+#include "fault_logger_service.h"
 #include "faultloggerd_client.h"
 #include "faultloggerd_socket.h"
 #include "faultloggerd_test.h"
@@ -634,5 +636,59 @@ HWTEST_F(FaultLoggerdServiceTest, AbnormalTest007, TestSize.Level2)
     EXPECT_EQ(faultLoggerdSocket2.RequestServer({&requestData, sizeof(requestData)}),
         ResponseCode::REQUEST_SUCCESS);
 }
+
+#ifndef is_ohos_lite
+/**
+ * @tc.name: SendMinidumpSignalTest001
+ * @tc.desc: test SendMinidumpSignal with invalid pid
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, SendMinidumpSignalTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SendMinidumpSignalTest001: start.";
+    EXPECT_FALSE(MiniDumpService::SendMinidumpSignal(-1));
+    EXPECT_FALSE(MiniDumpService::SendMinidumpSignal(0));
+    pid_t nonExistentPid = 9999999;
+    EXPECT_FALSE(MiniDumpService::SendMinidumpSignal(nonExistentPid));
+    GTEST_LOG_(INFO) << "SendMinidumpSignalTest001: end.";
+}
+/**
+ * @tc.name: RestoreDumpableTest001
+ * @tc.desc: test RestoreDumpable with invalid pid
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, RestoreDumpableTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "RestoreDumpableTest001: start.";
+    EXPECT_FALSE(MiniDumpService::RestoreDumpable(-1));
+    EXPECT_FALSE(MiniDumpService::RestoreDumpable(0));
+    pid_t nonExistentPid = 9999999;
+    EXPECT_FALSE(MiniDumpService::RestoreDumpable(nonExistentPid));
+    GTEST_LOG_(INFO) << "RestoreDumpableTest001: end.";
+}
+/**
+ * @tc.name: RestoreDumpableTest002
+ * @tc.desc: test RestoreDumpable after process exits
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdServiceTest, RestoreDumpableTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "RestoreDumpableTest002: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "fork failed";
+        FAIL();
+    }
+    if (pid == 0) {
+        _exit(0);
+    } else {
+        int status = 0;
+        waitpid(pid, &status, 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        EXPECT_FALSE(MiniDumpService::RestoreDumpable(pid));
+    }
+    GTEST_LOG_(INFO) << "RestoreDumpableTest002: end.";
+}
+#endif
 } // namespace HiviewDFX
 } // namespace OHOS
