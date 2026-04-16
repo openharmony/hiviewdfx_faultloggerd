@@ -341,6 +341,23 @@ static void DumpPrviRequest(int signo)
     DumpPrviProcess(signo, &g_request);
 }
 
+static bool PreSigdumpCheck(int signo, siginfo_t *si)
+{
+    if (signo != SIGDUMP || si == NULL) {
+        return true;
+    }
+    if (signo == SIGDUMP && si->si_code == -SIGDUMP_MINIDUMP) {
+        DFXLOGI("DFX_RestoreDumpableState");
+        DFX_RestoreDumpableState();
+        return false;
+    }
+
+    if (signo == SIGDUMP && si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
+        return false;
+    }
+    return true;
+}
+
 static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSigAction)
 {
     int pid = syscall(SYS_getpid);
@@ -351,7 +368,7 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
 
     DFXLOGI("DFX_SignalHandler :: signo(%{public}d), si_code(%{public}d), pid(%{public}d), tid(%{public}d).",
             signo, si->si_code, pid, tid);
-    if (signo == SIGDUMP && si->si_code != DUMP_TYPE_REMOTE && si->si_code != DUMP_TYPE_REMOTE_JSON) {
+    if (!PreSigdumpCheck(signo, si)) {
         return IsDumpSignal(signo);
     }
     static _Atomic(int) handlingTid = 0;
