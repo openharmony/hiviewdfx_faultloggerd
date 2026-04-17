@@ -169,6 +169,8 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
         &DfxCrasher::CrashInLibuvTimer},
     {"CrashInLibuvWorkDone", "Test async-stacktrace api in work callback done crash case",
         &DfxCrasher::CrashInLibuvWorkDone},
+    {"FdsanInLibuvWork", "Test async-stacktrace api in work callback fdsan case",
+        &DfxCrasher::FdsanInLibuvWork},
 #endif
 };
 
@@ -825,6 +827,18 @@ NOINLINE static void WorkCallback(uv_work_t* req)
     raise(SIGSEGV);
 }
 
+NOINLINE static void WorkFdsanCallback(uv_work_t* req)
+{
+    fdsan_set_error_level(FDSAN_ERROR_LEVEL_WARN_ONCE);
+    FILE *fp = fopen("/dev/null", "w+");
+    if (fp == nullptr) {
+        return;
+    }
+    close(fileno(fp));
+    uint64_t tag = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, reinterpret_cast<uint64_t>(fp));
+    fdsan_exchange_owner_tag(fileno(fp), tag, 0);
+}
+
 NOINLINE static void AfterWorkCallback(uv_work_t* req, int status)
 {
     g_events++;
@@ -853,6 +867,24 @@ NOINLINE int DfxCrasher::CrashInLibuvWork()
     uv_queue_work(loop, &work, WorkCallback, AfterWorkCallback);
     uv_run(loop, UV_RUN_DEFAULT);
     printf("END in CrashInLibuvWork\n");
+    return 0;
+}
+
+NOINLINE int DfxCrasher::FdsanInLibuvWork()
+{
+    if (!DfxInitAsyncStack()) {
+        printf("init async stack failed!\n");
+        return -1;
+    }
+    uv_timer_t timerHandle;
+    uv_work_t work;
+    uv_loop_t* loop = uv_default_loop();
+    int timeout = 1000;
+    uv_timer_init(loop, &timerHandle);
+    uv_timer_start(&timerHandle, TimerCallback, timeout, 0);
+    uv_queue_work(loop, &work, WorkFdsanCallback, AfterWorkCallback);
+    uv_run(loop, UV_RUN_DEFAULT);
+    printf("END in FdsanInLibuvWork\n");
     return 0;
 }
 
