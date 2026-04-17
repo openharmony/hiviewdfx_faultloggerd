@@ -270,47 +270,54 @@ bool SafeStrtolCpp(const std::string& numStr, long& out, int base)
 #if is_ohos && !is_mingw
 size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size)
 {
-    std::vector<iovec> remoteIovs;
-    struct iovec dataIov;
+    if (data == nullptr || size == 0 || pid <= 0) {
+        return 0;
+    }
     uint64_t currentAddr = addr;
-    size_t totalReadSize = 0;
-    size_t  leftSize = size;
-    while (leftSize > 0) {
-        if (currentAddr >= UINTPTR_MAX) {
-            DFXLOGE("currentAddr is over the max uintptr_t value");
-            break;
-        }
-        uintptr_t misalign = currentAddr & static_cast<uint64_t>(getpagesize() - 1);
-        size_t iovLen = std::min(getpagesize() - misalign, leftSize);
-        struct iovec remoteIov = {
-            .iov_base = reinterpret_cast<void*>(currentAddr),
-            .iov_len = iovLen,
-        };
-        if (__builtin_add_overflow(currentAddr, iovLen, &currentAddr)) {
-            DFXLOGE("currentAddr is overflowed");
-            break;
-        }
-        remoteIovs.emplace_back(remoteIov);
-        leftSize -= iovLen;
-        if (remoteIovs.size() == IOV_MAX) {
-            dataIov.iov_base = static_cast<uint8_t*>(data) + totalReadSize;
-            dataIov.iov_len = size - totalReadSize;
-            ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], IOV_MAX, 0);
-            if (readCount == -1) {
-                DFXLOGE("process_vm_readv failed, pid(%{public}d), errno(%{public}d)", pid, errno);
-                return totalReadSize;
+    uint8_t* dest = static_cast<uint8_t*>(data);
+    size_t totalRead = 0;
+    size_t remaining = size;
+    int tryTime = 0;
+    constexpr int maxTime = 10;
+    while (remaining > 0) {
+        std::vector<iovec> remoteIovs;
+        size_t batchTotal = 0;
+        while (remaining > 0 && remoteIovs.size() < IOV_MAX) {
+            uintptr_t misalign = currentAddr & (getpagesize() - 1);
+            size_t iovLen = std::min(getpagesize() - misalign, remaining);
+            iovec remoteIov = {
+                .iov_base = reinterpret_cast<void*>(currentAddr),
+                .iov_len = iovLen
+            };
+            remoteIovs.push_back(remoteIov);
+            batchTotal += iovLen;
+            if (__builtin_add_overflow(currentAddr, iovLen, &currentAddr)) {
+                return totalRead;
             }
-            totalReadSize += static_cast<size_t>(readCount);
-            remoteIovs.clear();
+            remaining -= iovLen;
+        }
+        iovec localIov = {
+            .iov_base = dest + totalRead,
+            .iov_len = batchTotal
+        };
+        ssize_t readCount = process_vm_readv(pid, &localIov, 1, remoteIovs.data(), remoteIovs.size(), 0);
+        if (readCount == -1) {
+            DFXLOGE("read failed, pid(%{public}d), errno(%{public}d)", pid, errno);
+            if (++tryTime > maxTime || errno == EPERM || errno == ESRCH || errno == EFAULT) {
+                return totalRead;
+            }
+            continue;
+        }
+        size_t actualRead = static_cast<size_t>(readCount);
+        totalRead += actualRead;
+        if (actualRead < batchTotal) {
+            DFXLOGW("actualRead(%{public}zu), batchTotal(%{public}zu), errno(%{public}d)",
+                actualRead, batchTotal, errno);
+            remaining = size - totalRead;
+            currentAddr = addr + totalRead;
         }
     }
-    if (!remoteIovs.empty()) {
-        dataIov.iov_base = static_cast<uint8_t*>(data) + totalReadSize;
-        dataIov.iov_len = size - totalReadSize;
-        ssize_t readCount = process_vm_readv(pid, &dataIov, 1, &remoteIovs[0], remoteIovs.size(), 0);
-        totalReadSize += (readCount > 0 ? static_cast<size_t>(readCount) : 0);
-    }
-    return totalReadSize;
+    return totalRead;
 }
 #endif
 }   // namespace HiviewDFX
