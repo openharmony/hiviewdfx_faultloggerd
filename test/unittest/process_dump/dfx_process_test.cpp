@@ -218,4 +218,23 @@ HWTEST_F(DfxProcessTest, DfxProcess_SetGetFaultThreadRegs_010, TestSize.Level2)
     ASSERT_TRUE(process.GetFaultThreadRegisters() != nullptr);
     GTEST_LOG_(INFO) << "DfxProcess_SetGetFaultThreadRegs_010: end.";
 }
+
+/**
+ * @tc.name: DfxProcessSetGetKeyThread
+ * @tc.desc: test DfxProcess setting and getting key thread
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxProcessTest, DfxProcess_SetGetKeyThread_011, TestSize.Level2)
+{
+    DfxProcess process;
+    ASSERT_TRUE(process.GetKeyThread() == nullptr);
+    pid_t pid = getpid();
+    auto keyThread = DfxThread::Create(pid, pid, pid, false);
+    keyThread->SetThreadName("test_key_thread");
+    process.SetKeyThread(keyThread);
+    ASSERT_TRUE(process.GetKeyThread() != nullptr);
+    ASSERT_EQ(process.GetKeyThread()->GetThreadInfo().tid, pid);
+    process.SetKeyThread(nullptr);
+    ASSERT_TRUE(process.GetKeyThread() == nullptr);
+}
 }

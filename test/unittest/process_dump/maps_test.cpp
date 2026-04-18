@@ -95,7 +95,7 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
             // Convert to uintptr_t type
             uintptr_t rightAddr = std::stoll(preLineMap.substr(mid + 1, mid), nullptr, 16);
             std::string curInode = preLineMap.substr(preLineMap.length() - 8, 8);
-            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && preInode == curInode) {
+            if (!mapsAddr.empty() && preInode == curInode) {
                 mapsAddr.pop();
                 mapsAddr.push(rightAddr);
             } else {

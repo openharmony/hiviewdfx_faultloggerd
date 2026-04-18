@@ -103,6 +103,7 @@ HWTEST_F(ThreadPoolTest, ThreadPool_StopWithTimeOut_Success_004, TestSize.Level2
     bool result = pool.StopWithTimeOut(5000);
     ASSERT_TRUE(result);
     ASSERT_EQ(counter.load(), 4);
+    sleep(1); // 1 : one second
     GTEST_LOG_(INFO) << "ThreadPool_StopWithTimeOut_Success_004: end.";
 }
 

@@ -30,7 +30,7 @@ static void CreateThread(const int *argv)
 {
     int threadID = *argv;
     printf("create MultiThread %d\n", threadID);
-    sleep(3); // 3 : sleep 3 seconds // 3 : three seconds
+    sleep(2); // 2 : sleep 2 seconds // 3 : three seconds
     return;
 }
 
@@ -52,7 +52,7 @@ pid_t CreateMultiThreadProcess(int threadNum)
         printf("Failed to fork new test process.");
     } else if (pid == 0) {
         (void)MultiThreadConstructor(threadNum);
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         _exit(0);
     }
     return pid;

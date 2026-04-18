@@ -256,4 +256,42 @@ HWTEST_F(DfxThreadTest, DfxThread_SetGetThreadRegs_010, TestSize.Level2)
     ASSERT_TRUE(thread->GetThreadRegs() != nullptr);
     GTEST_LOG_(INFO) << "DfxThread_SetGetThreadRegs_010: end.";
 }
+
+/**
+ * @tc.name: DfxThreadSetGetThreadStackBuffer
+ * @tc.desc: test DfxThread setting and getting thread stack buffer
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxThreadTest, DfxThread_SetGetStackBuffer_011, TestSize.Level2)
+{
+    pid_t pid = getpid();
+    auto thread = DfxThread::Create(pid, gettid(), gettid(), false);
+    ASSERT_TRUE(thread->GetThreadStackBuffer() == nullptr);
+    auto stackBuf = std::make_shared<std::vector<uint8_t>>(100, 0xAB);
+    thread->SetThreadStackBuffer(stackBuf);
+    auto retrievedBuf = thread->GetThreadStackBuffer();
+    ASSERT_TRUE(retrievedBuf != nullptr);
+    ASSERT_EQ(retrievedBuf->size(), 100);
+    ASSERT_EQ(retrievedBuf->at(0), 0xAB);
+    thread->SetThreadStackBuffer(nullptr);
+    ASSERT_TRUE(thread->GetThreadStackBuffer() == nullptr);
+}
+
+/**
+ * @tc.name: DfxThreadSetGetStartOfStackMemory
+ * @tc.desc: test DfxThread setting and getting start of stack memory
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxThreadTest, DfxThread_SetGetStartOfStackMemory_012, TestSize.Level2)
+{
+    pid_t pid = getpid();
+    auto thread = DfxThread::Create(pid, gettid(), gettid(), false);
+    ASSERT_EQ(thread->GetStartOfStackMemory(), 0);
+    thread->SetStartOfStackMemory(0x10000);
+    ASSERT_EQ(thread->GetStartOfStackMemory(), 0x10000);
+    thread->SetStartOfStackMemory(0x20000);
+    ASSERT_EQ(thread->GetStartOfStackMemory(), 0x20000);
+    thread->SetStartOfStackMemory(0);
+    ASSERT_EQ(thread->GetStartOfStackMemory(), 0);
+}
 }

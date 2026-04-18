@@ -70,7 +70,7 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateFromRegs(const UnwindMode mode, const ui
     }
     switch (mode) {
         case UnwindMode::DWARF_UNWIND:
-            dfxregs->SetRegsData(regs, REG_LAST);
+            dfxregs->SetRegsData(regs, size);
             break;
         case UnwindMode::FRAMEPOINTER_UNWIND:
             dfxregs->SetFromFpMiniRegs(regs, FP_MINI_REGS_SIZE);
@@ -138,7 +138,7 @@ void DfxRegs::SetRegsData(const std::vector<uintptr_t>& regs)
 
 void DfxRegs::SetRegsData(const uintptr_t* regs, const size_t size)
 {
-    size_t cpySize = (size > RegsSize()) ? RegsSize() : size;
+    size_t cpySize = std::min(size, RegsSize());
     if (memcpy_s(RawData(), RegsSize() * sizeof(uintptr_t), regs, cpySize * sizeof(uintptr_t)) != 0) {
         DFXLOGE("Failed to set regs data, errno=%{public}d", errno);
     }

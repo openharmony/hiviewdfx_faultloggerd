@@ -85,6 +85,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_path/tools/process_dump/coredump",
       "$faultloggerd_path/tools/process_dump/utils",
       "$faultloggerd_path/tools/process_dump/lperf",
+      "$faultloggerd_path/tools/process_dump/minidump_parser/include",
     ]
   }
 
@@ -111,6 +112,14 @@ if (defined(ohos_lite)) {
       "lperf_events_test.cpp",
       "maps_test.cpp",
       "memory_near_register_test.cpp",
+      "minidump_dumper_test.cpp",
+      "minidump_infrastructure_test.cpp",
+      "minidump_parser_test.cpp",
+      "minidump_memory_reader_test.cpp",
+      "minidump_context_exception_test.cpp",
+      "minidump_stream_data_test.cpp",
+      "minidump_memory_data_test.cpp",
+      "minidump_thread_module_test.cpp",
       "multithread_constructor.c",
       "open_files_test.cpp",
       "process_dump_config_test.cpp",

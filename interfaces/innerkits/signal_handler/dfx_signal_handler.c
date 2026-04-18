@@ -13,9 +13,6 @@
  * limitations under the License.
  */
 #include "dfx_signal_handler.h"
-#ifndef is_ohos_lite
-#include "faultlog_client.h"
-#endif
 
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE 1
@@ -26,6 +23,7 @@
 #include <poll.h>
 #include <pthread.h>
 #include <sched.h>
+#include <securec.h>
 #include <signal.h>
 #include <sigchain.h>
 #include <stdbool.h>
@@ -34,6 +32,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <info/fatal_message.h>
+#include <linux/capability.h>
 #include <sys/capability.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -42,17 +42,18 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
-#include <info/fatal_message.h>
-#include <linux/capability.h>
 
 #include "dfx_cutil.h"
 #include "dfx_define.h"
 #include "dfx_dump_request.h"
-#include "dfx_signalhandler_exception.h"
-#include <securec.h>
-#include "dfx_log.h"
 #include "dfx_dumprequest.h"
 #include "dfx_lite_dump_request.h"
+#include "dfx_log.h"
+#include "dfx_signalhandler_exception.h"
+#ifndef is_ohos_lite
+#include "faultlog_client.h"
+#include "hilog_snapshot/log_snapshot.h"
+#endif
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -450,8 +451,7 @@ static void DFX_InstallSignalHandler(void)
     InitCallbackItems();
     struct signal_chain_action sigchain = {
         .sca_sigaction = DFX_SigchainHandler,
-        .sca_mask = {},
-        .sca_flags = 0,
+        .sca_mask = {}, .sca_flags = 0,
     };
 
     for (size_t i = 0; i < sizeof(SIGCHAIN_DUMP_SIGNAL_LIST) / sizeof(SIGCHAIN_DUMP_SIGNAL_LIST[0]); i++) {

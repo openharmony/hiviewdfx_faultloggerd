@@ -265,10 +265,30 @@ int32_t RequestLimitedProcessDump(int pid)
 
 int32_t RequestSetMiniDump(bool able)
 {
+#ifndef is_ohos_lite
     MiniDumpRequestData request = {0};
     request.head.clientType = MINIDUMP_CLIENT;
     request.head.clientPid = getpid();
     request.pid = getpid();
     request.enableMinidump = (int8_t)able;
+    request.enableMinidumpToCrashLog = -1;
     return RequestServer(&request, sizeof(request), NULL);
+#else
+    return DEFAULT_ERROR_CODE;
+#endif
+}
+
+int32_t RequestSetMinidumpToCrashLog(bool enable)
+{
+#ifndef is_ohos_lite
+    MiniDumpRequestData request = {0};
+    request.head.clientType = MINIDUMP_CLIENT;
+    request.head.clientPid = getpid();
+    request.pid = getpid();
+    request.enableMinidump = -1;
+    request.enableMinidumpToCrashLog = (int8_t)enable;
+    return RequestServer(&request, sizeof(request), NULL);
+#else
+    return DEFAULT_ERROR_CODE;
+#endif
 }

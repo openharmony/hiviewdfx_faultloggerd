@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024-2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -74,6 +74,7 @@ bool CheckCallerUID(uint32_t callerUid)
         0, // rootUid
         1000, // bmsUid
         1201, // hiviewUid
+        1202, // faultloggerdUid
         1212, // hidumperServiceUid
         5523, // foundationUid
         7400, // dev_assistant
@@ -251,14 +252,20 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
     if (!Filter(socketName, connectionFd, requestData)) {
         return ResponseCode::REQUEST_REJECT;
     }
+    std::string filePath;
     SmartFd fileFd(TempFileManager::CreateFileDescriptor(requestData.type, requestData.pid,
-        requestData.tid, requestData.time));
+        requestData.tid, requestData.time, filePath));
     if (!fileFd) {
         return ResponseCode::ABNORMAL_SERVICE;
     }
 #ifndef is_ohos_lite
     if (requestData.minidump == true) {
         MiniDumpService::RestoreDumpable(requestData.pid);
+    }
+    if (requestData.minidump == false && requestData.type == FaultLoggerType::MINIDUMP) {
+        if (unlink(filePath.c_str()) == -1) {
+            DFXLOGE("unlink errno %{public}d", errno);
+        }
     }
     TempFileManager::RecordFileCreation(requestData.type, requestData.pid);
 #endif
@@ -711,7 +718,8 @@ int32_t MiniDumpService::OnRequest(const std::string &socketName, int32_t connec
         return ResponseCode::REQUEST_REJECT;
     }
 
-    auto ret = MinidumpManagerService::GetInstance().SetMiniDump(requestData.pid, requestData.enableMinidump);
+    auto ret = MinidumpManagerService::GetInstance().SetMiniDump(requestData.pid, requestData.enableMinidump,
+        requestData.enableMinidumpToCrashLog);
 
     int32_t responseData = ResponseCode::DEFAULT_ERROR_CODE;
     if (ret == 0) {

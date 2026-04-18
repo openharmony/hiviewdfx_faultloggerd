@@ -28,8 +28,9 @@ static int DoGetCrashFd(const struct ProcessDumpRequest* request)
     if (request == nullptr) {
         return -1;
     }
+    std::string filePath;
     return OHOS::HiviewDFX::TempFileManager::CreateFileDescriptor(FaultLoggerType::CPP_CRASH,
-                                                                  request->pid, request->tid, request->timeStamp);
+        request->pid, request->tid, request->timeStamp, filePath);
 }
 #endif
 

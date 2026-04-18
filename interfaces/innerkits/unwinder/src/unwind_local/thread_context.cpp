@@ -389,6 +389,12 @@ void LocalThreadContextMix::SetRegister(std::shared_ptr<DfxRegs> regs)
 #endif
 }
 
+void LocalThreadContextMix::SetSp(uintptr_t sp)
+{
+    std::unique_lock<std::mutex> lock(mtx_);
+    sp_ = sp;
+}
+
 void LocalThreadContextMix::SetStackRang(uintptr_t stackTop, uintptr_t stackBottom)
 {
     std::unique_lock<std::mutex> lock(mtx_);

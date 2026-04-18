@@ -257,6 +257,8 @@ typedef struct MiniDumpRequestData {
     uid_t uid;
     /** enable minidump */
     int8_t enableMinidump;
+    /** enable parse minidump */
+    int8_t enableMinidumpToCrashLog;
 } __attribute__((packed)) MiniDumpRequestData;
 
 /**
