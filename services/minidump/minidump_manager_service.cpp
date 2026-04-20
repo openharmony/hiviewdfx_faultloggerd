@@ -204,7 +204,7 @@ int MinidumpManagerService::SetMiniDump(pid_t pid, bool enable)
     if (rc < 0) {
         DFXLOGE("failed to call set %{public}d pdumpable errno%{public}d", enable, errno);
     } else {
-        DFXLOGE("success to call set %{public}d pdumpable", enable);
+        DFXLOGI("success to call set %{public}d pdumpable", enable);
     }
     return rc;
 }
