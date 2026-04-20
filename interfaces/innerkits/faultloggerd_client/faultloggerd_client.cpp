@@ -214,7 +214,7 @@ int32_t ReportDumpStats(struct FaultLoggerdStatsRequest *request)
     return retCode;
 }
 
-std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeout)
+std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeoutMs)
 {
 #ifndef is_ohos_lite
     DFXLOGI("%{public}s.%{public}s :: pid: %{public}d.", FAULTLOGGERD_CLIENT_TAG, __func__, targetPid);
@@ -222,16 +222,21 @@ std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeout)
         return "";
     }
 
+    if (timeoutMs < 0 || timeoutMs > 30 * 1000) { // 30 * 1000 : max timeout for coredump
+        DFXLOGI("%{public}s.%{public}s :: timeout %{public}d invalid.", FAULTLOGGERD_CLIENT_TAG, __func__, timeoutMs);
+        return "";
+    }
+
     struct CoreDumpRequestData request{};
     FillRequestHeadData(request.head, FaultLoggerClientType::COREDUMP_CLIENT);
     request.pid = targetPid;
-    request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeout);
+    request.endTime = GetAbsTimeMilliSeconds() + static_cast<uint64_t>(timeoutMs);
     request.coredumpAction = CoreDumpAction::DO_CORE_DUMP;
 
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     FaultLoggerdSocket faultLoggerdSocket;
     int32_t retCode{ResponseCode::DEFAULT_ERROR_CODE};
-    if (!faultLoggerdSocket.InitSocket(SERVER_SOCKET_NAME, COREDUMP_SOCKET_TIMEOUT)) {
+    if (!faultLoggerdSocket.InitSocket(SERVER_SOCKET_NAME, timeoutMs)) {
         DFXLOGE("%{public}s create socket fail", __func__);
         return "";
     }

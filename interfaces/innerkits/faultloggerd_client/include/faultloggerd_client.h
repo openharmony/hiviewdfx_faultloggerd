@@ -119,8 +119,8 @@ int32_t FinishCoredumpCb(int32_t targetPid, std::string& fileName, int32_t ret);
 /**
  * @brief do coredump request
  * @param targetPid target id
- * @param timeout timeout ms
+ * @param timeoutMs timeout ms
  * @return if succeed return fileName, otherwise return ""
 */
-std::string SaveCoredumpToFileTimeout(int32_t targetPid, int32_t timeout = 10000);
+std::string SaveCoredumpToFileTimeout(int32_t targetPid, int32_t timeoutMs = 15 * 1000);
 #endif
