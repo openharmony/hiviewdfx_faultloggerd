@@ -230,7 +230,11 @@ HWTEST_F(FaultloggerdCoredumpTest, CoreDumpCbTest002, TestSize.Level2)
     std::thread t(threadFunc);
     t.detach();
     auto ret = SaveCoredumpToFileTimeout(getpid());
-    ASSERT_EQ(ret, "com.ohos.sceneboard.dmp");
+    EXPECT_EQ(ret, "com.ohos.sceneboard.dmp");
+    EXPECT_EQ(SaveCoredumpToFileTimeout(-1), "");
+    EXPECT_EQ(SaveCoredumpToFileTimeout(0), "");
+    EXPECT_EQ(SaveCoredumpToFileTimeout(getpid(), -1), "");
+    EXPECT_EQ(SaveCoredumpToFileTimeout(getpid(), 35 * 1000), "");
     GTEST_LOG_(INFO) << "CoreDumpCbTest002: end.";
 }
 
