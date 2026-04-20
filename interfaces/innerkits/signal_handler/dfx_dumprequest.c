@@ -354,10 +354,10 @@ static bool SetDumpState(void)
     return true;
 }
 
-static void RestoreDumpState(bool isTracerStatusModified)
+static void RestoreDumpState(bool isTracerStatusModified, int signo)
 {
     // if minidump is enable, keep dump enable status
-    if (!IsMiniDumpEnable(g_request->crashLogConfig)) {
+    if (!IsMiniDumpEnable(g_request->crashLogConfig) || IsDumpSignal(signo)) {
         DFX_RestoreDumpableState();
     }
 
@@ -697,7 +697,7 @@ static int ProcessDump(int signo)
         ReadUnwindFinishMsg(signo);
     } while (false);
 
-    RestoreDumpState(isTracerStatusModified);
+    RestoreDumpState(isTracerStatusModified, signo);
     return 0;
 }
 
