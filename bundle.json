@@ -24,10 +24,12 @@
     "deps": {
       "components": [
         "ability_base",
+        "ace_ets2bundle",
         "bounds_checking_function",
         "bundle_framework",
         "cJSON",
         "c_utils",
+        "ets_frontend",
         "ffrt",
         "hilog",
         "hisysevent",
