@@ -42,15 +42,16 @@ public:
     bool Dump(int pid);
 private:
     bool ReadPipeData(int pid);
-    void ReadRequest(int pipeReadFd);
+    bool ReadRequest(int pipeReadFd);
     void SetProcessdumpTimeout(siginfo_t &si);
     void FormatJsonInfoIfNeed();
-    void ReadStat(int pipeReadFd);
-    void ReadStatm(int pipeReadFd);
-    void ReadStack(int pipeReadFd);
-    void ReadOtherThreadStack(int pipeReadFd);
+    bool ReadStat(int pipeReadFd);
+    bool ReadStatm(int pipeReadFd);
+    bool ReadStack(int pipeReadFd);
+    bool ReadOtherThreadStack(int pipeReadFd);
     bool LoopReadPipe(int pipeReadFd, void* buf, size_t length);
-    void ReadMemoryNearRegister(int pipeReadFd, ProcessDumpRequest request);
+    MemoryBlockInfo ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr, unsigned int count, unsigned int forward);
+    bool ReadMemoryNearRegister(int pipeReadFd, ProcessDumpRequest request);
 
     void InitProcess();
     void Unwind();
@@ -73,7 +74,6 @@ private:
     std::shared_ptr<DfxRegs> regs_;
     std::shared_ptr<DfxMaps> dfxMaps_;
 
-    int otherThreadNum_ = 0;
     std::vector<uint8_t> stackBuf_;
     std::vector<std::vector<uint8_t>> otherThreadStackBuf_;
     std::string stat_;

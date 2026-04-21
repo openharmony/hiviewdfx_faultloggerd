@@ -391,33 +391,10 @@ bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr)
     if (arkWebJitSymbolAddr == 0) {
         return false;
     }
-    const size_t step = 1024 * 1024;
-    size_t writeSuccessSize = 0;
-    const size_t maxTryTimes = 1000;
-    for (size_t i = 0; i < ARKWEB_JIT_SYMBOL_BUF_SIZE; i += writeSuccessSize) {
-        size_t length = (i + step) < ARKWEB_JIT_SYMBOL_BUF_SIZE ? step : ARKWEB_JIT_SYMBOL_BUF_SIZE - i;
-        arkWebJitSymbolAddr += writeSuccessSize;
-        int savedErrno = 0;
-        ssize_t writeSize = 0;
-        size_t tryTimes = 0;
-        do {
-            writeSize = syscall(SYS_write, pipeWriteFd, (void*)arkWebJitSymbolAddr, length);
-            savedErrno = errno;
-            if (writeSize == -1 && savedErrno != EINTR && savedErrno != EAGAIN) {
-                return false;
-            }
-            if (writeSize > 0) {
-                writeSuccessSize = writeSize;
-            }
-            if (tryTimes > maxTryTimes) {
-                DFXLOGW("Exceeding the maximum number of retries!");
-                break;
-            }
-            if (writeSize == -1 && savedErrno == EAGAIN) {
-                ++tryTimes;
-                usleep(1000); // 1000 : sleep 1ms try agin
-            }
-        } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
+    
+    if (!LoopWritePipe(pipeWriteFd, (void*)arkWebJitSymbolAddr, ARKWEB_JIT_SYMBOL_BUF_SIZE)) {
+        DFXLOGE("failed to write arkweb jit symbol buf %{public}d", errno);
+        return false;
     }
     DFXLOGI("Finish CollectArkWebJitSymbol");
     return true;
@@ -425,7 +402,7 @@ bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr)
 
 bool WriteStack(const int pipeWriteFd)
 {
-    if (syscall(SYS_write, pipeWriteFd, g_mmapSpace, g_mmapPos) != g_mmapPos) {
+    if (!LoopWritePipe(pipeWriteFd, g_mmapSpace, g_mmapPos)) {
         DFXLOGE("failed to write mmap buf %{public}d", errno);
         return false;
     }
@@ -448,6 +425,7 @@ bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length)
     const size_t step = 1024 * 1024;
     size_t writeSuccessSize = 0;
     const size_t maxTryTimes = 1000;
+    size_t totalWriteSize = 0;
     for (size_t i = 0; i < length; i += writeSuccessSize) {
         size_t len = (i + step) < length ? step : length - i;
         buf += writeSuccessSize;
@@ -462,10 +440,11 @@ bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length)
             }
             if (writeSize > 0) {
                 writeSuccessSize = writeSize;
+                totalWriteSize += writeSize;
             }
-            if (tryTimes > maxTryTimes) {
+            if (tryTimes > maxTryTimes && writeSize == -1) {
                 DFXLOGW("LoopWritePipe exceeding the maximum number of retries!");
-                break;
+                return totalWriteSize == length;
             }
             if (writeSize == -1 && savedErrno == EAGAIN) {
                 ++tryTimes;
@@ -473,7 +452,7 @@ bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length)
             }
         } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
     }
-    return true;
+    return totalWriteSize == length;
 }
 
 typedef struct {
@@ -506,7 +485,9 @@ NO_SANITIZE bool CreateMemoryBlock(const int fd, const RegInfo info, int regIdx)
     (void)memset_s(p, mmapSize, -1, mmapSize);
 
     CopyReadableBufSafe((uintptr_t)mptr, mmapSize, targetAddr, mmapSize);
-    LoopWritePipe(fd, mptr, mmapSize);
+    if (!LoopWritePipe(fd, mptr, mmapSize)) {
+        DFXLOGE("failed to write memory block buf %{public}d", errno);
+    }
     munmap(mptr, mmapSize);
     return true;
 }
@@ -514,7 +495,10 @@ NO_SANITIZE bool CreateMemoryBlock(const int fd, const RegInfo info, int regIdx)
 bool CollectMemoryNearRegisters(int fd, ucontext_t *context)
 {
     char start[50] = "start trans register";
-    LoopWritePipe(fd, start, sizeof(start));
+    if (!LoopWritePipe(fd, start, sizeof(start))) {
+        DFXLOGE("failed to write start trans register tag %{public}d", errno);
+        return false;
+    }
 #if defined(__aarch64__)
     const uintptr_t pacMaskDefault = ~(uintptr_t)0xFFFFFF8000000000;
     int lrIndex = 30;
@@ -539,7 +523,10 @@ bool CollectMemoryNearRegisters(int fd, ucontext_t *context)
     CreateMemoryBlock(fd, info, pcIndex);
 #endif
     char end[50] = "end trans register";
-    LoopWritePipe(fd, end, sizeof(end));
+    if (!LoopWritePipe(fd, end, sizeof(end))) {
+        DFXLOGE("failed to write end trans register tag %{public}d", errno);
+        return false;
+    }
     return true;
 }
 
@@ -578,7 +565,7 @@ bool FindArkWebJitSymbol(const char* buf, size_t len, uint64_t* startAddr)
 
 bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAddr)
 {
-    if (path == NULL || pipeFd < 0) {
+    if (path == NULL || pipeFd < 0 || arkWebJitSymbolAddr == NULL) {
         DFXLOGI("%{public}s path or pipeFd is invalid", __func__);
         return false;
     }
@@ -595,10 +582,13 @@ bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAd
     char remainBuf[remainBufLen];
     const int concatBufLen = 200;
     char concatBuf[concatBufLen];
-    bool findSymbolFlag = false;
     while ((n = syscall(SYS_read, fd, buf, sizeof(buf) - 1)) > 0) {
-        LoopWritePipe(pipeFd, buf, n);
-        if (findSymbolFlag) {
+        if (!LoopWritePipe(pipeFd, buf, n)) {
+            DFXLOGE("failed to write maps content %{public}d", errno);
+            syscall(SYS_close, fd);
+            return false;
+        }
+        if (*arkWebJitSymbolAddr != 0) { // if addr not equal zero, already found jit symbol start addr
             continue;
         }
         if (strcpy_s(concatBuf, concatBufLen, remainBuf) != EOK) {
@@ -610,24 +600,20 @@ bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAd
         if (!FindArkWebJitSymbol(buf, LINE_BUF_SIZE, arkWebJitSymbolAddr) &&
             !FindArkWebJitSymbol(concatBuf, concatBufLen, arkWebJitSymbolAddr)) {
             int remainStart = n - remainBufLen + 1;
-            int ret = 0;
             (void)memset_s(remainBuf, remainBufLen, 0, remainBufLen);
-            if (remainStart > 0) {
-                ret = strncpy_s(remainBuf, remainBufLen, buf + remainStart, remainBufLen - 1);
-            } else {
-                ret = strncpy_s(remainBuf, remainBufLen, buf, n);
-            }
+            int ret = remainStart > 0 ? strncpy_s(remainBuf, remainBufLen, buf + remainStart, remainBufLen - 1) :
+                strncpy_s(remainBuf, remainBufLen, buf, n);
             if (ret != EOK) {
                 DFXLOGE("strcpy remainBuf failed errno %{public}d", errno);
             }
-        } else {
-            findSymbolFlag = true;
         }
     }
-
-    char mapEndFlag[] = "Parse_Maps_Finish\n";
-    OHOS_TEMP_FAILURE_RETRY(write(pipeFd, mapEndFlag, strlen(mapEndFlag)));
     syscall(SYS_close, fd);
+    char mapEndFlag[] = "Parse_Maps_Finish\n";
+    if (!LoopWritePipe(pipeFd, mapEndFlag, strlen(mapEndFlag))) {
+        DFXLOGE("failed to write maps finish tag %{public}d", errno);
+        return false;
+    }
     return true;
 }
 
@@ -770,8 +756,10 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr)
     }
 
     char openFiles[] = "OpenFiles:\n";
-    LoopWritePipe(pipeWriteFd, openFiles, strlen(openFiles));
-
+    if (!LoopWritePipe(pipeWriteFd, openFiles, strlen(openFiles))) {
+        DFXLOGE("failed to write openfiles tag, %{public}d", errno);
+        return false;
+    }
     FdTableEntry fdEntries = {0};
     FdTableEntry overflowEntries = {0};
     FillFdsaninfo(&fdEntries, &overflowEntries, fdTableAddr);
@@ -789,7 +777,10 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr)
     closedir(dir);
     munmap(fdsanOwners, mmapSize);
     char endOpenfiles[] = "end trans openfiles\n";
-    LoopWritePipe(pipeWriteFd, endOpenfiles, strlen(endOpenfiles));
+    if (!LoopWritePipe(pipeWriteFd, endOpenfiles, strlen(endOpenfiles))) {
+        DFXLOGE("failed to write end openfiles tag, %{public}d", errno);
+        return false;
+    }
     return true;
 }
 
@@ -797,42 +788,51 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
 {
     DFXLOGI("start enter %{public}s", __func__);
     RegisterAllocator();
-    RequestLimitedProcessDump(request->pid);
+    pid_t crashHandlerPid = GetProcId(PROC_SELF_STATUS_PATH, PID_STR_NAME);
     int pipeWriteFd = -1;
-    RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, request->pid, request->processName);
+    RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, crashHandlerPid, request->processName);
     if (pipeWriteFd < 0) {
         DFXLOGE("lite dump failed to request pipe %{public}d", errno);
-        return false;
-    }
-
-    if (syscall(SYS_write, pipeWriteFd, request, sizeof(struct ProcessDumpRequest)) !=
-        sizeof(struct ProcessDumpRequest)) {
-        DFXLOGE("failed to write dump request %{public}d", errno);
-        syscall(SYS_close, pipeWriteFd);
         UnregisterAllocator();
         return false;
     }
+    bool ret = true;
+    do {
+        RequestLimitedProcessDump(crashHandlerPid);
+        if (!LoopWritePipe(pipeWriteFd, request, sizeof(struct ProcessDumpRequest))) {
+            DFXLOGE("failed to write dump request %{public}d", errno);
+            ret = false;
+            break;
+        }
 
-    if (!WriteStack(pipeWriteFd)) {
-        syscall(SYS_close, pipeWriteFd);
-        UnregisterAllocator();
-        return false;
-    }
-    if (request->type != DUMP_TYPE_DUMP_CATCH) {
-        CollectMemoryNearRegisters(pipeWriteFd, &request->context);
-    }
+        if (!WriteStack(pipeWriteFd)) {
+            ret = false;
+            break;
+        }
+        if (request->type != DUMP_TYPE_DUMP_CATCH) {
+            if (!CollectMemoryNearRegisters(pipeWriteFd, &request->context)) {
+                ret = false;
+                break;
+            }
+        }
 
-    uint64_t arkWebJitSymbolAddr = 0;
-    CollectMaps(pipeWriteFd, PROC_SELF_MAPS_PATH, &arkWebJitSymbolAddr);
-    if (request->type != DUMP_TYPE_DUMP_CATCH) {
-        CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table());
-    }
-    CollectArkWebJitSymbol(pipeWriteFd, arkWebJitSymbolAddr);
-
+        uint64_t arkWebJitSymbolAddr = 0;
+        if (!CollectMaps(pipeWriteFd, PROC_SELF_MAPS_PATH, &arkWebJitSymbolAddr)) {
+            ret = false;
+            break;
+        }
+        if (request->type != DUMP_TYPE_DUMP_CATCH) {
+            if (!CollectOpenFiles(pipeWriteFd, (uint64_t)fdsan_get_fd_table())) {
+                ret = false;
+                break;
+            }
+        }
+        ret = CollectArkWebJitSymbol(pipeWriteFd, arkWebJitSymbolAddr);
+    } while (false);
     syscall(SYS_close, pipeWriteFd);
     UnregisterAllocator();
     DFXLOGI("finish %{public}s", __func__);
-    return true;
+    return ret;
 }
 
 void UpdateSanBoxProcess(struct ProcessDumpRequest *request)
