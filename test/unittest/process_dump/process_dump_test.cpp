@@ -330,7 +330,7 @@ HWTEST_F (ProcessDumpTest, LiteProcessDumpTest006, TestSize.Level2)
     GTEST_LOG_(INFO) << "LiteProcessDumpTest006: start.";
     LiteProcessDumper liteDumper;
     constexpr int totalSize = 32 * 31 * 8 + 64 * 2 * 8;
-    char tmpStr[totalSize] = "test memory buf";
+    char tmpStr[totalSize] = "start trans register";
     write(g_pipeFd[PIPE_WRITE], tmpStr, 50);
     EXPECT_EQ(write(g_pipeFd[PIPE_WRITE], tmpStr, totalSize), totalSize);
     write(g_pipeFd[PIPE_WRITE], tmpStr, 50);

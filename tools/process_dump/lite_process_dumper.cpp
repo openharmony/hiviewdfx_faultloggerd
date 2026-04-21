@@ -60,16 +60,16 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-void LiteProcessDumper::ReadRequest(int pipeReadFd)
+bool LiteProcessDumper::ReadRequest(int pipeReadFd)
 {
-    if (read(pipeReadFd, &request_, sizeof(struct ProcessDumpRequest)) !=
-        static_cast<ssize_t>(sizeof(struct ProcessDumpRequest))) {
+    if (!LoopReadPipe(pipeReadFd, &request_, sizeof(struct ProcessDumpRequest))) {
         DFXLOGI("failed to read request %{public}d", errno);
-        return;
+        return false;
     }
     isJsonDump_ =  request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH &&
         request_.siginfo.si_code == DUMP_TYPE_REMOTE_JSON;
     DFXLOGI("read remote request procname: %{public}s", request_.processName);
+    return true;
 }
 
 void LiteProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
@@ -117,73 +117,78 @@ void LiteProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
     }
 }
 
-void LiteProcessDumper::ReadStat(int pipeReadFd)
+bool LiteProcessDumper::ReadStat(int pipeReadFd)
 {
     char buf[PROC_STAT_BUF_SIZE];
-    if (read(pipeReadFd, buf, sizeof(buf)) != static_cast<ssize_t>(sizeof(buf))) {
+    if (!LoopReadPipe(pipeReadFd, buf, sizeof(buf))) {
         DFXLOGI("failed to read stat %{public}d", errno);
-        return;
+        return false;
     }
     buf[PROC_STAT_BUF_SIZE - 1] = '\0';
     stat_ = buf;
     DFXLOGI("stat %{public}s", stat_.c_str());
+    return true;
 }
 
-void LiteProcessDumper::ReadStatm(int pipeReadFd)
+bool LiteProcessDumper::ReadStatm(int pipeReadFd)
 {
     char buf[PROC_STATM_BUF_SIZE];
-    if (read(pipeReadFd, buf, sizeof(buf)) != static_cast<ssize_t>(sizeof(buf))) {
+    if (!LoopReadPipe(pipeReadFd, buf, sizeof(buf))) {
         DFXLOGI("failed to read statm %{public}d", errno);
-        return;
+        return false;
     }
     buf[PROC_STATM_BUF_SIZE - 1] = '\0';
     statm_ = buf;
     DFXLOGI("statm %{public}s", statm_.c_str());
+    return true;
 }
 
-void LiteProcessDumper::ReadStack(int pipeReadFd)
+bool LiteProcessDumper::ReadStack(int pipeReadFd)
 {
     stackBuf_.resize(PRIV_COPY_STACK_BUFFER_SIZE);
-    if (read(pipeReadFd, stackBuf_.data(), PRIV_COPY_STACK_BUFFER_SIZE) != PRIV_COPY_STACK_BUFFER_SIZE) {
+    if (!LoopReadPipe(pipeReadFd, stackBuf_.data(), PRIV_COPY_STACK_BUFFER_SIZE)) {
         DFXLOGE("read stack fail %{public}d", errno);
-        return;
+        return false;
     }
     DFXLOGI("read stack success");
-    ReadOtherThreadStack(pipeReadFd);
+    return ReadOtherThreadStack(pipeReadFd);
 }
 
-void LiteProcessDumper::ReadOtherThreadStack(int pipeReadFd)
+bool LiteProcessDumper::ReadOtherThreadStack(int pipeReadFd)
 {
-    if (!LoopReadPipe(pipeReadFd, &otherThreadNum_, sizeof(int))) {
-        DFXLOGE("read otherThreadNum_ fail %{public}d", errno);
-        return;
+    int otherThreadNum = 0;
+    if (!LoopReadPipe(pipeReadFd, &otherThreadNum, sizeof(int))) {
+        DFXLOGE("read otherThreadNum fail %{public}d", errno);
+        return false;
     }
-    if (otherThreadNum_ <= 0 || otherThreadNum_ > MAX_DUMP_THREAD_NUM) {
-        DFXLOGE("lite proc dump otherThreadNum_ %{public}d invalid", otherThreadNum_);
-        return;
+    if (otherThreadNum < 0 || otherThreadNum > MAX_DUMP_THREAD_NUM) {
+        DFXLOGE("lite proc dump otherThreadNum %{public}d invalid", otherThreadNum);
+        return false;
     }
 
-    otherThreadRequest_.resize(otherThreadNum_);
-    otherThreadStackBuf_.resize(otherThreadNum_);
-    for (int i = 0; i < otherThreadNum_; ++i) {
+    otherThreadRequest_.resize(otherThreadNum);
+    otherThreadStackBuf_.resize(otherThreadNum);
+    for (int i = 0; i < otherThreadRequest_.size() && i < otherThreadStackBuf_.size(); ++i) {
         if (!LoopReadPipe(pipeReadFd, &otherThreadRequest_[i], sizeof(ThreadDumpRequest))) {
             DFXLOGE("read thread request fail %{public}d", errno);
-            return;
+            return false;
         }
 
         otherThreadStackBuf_[i].resize(THREAD_STACK_BUFFER_SIZE);
         if (!LoopReadPipe(pipeReadFd, otherThreadStackBuf_[i].data(), THREAD_STACK_BUFFER_SIZE)) {
             DFXLOGE("read thread stack fail %{public}d", errno);
-            return;
+            return false;
         }
     }
-    DFXLOGI("read %{public}d other thread stack success", otherThreadNum_);
+    DFXLOGI("read %{public}d other thread stack success", otherThreadNum);
+    return true;
 }
 
 bool LiteProcessDumper::LoopReadPipe(int pipeReadFd, void* buf, size_t length)
 {
     const size_t step = 1024 * 1024;
     size_t readSuccessSize = 0;
+    size_t totalReadSize = 0;
     const size_t maxTryTimes = 1000;
     for (size_t i = 0; i < length; i += readSuccessSize) {
         size_t len = (i + step) < length ? step : length - i;
@@ -198,10 +203,11 @@ bool LiteProcessDumper::LoopReadPipe(int pipeReadFd, void* buf, size_t length)
             }
             if (readSize > 0) {
                 readSuccessSize = readSize;
+                totalReadSize += readSize;
             }
-            if (tryTimes > maxTryTimes) {
+            if (tryTimes > maxTryTimes && readSize == -1) {
                 DFXLOGW("LoopReadPipe exceeding the maximum number of retries!");
-                return false;
+                return totalReadSize == length;
             }
             if (readSize == -1 && savedErrno == EAGAIN) {
                 ++tryTimes;
@@ -209,14 +215,14 @@ bool LiteProcessDumper::LoopReadPipe(int pipeReadFd, void* buf, size_t length)
             }
         } while (readSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
     }
-    return true;
+    return totalReadSize == length;
 }
 
-MemoryBlockInfo ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr, unsigned int count, unsigned int forward)
+MemoryBlockInfo LiteProcessDumper::ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr,
+    unsigned int count, unsigned int forward)
 {
     std::vector<uintptr_t> bk(count);
-    if (static_cast<unsigned long>(read(pipeReadFd, bk.data(), bk.size() * sizeof(uintptr_t))) !=
-        bk.size() * sizeof(uintptr_t)) {
+    if (!LoopReadPipe(pipeReadFd, bk.data(), bk.size() * sizeof(uintptr_t))) {
         DFXLOGI("failed to read reg near memory %{public}d", errno);
     }
     MemoryBlockInfo info;
@@ -227,11 +233,15 @@ MemoryBlockInfo ReadSingleRegMem(int pipeReadFd, uintptr_t nameAddr, unsigned in
     return info;
 }
 
-void LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpRequest request)
+bool LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpRequest request)
 {
     constexpr int bufSize = 50;
     char data[bufSize];
-    read(pipeReadFd, data, bufSize);
+    char startTag[bufSize] = "start trans register";
+    if (!LoopReadPipe(pipeReadFd, data, bufSize) || std::strcmp(data, startTag) != 0) {
+        DFXLOGE("failed to start memory tag", errno);
+        return false;
+    }
 #if defined(__aarch64__)
     auto& memoryIns = MemoryNearRegisterUtil::GetInstance();
     DFXLOGI("start memory tag %{public}s", data);
@@ -248,8 +258,13 @@ void LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpReques
     memoryIns.blocksInfo_.push_back(ReadSingleRegMem(pipeReadFd, request.context.uc_mcontext.pc,
         SPECIAL_REG_MEM_SIZE, SPECIAL_REG_MEM_FORWARD_SIZE));
 #endif
-    read(pipeReadFd, data, bufSize);
+    char endTag[bufSize] = "end trans register";
+    if (!LoopReadPipe(pipeReadFd, data, bufSize) || std::strcmp(data, endTag) != 0) {
+        DFXLOGE("failed to end memory tag", errno);
+        return false;
+    }
     DFXLOGI("end memory tag %{public}s", data);
+    return true;
 }
 
 bool LiteProcessDumper::ReadPipeData(int pid)
@@ -262,15 +277,22 @@ bool LiteProcessDumper::ReadPipeData(int pid)
     if (pipeReadFd <= 0) {
         return false;
     }
-    ReadRequest(pipeReadFd);
+    if (!ReadRequest(pipeReadFd)) {
+        return false;
+    }
     SetProcessdumpTimeout(request_.siginfo);
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        ReadStat(pipeReadFd);
-        ReadStatm(pipeReadFd);
+        if (!ReadStat(pipeReadFd) || !ReadStatm(pipeReadFd)) {
+            return false;
+        }
     }
-    ReadStack(pipeReadFd);
+    if (!ReadStack(pipeReadFd)) {
+        return false;
+    }
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        ReadMemoryNearRegister(pipeReadFd, request_);
+        if (!ReadMemoryNearRegister(pipeReadFd, request_)) {
+            return false;
+        }
     }
     std::vector<char> data(MAX_PIPE_SIZE, 0);
     ssize_t n = 1;
@@ -324,13 +346,13 @@ void LiteProcessDumper::Unwind()
 
 void LiteProcessDumper::UnwindOtherThread()
 {
-    if (otherThreadNum_ == 0) {
+    if (otherThreadStackBuf_.size() == 0 || otherThreadRequest_.size() == 0) {
         DFXLOGE("no other thread stack");
         return;
     }
     auto& instance = LocalThreadContextMix::GetInstance();
     instance.SetStackForward(0);
-    for (int i = 0; i < otherThreadNum_; ++i) {
+    for (int i = 0; i < otherThreadRequest_.size() && i < otherThreadStackBuf_.size(); ++i) {
         instance.SetStackBuf(otherThreadStackBuf_[i]);
         instance.CopyRegister(&otherThreadRequest_[i].context);
 
@@ -352,7 +374,7 @@ void LiteProcessDumper::InitProcess()
     process_->SetLogSource("liteprocessdump");
     process_->SetFaultThreadRegisters(regs_);
     process_->InitKeyThread(request_, false);
-    for (int i = 0; i < otherThreadNum_; ++i) {
+    for (int i = 0; i < otherThreadRequest_.size(); ++i) {
         auto thread = DfxThread::Create(request_.pid, otherThreadRequest_[i].tid, otherThreadRequest_[i].nsTid,
             request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
         process_->GetOtherThreads().push_back(thread);
