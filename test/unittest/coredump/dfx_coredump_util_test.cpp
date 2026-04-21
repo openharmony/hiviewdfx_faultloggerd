@@ -361,6 +361,41 @@ HWTEST_F(DfxCoredumpUtilTest, CoredumpMappingManager002, TestSize.Level2)
 }
 
 /**
+ * @tc.name: ShouldIncludeRegion001
+ * @tc.desc: test ShouldIncludeRegion returns false for large anonymous reservation
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoredumpUtilTest, ShouldIncludeRegion001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ShouldIncludeRegion001: start.";
+    DumpMemoryRegions region {};
+    region.startHex = 0x1000;
+    region.endHex = 0x1000 + 64UL * 1024 * 1024;
+    region.memorySizeHex = 64UL * 1024 * 1024;
+    (void)strncpy_s(region.priority, sizeof(region.priority), "r-xp", sizeof(region.priority) - 1);
+    EXPECT_EQ(CoredumpMappingManager::ShouldIncludeRegion(region), false);
+    GTEST_LOG_(INFO) << "ShouldIncludeRegion001: end.";
+}
+
+/**
+ * @tc.name: ShouldIncludeRegion002
+ * @tc.desc: test ShouldIncludeRegion returns true for large named region
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoredumpUtilTest, ShouldIncludeRegion002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ShouldIncludeRegion002: start.";
+    DumpMemoryRegions region {};
+    region.startHex = 0x1000;
+    region.endHex = 0x1000 + 64UL * 1024 * 1024;
+    region.memorySizeHex = 64UL * 1024 * 1024;
+    (void)strncpy_s(region.priority, sizeof(region.priority), "r-xp", sizeof(region.priority) - 1);
+    (void)strncpy_s(region.pathName, sizeof(region.pathName), "/system/lib/libtest.so", sizeof(region.pathName) - 1);
+    EXPECT_EQ(CoredumpMappingManager::ShouldIncludeRegion(region), true);
+    GTEST_LOG_(INFO) << "ShouldIncludeRegion002: end.";
+}
+
+/**
  * @tc.name: CoredumpJsonUtil001
  * @tc.desc: test coredump ObtainDumpRegion function
  * @tc.type: FUNC
