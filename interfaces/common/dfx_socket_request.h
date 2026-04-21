@@ -71,7 +71,9 @@ typedef enum FaultLoggerType : int32_t {
     /** native heap */
     NATIVE_SNAPSHOT = 112,
     /** kernel minidump */
-    MINIDUMP = 113
+    MINIDUMP = 113,
+    /** KMP heap snapshot */
+    KMP_HEAP_SNAPSHOT = 114
 } FaultLoggerType;
 
 /**
