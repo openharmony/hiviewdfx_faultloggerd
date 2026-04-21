@@ -117,6 +117,7 @@ constexpr static CrasherCommandLine CMDLINE_TABLE[] = {
         &DfxCrasher::MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC},
 
     {"STACKOF", "trigger a stack overflow", &DfxCrasher::StackOverflow},
+    {"MAINTHREADSTACKOF", "trigger a stack overflow", &DfxCrasher::StackOverflowInMainThread},
     {"OOM", "trigger out of memory", &DfxCrasher::Oom},
     {"PCZero", "trigger a crash with pc equal zero", &DfxCrasher::ProgramCounterZero},
     {"MTCrash", "trigger a multi-thread crash", &DfxCrasher::MultiThreadCrash},
@@ -491,6 +492,11 @@ static void *DoStackOverflow(void * inputArg) __attribute__((optnone))
     }
     DoStackOverflow(inputArg);
     return static_cast<void*>(b + 9); // 9: last element of array
+}
+
+NOINLINE int DfxCrasher::StackOverflowInMainThread()
+{
+    return *static_cast<int*>(DoStackOverflow(nullptr));
 }
 
 NOINLINE int DfxCrasher::StackOverflow()

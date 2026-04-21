@@ -102,7 +102,12 @@ std::string DumpInfoHeader::GetReasonInfo(const ProcessDumpRequest& request, Dfx
                 break;
             }
             std::vector<std::shared_ptr<DfxMap>> map;
-            std::string elfName = StringPrintf("[anon:stack:%d]", process.GetKeyThread()->GetThreadInfo().tid);
+            std::string elfName;
+            if (process.GetKeyThread()->GetThreadInfo().tid == process.GetProcessInfo().pid) {
+                elfName = "[stack]";
+            } else {
+                elfName = StringPrintf("[anon:stack:%d]", process.GetKeyThread()->GetThreadInfo().tid);
+            }
             if (!maps.FindMapsByName(elfName, map) || map[0] == nullptr) {
                 break;
             }

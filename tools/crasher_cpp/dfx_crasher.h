@@ -56,6 +56,7 @@ public:
     static int MaxMethodNameTest12345678901234567890123456789012345678901234567890ABC();
     static int TriggerSegmentFaultException();
     static int StackOverflow();
+    static int StackOverflowInMainThread();
     static int Oom();
     static int TriggerTrapException();
     static int CrashInLambda();
