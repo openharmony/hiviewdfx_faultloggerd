@@ -351,5 +351,68 @@ HWTEST_F(AsyncStackTest, AsyncStackTest008, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxGetSubmitterStackId: end. cost: " << duration.count() << "ns" << std::endl;
 #endif
 }
+
+/**
+ * @tc.name: AsyncStackTest009
+ * @tc.desc: test incremental (un)register callbacks via DfxSetAsyncStackType
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest009, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    DfxAsyncCtx buffer[5];
+    uint64_t stackId = 0;
+    bool init = DfxInitAsyncStack();
+    ASSERT_TRUE(init);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_EVENTHANDLER);
+    ASSERT_EQ(stackId, 0);
+
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_EQ(buffer[0].type, ASYNC_TYPE_LIBUV_QUEUE);
+    ASSERT_NE(buffer[0].id, 0);
+
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_TIMER);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_EQ(buffer[0].type, ASYNC_TYPE_LIBUV_TIMER);
+    ASSERT_NE(buffer[0].id, 0);
+    ASSERT_EQ(buffer[1].type, ASYNC_TYPE_LIBUV_QUEUE);
+    ASSERT_NE(buffer[1].id, 0);
+
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_EQ(buffer[0].type, ASYNC_TYPE_LIBUV_QUEUE);
+    ASSERT_NE(buffer[0].id, 0);
+
+    DfxSetAsyncStackType(ASYNC_TYPE_EVENTHANDLER);
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_EVENTHANDLER);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_EQ(buffer[0].type, ASYNC_TYPE_EVENTHANDLER);
+    ASSERT_NE(buffer[0].id, 0);
+    ASSERT_EQ(buffer[1].type, ASYNC_TYPE_LIBUV_QUEUE);
+    ASSERT_NE(buffer[1].id, 0);
+
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_EQ(buffer[0].type, 0);
+    ASSERT_EQ(buffer[0].id, 0);
+    
+    DfxAsyncMode premode = SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    ASSERT_EQ(premode, MODE_CHAINED_STACKTRACE);
+#endif
+}
 } // namespace HiviewDFX
 } // namespace OHOS

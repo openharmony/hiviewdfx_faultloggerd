@@ -38,7 +38,8 @@ static bool g_init = false;
 #if defined(__aarch64__)
 // Filter out illegal requests
 static std::atomic<uint64_t> g_enabledAsyncType = DEFAULT_ASYNC_TYPE;
-constexpr uint64_t UNSUPPORTED_CHAINED_STACK_TYPE = ASYNC_TYPE_JSVM | ASYNC_TYPE_ARKWEB;
+constexpr uint64_t UNSUPPORTED_CHAINED_STACK_TYPE =
+    ASYNC_TYPE_JSVM | ASYNC_TYPE_ARKWEB | ASYNC_TYPE_PROFILER;
 
 static pthread_key_t g_stackidKey;
 static std::unique_ptr<OHOS::HiviewDFX::FpBacktrace> g_fpBacktrace = nullptr;
@@ -200,14 +201,19 @@ extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
     }
     DfxAsyncMode prev = g_mode;
     g_mode = mode;
-    DFXLOGI("SetAsyncStackMode %{public}d", (int)g_mode);
+    DFXLOGI("SetAsyncStackMode %{public}d", static_cast<int>(g_mode));
     return prev;
 }
 
 extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
 {
+    if (sz == 0) {
+        DFXLOGW("GetCurrentChainedAsyncContext sz is 0");
+        return 0;
+    }
     DfxAsyncContext* ctx = DfxAsyncContextManager::Instance()->GetCurrentContext();
-    if (sz == 0 || ctx == nullptr) {
+    if (ctx == nullptr) {
+        DFXLOGW("GetCurrentContext failed, ctx is nullptr");
         return 0;
     }
     int32_t count = 0;
@@ -225,11 +231,11 @@ extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
 
 extern "C" void ReleaseAsyncContext(uint64_t stackId)
 {
-    if (g_mode == MODE_CHAINED_STACKTRACE) {
+    if (g_mode == MODE_LAST_STACKTRACE) {
         return;
     }
 
-    DfxAsyncContextManager::Instance()->RecycleAsyncContext((DfxAsyncContext*)stackId);
+    DfxAsyncContextManager::Instance()->RecycleAsyncContext(reinterpret_cast<DfxAsyncContext*>(stackId));
 }
 
 extern "C" void DfxPrintChainedStackTrace(void)
@@ -262,9 +268,9 @@ extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
     void* pcArray[depth] = {0};
     uint64_t stackId = CollectStackByFp(pcArray, depth);
     if ((g_mode == MODE_CHAINED_STACKTRACE) &&
-        !(type & UNSUPPORTED_CHAINED_STACK_TYPE) &&
-        (type != ASYNC_TYPE_PROFILER)) {
-        stackId = (uint64_t)DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type);
+        !(type & UNSUPPORTED_CHAINED_STACK_TYPE)) {
+        stackId =
+            reinterpret_cast<uint64_t>(DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type));
     }
     return stackId;
 }
@@ -284,9 +290,9 @@ extern "C" uint64_t DfxCollectStackWithDepth(uint64_t type, size_t depth)
     void* pcArray[maxSize] = {0};
     uint64_t stackId = CollectStackByFp(pcArray, realDepth);
     if ((g_mode == MODE_CHAINED_STACKTRACE) &&
-        !(type & UNSUPPORTED_CHAINED_STACK_TYPE) &&
-        (type != ASYNC_TYPE_PROFILER)) {
-        stackId = (uint64_t)DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type);
+        !(type & UNSUPPORTED_CHAINED_STACK_TYPE)) {
+        stackId =
+            reinterpret_cast<uint64_t>(DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type));
     }
     return stackId;
 }
@@ -307,7 +313,7 @@ extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
     if (g_mode == MODE_LAST_STACKTRACE) {
         pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(stackId));
     } else {
-        DfxAsyncContextManager::Instance()->HandleSetStackId(stackId);
+        DfxAsyncContextManager::Instance()->SetCurrentThreadContext(stackId);
     }
 }
 
