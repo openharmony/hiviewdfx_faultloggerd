@@ -1978,5 +1978,25 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest134, TestSize.Level2)
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest134: end.";
 }
 #endif
+
+/**
+ * @tc.name: FaultLoggerdSystemTest135
+ * @tc.desc: test CPP crasher application: STACKOFMAINTHREAD
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest135, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest135: start.";
+    string cmd = "MAINTHREADSTACKOF";
+    string fileName;
+    pid_t pid = TriggerCrasherAndGetFileName(cmd, CRASHER_CPP, fileName);
+    GTEST_LOG_(INFO) << "test pid(" << pid << ")"  << " cppcrash file name : " << fileName;
+    if (pid < 0 || fileName.size() < CPPCRASH_FILENAME_MIN_LENGTH) {
+        GTEST_LOG_(ERROR) << "Trigger Crash Failed.";
+        FAIL();
+    }
+    EXPECT_TRUE(CheckCountNumStackOverFlow(fileName, pid)) << "FaultLoggerdSystemTest135 Failed";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest135: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS
