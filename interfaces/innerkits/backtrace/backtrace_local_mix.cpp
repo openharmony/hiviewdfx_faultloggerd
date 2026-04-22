@@ -43,10 +43,7 @@ namespace {
 bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFrameNum, bool fast,
     size_t maxFrameNums, bool enableKernelStack)
 {
-#if defined(__x86_64__)
-    return false;
-#else
-#if defined(__arm__)
+#if defined(__arm__) || defined(__x86_64__)
     fast = false;
 #endif
     std::shared_ptr<Unwinder> unwinder = nullptr;
@@ -84,7 +81,6 @@ bool GetBacktraceStringByTidWithMix(std::string& out, int32_t tid, size_t skipFr
         out = threadHead + processInfoStr + Unwinder::GetFramesStr(frames);
     }
     return ret;
-#endif
 }
 } // namespace HiviewDFX
 } // namespace OHOS

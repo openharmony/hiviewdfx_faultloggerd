@@ -124,6 +124,16 @@ public:
         : [base] "+r"(regs)
         :
         : "x12", "memory");
+#elif defined(__x86_64__)
+        asm volatile(
+        "movq %%rbp, (%[base])\n"
+        "leaq 1f(%%rip), %%rax\n"
+        "movq %%rax, 8(%[base])\n"
+        "movq %%rsp, 16(%[base])\n"
+        "1:\n"
+        : [base] "+r"(regs)
+        :
+        : "rax", "memory");
 #endif
     }
 

@@ -61,7 +61,7 @@ bool BacktraceLocalThread::Unwind(Unwinder& unwinder, bool fast, size_t maxFrame
 
     if (tid_ == BACKTRACE_CURRENT_THREAD) {
         ret = unwinder.UnwindLocal(false, fast, maxFrameNum, skipFrameNum + 1);
-#ifdef __aarch64__
+#if (defined(__aarch64__) || defined(__x86_64__))
         if (fast) {
             Unwinder::GetLocalFramesByPcs(frames_, unwinder.GetPcs());
         }
@@ -73,7 +73,7 @@ bool BacktraceLocalThread::Unwind(Unwinder& unwinder, bool fast, size_t maxFrame
     }
 
     ret = unwinder.UnwindLocalWithTid(tid_, maxFrameNum, skipFrameNum);
-#ifdef __aarch64__
+#if (defined(__aarch64__) || defined(__x86_64__))
     Unwinder::GetLocalFramesByPcs(frames_, unwinder.GetPcs());
 #else
     frames_ = unwinder.GetFrames();
@@ -135,7 +135,7 @@ bool BacktraceLocalThread::UnwindOtherThreadMix(Unwinder& unwinder, bool fast, s
     } else {
         ret = unwinder.UnwindLocalByOtherTid(tid_, fast, maxFrameNum, skipFrameNum + 1);
     }
-#ifdef __aarch64__
+#if (defined(__aarch64__) || defined(__x86_64__))
     if (ret && fast) {
         unwinder.GetFramesByPcs(frames_, unwinder.GetPcs());
     }

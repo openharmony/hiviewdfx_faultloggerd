@@ -50,6 +50,7 @@ enum RegsEnumX86_64 : uint16_t {
 
     REG_SP = REG_X86_64_RSP,
     REG_PC = REG_X86_64_RIP,
+    REG_FP = REG_X86_64_RBP,
     REG_EH = REG_X86_64_RAX,
     REG_LAST = REG_X86_64_LAST,
 };

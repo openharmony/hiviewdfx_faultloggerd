@@ -37,6 +37,9 @@
 #if defined(__aarch64__)
 #include "unwind_arm64_define.h"
 #endif
+#if defined(__x86_64__)
+#include "unwind_x86_64_define.h"
+#endif
 #include "safe_reader.h"
 
 namespace OHOS {
@@ -47,7 +50,7 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxThreadContext"
 
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
 std::mutex g_localMutex;
 std::map<int32_t, std::shared_ptr<ThreadContext>> g_contextMap {};
 #endif
@@ -65,7 +68,7 @@ void PrintThreadStatus(int32_t tid)
     DFXLOGI("%{public}s", content.c_str());
 }
 
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
 std::shared_ptr<ThreadContext> GetContextLocked(int32_t tid)
 {
     auto it = g_contextMap.find(tid);
@@ -116,7 +119,7 @@ NO_SANITIZE void CopyContextAndWaitTimeoutMix(int sig, siginfo_t *si, void *cont
     instance.CopyStackBuf();
 }
 
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
 NO_SANITIZE void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context)
 {
     if (si == nullptr || si->si_value.sival_ptr == nullptr || context == nullptr) {
@@ -125,9 +128,15 @@ NO_SANITIZE void CopyContextAndWaitTimeout(int sig, siginfo_t *si, void *context
 
     DFXLOGU("tid(%{public}d) recv sig(%{public}d)", gettid(), sig);
     auto ctxPtr = static_cast<ThreadContext *>(si->si_value.sival_ptr);
+#ifdef __x86_64__
+    uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RBP];
+    uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RIP];
+    ctxPtr->firstFrameSp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RSP];
+#else
     uintptr_t fp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.regs[REG_FP];
     uintptr_t pc = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.pc;
     ctxPtr->firstFrameSp = reinterpret_cast<ucontext_t*>(context)->uc_mcontext.sp;
+#endif
     ctxPtr->frameSz = FpUnwinder::GetPtr()->UnwindSafe(pc, fp, ctxPtr->pcs, DEFAULT_MAX_LOCAL_FRAME_NUM);
     ctxPtr->cv.notify_all();
     ctxPtr->tid = static_cast<int32_t>(ThreadContextStatus::CONTEXT_UNUSED);
@@ -142,7 +151,7 @@ void DfxBacktraceLocalSignalHandler(int sig, siginfo_t *si, void *context)
     }
     int savedErrno = errno;
     switch (si->si_code) {
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
         case DUMP_TYPE_LOCAL:
             CopyContextAndWaitTimeout(sig, si, context);
             break;
@@ -173,7 +182,7 @@ void InitSignalHandler()
 }
 }
 
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
 LocalThreadContext& LocalThreadContext::GetInstance()
 {
     static LocalThreadContext instance;
@@ -241,7 +250,7 @@ bool LocalThreadContext::GetStackRange(int32_t tid, uintptr_t& stackBottom, uint
 
 bool LocalThreadContext::SignalRequestThread(int32_t tid, ThreadContext* threadContext)
 {
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
     siginfo_t si {0};
     si.si_signo = SIGLOCAL_DUMP;
     si.si_errno = 0;
@@ -344,6 +353,10 @@ NO_SANITIZE void LocalThreadContextMix::CopyRegister(void *context)
     lr_ = static_cast<ucontext_t*>(context)->uc_mcontext.regs[RegsEnumArm64::REG_LR];
     sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.sp;
     pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.pc;
+#elif defined(__x86_64__)
+    fp_ = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RBP];
+    sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RSP];
+    pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RIP];
 #endif
 }
 
@@ -367,11 +380,11 @@ NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
 
 void LocalThreadContextMix::SetRegister(std::shared_ptr<DfxRegs> regs)
 {
-#if defined(__arm__) || defined(__aarch64__)
     std::unique_lock<std::mutex> lock(mtx_);
     regs->SetSp(sp_);
     regs->SetPc(pc_);
     regs->SetFp(fp_);
+#ifndef __x86_64__
     regs->SetReg(REG_LR, &(lr_));
 #endif
 }

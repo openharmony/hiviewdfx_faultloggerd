@@ -15,7 +15,7 @@
 
 #include "fp_backtrace.h"
 
-#if is_ohos && !is_mingw && __aarch64__
+#if is_ohos && !is_mingw && (defined(__aarch64__) || defined(__x86_64__))
 #include <mutex>
 #include "dfx_ark.h"
 #include "dfx_log.h"
@@ -31,7 +31,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-#if is_ohos && !is_mingw && __aarch64__
+#if is_ohos && !is_mingw && (defined(__aarch64__) || defined(__x86_64__))
 namespace {
 
 #undef LOG_DOMAIN
@@ -215,7 +215,7 @@ DfxFrame* FpBacktraceImpl::SymbolicAddress(void* pc)
 
 FpBacktrace* FpBacktrace::CreateInstance()
 {
-#if is_ohos && !is_mingw && __aarch64__
+#if is_ohos && !is_mingw && (defined(__aarch64__) || defined(__x86_64__))
     auto fpBacktraceImpl =  new (std::nothrow) FpBacktraceImpl();
     if (fpBacktraceImpl == nullptr) {
         return nullptr;
@@ -230,7 +230,7 @@ FpBacktrace* FpBacktrace::CreateInstance()
 
 void FpBacktrace::UpdateArkStackRange(uintptr_t arkStubBegin, uintptr_t arkStubEnd)
 {
-#if is_ohos && !is_mingw && __aarch64__
+#if is_ohos && !is_mingw && (defined(__aarch64__) || defined(__x86_64__))
     DFXLOGI("UpdateArkStackRange.");
     g_arkStubBegin = arkStubBegin;
     g_arkStubEnd = arkStubEnd;
