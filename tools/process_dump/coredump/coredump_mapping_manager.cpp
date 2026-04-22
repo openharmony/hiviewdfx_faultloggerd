@@ -26,6 +26,17 @@ namespace HiviewDFX {
 
 namespace {
 constexpr int HEX_BASE = 16;
+constexpr uint64_t LARGE_ANON_THRESHOLD = 64UL * 1024 * 1024;
+bool HasValidPermissions(const DumpMemoryRegions& region)
+{
+    std::string perms = region.priority;
+    return perms.find('p') != std::string::npos && perms.find('r') != std::string::npos;
+}
+
+bool IsLargeAnonymousReservation(const DumpMemoryRegions &region)
+{
+    return region.pathName[0] == '\0' && region.memorySizeHex >= LARGE_ANON_THRESHOLD;
+}
 }
 CoredumpMappingManager& CoredumpMappingManager::GetInstance()
 {
@@ -56,8 +67,14 @@ void CoredumpMappingManager::Parse(pid_t pid)
 bool CoredumpMappingManager::isNativeProcess_ = false;
 bool CoredumpMappingManager::ShouldIncludeRegion(const DumpMemoryRegions& region)
 {
-    std::string perms = region.priority;
-    return perms.find('p') != std::string::npos && perms.find('r') != std::string::npos;
+    if (!HasValidPermissions(region)) {
+        return false;
+    }
+
+    if (IsLargeAnonymousReservation(region)) {
+        return false;
+    }
+    return true;
 }
 
 bool CoredumpMappingManager::IsHwAsanProcess() const
