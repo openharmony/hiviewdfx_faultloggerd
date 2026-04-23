@@ -614,7 +614,7 @@ int32_t LiteProcDumperPipeService::OnRequest(const std::string& socketName, int3
     }
     DelayTaskQueue::GetInstance().AddDelayTask([pid] {
         LimitedPipePair::DelPipePair(pid);
-        }, 30); // 30 : dump should finish in 30s
+        }, 10); // 10 : dump should finish in 10s
     if (fd < 0) {
         DFXLOGE("%{public}s :: failed to get fd for pipeType(%{public}d).", FAULTLOGGERD_SERVICE_TAG,
             requestData.pipeType);
