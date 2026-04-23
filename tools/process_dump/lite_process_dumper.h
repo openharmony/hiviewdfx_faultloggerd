@@ -42,6 +42,7 @@ public:
     bool Dump(int pid);
 private:
     bool ReadPipeData(int pid);
+    bool ReadContent(int pipeReadFd);
     bool ReadRequest(int pipeReadFd);
     void SetProcessdumpTimeout(siginfo_t &si);
     void FormatJsonInfoIfNeed();
