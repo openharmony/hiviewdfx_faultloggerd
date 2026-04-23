@@ -32,7 +32,6 @@
 #endif
 #include "process_dumper.h"
 
-const char* const FOUNDATION_PROCESS_NAME = "foundation";
 const char* const HIVIEW_PROCESS_NAME = "/system/bin/hiview";
 const char* const REGS_KEY_WORD = "Registers:\n";
 
@@ -172,15 +171,12 @@ SmartFd CppCrashReporter::TranferCrashInfoToHiview(const std::string& cppCrashIn
     return readFd;
 }
 
-struct AmsReportParams {
-    int pid;
-    uint32_t uid;
-    std::string reason;
-};
-
-static void* ReportAmsThreadFunc(void* arg)
+void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request)
 {
-    AmsReportParams* params = static_cast<AmsReportParams*>(arg);
+    if (request.uid < MIN_HAP_UID) {
+        DFXLOGW("Native process no need report kill reason to AbilityManagerService");
+        return;
+    }
     std::shared_ptr<void> handle(dlopen("libability_manager_c.z.so", RTLD_LAZY | RTLD_NODELETE), [] (void* handle) {
         if (handle != nullptr) {
             dlclose(handle);
@@ -188,50 +184,20 @@ static void* ReportAmsThreadFunc(void* arg)
     });
     if (handle == nullptr) {
         DFXLOGW("Failed to dlopen libabilityms, %{public}s\n", dlerror());
-        delete params;
-        return nullptr;
+        return;
     }
 
     RecordAppWithReason recordAppWithReason = (RecordAppWithReason)dlsym(handle.get(), "RecordAppWithReason");
     if (recordAppWithReason == nullptr) {
         DFXLOGW("Failed to dlsym RecordAppWithReason, %{public}s\n", dlerror());
-        delete params;
-        return nullptr;
+        return;
     }
 
     // defined in interfaces/inner_api/ability_manager/include/ability_state.h
     const int cppCrashExitReason = 2;
     // defined in interfaces/native/innerkits/include/xcollie/process_kill_reason.h
     const int killId = 2004;
-    recordAppWithReason(params->pid, params->uid, cppCrashExitReason, killId, params->reason.c_str());
-    DFXLOGI("Report to AbilityManagerService done.");
-    delete params;
-    return nullptr;
-}
-
-void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request, pthread_t *outThread,
-    bool& isCreateThreadSucc)
-{
-    if (process.GetProcessInfo().processName.find(FOUNDATION_PROCESS_NAME) != std::string::npos) {
-        DFXLOGW("Do not to report to AbilityManagerService, because foundation is crashed.");
-        return;
-    }
-
-    AmsReportParams* params = new AmsReportParams{request.pid, request.uid, process.GetReason()};
-    if (request.uid < MIN_HAP_UID) {
-        pthread_attr_t attr;
-        pthread_attr_init(&attr);
-        int ret = pthread_create(outThread, &attr, ReportAmsThreadFunc, params);
-        pthread_attr_destroy(&attr);
-        if (ret != 0) {
-            DFXLOGE("Failed to create report thread, error: %{public}d", ret);
-            delete params;
-        } else {
-            isCreateThreadSucc = true;
-        }
-    } else {
-        ReportAmsThreadFunc(params);
-    }
+    recordAppWithReason(request.pid, request.uid, cppCrashExitReason, killId, process.GetReason().c_str());
 }
 
 std::string CppCrashReporter::GetRegsString(std::shared_ptr<DfxRegs> regs)
