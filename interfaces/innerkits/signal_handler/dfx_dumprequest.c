@@ -536,6 +536,16 @@ static bool InitPipe(void)
         }
     }
     if (!ret) {
+        // restore soft limit to hard limit for creating pipe successfully, and try again
+        struct rlimit fdRlimit;
+        getrlimit(RLIMIT_NOFILE, &fdRlimit);
+        fdRlimit.rlim_cur = fdRlimit.rlim_max;
+        if (setrlimit(RLIMIT_NOFILE, &fdRlimit) == 0) {
+            DFXLOGI("restored soft limit to hard limit");
+        } else {
+            DFXLOGE("setrlimit error %{public}d", errno);
+        }
+
         CloseFds();
         for (int i = 0; i < PIPE_MAX; i++) {
             if (syscall(SYS_pipe2, g_pipeFds[i], 0) == -1) {
