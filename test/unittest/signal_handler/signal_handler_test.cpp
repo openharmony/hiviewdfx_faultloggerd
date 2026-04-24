@@ -25,6 +25,7 @@
 #include <vector>
 #include <sys/mman.h>
 #include <sys/prctl.h>
+#include <sys/resource.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1296,6 +1297,39 @@ HWTEST_F(SignalHandlerTest, DfxLiteDumperTest011, TestSize.Level2)
     EXPECT_TRUE(str.find("OpenFiles") != std::string::npos);
     EXPECT_TRUE(str.find("end trans openfiles") != std::string::npos);
     DeInitPipe();
+}
+
+/**
+ * @tc.name: SignalHandlerRlimitTest001
+ * @tc.desc: test crash handler when fd limit is abnormally restricted
+ *           verify that InitPipe can restore soft limit to hard limit and create pipe successfully
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerRlimitTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerRlimitTest001: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+        FAIL();
+    } else if (pid == 0) {
+        struct rlimit fdRlimit;
+        getrlimit(RLIMIT_NOFILE, &fdRlimit);
+        fdRlimit.rlim_cur = 10;
+        EXPECT_EQ(setrlimit(RLIMIT_NOFILE, &fdRlimit), 0) << "Failed to set rlimit, errno=" << errno;
+        for (int i = 0; i < 10; i++) {
+            int fd = open("/dev/null", O_RDONLY);
+            if (fd == -1) {
+                abort();
+            }
+        }
+        _exit(0);
+    } else {
+        auto filename = WaitCreateCrashFile("cppcrash", pid);
+        EXPECT_FALSE(filename.empty());
+        waitpid(pid, nullptr, 0);
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerRlimitTest001: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
