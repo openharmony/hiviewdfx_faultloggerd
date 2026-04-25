@@ -107,18 +107,29 @@ const char* DataTypeToString(int dataType)
 
 void PDumpListener::OnEventPoll()
 {
-    DFXLOGI("read dev pdump data");
+    DFXLOGI("recv dev pdump event");
 
-    // maybe have not one data comming, should read all
+    constexpr size_t pdumpDataSize = sizeof(struct __pdump_data_s);
     struct __pdump_data_s srcData;
     ssize_t bytesRead;
-    while ((bytesRead = read(GetFd(), &srcData, sizeof(struct __pdump_data_s))) > 0) {
-        if (bytesRead < static_cast<ssize_t>(sizeof(struct __pdump_header_s))) {
-            DFXLOGE("failed to read pdump header, bytesRead=%{public}zd errno%{public}d", bytesRead, errno);
+
+    while ((bytesRead = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), &srcData, pdumpDataSize))) > 0) {
+        if (bytesRead != static_cast<ssize_t>(pdumpDataSize)) {
+            DFXLOGE("read incomplete pdump header, bytesRead=%{public}zd, expected=%{public}zu",
+                bytesRead, pdumpDataSize);
             continue;
         }
-        MinidumpManagerService::GetInstance().ParsePDumpData(srcData);
+
+        if (!MinidumpManagerService::GetInstance().ParsePDumpData(srcData)) {
+            DFXLOGE("failed to parse pdump data");
+        }
     }
+
+    if (bytesRead < 0 && errno != EAGAIN) {
+        DFXLOGE("failed to read pdump data, errno=%{public}d", errno);
+    }
+
+    DFXLOGI("finish deal pdump event");
 }
 
 MinidumpManagerService& MinidumpManagerService::GetInstance()
