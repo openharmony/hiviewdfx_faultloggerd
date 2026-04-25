@@ -758,6 +758,7 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr)
     char openFiles[] = "OpenFiles:\n";
     if (!LoopWritePipe(pipeWriteFd, openFiles, strlen(openFiles))) {
         DFXLOGE("failed to write openfiles tag, %{public}d", errno);
+        closedir(dir);
         return false;
     }
     FdTableEntry fdEntries = {0};
@@ -789,6 +790,7 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
     DFXLOGI("start enter %{public}s", __func__);
     RegisterAllocator();
     pid_t crashHandlerPid = GetProcId(PROC_SELF_STATUS_PATH, PID_STR_NAME);
+    RequestLimitedProcessDump(crashHandlerPid);
     int pipeWriteFd = -1;
     RequestLimitedPipeFd(PIPE_WRITE, &pipeWriteFd, crashHandlerPid, request->processName);
     if (pipeWriteFd < 0) {
@@ -798,7 +800,6 @@ bool LiteCrashHandler(struct ProcessDumpRequest *request)
     }
     bool ret = true;
     do {
-        RequestLimitedProcessDump(crashHandlerPid);
         if (!LoopWritePipe(pipeWriteFd, request, sizeof(struct ProcessDumpRequest))) {
             DFXLOGE("failed to write dump request %{public}d", errno);
             ret = false;
