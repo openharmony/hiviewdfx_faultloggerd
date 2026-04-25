@@ -56,7 +56,7 @@ void PrintStackWithStackId(uint64_t type, uint64_t stackId)
 
 bool DfxAsyncContextPool::Init()
 {
-    if (initialized_) {
+    if (initialized_.load()) {
         return true;
     }
     DFXLOGI("init async context pool");
@@ -64,72 +64,79 @@ bool DfxAsyncContextPool::Init()
     memset_s(&(pool_[0]), sizeof(pool_), 0, sizeof(pool_));
     freeListHead_ = &pool_[0];
     for (uint32_t i = 0; i < CHAIN_POOL_SIZE - 1; i++) {
-        pool_[i].valid = 0;
+        pool_[i].valid = false;
         pool_[i].next = &pool_[i + 1];
     }
-    pool_[CHAIN_POOL_SIZE - 1].next = 0;
-    pool_[CHAIN_POOL_SIZE - 1].valid = 0;
+    pool_[CHAIN_POOL_SIZE - 1].next = nullptr;
+    pool_[CHAIN_POOL_SIZE - 1].valid = false;
     freeListTail_ = &pool_[CHAIN_POOL_SIZE - 1];
 
     freeThreadList_ = &threadCtxPool_[0];
     for (uint32_t i = 0; i < THREAD_POOL_SIZE - 1; i++) {
         memset_s(&(threadCtxPool_[i].contexts), sizeof(threadCtxPool_[i].contexts),
             0, sizeof(threadCtxPool_[i].contexts));
-        threadCtxPool_[i].valid = 0;
-        threadCtxPool_[i].curIndex = 0;
+        threadCtxPool_[i].valid = false;
+        threadCtxPool_[i].curAsyncContextsCnt = 0;
         threadCtxPool_[i].next = &threadCtxPool_[i + 1];
     }
-    threadCtxPool_[THREAD_POOL_SIZE - 1].next = 0;
+    threadCtxPool_[THREAD_POOL_SIZE - 1].next = nullptr;
+    threadCtxPool_[THREAD_POOL_SIZE - 1].valid = false;
 
-    initialized_ = true;
+    initialized_.store(true);
     DFXLOGI("async context pool init success");
     return true;
 }
 
 void DfxAsyncContextPool::DeInit()
 {
-    if (!initialized_) {
+    if (!initialized_.load()) {
         return;
     }
     std::lock_guard<std::mutex> lock(mutex_);
-    initialized_ = false;
+    initialized_.store(false);
     DFXLOGI("async contextPool deinit success");
 }
 
 DfxAsyncContext* DfxAsyncContextPool::AcquireAsyncContext()
 {
-    if (!initialized_) {
+    if (!initialized_.load()) {
         return nullptr;
     }
     std::lock_guard<std::mutex> lock(mutex_);
     if (freeListHead_ == freeListTail_) {
+        DFXLOGW("DfxAsyncContext exhausted");
         return nullptr;
     }
     DfxAsyncContext* ctx = freeListHead_;
     freeListHead_ = freeListHead_->next;
-    ctx->valid = 1;
+    ctx->valid = true;
     return ctx;
 }
 
 void DfxAsyncContextPool::ReleaseAsyncContext(DfxAsyncContext* ctx)
 {
-    if (ctx == nullptr || !initialized_) {
+    if (!initialized_.load()) {
+        return;
+    }
+    if (ctx == nullptr) {
+        DFXLOGW("ReleaseAsyncContext ctx is nullptr");
         return;
     }
     std::lock_guard<std::mutex> lock(mutex_);
     if (!ctx->valid) {
+        DFXLOGW("ReleaseAsyncContext ctx is invalid");
         return;
     }
     memset_s(&ctx->ctxs[0], sizeof(ctx->ctxs), 0, sizeof(ctx->ctxs));
     freeListTail_->next = ctx;
     freeListTail_ = ctx;
-    ctx->valid = 0;
-    ctx->next = 0;
+    ctx->valid = false;
+    ctx->next = nullptr;
 }
 
 DfxThreadAsyncContext* DfxAsyncContextPool::AcquireThreadContext()
 {
-    if (!initialized_) {
+    if (!initialized_.load()) {
         return nullptr;
     }
     std::lock_guard<std::mutex> lock(mutex_);
@@ -139,20 +146,24 @@ DfxThreadAsyncContext* DfxAsyncContextPool::AcquireThreadContext()
     }
     DfxThreadAsyncContext* ctx = freeThreadList_;
     freeThreadList_ = freeThreadList_->next;
-    ctx->valid = 1;
-    ctx->curIndex = 0;
+    ctx->valid = true;
+    ctx->curAsyncContextsCnt = 0;
     return ctx;
 }
 
 void DfxAsyncContextPool::ReleaseThreadContext(DfxThreadAsyncContext* ctx)
 {
-    if (ctx == nullptr || !initialized_) {
+    if (!initialized_.load()) {
+        return;
+    }
+    if (ctx == nullptr) {
+        DFXLOGW("ReleaseThreadContext ctx is nullptr");
         return;
     }
     std::lock_guard<std::mutex> lock(mutex_);
-    ctx->valid = 0;
+    ctx->valid = false;
     ctx->next = freeThreadList_;
-    ctx->curIndex = 0;
+    ctx->curAsyncContextsCnt = 0;
     freeThreadList_ = ctx;
 }
 
@@ -166,10 +177,12 @@ void ThreadAsyncContextDestructor(void *arg)
 {
     DfxThreadAsyncContext* ctx = (DfxThreadAsyncContext*)arg;
     if (ctx == nullptr) {
+        DFXLOGW("ThreadAsyncContextDestructor ctx is nullptr");
         return;
     }
 
     if (getpid() == gettid()) {
+        DFXLOGW("ThreadAsyncContextDestructor pid is equal to tid");
         return;
     }
 
@@ -178,7 +191,7 @@ void ThreadAsyncContextDestructor(void *arg)
 
 bool DfxAsyncContextManager::Init()
 {
-    if (initialized_) {
+    if (initialized_.load()) {
         return true;
     }
     if (!DfxAsyncContextPool::Instance()->Init()) {
@@ -189,25 +202,25 @@ bool DfxAsyncContextManager::Init()
         DFXLOGE("pthread_key_create failed");
         return false;
     }
-    initialized_ = true;
+    initialized_.store(true);
     DFXLOGI("AsyncContextManager init success");
     return true;
 }
 
 void DfxAsyncContextManager::DeInit()
 {
-    if (!initialized_) {
+    if (!initialized_.load()) {
         return;
     }
     DfxAsyncContextPool::Instance()->DeInit();
     pthread_key_delete(threadAsyncCtxKey_);
-    initialized_ = false;
+    initialized_.store(false);
     DFXLOGI("AsyncContextManager deinit success");
 }
 
 DfxAsyncContext* DfxAsyncContextManager::GetCurrentContext()
 {
-    if (!initialized_) {
+    if (!initialized_.load()) {
         return nullptr;
     }
     auto threadCtx = static_cast<DfxThreadAsyncContext*>(pthread_getspecific(threadAsyncCtxKey_));
@@ -215,53 +228,57 @@ DfxAsyncContext* DfxAsyncContextManager::GetCurrentContext()
         DFXLOGW("GetCurrentContext thread context is nullptr");
         return nullptr;
     }
-    if (threadCtx->curIndex <= 0 || threadCtx->curIndex >= MAX_THREAD_ASYNC_CTX_DEPTH ||
+    if (threadCtx->curAsyncContextsCnt <= 0 || threadCtx->curAsyncContextsCnt > MAX_THREAD_ASYNC_CTX_DEPTH ||
         !threadCtx->valid) {
+        DFXLOGW("GetCurrentContext thread context count is invalid");
         return nullptr;
     }
-    int index = threadCtx->curIndex - 1;
+    int index = threadCtx->curAsyncContextsCnt - 1;
     return threadCtx->contexts[index];
 }
 
 void DfxAsyncContextManager::PrintChainStack()
 {
     static int i = 0;
-    auto ctx = GetCurrentContext();
-    if (ctx == nullptr) {
-        return;
-    }
     if (i % PRINT_CHAIN_INTERVAL != 0) {
         i++;
         return;
     }
     i++;
+    auto ctx = GetCurrentContext();
+    if (ctx == nullptr) {
+        DFXLOGW("PrintChainStack ctx is nullptr");
+        return;
+    }
     for (int j = 0; j < DEFAULT_MAX_ASYNC_CHAIN_LAYERS; j++) {
         if (ctx->ctxs[j].id == 0) {
             break;
         }
         DFXLOGD("PrintChainStack: layer %{public}d type %{public}llu, stackId %{public}llu",
-            j, (unsigned long long)ctx->ctxs[j].type, (unsigned long long)ctx->ctxs[j].id);
+            j, static_cast<unsigned long long>(ctx->ctxs[j].type),
+            static_cast<unsigned long long>(ctx->ctxs[j].id));
         PrintStackWithStackId(ctx->ctxs[j].type, ctx->ctxs[j].id);
     }
 }
 
 void DfxAsyncContextManager::ClearThreadContext(DfxThreadAsyncContext* threadCtx)
 {
-    if (threadCtx == nullptr || !initialized_) {
+    if (threadCtx == nullptr) {
+        DFXLOGW("ClearThreadContext threadCtx is nullptr");
         return;
     }
-    if (threadCtx->curIndex < 0 || threadCtx->curIndex >= MAX_THREAD_ASYNC_CTX_DEPTH ||
+    if (threadCtx->curAsyncContextsCnt < 0 || threadCtx->curAsyncContextsCnt > MAX_THREAD_ASYNC_CTX_DEPTH ||
         !threadCtx->valid) {
         DFXLOGW("ClearThreadContext invalid thread context");
         return;
     }
-    threadCtx->curIndex = 0;
+    threadCtx->curAsyncContextsCnt = 0;
 }
 
 bool DfxAsyncContextManager::IsValidAsyncContext(DfxAsyncContext* ctx)
 {
-    DfxAsyncContext* begin = 0;
-    DfxAsyncContext* end = 0;
+    DfxAsyncContext* begin = nullptr;
+    DfxAsyncContext* end = nullptr;
     DfxAsyncContextPool::Instance()->GetAsyncContextRange(&begin, &end);
     return ((ctx >= begin) && (ctx <= end));
 }
@@ -269,55 +286,59 @@ bool DfxAsyncContextManager::IsValidAsyncContext(DfxAsyncContext* ctx)
 bool DfxAsyncContextManager::RecycleAsyncContext(DfxAsyncContext* ctx)
 {
     if (ctx == nullptr) {
+        DFXLOGW("RecycleAsyncContext ctx is nullptr");
         return false;
     }
-    DfxAsyncContext* begin = 0;
-    DfxAsyncContext* end = 0;
+    DfxAsyncContext* begin = nullptr;
+    DfxAsyncContext* end = nullptr;
     DfxAsyncContextPool::Instance()->GetAsyncContextRange(&begin, &end);
     if (ctx < begin || ctx > end) {
-        DFXLOGW("RecycleAsyncContext invalid");
+        DFXLOGW("RecycleAsyncContext ctx invalid");
         return false;
     }
     DFXLOGD("RecycleAsyncContext tid:%{public}d, type %{public}llu",
-        gettid(), (unsigned long long)ctx->ctxs[0].type);
+        gettid(), static_cast<unsigned long long>(ctx->ctxs[0].type));
     DfxAsyncContextPool::Instance()->ReleaseAsyncContext(ctx);
     return true;
 }
 
 void DfxAsyncContextManager::PushAsyncContext(DfxThreadAsyncContext* threadCtx, DfxAsyncContext* ctx)
 {
-    if (threadCtx->curIndex >= MAX_THREAD_ASYNC_CTX_DEPTH) {
+    if (threadCtx->curAsyncContextsCnt >= MAX_THREAD_ASYNC_CTX_DEPTH) {
         DFXLOGW("PushAsyncContext curThread layer reach max:%{public}d", gettid());
         return;
     }
 
     if (!IsValidAsyncContext(ctx)) {
         DFXLOGD("PushAsyncContext invalid tid:%{public}d, ctx:%{public}llu, at index:%{public}d",
-            gettid(), (unsigned long long)ctx, threadCtx->curIndex);
+            gettid(), static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(ctx)),
+            threadCtx->curAsyncContextsCnt);
         return;
     }
-    threadCtx->contexts[threadCtx->curIndex++] = ctx;
+    threadCtx->contexts[threadCtx->curAsyncContextsCnt++] = ctx;
 }
 
 void DfxAsyncContextManager::PopAsyncContext(DfxThreadAsyncContext* threadCtx)
 {
-    if (threadCtx->curIndex <= 0) {
+    if (threadCtx->curAsyncContextsCnt <= 0) {
         DFXLOGW("PopAsyncContext invalid thread index:%{public}d", gettid());
         return;
     }
-    threadCtx->curIndex--;
+    threadCtx->curAsyncContextsCnt--;
 }
 
-void DfxAsyncContextManager::SetCurrentContext(DfxAsyncContext* ctx)
+void DfxAsyncContextManager::SetCurrentThreadContext(uint64_t stackId)
 {
-    if (!initialized_) {
+    if (!initialized_.load()) {
         return;
     }
+    // Task destruction, libuv uses DfxSetSubmitterStackId(0) to pop the current asynchronous context.
+    DfxAsyncContext* ctx = (stackId == 0) ? nullptr : reinterpret_cast<DfxAsyncContext*>(stackId);
     auto threadCtx = static_cast<DfxThreadAsyncContext*>(pthread_getspecific(threadAsyncCtxKey_));
     if (threadCtx == nullptr) {
         threadCtx = DfxAsyncContextPool::Instance()->AcquireThreadContext();
         if (threadCtx == nullptr) {
-            DFXLOGW("SetCurrentContext acquire thread context failed");
+            DFXLOGW("SetCurrentThreadContext acquire thread context failed");
             return;
         }
         pthread_setspecific(threadAsyncCtxKey_, threadCtx);
@@ -349,18 +370,9 @@ DfxAsyncContext* DfxAsyncContextManager::HandleCollectAsyncStack(uint64_t stackI
                 break;
             }
             ctx->ctxs[i + 1] = curCtx->ctxs[i];
-            ctx->curIndex = i + 1;
         }
-    } else {
-        ctx->curIndex = 0;
     }
     return ctx;
-}
-
-void DfxAsyncContextManager::HandleSetStackId(uint64_t stackId)
-{
-    auto ctx = reinterpret_cast<DfxAsyncContext*>(stackId);
-    SetCurrentContext(ctx);
 }
 #endif
 }
