@@ -33,7 +33,6 @@ constexpr uint32_t PRINT_CHAIN_INTERVAL = 10;
 typedef struct DfxAsyncContext {
     DfxAsyncContext* next;
     bool valid;
-    uint8_t curIndex;
     DfxAsyncCtx ctxs[DEFAULT_MAX_ASYNC_CHAIN_LAYERS];
 } DfxAsyncContext;
 
@@ -41,7 +40,7 @@ typedef struct DfxThreadAsyncContext {
     DfxAsyncContext* contexts[MAX_THREAD_ASYNC_CTX_DEPTH];
     DfxThreadAsyncContext* next;
     bool valid;
-    int32_t curIndex;
+    int32_t curAsyncContextsCnt;
 } DfxThreadAsyncContext;
 
 /**
@@ -59,7 +58,7 @@ public:
     void GetAsyncContextRange(DfxAsyncContext** begin, DfxAsyncContext** end)
     {
         *begin = &pool_[0];
-        *end = &pool_[CHAIN_POOL_SIZE];
+        *end = &pool_[CHAIN_POOL_SIZE - 1];
     }
 private:
     DfxAsyncContextPool() = default;
@@ -72,7 +71,7 @@ private:
     DfxAsyncContext* freeListTail_{nullptr};
     DfxThreadAsyncContext* freeThreadList_{nullptr};
     std::mutex mutex_;
-    bool initialized_{false};
+    std::atomic<bool> initialized_{false};
 };
 
 class DfxAsyncContextManager {
@@ -81,9 +80,8 @@ public:
     bool Init();
     void DeInit();
     DfxAsyncContext* HandleCollectAsyncStack(uint64_t stackId, uint64_t asyncType);
-    void HandleSetStackId(uint64_t stackId);
     DfxAsyncContext* GetCurrentContext();
-    void SetCurrentContext(DfxAsyncContext* ctx);
+    void SetCurrentThreadContext(uint64_t stackId);
 
     bool RecycleAsyncContext(DfxAsyncContext* ctx);
     bool IsValidAsyncContext(DfxAsyncContext* ctx);
@@ -97,7 +95,7 @@ private:
     void PushAsyncContext(DfxThreadAsyncContext* threadCtx, DfxAsyncContext* ctx);
     void PopAsyncContext(DfxThreadAsyncContext* threadCtx);
     pthread_key_t threadAsyncCtxKey_;
-    bool initialized_;
+    std::atomic<bool> initialized_;
 };
 
 } // namespace HiviewDFX
