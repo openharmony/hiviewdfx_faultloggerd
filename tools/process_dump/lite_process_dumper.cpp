@@ -168,7 +168,7 @@ bool LiteProcessDumper::ReadOtherThreadStack(int pipeReadFd)
 
     otherThreadRequest_.resize(otherThreadNum);
     otherThreadStackBuf_.resize(otherThreadNum);
-    for (int i = 0; i < otherThreadRequest_.size() && i < otherThreadStackBuf_.size(); ++i) {
+    for (size_t i = 0; i < otherThreadRequest_.size() && i < otherThreadStackBuf_.size(); ++i) {
         if (!LoopReadPipe(pipeReadFd, &otherThreadRequest_[i], sizeof(ThreadDumpRequest))) {
             DFXLOGE("read thread request fail %{public}d", errno);
             return false;
@@ -239,7 +239,7 @@ bool LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpReques
     char data[bufSize];
     char startTag[bufSize] = "start trans register";
     if (!LoopReadPipe(pipeReadFd, data, bufSize) || std::strcmp(data, startTag) != 0) {
-        DFXLOGE("failed to start memory tag", errno);
+        DFXLOGE("failed to start memory tag %{public}d", errno);
         return false;
     }
 #if defined(__aarch64__)
@@ -260,23 +260,15 @@ bool LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpReques
 #endif
     char endTag[bufSize] = "end trans register";
     if (!LoopReadPipe(pipeReadFd, data, bufSize) || std::strcmp(data, endTag) != 0) {
-        DFXLOGE("failed to end memory tag", errno);
+        DFXLOGE("failed to end memory tag %{public}d", errno);
         return false;
     }
     DFXLOGI("end memory tag %{public}s", data);
     return true;
 }
 
-bool LiteProcessDumper::ReadPipeData(int pid)
+bool LiteProcessDumper::ReadContent(int pipeReadFd)
 {
-    DFXLOGI("start read pipe data");
-    int pipeReadFd = -1;
-#ifndef is_ohos_lite
-    RequestLimitedPipeFd(PIPE_READ, &pipeReadFd, pid, nullptr);
-#endif
-    if (pipeReadFd <= 0) {
-        return false;
-    }
     if (!ReadRequest(pipeReadFd)) {
         return false;
     }
@@ -310,6 +302,25 @@ bool LiteProcessDumper::ReadPipeData(int pid)
         if (n > 0) {
             rawData_.append(data.data(), static_cast<size_t>(n));
         }
+    }
+    return true;
+}
+
+bool LiteProcessDumper::ReadPipeData(int pid)
+{
+    DFXLOGI("start read pipe data");
+    int pipeReadFd = -1;
+#ifndef is_ohos_lite
+    RequestLimitedPipeFd(PIPE_READ, &pipeReadFd, pid, nullptr);
+#endif
+    if (pipeReadFd <= 0) {
+        return false;
+    }
+    if (!ReadContent(pipeReadFd)) {
+#ifndef is_ohos_lite
+        RequestLimitedDelPipeFd(pid);
+#endif
+        return false;
     }
     DFXLOGI("finish read pipe data");
 #ifndef is_ohos_lite
@@ -352,7 +363,7 @@ void LiteProcessDumper::UnwindOtherThread()
     }
     auto& instance = LocalThreadContextMix::GetInstance();
     instance.SetStackForward(0);
-    for (int i = 0; i < otherThreadRequest_.size() && i < otherThreadStackBuf_.size(); ++i) {
+    for (size_t i = 0; i < otherThreadRequest_.size() && i < otherThreadStackBuf_.size(); ++i) {
         instance.SetStackBuf(otherThreadStackBuf_[i]);
         instance.CopyRegister(&otherThreadRequest_[i].context);
 
@@ -374,7 +385,7 @@ void LiteProcessDumper::InitProcess()
     process_->SetLogSource("liteprocessdump");
     process_->SetFaultThreadRegisters(regs_);
     process_->InitKeyThread(request_, false);
-    for (int i = 0; i < otherThreadRequest_.size(); ++i) {
+    for (size_t i = 0; i < otherThreadRequest_.size(); ++i) {
         auto thread = DfxThread::Create(request_.pid, otherThreadRequest_[i].tid, otherThreadRequest_[i].nsTid,
             request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
         process_->GetOtherThreads().push_back(thread);
