@@ -108,7 +108,11 @@ if (defined(ohos_lite)) {
 
   ohos_prebuilt_etc("faultloggerd.cfg") {
     if (use_musl) {
-      source = "config/faultloggerd.cfg"
+      if (faultloggerd_manual_start_enable) {
+        source = "config/manual/faultloggerd.cfg"
+      } else {
+        source = "config/faultloggerd.cfg"
+      }
     } else {
       source = "config/bionic/faultloggerd.cfg"
     }
