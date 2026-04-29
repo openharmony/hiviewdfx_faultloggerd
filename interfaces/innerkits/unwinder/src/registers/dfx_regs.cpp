@@ -162,8 +162,8 @@ void DfxRegs::SetReg(const int idx, const uintptr_t* val)
 
 void DfxRegs::GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintptr_t& pc) const
 {
-#if defined(__arm__) || defined(__aarch64__) || defined(__riscv) || defined(__loongarch_lp64)
     fp = regsData_[REG_FP];
+#ifndef __x86_64__
     lr = regsData_[REG_LR];
 #endif
     sp = regsData_[REG_SP];
@@ -172,8 +172,8 @@ void DfxRegs::GetSpecialRegs(uintptr_t& fp, uintptr_t& lr, uintptr_t& sp, uintpt
 
 void DfxRegs::SetSpecialRegs(uintptr_t fp, uintptr_t lr, uintptr_t sp, uintptr_t pc)
 {
-#if defined(__arm__) || defined(__aarch64__) || defined(__riscv) || defined(__loongarch_lp64)
     regsData_[REG_FP] = fp;
+#ifndef __x86_64__
     regsData_[REG_LR] = lr;
 #endif
     regsData_[REG_SP] = sp;
@@ -202,18 +202,12 @@ void DfxRegs::SetPc(uintptr_t pc)
 
 uintptr_t DfxRegs::GetFp() const
 {
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch_lp64)
     return regsData_[REG_FP];
-#else
-    return 0;
-#endif
 }
 
 void DfxRegs::SetFp(uintptr_t fp)
 {
-#if defined(__arm__) || defined(__aarch64__)  || defined(__riscv) || defined(__loongarch_lp64)
     regsData_[REG_FP] = fp;
-#endif
 }
 
 std::string DfxRegs::GetSpecialRegsName(uintptr_t val) const
@@ -235,9 +229,9 @@ std::string DfxRegs::GetSpecialRegsName(uintptr_t val) const
 std::string DfxRegs::GetSpecialRegsNameByIndex(int index) const
 {
     switch (index) {
-#if defined(__arm__) || defined(__aarch64__) || defined(__riscv)
         case REG_FP:
             return "fp";
+#ifndef __x86_64__
         case REG_LR:
             return "lr";
 #endif

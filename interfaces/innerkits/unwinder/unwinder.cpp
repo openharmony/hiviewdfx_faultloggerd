@@ -46,6 +46,9 @@ namespace HiviewDFX {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxUnwinder"
+#if defined(__x86_64__)
+const size_t X86_FP_SP_OFFSET = 16;
+#endif
 
 class Unwinder::Impl {
 public:
@@ -113,7 +116,7 @@ public:
             }
         }
 #endif
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
         if (pid_ == UNWIND_TYPE_LOCAL) {
             LocalThreadContext::GetInstance().CleanUp();
         }
@@ -599,7 +602,7 @@ bool Unwinder::Impl::GetStackRange(uintptr_t& stackBottom, uintptr_t& stackTop)
 
 bool Unwinder::Impl::UnwindLocalWithTid(const pid_t tid, size_t maxFrameNum, size_t skipFrameNum)
 {
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
     if (tid < 0 || tid == gettid()) {
         lastErrorData_.SetCode(UNW_ERROR_NOT_SUPPORT);
         DFXLOGE("params is nullptr, tid: %{public}d", tid);
@@ -643,7 +646,7 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
     }
 
     if (!withRegs) {
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__x86_64__)
         if (fpUnwind) {
             uintptr_t miniRegs[FP_MINI_REGS_SIZE] = {0};
             GetFramePointerMiniRegs(miniRegs, sizeof(miniRegs) / sizeof(miniRegs[0]));
@@ -668,7 +671,7 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
     context_.stackCheck = false;
     context_.stackBottom = stackBottom;
     context_.stackTop = stackTop;
-#ifdef __aarch64__
+#if defined(__aarch64__) || defined(__x86_64__)
     if (fpUnwind) {
         return UnwindByFp(&context_, maxFrameNum, skipFrameNum, enableArk);
     }
@@ -934,7 +937,7 @@ bool Unwinder::Impl::UnwindByFp(void *ctx, size_t maxFrameNum, size_t skipFrameN
 
 bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
 {
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__x86_64__)
     DFXLOGU("+fp: %{public}lx, pc: %{public}lx", (uint64_t)fp, (uint64_t)pc);
     if ((regs_ == nullptr) || (memory_ == nullptr)) {
         DFXLOGE("[%{public}d]: params is nullptr", __LINE__);
@@ -953,9 +956,16 @@ bool Unwinder::Impl::FpStep(uintptr_t& fp, uintptr_t& pc, void *ctx)
             lastErrorData_.SetAddrAndCode(pc, UNW_ERROR_ILLEGAL_VALUE);
             return false;
         }
+#ifdef __x86_64__
+        uintptr_t newSp = fp + X86_FP_SP_OFFSET;
+        regs_->SetReg(REG_FP, &fp);
+        regs_->SetReg(REG_SP, &newSp);
+        regs_->SetPc(pc);
+#else
         regs_->SetReg(REG_FP, &fp);
         regs_->SetReg(REG_SP, &prevFp);
         regs_->SetPc(StripPac(pc, pacMask_));
+#endif
         DFXLOGU("-fp: %{public}lx, pc: %{public}lx", (uint64_t)fp, (uint64_t)pc);
         return true;
     }
@@ -1078,7 +1088,7 @@ bool Unwinder::Impl::ParseUnwindTable(uintptr_t pc, std::shared_ptr<RegLocState>
 
 void Unwinder::Impl::StepToNextFpIfNeed()
 {
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__x86_64__)
     if (memory_ == nullptr || regs_ == nullptr) {
         return;
     }
@@ -1124,7 +1134,7 @@ void Unwinder::Impl::UpdateRegsState(
     }
     regs_->SetPc(StripPac(regs_->GetPc(), pacMask_));
 
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(__x86_64__)
     if (!unwinderResult) { // try fp
         unwinderResult = FpStep(frame.fp, frame.pc, ctx);
         if (unwinderResult && !isFpStep_) {

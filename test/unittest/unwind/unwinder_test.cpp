@@ -1154,6 +1154,37 @@ HWTEST_F(UnwinderTest, UnwindTest0017, TestSize.Level2)
     EXPECT_FALSE(cur);
     GTEST_LOG_(INFO) << "UnwindTest0017: end.";
 }
+
+/**
+ * @tc.name: UnwindTest0018
+ * @tc.desc: test Unwind UnwindLocal
+ * @tc.type: FUNC
+ */
+__attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN3()
+{
+    GTEST_LOG_(INFO) << "FUN3: start.";
+    std::shared_ptr<Unwinder> unwinder = nullptr;
+    if (!unwinder) {
+        unwinder = std::make_shared<Unwinder>();
+    }
+    bool bUnwindLocal = unwinder->UnwindLocal(false, true, 256, 0, true);
+    ASSERT_EQ(true, bUnwindLocal);
+    GTEST_LOG_(INFO) << "FUN3: end.";
+}
+
+__attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN2()
+{
+    GTEST_LOG_(INFO) << "FUN2: start.";
+    FUN3();
+    GTEST_LOG_(INFO) << "FUN2: end.";
+}
+
+__attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN1()
+{
+    GTEST_LOG_(INFO) << "FUN1: start.";
+    FUN2();
+    GTEST_LOG_(INFO) << "FUN1: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
 

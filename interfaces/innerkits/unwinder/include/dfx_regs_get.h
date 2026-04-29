@@ -159,8 +159,19 @@ inline AT_ALWAYS_INLINE void GetLocalRegs(void* regs)
     _x86_64_getcontext(regs);
 }
 
-inline AT_ALWAYS_INLINE void GetFramePointerMiniRegs(void *regs, size_t size)
+inline __attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void GetFramePointerMiniRegs(
+    void *regs, size_t size)
 {
+    if (size < FP_MINI_REGS_SIZE) { return; }
+    asm volatile(
+    "movq %%rbp, (%[base])\n"
+    "leaq 1f(%%rip), %%rax\n"
+    "movq %%rax, 8(%[base])\n"
+    "movq %%rsp, 16(%[base])\n"
+    "1:\n"
+    : [base] "+r"(regs)
+    :
+    : "rax", "memory");
 }
 
 inline AT_ALWAYS_INLINE void GetQuickenMiniRegsAsm(void *regs)

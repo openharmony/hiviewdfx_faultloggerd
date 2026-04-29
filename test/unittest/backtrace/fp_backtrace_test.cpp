@@ -36,11 +36,11 @@ class FpBacktraceTest : public testing::Test {};
  * @tc.desc: test get backtrace of current thread by fp
  * @tc.type: FUNC
  */
-HWTEST_F(FpBacktraceTest, FpBacktraceTestTest001, TestSize.Level2)
+__attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN3()
 {
-    GTEST_LOG_(INFO) << "BacktraceLocalTest001: start.";
+    GTEST_LOG_(INFO) << "FUN3: start.";
     auto fpBacktrace = FpBacktrace::CreateInstance();
-#if is_ohos && !is_mingw && __aarch64__
+#if is_ohos && !is_mingw && (defined(__aarch64__) || defined(__x86_64__))
     ASSERT_NE(nullptr, fpBacktrace);
     void* pcArray[DEFAULT_MAX_FRAME_NUM]{0};
     int size = fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, DEFAULT_MAX_FRAME_NUM);
@@ -54,6 +54,27 @@ HWTEST_F(FpBacktraceTest, FpBacktraceTestTest001, TestSize.Level2)
 #else
     ASSERT_EQ(nullptr, fpBacktrace);
 #endif
+    GTEST_LOG_(INFO) << "FUN3: end.";
+}
+
+__attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN2()
+{
+    GTEST_LOG_(INFO) << "FUN2: start.";
+    FUN3();
+    GTEST_LOG_(INFO) << "FUN2: end.";
+}
+
+__attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN1()
+{
+    GTEST_LOG_(INFO) << "FUN1: start.";
+    FUN2();
+    GTEST_LOG_(INFO) << "FUN1: end.";
+}
+
+HWTEST_F(FpBacktraceTest, FpBacktraceTestTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "BacktraceLocalTest001: start.";
+    FUN1();
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: end.";
 }
 
