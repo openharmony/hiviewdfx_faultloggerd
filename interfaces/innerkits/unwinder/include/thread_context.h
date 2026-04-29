@@ -36,7 +36,7 @@ enum ThreadContextStatus : int32_t {
     CONTEXT_READY = -2,
 };
 
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__loongarch_lp64) || defined(__x86_64__)
 struct ThreadContext {
     std::atomic<int32_t> tid {ThreadContextStatus::CONTEXT_UNUSED};
     // the thread should be suspended while unwinding

@@ -194,7 +194,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest003, TestSize.Level2)
         FAIL() << "Failed to create child thread.\n";
     }
 
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__x86_64__) || defined(__loongarch_lp64)
     ElapsedTime counter;
     Unwinder unwinder;
     BacktraceLocalThread thread(g_tid);
@@ -500,7 +500,7 @@ HWTEST_F(BacktraceLocalTest, BacktraceLocalTest013, TestSize.Level2)
     GTEST_LOG_(INFO) << "BacktraceLocalTest013: end.";
 }
 
-#if defined(__aarch64__) || defined(__loongarch_lp64)
+#if defined(__aarch64__) || defined(__x86_64__) || defined(__loongarch_lp64)
 /**
  * @tc.name: BacktraceLocalTest014
  * @tc.desc: Test async-stacktrace api enable in ffrt backtrace
@@ -619,7 +619,7 @@ void CallMixFirst(int tid, bool fast, int colNumber)
     Compare(oldStr, mixStr, colNumber);
 }
 
-#if defined(__arm__) || defined(__aarch64__)
+#if defined(__arm__) || defined(__aarch64__) || defined(__x86_64__)
 /**
  * @tc.name: BacktraceLocalTest016
  * @tc.desc: test backtrace other thread

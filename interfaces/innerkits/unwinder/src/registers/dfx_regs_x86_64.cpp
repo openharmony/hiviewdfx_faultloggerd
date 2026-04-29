@@ -54,6 +54,12 @@ void DfxRegsX86_64::SetFromUcontext(const ucontext_t &context)
 
 void DfxRegsX86_64::SetFromFpMiniRegs(const uintptr_t* regs, const size_t size)
 {
+    if (regs == nullptr || size < FP_MINI_REGS_SIZE) {
+        return;
+    }
+    regsData_[REG_FP] = regs[0]; // 0 : RBP
+    regsData_[REG_PC] = regs[1]; // 1 : RIP
+    regsData_[REG_SP] = regs[2]; // 2 : RSP
 }
 
 void DfxRegsX86_64::SetFromQutMiniRegs(const uintptr_t* regs, const size_t size)
