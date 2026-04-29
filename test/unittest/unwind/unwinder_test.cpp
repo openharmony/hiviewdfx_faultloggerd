@@ -1155,11 +1155,6 @@ HWTEST_F(UnwinderTest, UnwindTest0017, TestSize.Level2)
     GTEST_LOG_(INFO) << "UnwindTest0017: end.";
 }
 
-/**
- * @tc.name: UnwindTest0018
- * @tc.desc: test Unwind UnwindLocal
- * @tc.type: FUNC
- */
 __attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN3()
 {
     GTEST_LOG_(INFO) << "FUN3: start.";
@@ -1168,7 +1163,9 @@ __attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN3(
         unwinder = std::make_shared<Unwinder>();
     }
     bool bUnwindLocal = unwinder->UnwindLocal(false, true, 256, 0, true);
+    std::vector<uintptr_t> pcs = unwinder->GetPcs();
     ASSERT_EQ(true, bUnwindLocal);
+    ASSERT_GE(pcs.size(), 0);
     GTEST_LOG_(INFO) << "FUN3: end.";
 }
 
@@ -1184,6 +1181,17 @@ __attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN1(
     GTEST_LOG_(INFO) << "FUN1: start.";
     FUN2();
     GTEST_LOG_(INFO) << "FUN1: end.";
+}
+/**
+ * @tc.name: UnwindTest0018
+ * @tc.desc: test Unwind UnwindLocal
+ * @tc.type: FUNC
+ */
+HWTEST_F(UnwinderTest, UnwindTest0018, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "UnwindTest0018: start.";
+    FUN1();
+    GTEST_LOG_(INFO) << "UnwindTest0018: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS
