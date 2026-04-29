@@ -20,17 +20,6 @@
 #include <securec.h>
 #include <sys/syscall.h>
 #include "dfx_define.h"
-#include "dfx_log.h"
-
-#ifdef LOG_DOMAIN
-#undef LOG_DOMAIN
-#define LOG_DOMAIN 0xD002D11
-#endif
-
-#ifdef LOG_TAG
-#undef LOG_TAG
-#define LOG_TAG "DfxSafeReader"
-#endif
 
 static int g_pipeFd[] = {-1, -1};
 
@@ -67,18 +56,16 @@ static uintptr_t GetCurrentPageEndAddr(uintptr_t addr)
     return (addr + pageSize) & (~(pageSize - 1));
 }
 
-static bool IsReadableAddr(uintptr_t addr)
+static size_t ReadableDataByPipe(uintptr_t srcAddr, size_t size, uintptr_t destAddr)
 {
     if (g_pipeFd[PIPE_WRITE] < 0) {
         if (!InitPipe()) {
-            return false;
+            return 0;
         }
     }
 
-    if (OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, g_pipeFd[PIPE_WRITE], addr, sizeof(char))) == -1) {
-        return false;
-    }
-    return true;
+    OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, g_pipeFd[PIPE_WRITE], srcAddr,  size));
+    return  OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, g_pipeFd[PIPE_READ], destAddr,  size));
 }
 
 size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen)
@@ -89,18 +76,14 @@ size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, 
     size_t copeSize = Min(destLen, srcLen);
     uintptr_t currentPtr = srcPtr;
     uintptr_t srcEndPtr = srcPtr + copeSize;
-    size_t destIndex = 0;
+    size_t totalReadSize = 0;
     while (currentPtr < srcEndPtr) {
         uintptr_t pageEndPtr = GetCurrentPageEndAddr(currentPtr);
         pageEndPtr = Min(pageEndPtr, srcEndPtr);
-        if (!IsReadableAddr(currentPtr) || !IsReadableAddr(pageEndPtr - 1)) {
-            destIndex += pageEndPtr - currentPtr;
-            currentPtr = pageEndPtr;
-            continue;
-        }
-        while (currentPtr < pageEndPtr) {
-            ((uint8_t*)destPtr)[destIndex++] = *((uint8_t*)currentPtr++);
-        }
+        const size_t copySize = pageEndPtr - currentPtr;
+        totalReadSize += ReadableDataByPipe(currentPtr, copySize, destPtr);
+        currentPtr += copySize;
+        destPtr += copySize;
     }
-    return destIndex;
+    return totalReadSize;
 }
