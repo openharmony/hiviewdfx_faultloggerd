@@ -31,11 +31,6 @@ namespace HiviewDFX {
 
 class FpBacktraceTest : public testing::Test {};
 
-/**
- * @tc.name: FpBacktraceTestTest001
- * @tc.desc: test get backtrace of current thread by fp
- * @tc.type: FUNC
- */
 __attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN3()
 {
     GTEST_LOG_(INFO) << "FUN3: start.";
@@ -71,6 +66,11 @@ __attribute__((optimize("no-omit-frame-pointer"), optnone, noinline)) void FUN1(
     GTEST_LOG_(INFO) << "FUN1: end.";
 }
 
+/**
+ * @tc.name: FpBacktraceTestTest001
+ * @tc.desc: test get backtrace of current thread by fp
+ * @tc.type: FUNC
+ */
 HWTEST_F(FpBacktraceTest, FpBacktraceTestTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BacktraceLocalTest001: start.";
