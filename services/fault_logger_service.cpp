@@ -70,7 +70,7 @@ int GetRealUid(int uid)
 
 bool CheckCallerUID(uint32_t callerUid)
 {
-    const uint32_t whitelist[] = {
+    const uint32_t uidList[] = {
         0, // rootUid
         1000, // bmsUid
         1201, // hiviewUid
@@ -78,7 +78,7 @@ bool CheckCallerUID(uint32_t callerUid)
         5523, // foundationUid
         7400, // dev_assistant
     };
-    if (std::find(std::begin(whitelist), std::end(whitelist), callerUid) == std::end(whitelist)) {
+    if (std::find(std::begin(uidList), std::end(uidList), callerUid) == std::end(uidList)) {
         DFXLOGW("%{public}s :: CheckCallerUID :: Caller Uid(%{public}d) is unexpectly.",
                 FAULTLOGGERD_SERVICE_TAG, callerUid);
         return false;
