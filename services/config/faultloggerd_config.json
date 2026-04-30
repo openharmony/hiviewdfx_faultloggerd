@@ -135,6 +135,16 @@
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 115,
+      "fileNamePrefix": "jsvmheap",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }
