@@ -54,8 +54,8 @@ public:
     bool InitBufferWriter(const ProcessDumpRequest& request);
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
     void RemoveFileIfNeed(const std::string& dirPath) const;
-private:
     static int DefaultWrite(int32_t fd, const char *buf, const size_t len);
+private:
     bool WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen);
 
     DfxBufferWriter() = default;
