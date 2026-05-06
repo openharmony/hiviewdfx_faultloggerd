@@ -77,6 +77,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/cutil",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
       "$faultloggerd_path/example",
       "$faultloggerd_path/test/utils",
       "$faultloggerd_path/tools/process_dump",

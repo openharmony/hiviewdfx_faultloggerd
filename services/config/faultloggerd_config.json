@@ -145,6 +145,16 @@
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 116,
+      "fileNamePrefix": "crashjsonstack",
+      "maxSingleFileSizeInKB": 51200,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 25,
+      "maxFileCount": 50,
+      "fileExistTimeInSecond": 300,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }

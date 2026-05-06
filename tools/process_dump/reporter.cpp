@@ -30,7 +30,9 @@
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
+#include "dfx_buffer_writer.h"
 #include "process_dumper.h"
+#include "faultloggerd_client.h"
 
 const char* const HIVIEW_PROCESS_NAME = "/system/bin/hiview";
 const char* const REGS_KEY_WORD = "Registers:\n";
@@ -86,8 +88,8 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.time = request.timeStamp;
     info.id = process.GetProcessInfo().uid;
     info.pid = process.GetProcessInfo().pid;
-    SmartFd fdRead = TranferCrashInfoToHiview(process.GetCrashInfoJson());
-    info.pipeFd = fdRead.GetFd(); // free after addFaultLog
+    WriteCppcrashInfo(process, request, process.GetCrashInfoJson());
+    info.pipeFd = -1;
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
     info.logFileCutoffSizeBytes = process.GetCrashLogConfig().logFileCutoffSizeBytes;
     info.module = process.GetProcessInfo().processName;
@@ -142,33 +144,42 @@ std::string CppCrashReporter::GetSummary(DfxProcess& process)
     return summary;
 }
 
-// read fd will be closed after transfering to hiview
-SmartFd CppCrashReporter::TranferCrashInfoToHiview(const std::string& cppCrashInfo)
+void CppCrashReporter::WriteCppcrashInfo(DfxProcess& process, const ProcessDumpRequest &request_,
+    const std::string& cppCrashInfo)
 {
-    size_t crashInfoSize = cppCrashInfo.size();
-    if (crashInfoSize > MAX_PIPE_SIZE) {
-        DFXLOGE("the size of json string is greater than max pipe size, do not report");
-        return {};
+    struct FaultLoggerdRequest faultloggerdRequest{
+        .pid = request_.pid,
+        .type = CRASH_JSON_STACK,
+        .tid = request_.tid,
+        .time = request_.timeStamp,
+        .minidump = 0
+    };
+    auto bufferFd = SmartFd {RequestFileDescriptorEx(&faultloggerdRequest)};
+    if (!bufferFd) {
+        DFXLOGE("failed to crash crashjson file");
+    } else {
+        DfxBufferWriter::DefaultWrite(bufferFd.GetFd(), cppCrashInfo.c_str(), cppCrashInfo.size());
     }
-    int pipeFd[PIPE_NUM_SZ] = {-1, -1};
-    if (pipe2(pipeFd, O_NONBLOCK) != 0) {
-        DFXLOGE("Failed to create pipe.");
-        return {};
+#ifndef HISYSEVENT_DISABLE
+    constexpr uint32_t jsonLimitSize = 1024 * 1024;
+    if (cppCrashInfo.size() > jsonLimitSize) {
+        std::string summary = "crashjson: stack greate 1m, ";
+        summary += "real size is: " + std::to_string(cppCrashInfo.size() / 1024) + "kb, "; // 1024 : kb
+        summary += "thread count: " + std::to_string(process.GetOtherThreads().size());
+        HiSysEventParam params[] = {
+            {.name = "UID", .t = HISYSEVENT_UINT32, .v = { .ui32 = request_.uid}, .arraySize = 0},
+            {.name = "PID", .t = HISYSEVENT_UINT32, .v = { .ui32 = request_.pid}, .arraySize = 0},
+            {.name = "PROCESS_NAME", .t = HISYSEVENT_STRING,
+                .v = {.s = const_cast<char*>(request_.processName)}, .arraySize = 0},
+            {.name = "HAPPEN_TIME", .t = HISYSEVENT_UINT64, .v = {.ui64 = request_.timeStamp}, .arraySize = 0},
+            {.name = "SUMMARY", .t = HISYSEVENT_STRING,
+                .v = {.s = const_cast<char*>(summary.c_str())}, .arraySize = 0},
+        };
+        int ret = OH_HiSysEvent_Write("RELIABILITY", "CPP_CRASH_NO_LOG",
+            HISYSEVENT_FAULT, params, sizeof(params) / sizeof(params[0]));
+        DFXLOGI("Report pid %{public}d event ret %{public}d %{public}s", request_.pid, ret, summary.c_str());
     }
-    SmartFd writeFd(pipeFd[PIPE_WRITE]);
-    SmartFd readFd(pipeFd[PIPE_READ]);
-    if (fcntl(readFd.GetFd(), F_SETPIPE_SZ, crashInfoSize) < 0 ||
-        fcntl(writeFd.GetFd(), F_SETPIPE_SZ, crashInfoSize) < 0) {
-        DFXLOGE("[%{public}d]: failed to set pipe size.", __LINE__);
-        return {};
-    }
-    ssize_t realWriteSize = -1;
-    realWriteSize = OHOS_TEMP_FAILURE_RETRY(write(writeFd.GetFd(), cppCrashInfo.c_str(), crashInfoSize));
-    if (static_cast<ssize_t>(crashInfoSize) != realWriteSize) {
-        DFXLOGE("Failed to write pipe. realWriteSize %{public}zd, json size %{public}zd", realWriteSize, crashInfoSize);
-        return {};
-    }
-    return readFd;
+#endif
 }
 
 void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpRequest &request)

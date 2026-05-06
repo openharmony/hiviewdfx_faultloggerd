@@ -44,7 +44,7 @@ public:
 private:
     void ReportToHiview(DfxProcess& process, const ProcessDumpRequest &request);
     std::string GetRegsString(std::shared_ptr<DfxRegs> regs);
-    SmartFd TranferCrashInfoToHiview(const std::string& cppCrashInfo);
+    void WriteCppcrashInfo(DfxProcess& process, const ProcessDumpRequest &request, const std::string& cppCrashInfo);
     std::string GetSummary(DfxProcess& process);
 };
 

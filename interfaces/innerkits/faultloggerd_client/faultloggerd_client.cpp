@@ -72,6 +72,7 @@ int32_t RequestFileDescriptor(const struct FaultLoggerdRequest &request)
         case CPP_STACKTRACE:
         case LEAK_STACKTRACE:
         case JIT_CODE_LOG:
+        case CRASH_JSON_STACK:
             SendRequestToServer(SERVER_CRASH_SOCKET_NAME, socketRequestData, CRASHDUMP_SOCKET_TIMEOUT, &socketFdData);
             return fd;
         default:
