@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -352,6 +352,16 @@ void LiteProcessDumper::Unwind()
     unwinder_->SetRegs(DfxRegs::CreateFromUcontext(request_.context));
     unwinder_->SetMaps(dfxMaps_);
     unwinder_->Unwind(&request_.context);
+
+    if (request_.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+        auto keyThread = process_->GetKeyThread();
+        if (keyThread != nullptr) {
+            process_->GetKeyThread()->SetFrames(unwinder_->GetFrames());
+            faultStack_.SetLiteType(true);
+            faultStack_.Collect(*process_, request_, *unwinder_);
+        }
+    }
+
     UnwindOtherThread();
 }
 
@@ -472,9 +482,6 @@ void LiteProcessDumper::PrintHeader()
 
 void LiteProcessDumper::PrintThreadInfo()
 {
-    if (unwinder_ == nullptr) {
-        return;
-    }
     std::string faultThreadInfo;
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         faultThreadInfo += "Fault thread info:\n";
@@ -483,7 +490,6 @@ void LiteProcessDumper::PrintThreadInfo()
     if (keyThread == nullptr) {
         return;
     }
-    keyThread->SetFrames(unwinder_->GetFrames());
     faultThreadInfo += keyThread->ToString();
     if (!isJsonDump_) {
         auto& instance = DfxBufferWriter::GetInstance();
@@ -551,10 +557,7 @@ void LiteProcessDumper::PrintFaultStack()
     if (unwinder_ == nullptr) {
         return;
     }
-    FaultStack faultStack;
-    faultStack.SetLiteType(true);
-    faultStack.Collect(*process_, request_, *unwinder_);
-    faultStack.Print(*process_, request_, *unwinder_);
+    faultStack_.Print(*process_, request_, *unwinder_);
 }
 
 void LiteProcessDumper::PrintMaps()

@@ -90,6 +90,7 @@ private:
     void* jitSymbolMMap_ = MAP_FAILED;
     bool isJsonDump_ = false;
     uint64_t expectedDumpFinishTime_ = 0;
+    FaultStack faultStack_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
