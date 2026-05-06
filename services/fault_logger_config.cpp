@@ -68,15 +68,19 @@ void ParseSingleFileConfig(const cJSON* tempFile,  std::vector<SingleFileConfig>
                                      0, MAX_NUM_INT32);
     tempFileConfig.maxSingleFileSize = static_cast<uint64_t>(maxFileSize) << KB_TO_B;
     int32_t fileExistTime = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "fileExistTimeInSecond"), -1);
-    tempFileConfig.fileExistTime = std::clamp(fileExistTime, -1, MAX_NUM_INT32);
+    if (fileExistTime <= 0) {
+        tempFileConfig.fileExistTime = -1;
+    } else {
+        tempFileConfig.fileExistTime = fileExistTime;
+        if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overTimeFileDeleteType")) ==
+            OVER_TIME_FILE_DELETE_ACTIVE) {
+            tempFileConfig.overTimeFileDeleteType = OverTimeFileDeleteType::ACTIVE;
+        }
+    }
     int32_t keeFileCount = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "keepFileCount"), -1);
     tempFileConfig.keepFileCount = std::clamp(keeFileCount, -1, MAX_NUM_INT32);
     int32_t maxFileCount = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "maxFileCount"), -1);
     tempFileConfig.maxFileCount = std::clamp(maxFileCount, tempFileConfig.keepFileCount, MAX_NUM_INT32);
-    if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overTimeFileDeleteType")) ==
-        OVER_TIME_FILE_DELETE_ACTIVE) {
-        tempFileConfig.overTimeFileDeleteType = OverTimeFileDeleteType::ACTIVE;
-    }
     if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overFileSizeAction")) ==
         OVER_SIZE_ACTION_DELETE) {
         tempFileConfig.overFileSizeAction = OverFileSizeAction::DELETE;

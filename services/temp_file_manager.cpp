@@ -53,6 +53,31 @@ const SingleFileConfig* GetTargetFileConfig(const std::function<bool(const Singl
     return iter == fileConfigs.end() ? nullptr : iter.base();
 }
 
+const SingleFileConfig* GetTargetFileConfig(const std::string& filePath)
+{
+    size_t lastSlash = filePath.find_last_of('/');
+    size_t prefixBegin = 0;
+    if (lastSlash != std::string::npos) {
+        prefixBegin = lastSlash + 1;
+    }
+    size_t prefixLenth = filePath.length() - prefixBegin;
+    size_t firstDash = filePath.find('-', prefixBegin);
+    if (firstDash != std::string::npos) {
+        prefixLenth = firstDash - prefixBegin;
+    }
+    auto filePrefix = filePath.substr(prefixBegin, prefixLenth);
+    return GetTargetFileConfig([&filePrefix](const SingleFileConfig& fileConfig) {
+        return filePrefix == fileConfig.fileNamePrefix;
+    });
+}
+
+const SingleFileConfig* GetTargetFileConfig(int32_t type)
+{
+    return GetTargetFileConfig([type](const SingleFileConfig& fileConfig) {
+        return fileConfig.type == type;
+    });
+}
+
 uint64_t GetCurrentTime()
 {
     using namespace std::chrono;
@@ -219,9 +244,7 @@ void GetTempFiles(std::map<const SingleFileConfig*, std::list<std::string>>& tem
     const auto& tempFilePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
     OHOS::GetDirFiles(tempFilePath, files);
     for (const auto& file : files) {
-        auto fileConfig = GetTargetFileConfig([&file, &tempFilePath](const SingleFileConfig& fileConfig) {
-            return file.find(fileConfig.fileNamePrefix, tempFilePath.size()) != std::string::npos;
-        });
+        auto fileConfig = GetTargetFileConfig(file);
         tempFilesMap[fileConfig].emplace_back(file);
     }
 }
@@ -315,9 +338,7 @@ bool TempFileManager::Init()
 
 int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time)
 {
-    const auto fileConfig = GetTargetFileConfig([type](const SingleFileConfig& fileConfig) {
-        return fileConfig.type == type;
-    });
+    const auto fileConfig = GetTargetFileConfig(type);
     if (fileConfig == nullptr) {
         DFXLOGW("%{public}s :: failed to create fileDescriptor because of unknown file type for %{public}d",
             TEMP_FILE_MANAGER_TAG, type);
@@ -443,9 +464,7 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
         }
         if (event->len > 0) {
             std::string fileName(event->name);
-            auto fileConfig = GetTargetFileConfig([&fileName](const SingleFileConfig& fileConfig) {
-                return fileName.find(fileConfig.fileNamePrefix) != std::string::npos;
-            });
+            auto fileConfig = GetTargetFileConfig(fileName);
             std::string filePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/" + fileName;
             if (fileConfig == nullptr) {
                 RemoveTempFile(filePath);
