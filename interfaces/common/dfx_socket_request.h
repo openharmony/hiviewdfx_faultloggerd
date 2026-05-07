@@ -75,7 +75,11 @@ typedef enum FaultLoggerType : int32_t {
     /** KMP heap snapshot */
     KMP_HEAP_SNAPSHOT = 114,
     /** JSVM heap snapshot */
-    JSVM_HEAP_SNAPSHOT = 115
+    JSVM_HEAP_SNAPSHOT = 115,
+    /** arkweb js heap */
+    ARKWEB_JS_HEAP_SNAPSHOT = 117,
+     /** arkweb js raw heap */
+    ARKWEB_JS_RAW_SNAPSHOT = 118
 } FaultLoggerType;
 
 /**

@@ -145,6 +145,26 @@
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 117,
+      "fileNamePrefix": "arkweb_jsheap",
+      "maxSingleFileSizeInKB": 2726298,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
+    },
+    {
+      "type": 118,
+      "fileNamePrefix": "arkweb_jsheap",
+      "maxSingleFileSizeInKB": 2726298,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE"
     }
   ]
 }
