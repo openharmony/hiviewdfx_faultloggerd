@@ -18,6 +18,7 @@
 #include <cinttypes>
 #include <string>
 
+#include "cppcrash_utils.h"
 #include "dfx_define.h"
 
 #include "dfx_log.h"
@@ -38,9 +39,6 @@ bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request,
     Json::Value jsonInfo;
     Json::Value thread;
     switch (request.type) {
-        case ProcessDumpType::DUMP_TYPE_CPP_CRASH:
-            GetCrashJsonFormatInfo(request, process, jsonInfo);
-            break;
         case ProcessDumpType::DUMP_TYPE_DUMP_CATCH:
             jsonInfo["dump_result"] = dumpError;
             GetDumpJsonFormatInfo(process, thread);
@@ -56,48 +54,6 @@ bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request,
 }
 
 #ifndef is_ohos_lite
-void DumpInfoJsonFormatter::GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
-    Json::Value& jsonInfo)
-{
-    jsonInfo["time"] = request.timeStamp;
-    jsonInfo["uuid"] = "";
-    jsonInfo["crash_type"] = "NativeCrash";
-    jsonInfo["process_name"] = process.GetProcessInfo().processName;
-    jsonInfo["pid"] = process.GetProcessInfo().pid;
-    jsonInfo["uid"] = process.GetProcessInfo().uid;
-    jsonInfo["app_running_unique_id"] = request.appRunningUniqueId;
-
-    DfxSignal dfxSignal(request.siginfo.si_signo);
-    Json::Value signal;
-    signal["signo"] = request.siginfo.si_signo;
-    signal["code"] = request.siginfo.si_code;
-    signal["address"] = dfxSignal.IsAddrAvailable() ?
-        StringPrintf("%" PRIX64_ADDR, reinterpret_cast<uint64_t>(request.siginfo.si_addr)) : "";
-    Json::Value exception;
-    exception["signal"] = signal;
-    exception["message"] = process.GetFatalMessage();
-
-    Json::Value frames(Json::arrayValue);
-    if (process.GetKeyThread() == nullptr) {
-        exception["thread_name"] = "";
-        exception["tid"] = 0;
-    } else {
-        exception["thread_name"] = process.GetKeyThread()->GetThreadInfo().threadName;
-        exception["tid"] = process.GetKeyThread()->GetThreadInfo().tid;
-        FillFramesJson(process.GetKeyThread()->GetFrames(), frames);
-    }
-    exception["frames"] = frames;
-    jsonInfo["exception"] = exception;
-
-    // fill other thread info
-    const auto& otherThreads = process.GetOtherThreads();
-    if (otherThreads.size() > 0) {
-        Json::Value threadsJsonArray(Json::arrayValue);
-        AppendThreads(otherThreads, threadsJsonArray);
-        jsonInfo["threads"] = threadsJsonArray;
-    }
-}
-
 void DumpInfoJsonFormatter::GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo)
 {
     Json::Value thread;
@@ -146,7 +102,7 @@ bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, 
         } else {
             FillNativeFrameJson(frame, jsonInfo);
 #if defined(__aarch64__)
-            if (DumpUtils::IsLastValidFrame(frame)) {
+            if (CppCrashUtils::IsLastValidFrame(frame)) {
                 break;
             }
 #endif

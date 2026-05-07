@@ -275,7 +275,6 @@ bool FileDesService::Filter(const std::string& socketName, int32_t connectionFd,
     switch (requestData.type) {
         case FaultLoggerType::CPP_CRASH:
         case FaultLoggerType::CPP_STACKTRACE:
-        case FaultLoggerType::CRASH_JSON_STACK:
         case FaultLoggerType::LEAK_STACKTRACE:
         case FaultLoggerType::JIT_CODE_LOG:
             return socketName == SERVER_CRASH_SOCKET_NAME;

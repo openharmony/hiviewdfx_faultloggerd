@@ -20,6 +20,7 @@
 #include "dfx_log.h"
 #include "dump_utils.h"
 #include "unwinder.h"
+#include "cppcrash_info_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(ExtraCrashInfo);
@@ -32,6 +33,7 @@ void ExtraCrashInfo::Collect(DfxProcess& process, const ProcessDumpRequest& requ
 void ExtraCrashInfo::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
     DecorativeDumpInfo::Print(process, request, unwinder);
+    CppCrashInfoCollector::Instance().SetExtraCrashInfo(extraCrashInfoStr_);
     DfxBufferWriter::GetInstance().WriteMsg(extraCrashInfoStr_);
 }
 

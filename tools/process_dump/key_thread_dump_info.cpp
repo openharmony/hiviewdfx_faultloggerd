@@ -41,6 +41,7 @@
 #include "dfx_thread.h"
 #include "dfx_trace.h"
 #include "dfx_util.h"
+#include "cppcrash_info_collector.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -95,7 +96,10 @@ void KeyThreadDumpInfo::Print(DfxProcess& process, const ProcessDumpRequest& req
         dumpInfo += "Fault thread info:\n";
     }
 
-    dumpInfo += thread->ToString();
+    std::string threadInfo = thread->ToString();
+    dumpInfo += threadInfo;
+    CppCrashInfoCollector::Instance().SetKeyThread(thread->GetThreadInfo().threadName, thread->GetThreadInfo().tid,
+        thread->GetFrames());
     DfxBufferWriter::GetInstance().WriteMsg(dumpInfo);
     DfxBufferWriter::GetInstance().AppendBriefDumpInfo(dumpInfo);
 }

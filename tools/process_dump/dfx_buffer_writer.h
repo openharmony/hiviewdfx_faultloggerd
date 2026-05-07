@@ -46,6 +46,7 @@ public:
 
     void WriteMsg(const std::string& msg);
     void WriteFormatMsg(const char *format, ...);
+    void WriteFormatCrashInfo();
 
     void AppendBriefDumpInfo(const std::string& info);
     void PrintBriefDumpInfo();
@@ -54,9 +55,11 @@ public:
     bool InitBufferWriter(const ProcessDumpRequest& request);
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
     void RemoveFileIfNeed(const std::string& dirPath) const;
+    int GetBufFd() const;
     static int DefaultWrite(int32_t fd, const char *buf, const size_t len);
 private:
     bool WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen);
+    void WriteToBuffer(const std::string& msg);
 
     DfxBufferWriter() = default;
     DISALLOW_COPY_AND_MOVE(DfxBufferWriter);

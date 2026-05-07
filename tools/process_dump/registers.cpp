@@ -15,6 +15,7 @@
 #include "decorative_dump_info.h"
 #include "dfx_log.h"
 #include "dfx_buffer_writer.h"
+#include "cppcrash_info_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(Registers);
@@ -27,7 +28,16 @@ void Registers::Collect(DfxProcess& process, const ProcessDumpRequest& request, 
         DFXLOGE("Fault thread regs is nullptr!");
         return;
     }
+
     regsStr_ = process.GetFaultThreadRegisters()->PrintRegs();
+    std::string prefix = "Registers:\n";
+    std::string regsSubStr;
+    if (regsStr_.size() >= prefix.size() && regsStr_.substr(0, prefix.size()) == prefix) {
+        regsSubStr = regsStr_.substr(prefix.size());
+    } else {
+        regsSubStr = regsStr_;
+    }
+    CppCrashInfoCollector::Instance().SetRegisters(regsSubStr);
 }
 
 void Registers::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)

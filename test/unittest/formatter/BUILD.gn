@@ -53,8 +53,40 @@ if (defined(ohos_lite)) {
     defines = [ "UNITTEST" ]
   }
 
+  ohos_unittest("cppcrash_formatter_test") {
+    module_out_path = "faultloggerd/faultloggerd/formatter"
+
+    sources = [ "cppcrash_formatter_test.cpp" ]
+
+    include_dirs = [
+      "$faultloggerd_common_path/cppcrash_formatter",
+      "$faultloggerd_interfaces_path/innerkits/backtrace/include",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/test/utils",
+      "$faultloggerd_path/common/dfxutil",
+    ]
+
+    deps = [
+      "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+      "$faultloggerd_path/common/dfxutil:dfx_util",
+    ]
+
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "cJSON:cjson",
+      "hilog:libhilog",
+    ]
+
+    cflags_cc = [ "-Dprivate=public" ]
+    defines = [ "UNITTEST" ]
+  }
+
   group("unittest") {
     testonly = true
-    deps = [ ":dfx_json_formatter_test" ]
+    deps = [
+      ":dfx_json_formatter_test",
+      ":cppcrash_formatter_test",
+    ]
   }
 }

@@ -20,6 +20,7 @@
 #include "process_dump_config.h"
 #include "dfx_buffer_writer.h"
 #include "thread_pool.h"
+#include "cppcrash_info_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(OtherThreadDumpInfo);
@@ -73,9 +74,13 @@ void OtherThreadDumpInfo::Print(DfxProcess& process, const ProcessDumpRequest& r
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH && !process.GetOtherThreads().empty()) {
         dumpInfo += "Other thread info:\n";
     }
+    std::string threadInfo;
     for (const auto &thread : process.GetOtherThreads()) {
-        dumpInfo += thread->ToString();
+        threadInfo += thread->ToString();
+        CppCrashInfoCollector::Instance().AddOtherThread(thread->GetThreadInfo().threadName,
+            thread->GetThreadInfo().tid, thread->GetFrames());
     }
+    dumpInfo += threadInfo;
     DfxBufferWriter::GetInstance().WriteMsg(dumpInfo);
 }
 }

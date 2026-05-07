@@ -40,6 +40,7 @@ if (defined(ohos_lite)) {
     ]
     sources = dfx_test_util_sources
     deps = [ "$hilog_lite_deps_path" ]
+    defines = [ "is_ohos_lite" ]
   }
 
   static_library("faultloggerd_test_src") {
@@ -93,8 +94,16 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxutil",
     ]
+
+    dfx_test_util_sources += [ "cppcrash_test_json.cpp" ]
+
     sources = dfx_test_util_sources
-    external_deps = [ "c_utils:utils" ]
+
+    external_deps = [
+      "c_utils:utils",
+      "cJSON:cjson",
+      "hilog:libhilog",
+    ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }

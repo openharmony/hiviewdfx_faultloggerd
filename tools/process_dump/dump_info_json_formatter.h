@@ -35,7 +35,6 @@ public:
 
 private:
 #ifndef is_ohos_lite
-    static void GetCrashJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process, Json::Value& jsonInfo);
     static void GetDumpJsonFormatInfo(DfxProcess& process, Json::Value& jsonInfo);
     static void AppendThreads(const std::vector<std::shared_ptr<DfxThread>>& threads, Json::Value& jsonInfo);
     static bool FillFramesJson(const std::vector<DfxFrame>& frames, Json::Value& jsonInfo);

@@ -75,9 +75,7 @@ typedef enum FaultLoggerType : int32_t {
     /** KMP heap snapshot */
     KMP_HEAP_SNAPSHOT = 114,
     /** JSVM heap snapshot */
-    JSVM_HEAP_SNAPSHOT = 115,
-    /** cpp crash json stack */
-    CRASH_JSON_STACK = 116
+    JSVM_HEAP_SNAPSHOT = 115
 } FaultLoggerType;
 
 /**

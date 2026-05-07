@@ -33,6 +33,7 @@
 #endif
 #include "procinfo.h"
 #include "info/fatal_message.h"
+#include "cppcrash_info_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -44,37 +45,64 @@ REGISTER_DUMP_INFO_CLASS(DumpInfoHeader);
 
 void DumpInfoHeader::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
+    std::string tempStr;
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
 #ifndef is_ohos_lite
-        headerInfo_ = "Build info:" + DumpUtils::GetBuildInfo() + "\n";
+        tempStr = DumpUtils::GetBuildInfo();
+        headerInfo_ = "Build info:" + tempStr + "\n";
+        CppCrashInfoCollector::Instance().SetBuildInfo(tempStr);
 #endif
         headerInfo_ += GetCrashLogConfigInfo(request, process);
     }
-    headerInfo_ += "Timestamp:" + GetCurrentTimeStr(request.timeStamp);
+    tempStr = GetCurrentTimeStr(request.timeStamp);
+    headerInfo_ += "Timestamp:" + tempStr;
+    CppCrashInfoCollector::Instance().SetTimestamp(tempStr);
     headerInfo_ += StringPrintf("Pid:%d\nUid:%d\n", process.GetProcessInfo().pid, process.GetProcessInfo().uid);
+    CppCrashInfoCollector::Instance().SetPid(process.GetProcessInfo().pid);
+    CppCrashInfoCollector::Instance().SetUid(process.GetProcessInfo().uid);
 #ifndef is_ohos_lite
     if (request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH && request.hitraceId.valid == HITRACE_ID_VALID) {
-        headerInfo_ += StringPrintf("HiTraceId:%" PRIx64 "\n", static_cast<uint64_t>(request.hitraceId.chainId));
+        tempStr = StringPrintf("%" PRIx64 "\n", static_cast<uint64_t>(request.hitraceId.chainId));
+        headerInfo_ += "HiTraceId:" + tempStr;
+        CppCrashInfoCollector::Instance().SetHiTraceId(tempStr);
     }
 #endif
+    CollectProcessInfo(process, request, unwinder);
+}
+
+void DumpInfoHeader::CollectProcessInfo(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
+{
+    std::string tempStr;
     headerInfo_ += StringPrintf("Process name:%s\n", process.GetProcessInfo().processName.c_str());
+    CppCrashInfoCollector::Instance().SetPname(process.GetProcessInfo().processName);
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         uint64_t lifeTimeSeconds = 0;
         int errCode = GetProcessLifeCycle(process.GetProcessInfo().pid, lifeTimeSeconds);
         process.SetLifeTime(lifeTimeSeconds);
-        headerInfo_ += ("Process life time:" + std::to_string(lifeTimeSeconds) + "s" + "\n");
+        tempStr = std::to_string(lifeTimeSeconds) + "s";
+        headerInfo_ += ("Process life time:" + tempStr + "\n");
+        CppCrashInfoCollector::Instance().SetProcessLifeTime(tempStr);
         if (errCode != 0) {
             DFXLOGE("Get process lifeCycle fail, errCode: %{public}d", errCode);
             ReportCrashException(CrashExceptionCode::CRASH_LOG_EPROCESS_LIFECYCLE);
         }
         uint64_t rss = GetProcRssMemInfo(process.GetProcessInfo().pid);
         process.SetRss(rss);
-        headerInfo_ += StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n", rss);
-        headerInfo_ += ("Reason:" + GetReasonInfo(request, process, *unwinder.GetMaps()));
+        tempStr = StringPrintf("%" PRIu64 "(Rss)\n", rss);
+        headerInfo_ += "Process Memory(kB):" + tempStr;
+        CppCrashInfoCollector::Instance().SetProcessRssMeminfo(tempStr);
+        tempStr = GetReasonInfo(request, process, *unwinder.GetMaps());
+        headerInfo_ += ("Reason:" + tempStr);
+        CppCrashInfoCollector::Instance().SetReason(tempStr);
+        DfxSignal dfxSignal(request.siginfo.si_signo);
+        tempStr = dfxSignal.IsAddrAvailable() ?
+            StringPrintf("%" PRIX64_ADDR, reinterpret_cast<uint64_t>(request.siginfo.si_addr)) : "";
+        CppCrashInfoCollector::Instance().SetSignal(request.siginfo.si_signo, request.siginfo.si_code, tempStr);
         process.AppendFatalMessage(GetLastFatalMsg(process, request));
         auto msg = process.GetFatalMessage();
         if (!msg.empty()) {
             headerInfo_ += "LastFatalMessage:" + msg + "\n";
+            CppCrashInfoCollector::Instance().SetLastFatalMessage(msg);
         }
     }
 }
@@ -135,24 +163,31 @@ std::string DumpInfoHeader::GetCrashLogConfigInfo(const ProcessDumpRequest& requ
     if ((request.crashLogConfig & extendPcLrMask) == extendPcLrMask) {
         crashLogConfig.extendPcLrPrinting = true;
         crashLogConfigInfo += "Extend pc lr printing:true\n";
+        CppCrashInfoCollector::Instance().SetExtendPcLrPrinting(true);
     }
     // 32 : cutoff size start from high 32 bit
     uint32_t logFileCutoffSizeBytes = static_cast<uint32_t>(request.crashLogConfig >> 32);
+    std::string logCutSizeStr;
     if (logFileCutoffSizeBytes != 0) {
         crashLogConfig.logFileCutoffSizeBytes = logFileCutoffSizeBytes;
-        crashLogConfigInfo += StringPrintf("Log cut off size:%" PRIu32 "B\n", crashLogConfig.logFileCutoffSizeBytes);
+        logCutSizeStr = StringPrintf("%" PRIu32 "B\n", crashLogConfig.logFileCutoffSizeBytes);
+        crashLogConfigInfo += "Log cut off size:" + logCutSizeStr;
+        CppCrashInfoCollector::Instance().SetLogCutOffSizeStr(logCutSizeStr);
     }
     if ((request.crashLogConfig & simplifyVmaMask) == simplifyVmaMask) {
         crashLogConfig.simplifyVmaPrinting = true;
         crashLogConfigInfo += "Simplify maps printing:true\n";
+        CppCrashInfoCollector::Instance().SetSimplifyVmaPrinting(true);
     }
     if ((request.crashLogConfig & mergeAppLogMask) == mergeAppLogMask) {
         crashLogConfig.mergeAppLog = true;
         crashLogConfigInfo += "Merge app log printing:true\n";
+        CppCrashInfoCollector::Instance().SetMergeAppLog(true);
     }
     if (IsMiniDumpEnable(request.crashLogConfig)) {
         crashLogConfig.minidumpLog = true;
         crashLogConfigInfo += "Enable minidump log:true\n";
+        CppCrashInfoCollector::Instance().SetMinidumpLog(true);
     }
     if (!crashLogConfigInfo.empty()) {
         crashLogConfigInfo = "Enabled app log configs:\n" + crashLogConfigInfo;

@@ -21,6 +21,7 @@
 #include "dfx_log.h"
 #include "process_dump_config.h"
 #include "unwinder.h"
+#include "cppcrash_info_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(Maps);
@@ -33,21 +34,25 @@ void Maps::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinde
         DFXLOGE("maps is not init!");
         return;
     }
-    DfxBufferWriter::GetInstance().WriteMsg("\nMaps:\n");
+    std::string prefix = "\nMaps:\n";
+    std::string mapsInfo;
     if (ProcessDumpConfig::GetInstance().GetConfig().simplifyVmaPrinting ||
         (process.GetCrashLogConfig().simplifyVmaPrinting)) {
         std::set<DfxMap> simplifyMaps;
         SimplifyVma(process, request, maps, simplifyMaps);
         for (const auto& simplifyMap : simplifyMaps) {
-            DfxBufferWriter::GetInstance().WriteMsg(simplifyMap.ToString());
+            mapsInfo += simplifyMap.ToString();
         }
     } else {
         for (const auto& map : maps->GetMaps()) {
             if (map != nullptr) {
-                DfxBufferWriter::GetInstance().WriteMsg(map->ToString());
+                mapsInfo += map->ToString();
             }
         }
     }
+    CppCrashInfoCollector::Instance().SetMaps(mapsInfo);
+    mapsInfo = prefix + mapsInfo;
+    DfxBufferWriter::GetInstance().WriteMsg(mapsInfo);
 }
 
 void Maps::SimplifyVma(DfxProcess& process, const ProcessDumpRequest& request,

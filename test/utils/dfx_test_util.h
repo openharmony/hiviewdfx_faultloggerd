@@ -96,6 +96,10 @@ void InstallTestHap(const std::string& hapName);
 void UninstallTestHap(const std::string& bundleName);
 int CountLines(const std::string& fileName);
 bool CheckProcessComm(int pid, const std::string& name);
+int CheckKeyWordsNormal(const std::string& filePath, const std::string *keywords, int length, int minRegIdx);
+#ifndef is_ohos_lite
+int CheckKeyWordsJson(const std::string& filePath, const std::string *keywords, int length, int minRegIdx);
+#endif
 int CheckKeyWords(const std::string& filePath, const std::string *keywords, int length, int minRegIdx);
 int CheckKeyWords(const std::string& filePath, std::vector<std::string>& keywords, int minRegIdx);
 bool CheckContent(const std::string& content, const std::string& keyContent, bool checkExist);
@@ -116,6 +120,7 @@ void WaitProcStart(int (&fd)[2]);
 void CheckAndExit(bool hasFailure);
 bool IsLinuxKernel();
 bool CheckLineMatch(const std::string& filePath, std::list<LineRule>& rules);
+bool IsJsonFilePath(const std::string& filePath);
 
 template<typename T>
 class AsyncWorker {

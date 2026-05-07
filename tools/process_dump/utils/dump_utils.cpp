@@ -24,6 +24,7 @@
 #include <selinux/selinux.h>
 #endif
 
+#include "cppcrash_utils.h"
 #include "dfx_frame_formatter.h"
 #include "dfx_kernel_stack.h"
 #include "dfx_log.h"
@@ -72,29 +73,6 @@ bool DumpUtils::ParseLockInfo(Unwinder& unwinder, int32_t vmPid, int32_t tid)
     // not impl yet
     return false;
 #endif
-}
-
-bool DumpUtils::IsLastValidFrame(const DfxFrame& frame)
-{
-    static uintptr_t libcStartPc = 0;
-    static uintptr_t libffrtStartEntry = 0;
-    if (((libcStartPc != 0) && (frame.pc == libcStartPc)) ||
-        ((libffrtStartEntry != 0) && (frame.pc == libffrtStartEntry))) {
-        return true;
-    }
-
-    if (frame.mapName.find("ld-musl-aarch64.so.1") != std::string::npos &&
-        frame.funcName.find("start") != std::string::npos) {
-        libcStartPc = frame.pc;
-        return true;
-    }
-
-    if (frame.mapName.find("libffrt") != std::string::npos &&
-        frame.funcName.find("CoStartEntry") != std::string::npos) {
-        libffrtStartEntry = frame.pc;
-        return true;
-    }
-    return false;
 }
 
 void DumpUtils::GetThreadKernelStack(DfxThread& thread, bool needParseSymbols)
@@ -156,7 +134,7 @@ std::string DumpUtils::GetStackTrace(const std::vector<DfxFrame>& frames)
     for (const auto& frame : frames) {
         stackTrace += DfxFrameFormatter::GetFrameStr(frame);
 #if defined(__aarch64__)
-        if (IsLastValidFrame(frame)) {
+        if (CppCrashUtils::IsLastValidFrame(frame)) {
             break;
         }
 #endif

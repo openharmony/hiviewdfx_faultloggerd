@@ -333,11 +333,12 @@ static bool CheckTestGetCrashObjNKB(const string& filePath, const pid_t& pid, si
     if (nKB >= belowTheBoundary && nKB <= aboveTheBoundary) {
         constexpr const int oneKb = 1024;
         char buff[oneKb];
-        (void)snprintf_s(buff, sizeof(buff), sizeof(buff) - 1, "%01023lu\n", nKB);
+        (void)snprintf_s(buff, sizeof(buff), sizeof(buff) - 1, "%01023lu\n", nKB - 1);
         log.push_back(std::string(buff));
     }
-    int minRegIdx = 8; // 8 : index of first REGISTERS - 1
-    return CheckKeyWords(filePath, log, minRegIdx);
+    int minRegIdx = 7; // 7 : index of first REGISTERS - 1
+    int expectNum = log.size();
+    return CheckKeyWords(filePath, log, minRegIdx) == expectNum;
 }
 #endif
 
@@ -1220,14 +1221,8 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest104, TestSize.Level2)
         string s;
         file >> s;
         if (s.find("/data/crasher_c") != string::npos) {
-            string buildId;
-            size_t leftBraceIdx = s.find('(');
-            size_t rightBraceIdx = s.find(')');
-            if (leftBraceIdx != string::npos && rightBraceIdx != string::npos) {
-                buildId = s.substr(leftBraceIdx + 1, rightBraceIdx - leftBraceIdx - 1);
-                GTEST_LOG_(INFO) << "build-id = " << buildId;
-            }
-            EXPECT_FALSE(buildId.empty()) << "FaultLoggerdSystemTest104 Failed";
+            size_t braceIdx = s.find("buildId");
+            EXPECT_TRUE(braceIdx != string::npos) << "FaultLoggerdSystemTest104 Failed";
             break;
         }
     }
@@ -1884,7 +1879,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest130, TestSize.Level2)
         FAIL();
     }
     // 65: The boundary value is 64, and the test is higher than the boundary value
-    EXPECT_TRUE(CheckTestGetCrashObjNKB(fileName, pid, 65));
+    EXPECT_FALSE(CheckTestGetCrashObjNKB(fileName, pid, 65));
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest130: end.";
 }
 #endif

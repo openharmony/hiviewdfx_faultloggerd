@@ -21,6 +21,7 @@
 #include "string_printf.h"
 #include "dump_utils.h"
 #include "lite_process_dumper.h"
+#include "cppcrash_info_collector.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -42,16 +43,19 @@ void MemoryNearRegister::Collect(DfxProcess& process, const ProcessDumpRequest& 
         ProcessDumpConfig::GetInstance().GetConfig().extendPcLrPrinting;
     CollectRegistersBlock(tid, process.GetFaultThreadRegisters(), unwinder.GetMaps(), extendPcLrPrinting);
     memoryNearRegisterStr_ = "Memory near registers:\n";
+    std::string registerStr;
     for (const auto& block : registerBlocks_) {
         uintptr_t targetAddr = block.startAddr;
-        memoryNearRegisterStr_ += block.name + ":\n";
+        registerStr += block.name + ":\n";
         for (size_t i = 0; i < block.content.size(); i++) {
-           memoryNearRegisterStr_ += StringPrintf("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
+           registerStr += StringPrintf("    " PRINT_FORMAT " " PRINT_FORMAT "\n",
                 targetAddr,
                 block.content.at(i));
             targetAddr += STEP;
         }
     }
+    memoryNearRegisterStr_ += registerStr;
+    CppCrashInfoCollector::Instance().SetMemoryNearRegister(registerStr);
 }
 
 void MemoryNearRegister::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)

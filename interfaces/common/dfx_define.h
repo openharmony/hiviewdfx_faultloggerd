@@ -90,6 +90,9 @@ static const char* const PROC_SELF_SMAPS_ROLLUP_PATH = "/proc/self/smaps_rollup"
 static const char* const ADLT_PATH_NAME_START = "/system/lib/libadlt";
 static const char* const SANDBOX_FILE_PATH_PREFIX = "/data/storage/";
 static const char* const NSPID_STR_NAME = "NSpid:";
+
+static const char* const CPPCRASH_JSON_VERSION_KEY = "JSON_VERSION";
+static const char* const CPPCRASH_JSON_VERSION_VALUE = "1.0";
 #ifdef DFX_LOG_HILOG_BASE
 static const char* const PROCESSDUMP_PATH = "/system/bin/processdump";
 #else
