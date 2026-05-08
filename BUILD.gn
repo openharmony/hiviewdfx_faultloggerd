@@ -32,6 +32,10 @@ group("faultloggerd_targets") {
         "services/snapshot:kernel_snapshot",
         "tools/dump_catcher:dumpcatcher",
       ]
+      if (!support_jsapi) {
+        deps -= [ "tools/process_dump:processdump" ]
+        deps -= [ "tools/dump_catcher:dumpcatcher" ]
+      }
       if (faultloggerd_hisysevent_enable) {
         deps += [ "tools/crash_validator:crash_validator" ]
       }
@@ -40,7 +44,7 @@ group("faultloggerd_targets") {
 }
 
 group("faultloggerd_tests") {
-  if (faultloggerd_enable_build_targets) {
+  if (faultloggerd_enable_build_targets && support_jsapi) {
     deps = [
       "test:faultloggerd_moduletest",
       "test:faultloggerd_systemtest",
