@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -1090,14 +1090,15 @@ void GenerateCrashLogFiles()
  */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest101, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest0009: start.";
+    GTEST_LOG_(INFO) << "FaultLoggerdSystemTest101: start.";
     string clearTempFilesCmd = "rm -rf /data/log/faultlog/temp/*";
     system(clearTempFilesCmd.c_str());
     GenerateCrashLogFiles();
     vector<string> files;
     OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
     GTEST_LOG_(INFO) << files.size();
-    EXPECT_EQ(files.size(), SIGNAL_TEST_NUM) << "FaultLoggerdSystemTest101 Failed";
+    constexpr int tmpFileNum = 2 * SIGNAL_TEST_NUM; // 2 : the total count of cppcrash and crashjsonstack
+    EXPECT_EQ(files.size(), tmpFileNum) << "FaultLoggerdSystemTest101 Failed";
 }
 
 static void CrashInChildThread()
@@ -1186,7 +1187,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << oldcrash;
     files.clear();
-    for (int i = 0; i < SIGNAL_TEST_NUM; i++) { // 25 : the count of crash file
+    for (int i = 0; i < SIGNAL_TEST_NUM; i++) {
         system("/data/crasher_c SIGSEGV");
     }
     OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
@@ -1195,7 +1196,9 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
             FAIL();
         }
     }
-    EXPECT_EQ(files.size(), 20) << "FaultLoggerdSystemTest103 Failed";
+    constexpr int cppcrashKeepNum = 20;
+    constexpr int crashJsonStackKeepNum = SIGNAL_TEST_NUM + 1;
+    EXPECT_EQ(files.size(), cppcrashKeepNum + crashJsonStackKeepNum) << "FaultLoggerdSystemTest103 Failed";
 }
 
 /**
