@@ -51,6 +51,7 @@
 #include "thread_context.h"
 #include "unwinder.h"
 #include "unwinder_config.h"
+#include "cppcrash_info_collector.h"
 
 #undef LOG_DOMAIN
 #undef LOG_TAG
@@ -410,6 +411,7 @@ bool LiteProcessDumper::Dump(int pid)
     if (!DfxBufferWriter::GetInstance().InitBufferWriter(request_)) {
         DFXLOGE("Failed to init buffer writer.");
     }
+    CppCrashInfoCollector::Instance().SetNeedFormatFlag(request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     regs_ = DfxRegs::CreateFromUcontext(request_.context);
     std::string bundleName = request_.processName;
     bundleName = bundleName.substr(0, bundleName.find_first_of(':'));
@@ -419,6 +421,7 @@ bool LiteProcessDumper::Dump(int pid)
     InitProcess();
     Unwind();
     PrintAll();
+    DfxBufferWriter::GetInstance().WriteFormatCrashInfo();
     FormatJsonInfoIfNeed();
     if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         DfxBufferWriter::GetInstance().WriteDumpRes(DumpErrorCode::DUMP_ESUCCESS);
@@ -431,7 +434,7 @@ bool LiteProcessDumper::Dump(int pid)
 
 void LiteProcessDumper::FormatJsonInfoIfNeed()
 {
-    if (!isJsonDump_ && request_.type != ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
+    if (!isJsonDump_) {
         return;
     }
     if (process_ == nullptr) {
@@ -439,9 +442,7 @@ void LiteProcessDumper::FormatJsonInfoIfNeed()
     }
     std::string jsonInfo;
     DumpInfoJsonFormatter::GetJsonFormatInfo(request_, *process_, jsonInfo);
-    if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        process_->SetCrashInfoJson(jsonInfo);
-    } else if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+    if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         DfxBufferWriter::GetInstance().WriteMsg(jsonInfo);
     }
     DFXLOGI("Finish GetJsonFormatInfo len %{public}" PRIuPTR "", jsonInfo.length());
@@ -450,22 +451,34 @@ void LiteProcessDumper::FormatJsonInfoIfNeed()
 void LiteProcessDumper::PrintHeader()
 {
     std::string headInfo;
+    std::string tempStr;
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        headInfo += StringPrintf("Build info:%s\n", DumpUtils::GetBuildInfo().c_str());
+        tempStr = DumpUtils::GetBuildInfo();
+        headInfo += StringPrintf("Build info:%s\n", tempStr.c_str());
+        CppCrashInfoCollector::Instance().SetBuildInfo(tempStr);
     }
-    headInfo += "Timestamp:" + GetCurrentTimeStr(request_.timeStamp);
+    tempStr = GetCurrentTimeStr(request_.timeStamp);
+    headInfo += "Timestamp:" + tempStr;
+    CppCrashInfoCollector::Instance().SetTimestamp(tempStr);
     headInfo += StringPrintf("Pid:%d\n", request_.pid);
+    CppCrashInfoCollector::Instance().SetPid(request_.pid);
     headInfo += StringPrintf("Uid:%d\n", request_.uid);
+    CppCrashInfoCollector::Instance().SetUid(request_.uid);
     headInfo += StringPrintf("Process name:%s\n", request_.processName);
+    CppCrashInfoCollector::Instance().SetPname(request_.processName);
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         uint64_t lifeTimeSeconds;
         GetProcessLifeCycle(stat_, lifeTimeSeconds);
         process_->SetLifeTime(lifeTimeSeconds);
-        headInfo += "Process life time:" + std::to_string(lifeTimeSeconds) + "s" + "\n";
+        tempStr = std::to_string(lifeTimeSeconds) + "s";
+        headInfo += "Process life time:" + tempStr + "\n";
+        CppCrashInfoCollector::Instance().SetProcessLifeTime(tempStr);
 
         uint64_t rss = GetProcRssMemInfo(statm_);
         process_->SetRss(rss);
-        headInfo += StringPrintf("Process Memory(kB): %" PRIu64 "(Rss)\n", rss);
+        tempStr = StringPrintf("%" PRIu64 "(Rss)\n", rss);
+        headInfo += "Process Memory(kB):" + tempStr;
+        CppCrashInfoCollector::Instance().SetProcessRssMeminfo(tempStr);
 
         if (request_.siginfo.si_pid == request_.pid) {
             request_.siginfo.si_uid = request_.uid;
@@ -473,6 +486,7 @@ void LiteProcessDumper::PrintHeader()
         std::string reason = DfxSignal::PrintSignal(request_.siginfo) + "\n";
         process_->SetReason(DfxSignal::PrintSignal(request_.siginfo));
         headInfo += "Reason:" + reason;
+        CppCrashInfoCollector::Instance().SetReason(reason);
     }
     if (!isJsonDump_) {
         DfxBufferWriter::GetInstance().WriteMsg(headInfo);
@@ -490,10 +504,12 @@ void LiteProcessDumper::PrintThreadInfo()
     if (keyThread == nullptr) {
         return;
     }
-    faultThreadInfo += keyThread->ToString();
+    std::string threadInfo = keyThread->ToString();
+    CppCrashInfoCollector::Instance().SetKeyThread(keyThread->GetThreadInfo().threadName,
+        keyThread->GetThreadInfo().tid, keyThread->GetFrames());
+    faultThreadInfo += threadInfo;
     if (!isJsonDump_) {
-        auto& instance = DfxBufferWriter::GetInstance();
-        instance.WriteMsg(faultThreadInfo);
+        DfxBufferWriter::GetInstance().WriteMsg(faultThreadInfo);
     }
     std::istringstream iss(faultThreadInfo);
     std::string line;
@@ -508,12 +524,15 @@ void LiteProcessDumper::PrintOtherThreadInfo()
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         otherThreadInfo += "Other thread info:\n";
     }
+    std::string threadInfo;
     for (const auto& thread : process_->GetOtherThreads()) {
-        otherThreadInfo += thread->ToString();
+        threadInfo += thread->ToString();
+        CppCrashInfoCollector::Instance().AddOtherThread(thread->GetThreadInfo().threadName,
+            thread->GetThreadInfo().tid, thread->GetFrames());
     }
+    otherThreadInfo += threadInfo;
     if (!isJsonDump_) {
-        auto& instance = DfxBufferWriter::GetInstance();
-        instance.WriteMsg(otherThreadInfo);
+        DfxBufferWriter::GetInstance().WriteMsg(otherThreadInfo);
     }
 }
 
@@ -525,9 +544,16 @@ void LiteProcessDumper::PrintRegisters()
     if (regs_ == nullptr) {
         return;
     }
-    auto& instance = DfxBufferWriter::GetInstance();
     std::string regsStr = regs_->PrintRegs();
-    instance.WriteMsg(regsStr);
+    std::string prefix = "Registers:\n";
+    std::string regsSubStr;
+    if (regsStr.substr(0, prefix.size()) == prefix) {
+        regsSubStr = regsStr.substr(prefix.size());
+    } else {
+        regsSubStr = regsStr;
+    }
+    CppCrashInfoCollector::Instance().SetRegisters(regsSubStr);
+    DfxBufferWriter::GetInstance().WriteMsg(regsStr);
     std::istringstream iss(regsStr);
     std::string line;
     while (std::getline(iss, line)) {
@@ -568,11 +594,13 @@ void LiteProcessDumper::PrintMaps()
     if (dfxMaps_ == nullptr) {
         return;
     }
-    std::string mapsStr = "Maps:\n";
+    std::string prefix = "Maps:\n";
+    std::string mapsStr;
     for (const auto &map : dfxMaps_->GetMaps()) {
         mapsStr.append(map->ToString());
     }
-    DfxBufferWriter::GetInstance().WriteMsg(mapsStr);
+    CppCrashInfoCollector::Instance().SetMaps(mapsStr);
+    DfxBufferWriter::GetInstance().WriteMsg(prefix + mapsStr);
 }
 
 void LiteProcessDumper::CollectOpenFiles()
@@ -608,11 +636,13 @@ void LiteProcessDumper::PrintOpenFiles()
     if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         return;
     }
-    std::string openFiles = "OpenFiles:\n";
-    DfxBufferWriter::GetInstance().WriteMsg(openFiles);
+    std::string prefix = "OpenFiles:\n";
+    std::string openFiles;
     for (auto& file : fdFiles_) {
-        DfxBufferWriter::GetInstance().WriteMsg(file.second);
+        openFiles.append(file.second);
     }
+    CppCrashInfoCollector::Instance().SetOpenFiles(openFiles);
+    DfxBufferWriter::GetInstance().WriteMsg(prefix + openFiles);
 }
 
 void LiteProcessDumper::MmapJitSymbol()

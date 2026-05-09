@@ -55,6 +55,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog",
       "$faultloggerd_common_path/cutil",
       "$faultloggerd_common_path/dfxutil",
+      "$faultloggerd_common_path/cppcrash_formatter",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/async_stack/include",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
@@ -74,6 +75,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
@@ -96,6 +98,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
@@ -121,6 +124,7 @@ if (defined(ohos_lite)) {
       "utils",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_common_path/cutil",
+      "$faultloggerd_common_path/cppcrash_formatter",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_interfaces_path/innerkits/crash_exception",
       "$faultloggerd_interfaces_path/innerkits/procinfo/include",
@@ -173,6 +177,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_common_path/trace:dfx_trace",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
@@ -248,6 +253,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
       "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
       "$faultloggerd_common_path/trace:dfx_trace_cfi",
+      "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src_cfi",
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",
       "$faultloggerd_interfaces_path/innerkits/async_stack:libasync_stack",
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",

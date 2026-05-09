@@ -79,16 +79,6 @@ public:
         return reason_;
     }
 
-    const std::string& GetCrashInfoJson() const
-    {
-        return crashInfoJson_;
-    }
-
-    void SetCrashInfoJson(const std::string& crashInfoJson)
-    {
-        crashInfoJson_ = crashInfoJson;
-    }
-
     const std::string& GetLogSource() const
     {
         return logSource_;
@@ -175,7 +165,6 @@ private:
     uint64_t rss_{0};
     uint64_t lifeTime_{0};
     std::map<int, int> kvThreads_;
-    std::string crashInfoJson_ = "";
     std::string logSource_ = "";
     pid_t vmPid_ = 0;
     std::set<uintptr_t> memoryValues_;

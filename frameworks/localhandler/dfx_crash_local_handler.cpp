@@ -30,6 +30,8 @@
 #include "hisysevent.h"
 #include "string_printf.h"
 #include "unwinder.h"
+#include "cppcrash_info_collector.h"
+#include "cppcrash_formatter.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -59,7 +61,7 @@ static __attribute__((noinline)) int RequestOutputLogFile(const struct ProcessDu
     return RequestFileDescriptorEx(&faultloggerdRequest);
 }
 
-static __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
+static __attribute__((noinline)) void PrintLog(const char *format, ...)
 {
     char buf[BUF_SZ] = {0};
     va_list args;
@@ -67,15 +69,50 @@ static __attribute__((noinline)) void PrintLog(int fd, const char *format, ...)
     int size = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
     if (size == -1) {
-        if (fd > 0) {
-            const char* error = "PrintLog vsnprintf_s fail\n";
-            (void)OHOS_TEMP_FAILURE_RETRY(write(fd, error, strlen(error)));
-        }
+        DFXLOGI("PrintLog vsnprintf_s fail");
         return;
     }
     DFXLOGE("%{public}s", buf);
+}
+
+static int WriteBuf(int32_t fd, const char* buf, const size_t len)
+{
+    if (buf == nullptr) {
+        return -1;
+    }
     if (fd > 0) {
-        (void)OHOS_TEMP_FAILURE_RETRY(write(fd, buf, strlen(buf)));
+        ssize_t writeSize = 0;
+        int savedErrno = 0;
+        constexpr size_t maxTryTimes = 1000;
+        constexpr int sleepIntervalUs = 1000;
+        size_t tryTimes = 0;
+        do {
+            writeSize = write(fd, buf, len);
+            savedErrno = errno;
+            if (++tryTimes >= maxTryTimes) {
+                DFXLOGW("Exceeding the maximum number of retries!");
+                break;
+            }
+            if (writeSize == -1 && savedErrno == EAGAIN) {
+                usleep(sleepIntervalUs);
+            }
+        } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
+        return writeSize;
+    }
+    return 0;
+}
+
+static void WriteCrashMsg(const int fd)
+{
+    std::string msg = OHOS::HiviewDFX::CppCrashFormatterFactory::Create().FormatCrashInfo();
+    constexpr size_t step = 1024 * 1024;
+    for (size_t i = 0; i < msg.size(); i += step) {
+        size_t length = (i + step) < msg.size() ? step : msg.size() - i;
+        int cnt = WriteBuf(fd, msg.substr(i, length).c_str(), length);
+        if (cnt <= 0) {
+            DFXLOGW("Write message failed.");
+            break;
+        }
     }
 }
 
@@ -86,20 +123,35 @@ static __attribute__((noinline)) void CrashLocalUnwind(const int fd,
     if (request == nullptr) {
         return;
     }
+    auto& collector = OHOS::HiviewDFX::CppCrashInfoCollector::Instance();
     std::string logContext = OHOS::HiviewDFX::StringPrintf("Tid:%d, Name:%s\n", request->tid, request->threadName);
     OHOS::HiviewDFX::Unwinder unwind;
     unwind.UnwindLocalWithContext(request->context);
     logContext.append(unwind.GetFramesStr(unwind.GetFrames()));
+    collector.SetKeyThread(request->threadName, request->tid, unwind.GetFrames());
     errMessage += logContext;
     auto regs = OHOS::HiviewDFX::DfxRegs::CreateFromUcontext(request->context);
-    logContext.append(regs->PrintRegs());
-    logContext.append("\nMaps:\n");
-    for (const auto &map : unwind.GetMaps()->GetMaps()) {
-        logContext.append(map->ToString());
+    std::string prefix = "Registers:\n";
+    std::string regsStr = regs->PrintRegs();
+    std::string regsSubStr;
+    if (regsStr.substr(0, prefix.size()) == prefix) {
+        regsSubStr = regsStr.substr(prefix.size());
+    } else {
+        regsSubStr = regsStr;
     }
+    collector.SetRegisters(regsSubStr);
+    logContext.append(regsStr);
+    logContext.append("\nMaps:\n");
+
+    std::string mapStr;
+    for (const auto &map : unwind.GetMaps()->GetMaps()) {
+        mapStr.append(map->ToString());
+    }
+    collector.SetMaps(mapStr);
+    logContext.append(mapStr);
 
     for (unsigned int i = 0; i < logContext.length(); i += BUF_SZ_SMALL) {
-        PrintLog(fd, "%s", logContext.substr(i, BUF_SZ_SMALL).c_str());
+        PrintLog("%s", logContext.substr(i, BUF_SZ_SMALL).c_str());
     }
 }
 
@@ -115,6 +167,7 @@ void CrashLocalHandler(struct ProcessDumpRequest* request)
 
 static void PrintTimeStamp(const int fd, const struct ProcessDumpRequest* request)
 {
+    auto& collector = OHOS::HiviewDFX::CppCrashInfoCollector::Instance();
     uint64_t currentTime = request->timeStamp;
     char secBuf[BUF_SZ] = {0};
     char printBuf[BUF_SZ] = {0};
@@ -130,7 +183,8 @@ static void PrintTimeStamp(const int fd, const struct ProcessDumpRequest* reques
         DFXLOGE("snprintf timestamp fail");
         return;
     }
-    PrintLog(fd, "Timestamp:%s", printBuf);
+    collector.SetTimestamp(std::string(printBuf));
+    PrintLog("Timestamp:%s", printBuf);
 }
 
 void CrashLocalHandlerFd(const int fd, struct ProcessDumpRequest* request)
@@ -138,18 +192,31 @@ void CrashLocalHandlerFd(const int fd, struct ProcessDumpRequest* request)
     if (request == nullptr) {
         return;
     }
+    auto& collector = OHOS::HiviewDFX::CppCrashInfoCollector::Instance();
+    collector.Reset();
+    collector.SetNeedFormatFlag(true);
     PrintTimeStamp(fd, request);
-    PrintLog(fd, "Pid:%d\n", request->pid);
-    PrintLog(fd, "Uid:%d\n", request->uid);
-    PrintLog(fd, "Process name:%s\n", request->processName);
+    collector.SetPid(request->pid);
+    PrintLog("Pid:%d\n", request->pid);
+    collector.SetUid(request->uid);
+    PrintLog("Uid:%d\n", request->uid);
+    collector.SetPname(request->processName);
+    PrintLog("Process name:%s\n", request->processName);
     if (request->siginfo.si_pid == request->pid) {
         request->siginfo.si_uid = request->uid;
     }
     std::string reason = OHOS::HiviewDFX::DfxSignal::PrintSignal(request->siginfo) + "\n";
     std::string errMessage = reason;
-    PrintLog(fd, reason.c_str());
-    PrintLog(fd, "Fault thread info:\n");
+    collector.SetReason(reason);
+    OHOS::HiviewDFX::DfxSignal dfxSignal(request->siginfo.si_signo);
+    std::string signalStr = dfxSignal.IsAddrAvailable() ?
+        OHOS::HiviewDFX::StringPrintf("%" PRIX64_ADDR, reinterpret_cast<uint64_t>(request->siginfo.si_addr)) : "";
+    collector.SetSignal(request->siginfo.si_signo, request->siginfo.si_code, signalStr);
+
+    PrintLog(reason.c_str());
+    PrintLog("Fault thread info:\n");
     CrashLocalUnwind(fd, request, errMessage);
+    WriteCrashMsg(fd);
     HiSysEventWrite(
         OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY,
         "CPP_CRASH_EXCEPTION",

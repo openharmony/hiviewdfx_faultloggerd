@@ -31,6 +31,7 @@
 #include "dfx_cutil.h"
 #include "directory_ex.h"
 #include "faultloggerd_client.h"
+#include "cppcrash_formatter.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -42,6 +43,22 @@ DfxBufferWriter &DfxBufferWriter::GetInstance()
 }
 
 void DfxBufferWriter::WriteMsg(const std::string& msg)
+{
+    if (CppCrashFormatterFactory::Create().NeedFormatCrashInfo()) {
+        return;
+    }
+    WriteToBuffer(msg);
+}
+
+void DfxBufferWriter::WriteFormatCrashInfo()
+{
+    std::string msg = CppCrashFormatterFactory::Create().FormatCrashInfo();
+    if (!msg.empty()) {
+        WriteToBuffer(msg);
+    }
+}
+
+void DfxBufferWriter::WriteToBuffer(const std::string& msg)
 {
     if (writeFunc_ == nullptr) {
         writeFunc_ = DfxBufferWriter::DefaultWrite;
@@ -248,6 +265,9 @@ int32_t DfxBufferWriter::CreateFileForCrash(int32_t pid, uint64_t time) const
     }
     RemoveFileIfNeed(dirPath);
     std::string logPath = dirPath + "/" + logFileType + "-" + std::to_string(pid) + "-" + std::to_string(time);
+#ifndef is_ohos_lite
+    logPath += ".json";
+#endif
     int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT, logcrashFileProp));
     if (fd == INVALID_FD) {
         DFXLOGE("create %{public}s failed, errno=%{public}d", logPath.c_str(), errno);
@@ -255,6 +275,11 @@ int32_t DfxBufferWriter::CreateFileForCrash(int32_t pid, uint64_t time) const
         DFXLOGI("create crash path %{public}s succ.", logPath.c_str());
     }
     return fd;
+}
+
+int DfxBufferWriter::GetBufFd() const
+{
+    return bufFd_.GetFd();
 }
 
 void DfxBufferWriter::RemoveFileIfNeed(const std::string& dirPath) const

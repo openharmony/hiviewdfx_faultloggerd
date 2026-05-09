@@ -354,9 +354,13 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
 (std::chrono::system_clock::now().time_since_epoch()).count() : time);
     if (type == FaultLoggerType::JS_RAW_SNAPSHOT) {
         ss += ".rawheap";
+    } else if (type == FaultLoggerType::CPP_CRASH) {
+#ifndef is_ohos_lite
+        ss += ".json";
+#endif
     }
     DFXLOGI("%{public}s :: create file for path(%{public}s).", TEMP_FILE_MANAGER_TAG, ss.c_str());
-    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(ss.c_str(), O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP));
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(ss.c_str(), O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP));
     if (fd < 0) {
         int openErrno = errno;
         const auto& dirPath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;

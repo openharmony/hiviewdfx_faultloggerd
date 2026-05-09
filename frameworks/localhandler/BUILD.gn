@@ -42,6 +42,7 @@ if (!defined(ohos_lite)) {
     defines = [ "DFX_LOG_HILOG_BASE" ]
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil",
+      "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src",
       "$faultloggerd_common_path/dfxutil:dfx_util",
       "$faultloggerd_frameworks_path/allocator:dfx_allocator_src",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
@@ -52,6 +53,7 @@ if (!defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hisysevent:libhisysevent",
+      "cJSON:cjson",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
@@ -74,6 +76,7 @@ if (!defined(ohos_lite)) {
     defines = [ "DFX_LOG_HILOG_BASE" ]
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil_cfi",
+      "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src_cfi",
       "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
       "$faultloggerd_frameworks_path/allocator:dfx_allocator_src_cfi",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
@@ -84,6 +87,7 @@ if (!defined(ohos_lite)) {
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hisysevent:libhisysevent",
+      "cJSON:cjson",
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"

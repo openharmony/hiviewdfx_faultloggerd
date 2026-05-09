@@ -76,6 +76,7 @@ public:
     void Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder) override;
     static std::shared_ptr<DumpInfo> CreateInstance() { return std::make_shared<DumpInfoHeader>(); }
 private:
+    void CollectProcessInfo(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder);
     std::string GetReasonInfo(const ProcessDumpRequest& request, DfxProcess& process, DfxMaps& maps);
     std::string GetCrashLogConfigInfo(const ProcessDumpRequest& request, DfxProcess& process);
     static std::string GetLastFatalMsg(const DfxProcess& process, const ProcessDumpRequest& request);

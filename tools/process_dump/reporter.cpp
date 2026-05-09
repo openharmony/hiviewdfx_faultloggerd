@@ -32,7 +32,7 @@
 #endif
 #include "dfx_buffer_writer.h"
 #include "process_dumper.h"
-#include "faultloggerd_client.h"
+#include "cppcrash_info_collector.h"
 
 const char* const HIVIEW_PROCESS_NAME = "/system/bin/hiview";
 const char* const REGS_KEY_WORD = "Registers:\n";
@@ -88,8 +88,8 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.time = request.timeStamp;
     info.id = process.GetProcessInfo().uid;
     info.pid = process.GetProcessInfo().pid;
-    WriteCppcrashInfo(process, request, process.GetCrashInfoJson());
-    info.pipeFd = -1;
+    ReportCppcrashNoLog(process, request);
+    info.fileFd = DfxBufferWriter::GetInstance().GetBufFd();
     info.faultLogType = 2; // 2 : CPP_CRASH_TYPE
     info.logFileCutoffSizeBytes = process.GetCrashLogConfig().logFileCutoffSizeBytes;
     info.module = process.GetProcessInfo().processName;
@@ -144,40 +144,28 @@ std::string CppCrashReporter::GetSummary(DfxProcess& process)
     return summary;
 }
 
-void CppCrashReporter::WriteCppcrashInfo(DfxProcess& process, const ProcessDumpRequest &request_,
-    const std::string& cppCrashInfo)
+void CppCrashReporter::ReportCppcrashNoLog(DfxProcess& process, const ProcessDumpRequest &request)
 {
-    struct FaultLoggerdRequest faultloggerdRequest{
-        .pid = request_.pid,
-        .type = CRASH_JSON_STACK,
-        .tid = request_.tid,
-        .time = request_.timeStamp,
-        .minidump = 0
-    };
-    auto bufferFd = SmartFd {RequestFileDescriptorEx(&faultloggerdRequest)};
-    if (!bufferFd) {
-        DFXLOGE("failed to crash crashjson file");
-    } else {
-        DfxBufferWriter::DefaultWrite(bufferFd.GetFd(), cppCrashInfo.c_str(), cppCrashInfo.size());
-    }
 #ifndef HISYSEVENT_DISABLE
-    constexpr uint32_t jsonLimitSize = 1024 * 1024;
-    if (cppCrashInfo.size() > jsonLimitSize) {
-        std::string summary = "crashjson: stack greate 1m, ";
-        summary += "real size is: " + std::to_string(cppCrashInfo.size() / 1024) + "kb, "; // 1024 : kb
+    size_t crashInfoSize = CppCrashInfoCollector::Instance().GetCrashInfoSize();
+    DFXLOGI("Crash info json size: %{public}zu", crashInfoSize);
+    constexpr uint32_t jsonLimitSize = 2 * 1024 * 1024;
+    if (crashInfoSize > jsonLimitSize) {
+        std::string summary = "crashjson: stack greate 2m, ";
+        summary += "real size is: " + std::to_string(crashInfoSize / 1024) + "kb, "; // 1024 : kb
         summary += "thread count: " + std::to_string(process.GetOtherThreads().size());
         HiSysEventParam params[] = {
-            {.name = "UID", .t = HISYSEVENT_UINT32, .v = { .ui32 = request_.uid}, .arraySize = 0},
-            {.name = "PID", .t = HISYSEVENT_UINT32, .v = { .ui32 = request_.pid}, .arraySize = 0},
+            {.name = "UID", .t = HISYSEVENT_UINT32, .v = { .ui32 = request.uid}, .arraySize = 0},
+            {.name = "PID", .t = HISYSEVENT_UINT32, .v = { .ui32 = request.pid}, .arraySize = 0},
             {.name = "PROCESS_NAME", .t = HISYSEVENT_STRING,
-                .v = {.s = const_cast<char*>(request_.processName)}, .arraySize = 0},
-            {.name = "HAPPEN_TIME", .t = HISYSEVENT_UINT64, .v = {.ui64 = request_.timeStamp}, .arraySize = 0},
+                .v = {.s = const_cast<char*>(request.processName)}, .arraySize = 0},
+            {.name = "HAPPEN_TIME", .t = HISYSEVENT_UINT64, .v = {.ui64 = request.timeStamp}, .arraySize = 0},
             {.name = "SUMMARY", .t = HISYSEVENT_STRING,
                 .v = {.s = const_cast<char*>(summary.c_str())}, .arraySize = 0},
         };
         int ret = OH_HiSysEvent_Write("RELIABILITY", "CPP_CRASH_NO_LOG",
             HISYSEVENT_FAULT, params, sizeof(params) / sizeof(params[0]));
-        DFXLOGI("Report pid %{public}d event ret %{public}d %{public}s", request_.pid, ret, summary.c_str());
+        DFXLOGI("Report pid %{public}d event ret %{public}d %{public}s", request.pid, ret, summary.c_str());
     }
 #endif
 }

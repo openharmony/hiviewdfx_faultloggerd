@@ -25,6 +25,9 @@
 #include "file_util.h"
 #include <string_ex.h>
 #include <sys/inotify.h>
+#ifndef is_ohos_lite
+#include "cppcrash_test_json.h"
+#endif
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -32,6 +35,8 @@ namespace {
 #define EVENT_SIZE (sizeof(struct inotify_event))
 #define EVENT_BUF_LEN (1024 * (EVENT_SIZE + 16))
 const int BUF_LEN = 128;
+constexpr int SP_PREFIX_LEN = 3;
+constexpr int JSON_EXTENSION_LEN = 5;
 }
 
 std::string ExecuteCommands(const std::string& cmds)
@@ -144,7 +149,7 @@ bool CheckProcessComm(int pid, const std::string& name)
     return false;
 }
 
-int CheckKeyWords(const std::string& filePath, const std::string *keywords, int length, int minRegIdx)
+int CheckKeyWordsNormal(const std::string& filePath, const std::string *keywords, int length, int minRegIdx)
 {
     std::ifstream file;
     file.open(filePath.c_str(), std::ios::in);
@@ -180,19 +185,85 @@ int CheckKeyWords(const std::string& filePath, const std::string *keywords, int 
     return count;
 }
 
+#ifndef is_ohos_lite
+int CheckKeyWordsJson(const std::string& filePath, const std::string *keywords, int length, int minRegIdx)
+{
+    CppCrashTestJson testJson;
+    testJson.InitFromFile(filePath);
+    std::string textStr = testJson.ToTextString();
+    if (textStr.empty()) {
+        std::cout << "json file is empty!"<< std::endl;
+        return 0;
+    }
+    int count = 0;
+    std::string::size_type idx;
+    int i = 0;
+    int maxRegIdx = minRegIdx + REGISTERS_NUM + 1;
+    while (i < length) {
+        idx = std::string::npos;
+        if (minRegIdx != -1 && i > minRegIdx && i < maxRegIdx) {
+            std::regex reg(keywords[i] + "[0-9a-fA-F]+");
+            std::smatch match;
+            if (std::regex_search(textStr, match, reg)) {
+                idx = match.position();
+            }
+            if (idx == std::string::npos && keywords[i].size() > SP_PREFIX_LEN &&
+                keywords[i].substr(0, SP_PREFIX_LEN) == "sp:") {
+                idx = textStr.find(keywords[i]);
+            }
+        } else {
+            idx = textStr.find(keywords[i]);
+        }
+        if (idx != std::string::npos) {
+            count++;
+        } else {
+            break;
+        }
+        i++;
+    }
+    std::cout << "Matched keywords count: " << count << std::endl;
+    if (i < length) {
+        std::cout << "Not found keyword: " << keywords[i] << std::endl;
+    }
+    return count;
+}
+#endif
+
+int CheckKeyWords(const std::string& filePath, const std::string *keywords, int length, int minRegIdx)
+{
+#ifndef is_ohos_lite
+    if (IsJsonFilePath(filePath)) {
+        return CheckKeyWordsJson(filePath, keywords, length, minRegIdx);
+    } else {
+        return CheckKeyWordsNormal(filePath, keywords, length, minRegIdx);
+    }
+#else
+    return CheckKeyWordsNormal(filePath, keywords, length, minRegIdx);
+#endif
+}
+
+bool IsJsonFilePath(const std::string& filePath)
+{
+    if (filePath.size() > JSON_EXTENSION_LEN &&
+        filePath.substr(filePath.size() - JSON_EXTENSION_LEN) == ".json") {
+        return true;
+    }
+    return false;
+}
+
 int CheckKeyWords(const std::string& filePath, std::vector<std::string>& keywords, int minRegIdx)
 {
     if (keywords.size() == 0) {
         return true;
     }
-    std::unique_ptr<std::string[]> keywordsArray(new std::string[keywords.size()]);
+    int length = keywords.size();
+    std::string keywordsArray[length];
 
-    for (size_t i = 0; i < keywords.size(); ++i) {
+    for (size_t i = 0; i < length; ++i) {
         keywordsArray[i] = keywords[i];
     }
 
-    int length = sizeof(keywordsArray) / sizeof(keywordsArray[0]);
-    return CheckKeyWords(filePath, keywordsArray.get(), length, minRegIdx);
+    return CheckKeyWords(filePath, keywordsArray, length, minRegIdx);
 }
 
 bool CheckLineMatch(const std::string& filePath, std::list<LineRule>& rules)

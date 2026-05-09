@@ -49,6 +49,7 @@
 #include "dfx_process.h"
 #include "dfx_regs.h"
 #include "key_thread_dump_info.h"
+#include "cppcrash_info_collector.h"
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
 #endif
@@ -154,7 +155,9 @@ DumpErrorCode ProcessDumper::DumpProcess()
     if (dumpRes != DumpErrorCode::DUMP_ESUCCESS) {
         return dumpRes;
     }
+    CppCrashInfoCollector::Instance().SetNeedFormatFlag(request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     PrintDumpInfo(dumpRes);
+    DfxBufferWriter::GetInstance().WriteFormatCrashInfo();
     UnwindWriteJit();
     DfxPtrace::Detach(process_->GetVmPid());
     return dumpRes;
@@ -262,7 +265,7 @@ void ProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
 
 void ProcessDumper::FormatJsonInfoIfNeed(const DumpErrorCode& resDump)
 {
-    if (!isJsonDump_ && request_.type != ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
+    if (!isJsonDump_) {
         return;
     }
     if (process_ == nullptr) {
@@ -283,9 +286,7 @@ void ProcessDumper::FormatJsonInfoIfNeed(const DumpErrorCode& resDump)
             break;
     }
     DumpInfoJsonFormatter::GetJsonFormatInfo(request_, *process_, jsonInfo, dumpError);
-    if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        process_->SetCrashInfoJson(jsonInfo);
-    } else if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+    if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         DfxBufferWriter::GetInstance().WriteMsg(jsonInfo);
     }
     DFXLOGI("Finish GetJsonFormatInfo len %{public}" PRIuPTR "", jsonInfo.length());

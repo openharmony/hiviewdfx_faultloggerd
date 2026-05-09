@@ -21,6 +21,7 @@
 #include "dfx_trace.h"
 #include "dfx_buffer_writer.h"
 #include "dfx_log.h"
+#include "cppcrash_info_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
@@ -52,6 +53,14 @@ void OpenFiles::Collect(DfxProcess& process, const ProcessDumpRequest& request, 
     CollectOpenFiles(openFies, process.GetProcessInfo().pid);
     FillFdsaninfo(openFies, process.GetProcessInfo().nsPid, request.fdTableAddr);
     openFilesStr_ = DumpOpenFiles(openFies);
+    std::string prefix = "OpenFiles:\n";
+    std::string openFilesSubStr;
+    if (openFilesStr_.size() >= prefix.size() && openFilesStr_.substr(0, prefix.size()) == prefix) {
+        openFilesSubStr = openFilesStr_.substr(prefix.size());
+    } else {
+        openFilesSubStr = openFilesStr_;
+    }
+    CppCrashInfoCollector::Instance().SetOpenFiles(openFilesSubStr);
     DFXLOGI("get open files info finish");
 }
 

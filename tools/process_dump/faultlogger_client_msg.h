@@ -28,7 +28,7 @@ struct FaultDFXLOGIInner {
     uint64_t time{0};
     uint32_t id{0};
     int32_t pid{-1};
-    int32_t pipeFd{-1};
+    int32_t fileFd{-1};
     int32_t faultLogType{0};
     uint32_t logFileCutoffSizeBytes{0};
     std::string module;

@@ -208,7 +208,7 @@ HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig006, TestSize.Level2)
 
         std::ifstream ifs(file);
         std::string fileContent((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-        EXPECT_TRUE(fileContent.find("Enable minidump log:true") != std::string::npos);
+        EXPECT_TRUE(fileContent.find("ENABLE_MINIDUMP_LOG") != std::string::npos);
         int status = 0;
         waitpid(pid, &status, 0);
     }

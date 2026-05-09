@@ -27,6 +27,7 @@
 #include "dump_utils.h"
 #include "process_dump_config.h"
 #include "thread_context.h"
+#include "cppcrash_info_collector.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -34,7 +35,7 @@ REGISTER_DUMP_INFO_CLASS(FaultStack);
 
 void FaultStack::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    faultStackStr_ = "FaultStack:\n";
+    std::string prefix = "FaultStack:\n";
     CollectStackInfo(process.GetKeyThread()->GetThreadInfo().nsTid, process.GetKeyThread()->GetFrames());
     if (blocks_.empty()) {
         return;
@@ -53,6 +54,8 @@ void FaultStack::Collect(DfxProcess& process, const ProcessDumpRequest& request,
         GetMemoryValues(memoryValues);
         process.SetMemoryValues(memoryValues);
     }
+    CppCrashInfoCollector::Instance().SetFaultStack(faultStackStr_ + "\n");
+    faultStackStr_ = prefix + faultStackStr_;
 }
 
 void FaultStack::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)

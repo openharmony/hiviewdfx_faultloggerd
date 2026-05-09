@@ -75,6 +75,7 @@ if (defined(ohos_lite)) {
     include_dirs = [
       "$faultloggerd_common_path/dfxutil",
       "$faultloggerd_common_path/cutil",
+      "$faultloggerd_common_path/cppcrash_formatter",
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_interfaces_path/innerkits/unwinder/include",
       "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",

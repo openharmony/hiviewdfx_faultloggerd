@@ -26,6 +26,7 @@
 #endif
 #include "dfx_util.h"
 #include "dfx_buffer_writer.h"
+#include "cppcrash_info_collector.h"
 namespace OHOS {
 namespace HiviewDFX {
 REGISTER_DUMP_INFO_CLASS(SubmitterStack);
@@ -40,6 +41,7 @@ void SubmitterStack::Collect(DfxProcess& process, const ProcessDumpRequest& requ
     }
     stackStr_ = "========SubmitterStacktrace========\n";
     stackStr_ += DumpUtils::GetStackTrace(submitterFrames);
+    CppCrashInfoCollector::Instance().SetSubmitterStacktrace(stackStr_);
 }
 
 void SubmitterStack::Print(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)

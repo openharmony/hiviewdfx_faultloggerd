@@ -26,7 +26,6 @@ namespace HiviewDFX {
 class DumpUtils {
 public:
     static bool ParseLockInfo(Unwinder& unwinder, int32_t vmPid, int32_t tid);
-    static bool IsLastValidFrame(const DfxFrame& frame);
     static void GetThreadKernelStack(DfxThread& thread, bool needParseSymbols = false);
     static std::string ReadStringByPtrace(pid_t tid, uintptr_t startAddr, size_t maxLen);
     static std::string GetStackTrace(const std::vector<DfxFrame>& frames);
