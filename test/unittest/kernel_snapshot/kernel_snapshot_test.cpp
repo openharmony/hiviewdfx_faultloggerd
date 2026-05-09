@@ -546,7 +546,7 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest042, TestSize.Level2)
     GTEST_LOG_(INFO) << "KernelSnapshotTest042: start.";
     KernelSnapshotPrinter printer;
     CrashMap output;
-    std::string filePath = "/data/log/faultlog/temp/cppcrash.txt";
+    std::string filePath = "/data/log/faultlog/temp/cppcrash-1.txt";
     printer.OutputToFile(filePath, output);
 
     auto ret = access(filePath.c_str(), F_OK);
