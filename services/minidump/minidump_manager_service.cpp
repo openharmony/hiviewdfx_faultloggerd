@@ -192,7 +192,7 @@ bool MinidumpManagerService::GenerateMinidump(int pipeFd, pid_t pid)
         return false;
     }
 
-    DFXLOGI("successfully transfered minidump data for pid=%{public}d", pid);
+    DFXLOGI("successfully transferred minidump data for pid=%{public}d", pid);
     return FinalizeMinidumpFile(tmpFilename);
 }
 

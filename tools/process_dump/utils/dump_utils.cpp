@@ -282,7 +282,7 @@ void DumpUtils::BlockCrashProcExit(const ProcessDumpRequest& request)
     DFXLOGI("start block crash process pid %{public}d nspid %{public}d", request.pid, request.nsPid);
     if (ptrace(PTRACE_POKEDATA, request.nsPid, reinterpret_cast<void*>(request.blockCrashExitAddr),
         CRASH_BLOCK_EXIT_FLAG) < 0) {
-        DFXLOGE("pok block falg to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
+        DFXLOGE("pok block flag to nsPid %{public}d fail %{public}s", request.nsPid, strerror(errno));
     }
 }
 

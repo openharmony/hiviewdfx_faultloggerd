@@ -47,8 +47,8 @@
 static const int NUMBER_ONE_THOUSAND = 1000;
 static const int NUMBER_ONE_MILLION = 1000000;
 
-static const int PTRACE_ATTATCH_KEY_THREAD_TIMEOUT = 1000;
-static const int PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT = 50;
+static const int PTRACE_ATTACH_KEY_THREAD_TIMEOUT = 1000;
+static const int PTRACE_ATTACH_OTHER_THREAD_TIMEOUT = 50;
 
 static const int INVALID_FD = -1;
 static const int DUMP_TYPE_REMOTE = -1;

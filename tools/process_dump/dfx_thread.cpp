@@ -155,4 +155,4 @@ void DfxThread::SetParseSymbolNecessity(bool needParseSymbol)
     needParseSymbol_ = needParseSymbol;
 }
 } // namespace HiviewDFX
-} // nampespace OHOS
+} // namespace OHOS

@@ -702,7 +702,7 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_005, TestSize.Level2)
 
     uint64_t startTime = timestamps[0] - 10;
     uint64_t endTime = timestamps[0] - 1;
-    // shoud return empty stack
+    // should return empty stack
     std::string emptyStack = stackPrinter->GetHeaviestStack(gettid(), startTime, endTime);
     ASSERT_EQ(emptyStack, "");
     std::string stack = stackPrinter->GetHeaviestStack(gettid());

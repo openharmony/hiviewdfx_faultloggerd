@@ -98,7 +98,7 @@ public:
      * @param printTimes whether to print the timestamps of the stack, default false.
      * @param beginTime the begin time of the time interval to filter the sampled stack, default 0.
      * @param endTime the end time of the time interval to filter sampled stack, default 0.
-     * @return the string of the sampled stack, formated in tree style.
+     * @return the string of the sampled stack, formatted in tree style.
      */
     std::string GetTreeStack(int tid, bool printTimes = false, uint64_t beginTime = 0, uint64_t endTime = 0);
 
@@ -119,7 +119,7 @@ public:
      * @param printTimes whether to print the timestamps of the stack, default false.
      * @param unwinder the unwinder to unwind stacks.
      * @param maps the maps of the process.
-     * @return the string of the sampled stack, formated in tree style.
+     * @return the string of the sampled stack, formatted in tree style.
      */
     static std::string PrintTreeStackBySampledStack(const std::vector<SampledFrame>& sampledFrameVec, bool printTimes,
                                                     const std::shared_ptr<Unwinder>& unwinder,

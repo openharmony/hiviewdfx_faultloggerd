@@ -151,7 +151,7 @@ void CppCrashReporter::ReportCppcrashNoLog(DfxProcess& process, const ProcessDum
     DFXLOGI("Crash info json size: %{public}zu", crashInfoSize);
     constexpr uint32_t jsonLimitSize = 2 * 1024 * 1024;
     if (crashInfoSize > jsonLimitSize) {
-        std::string summary = "crashjson: stack greate 2m, ";
+        std::string summary = "crashjson: stack greater 2m, ";
         summary += "real size is: " + std::to_string(crashInfoSize / 1024) + "kb, "; // 1024 : kb
         summary += "thread count: " + std::to_string(process.GetOtherThreads().size());
         HiSysEventParam params[] = {
