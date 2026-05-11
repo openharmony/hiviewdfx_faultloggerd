@@ -16,7 +16,6 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 cppcrash_formatter_sources = [
   "cppcrash_info_collector.cpp",
   "cppcrash_formatter.cpp",
-  "cppcrash_utils.cpp",
 ]
 
 if (defined(ohos_lite)) {

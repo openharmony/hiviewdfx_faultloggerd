@@ -32,6 +32,7 @@
 #include "unwinder.h"
 #include "cppcrash_info_collector.h"
 #include "cppcrash_formatter.h"
+#include "dfx_util.h"
 
 #ifdef LOG_DOMAIN
 #undef LOG_DOMAIN
@@ -69,51 +70,10 @@ static __attribute__((noinline)) void PrintLog(const char *format, ...)
     int size = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format, args);
     va_end(args);
     if (size == -1) {
-        DFXLOGI("PrintLog vsnprintf_s fail");
+        DFXLOGE("PrintLog vsnprintf_s fail");
         return;
     }
     DFXLOGE("%{public}s", buf);
-}
-
-static int WriteBuf(int32_t fd, const char* buf, const size_t len)
-{
-    if (buf == nullptr) {
-        return -1;
-    }
-    if (fd > 0) {
-        ssize_t writeSize = 0;
-        int savedErrno = 0;
-        constexpr size_t maxTryTimes = 1000;
-        constexpr int sleepIntervalUs = 1000;
-        size_t tryTimes = 0;
-        do {
-            writeSize = write(fd, buf, len);
-            savedErrno = errno;
-            if (++tryTimes >= maxTryTimes) {
-                DFXLOGW("Exceeding the maximum number of retries!");
-                break;
-            }
-            if (writeSize == -1 && savedErrno == EAGAIN) {
-                usleep(sleepIntervalUs);
-            }
-        } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
-        return writeSize;
-    }
-    return 0;
-}
-
-static void WriteCrashMsg(const int fd)
-{
-    std::string msg = OHOS::HiviewDFX::CppCrashFormatterFactory::Create().FormatCrashInfo();
-    constexpr size_t step = 1024 * 1024;
-    for (size_t i = 0; i < msg.size(); i += step) {
-        size_t length = (i + step) < msg.size() ? step : msg.size() - i;
-        int cnt = WriteBuf(fd, msg.substr(i, length).c_str(), length);
-        if (cnt <= 0) {
-            DFXLOGW("Write message failed.");
-            break;
-        }
-    }
 }
 
 static __attribute__((noinline)) void CrashLocalUnwind(const int fd,
@@ -216,7 +176,8 @@ void CrashLocalHandlerFd(const int fd, struct ProcessDumpRequest* request)
     PrintLog(reason.c_str());
     PrintLog("Fault thread info:\n");
     CrashLocalUnwind(fd, request, errMessage);
-    WriteCrashMsg(fd);
+    std::string msg = OHOS::HiviewDFX::CppCrashFormatterFactory::Create().FormatCrashInfo();
+    OHOS::HiviewDFX::WriteStringMsg(fd, msg);
     HiSysEventWrite(
         OHOS::HiviewDFX::HiSysEvent::Domain::RELIABILITY,
         "CPP_CRASH_EXCEPTION",

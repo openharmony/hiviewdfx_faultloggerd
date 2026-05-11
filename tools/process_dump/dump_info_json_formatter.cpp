@@ -18,7 +18,6 @@
 #include <cinttypes>
 #include <string>
 
-#include "cppcrash_utils.h"
 #include "dfx_define.h"
 
 #include "dfx_log.h"
@@ -102,7 +101,7 @@ bool DumpInfoJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames, 
         } else {
             FillNativeFrameJson(frame, jsonInfo);
 #if defined(__aarch64__)
-            if (CppCrashUtils::IsLastValidFrame(frame)) {
+            if (DumpUtils::IsLastValidFrame(frame)) {
                 break;
             }
 #endif
