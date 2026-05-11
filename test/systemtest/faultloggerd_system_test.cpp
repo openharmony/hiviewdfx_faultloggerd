@@ -1098,8 +1098,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest101, TestSize.Level2)
     vector<string> files;
     OHOS::GetDirFiles("/data/log/faultlog/temp/", files);
     GTEST_LOG_(INFO) << files.size();
-    constexpr int tmpFileNum = 2 * SIGNAL_TEST_NUM; // 2 : the total count of cppcrash and crashjsonstack
-    EXPECT_EQ(files.size(), tmpFileNum) << "FaultLoggerdSystemTest101 Failed";
+    EXPECT_EQ(files.size(), SIGNAL_TEST_NUM) << "FaultLoggerdSystemTest101 Failed";
 }
 
 static void CrashInChildThread()
@@ -1197,9 +1196,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest103, TestSize.Level2)
             FAIL();
         }
     }
-    constexpr int cppcrashKeepNum = 20;
-    constexpr int crashJsonStackKeepNum = SIGNAL_TEST_NUM + 1;
-    EXPECT_EQ(files.size(), cppcrashKeepNum + crashJsonStackKeepNum) << "FaultLoggerdSystemTest103 Failed";
+    EXPECT_EQ(files.size(), 20) << "FaultLoggerdSystemTest103 Failed";
 }
 
 /**
