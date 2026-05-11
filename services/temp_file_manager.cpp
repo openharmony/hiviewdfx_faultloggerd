@@ -347,12 +347,13 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
     std::string ss = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/" +
         fileConfig->fileNamePrefix + "-" + std::to_string(pid);
     if (type == FaultLoggerType::JS_HEAP_SNAPSHOT || type == FaultLoggerType::JS_RAW_SNAPSHOT ||
-        type == FaultLoggerType::JSVM_HEAP_SNAPSHOT) {
+        type == FaultLoggerType::JSVM_HEAP_SNAPSHOT || type == FaultLoggerType::ARKWEB_JS_HEAP_SNAPSHOT ||
+        type == FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT) {
         ss += "-" + std::to_string(tid);
     }
     ss += "-" + std::to_string(time == 0 ? std::chrono::duration_cast<std::chrono::milliseconds>\
 (std::chrono::system_clock::now().time_since_epoch()).count() : time);
-    if (type == FaultLoggerType::JS_RAW_SNAPSHOT) {
+    if (type == FaultLoggerType::JS_RAW_SNAPSHOT || type == FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT) {
         ss += ".rawheap";
     } else if (type == FaultLoggerType::CPP_CRASH) {
 #ifndef is_ohos_lite
