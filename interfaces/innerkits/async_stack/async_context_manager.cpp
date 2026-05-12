@@ -34,26 +34,6 @@ DfxAsyncContextPool* DfxAsyncContextPool::Instance()
     return &pool;
 }
 
-void PrintStackWithStackId(uint64_t type, uint64_t stackId)
-{
-    std::vector<uintptr_t> pcs;
-    StackId id;
-    id.value = stackId;
-    if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->GetPcsByStackId(id, pcs)) {
-        DFXLOGD("failed to get pcs by stackId");
-        return;
-    }
-
-    std::vector<DfxFrame> submitterFrames;
-    Unwinder unwinder;
-    std::string stackTrace;
-    unwinder.GetFramesByPcs(submitterFrames, pcs);
-    for (const auto& frame : submitterFrames) {
-        std::string framestr = DfxFrameFormatter::GetFrameStr(frame);
-        DFXLOGD("frame:%{public}s", framestr.c_str());
-    }
-}
-
 bool DfxAsyncContextPool::Init()
 {
     if (initialized_.load()) {
@@ -235,30 +215,6 @@ DfxAsyncContext* DfxAsyncContextManager::GetCurrentContext()
     }
     int index = threadCtx->curAsyncContextsCnt - 1;
     return threadCtx->contexts[index];
-}
-
-void DfxAsyncContextManager::PrintChainStack()
-{
-    static int i = 0;
-    if (i % PRINT_CHAIN_INTERVAL != 0) {
-        i++;
-        return;
-    }
-    i++;
-    auto ctx = GetCurrentContext();
-    if (ctx == nullptr) {
-        DFXLOGW("PrintChainStack ctx is nullptr");
-        return;
-    }
-    for (int j = 0; j < DEFAULT_MAX_ASYNC_CHAIN_LAYERS; j++) {
-        if (ctx->ctxs[j].id == 0) {
-            break;
-        }
-        DFXLOGD("PrintChainStack: layer %{public}d type %{public}llu, stackId %{public}llu",
-            j, static_cast<unsigned long long>(ctx->ctxs[j].type),
-            static_cast<unsigned long long>(ctx->ctxs[j].id));
-        PrintStackWithStackId(ctx->ctxs[j].type, ctx->ctxs[j].id);
-    }
 }
 
 void DfxAsyncContextManager::ClearThreadContext(DfxThreadAsyncContext* threadCtx)
