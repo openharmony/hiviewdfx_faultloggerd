@@ -186,7 +186,8 @@ void ReportToAbilityManagerService(const DfxProcess& process, const ProcessDumpR
         return;
     }
 
-    RecordAppWithReason recordAppWithReason = (RecordAppWithReason)dlsym(handle.get(), "RecordAppWithReason");
+    RecordAppWithReason recordAppWithReason = reinterpret_cast<RecordAppWithReason>(dlsym(handle.get(),
+        "RecordAppWithReason"));
     if (recordAppWithReason == nullptr) {
         DFXLOGW("Failed to dlsym RecordAppWithReason, %{public}s\n", dlerror());
         return;
