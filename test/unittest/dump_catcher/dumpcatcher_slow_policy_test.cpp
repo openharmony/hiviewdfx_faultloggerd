@@ -40,63 +40,44 @@ class DfxDumpCatcherSlowPolicyTest : public testing::Test {};
 HWTEST_F(DfxDumpCatcherSlowPolicyTest, DfxDumpCatcherSlowPolicyTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest001: start.";
-    const int pid = 12345;
-    const int waitSec = 5; // 5 : 5s for slow period
-    DfxDumpCatcherSlowPolicy::GetInstance().SetDumpCatcherSlowStat(pid);
-    sleep(1); // 1 : 1s
-    ASSERT_TRUE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(pid));
-    sleep(waitSec);
-    ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(pid));
-    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest001: end.";
-}
-
-/**
- * @tc.name: DfxDumpCatcherSlowPolicyTest002
- * @tc.desc: test DfxDumpCatcherSlowPolicy Set And Get diff Pid
- * @tc.type: FUNC
- */
-HWTEST_F(DfxDumpCatcherSlowPolicyTest, DfxDumpCatcherSlowPolicyTest002, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest002: start.";
-    const int pid = 12345;
     const int otherPid = 54321;
-    const int waitSec = 5; // 5 : 5s for slow period
-    DfxDumpCatcherSlowPolicy::GetInstance().SetDumpCatcherSlowStat(pid);
-    sleep(1); // 1 : 1s
-    ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(otherPid));
-    sleep(waitSec);
-    ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(pid));
-    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest002: end.";
-}
-
-/**
- * @tc.name: DfxDumpCatcherSlowPolicyTest003
- * @tc.desc: test DfxDumpCatcherSlowPolicy Set And Get muti Pid
- * @tc.type: FUNC
- */
-HWTEST_F(DfxDumpCatcherSlowPolicyTest, DfxDumpCatcherSlowPolicyTest003, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest003: start.";
     const int waitSec = 5; // 5 : 5s for slow period
     const int pidNum = 50; // 50 : save 50 record
 
     for (int pid = 0; pid < pidNum; pid++) {
         DfxDumpCatcherSlowPolicy::GetInstance().SetDumpCatcherSlowStat(pid);
-        usleep(100000); // 100000 : 100ms
+        usleep(10000); // 10000 : 10ms
         ASSERT_TRUE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(pid));
     }
-
+    ASSERT_TRUE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(0));
+    ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(otherPid));
     sleep(waitSec);
+    ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(0));
+    ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(otherPid));
+    DfxDumpCatcherSlowPolicy::GetInstance().SetDumpCatcherSlowStat(otherPid);
+    usleep(100000); // 100000 : 100ms
     for (int pid = 0; pid < pidNum; pid++) {
         ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(pid));
     }
+    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest001: end.";
+}
+
+/**
+ * @tc.name: DfxDumpCatcherSlowPolicyTest002
+ * @tc.desc: test DfxDumpCatcherSlowPolicy Set And Get muti Pid
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxDumpCatcherSlowPolicyTest, DfxDumpCatcherSlowPolicyTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest002: start.";
+    const int pidNum = 50; // 50 : save 50 record
 
     for (int pid = 0; pid < pidNum + 1; pid++) {
         DfxDumpCatcherSlowPolicy::GetInstance().SetDumpCatcherSlowStat(pid);
         usleep(1000); // 1000 : 1ms
     }
     ASSERT_FALSE(DfxDumpCatcherSlowPolicy::GetInstance().IsDumpCatcherInSlowPeriod(1));
-    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest003: end.";
+    GTEST_LOG_(INFO) << "DfxDumpCatcherSlowPolicyTest002: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

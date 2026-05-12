@@ -201,7 +201,7 @@ HWTEST_F(MapsTest, MapsTest001, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(1); // 1 : sleep 1 seconds
         exit(0);
     }
     DfxProcess process;
