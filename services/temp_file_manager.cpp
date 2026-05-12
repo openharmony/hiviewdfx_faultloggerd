@@ -371,6 +371,11 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
         } else {
             DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d)", TEMP_FILE_MANAGER_TAG, openErrno);
         }
+    } else if (fileConfig->fileOwnerUid >= 0) {
+        if (chown(ss.c_str(), fileConfig->fileOwnerUid, -1) != 0) {
+            DFXLOGE("%{public}s :: Failed to chown file %{public}s to uid %{public}d, errno(%{public}d)",
+                TEMP_FILE_MANAGER_TAG, ss.c_str(), fileConfig->fileOwnerUid, errno);
+        }
     }
     return fd;
 }

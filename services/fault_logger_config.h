@@ -42,6 +42,7 @@ struct SingleFileConfig {
     OverTimeFileDeleteType overTimeFileDeleteType;
     int32_t keepFileCount;
     int32_t maxFileCount;
+    int32_t fileOwnerUid;
 };
 
 struct DirectoryConfig {
