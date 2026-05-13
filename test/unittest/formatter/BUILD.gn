@@ -34,6 +34,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/formatter/include",
       "$faultloggerd_interfaces_path/innerkits/backtrace/include",
       "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_path/test/utils",
     ]
 
     deps = [
@@ -41,6 +42,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "$faultloggerd_path/common/dfxutil:dfx_util",
+      "$faultloggerd_path/test/utils:dfx_test_util",
     ]
 
     external_deps = [

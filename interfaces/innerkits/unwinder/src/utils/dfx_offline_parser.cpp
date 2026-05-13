@@ -98,6 +98,9 @@ bool DfxOfflineParser::ParseNativeSymbol(DfxFrame& frame)
     if (elf == nullptr) {
         return false;
     }
+    if (elf->IsAdlt()) {
+        frame.originSoName = elf->GetAdltOriginSoNameByRelPc(frame.relPc);
+    }
     if (!DfxSymbols::GetFuncNameAndOffsetByPc(frame.relPc, elf, frame.funcName, frame.funcOffset)) {
         DFXLOGU("Failed to get symbol, relPc: %{public}" PRIx64 ", mapName: %{public}s",
             frame.relPc, frame.mapName.c_str());

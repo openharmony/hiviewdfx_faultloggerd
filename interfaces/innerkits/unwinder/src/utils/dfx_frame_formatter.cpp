@@ -59,6 +59,9 @@ std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
 #endif
         if (!frame.mapName.empty()) {
             data += " " + DfxMap::UnFormatMapName(frame.mapName);
+            if (!frame.originSoName.empty()) {
+                data += ":" + frame.originSoName;
+            }
         } else {
             data += " [Unknown]";
         }

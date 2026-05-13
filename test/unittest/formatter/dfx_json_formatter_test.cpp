@@ -15,6 +15,11 @@
 
 #include <gtest/gtest.h>
 #include "dfx_json_formatter.h"
+#include <filesystem>
+#include <fstream>
+#include <sstream>
+#include <vector>
+#include "dfx_test_util.h"
 
 using namespace testing::ext;
 using namespace OHOS::HiviewDFX;
@@ -251,6 +256,48 @@ HWTEST_F(DfxJsonFormatterTest, FormatKernelStackJsonWithJsStack, TestSize.Level1
     EXPECT_TRUE(formattedStack.find("\"column\":456") != std::string::npos);
     EXPECT_TRUE(formattedStack.find("\"symbol\":\"symbol1\"") != std::string::npos);
     EXPECT_TRUE(formattedStack.find("\"packageName\":\"packageName\"") != std::string::npos);
+}
+
+/**
+ * @tc.name: FormatKernelStackMainThreadWithAdltFile
+ * @tc.desc: test kernel stack with main thread with adlt file
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxJsonFormatterTest, FormatKernelStackMainThreadWithAdltFile, TestSize.Level1)
+{
+    std::string getPidCMD = "pidof perfgenius_host";
+    std::string pid = ExecuteCommands(getPidCMD);
+    EXPECT_TRUE(!pid.empty());
+    pid = pid.substr(0, pid.find_last_not_of(" \t\n\r\f\v") + 1);
+    std::string taskDir = "/proc/" + pid + "/task";
+    GTEST_LOG_(INFO) << "Task Dir: " << taskDir;
+    EXPECT_TRUE(std::filesystem::exists(taskDir));
+    // lookup /proc/<pid>/task dir
+    for (const auto& entry : std::filesystem::directory_iterator(taskDir)) {
+        if (!entry.is_directory()) continue;
+        // get tid
+        std::string tid = entry.path().filename().string();
+        std::string stackPath = taskDir + "/" + tid + "/stack";
+        // get stack
+        std::ifstream file(stackPath);
+        if (file.is_open()) {
+            std::string threadInfo = "=== Stack from tid: " + tid + " ===\n";
+            std::string line;
+            while (std::getline(file, line)) {
+                threadInfo += line + "\n";
+            }
+            std::string fallbackStack = std::string(MOCK_USER_STACK);
+            std::string formattedStack;
+            bool ret = DfxJsonFormatter::FormatKernelStack(threadInfo, formattedStack, false, true,
+                "com.test.hap", fallbackStack);
+            EXPECT_TRUE(ret);
+            GTEST_LOG_(INFO) << "Formatted Stack for Thread Info:\n" << formattedStack;
+            if (threadInfo.find("libadlt_app.so") != std::string::npos) {
+                EXPECT_TRUE(formattedStack.find("libadlt_app.so:") != std::string::npos ||
+                    formattedStack.find("libadlt_app.so(.plt") != std::string::npos);
+            }
+        }
+    }
 }
 #endif
 } // namespace HiviewDFX
