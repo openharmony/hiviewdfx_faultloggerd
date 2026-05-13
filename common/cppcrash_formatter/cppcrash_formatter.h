@@ -56,6 +56,7 @@ private:
     cJSON* FillNativeFrameJson(const DfxFrame& frame);
     cJSON* FillJsFrameJson(const DfxFrame& frame);
     std::string FormatPc(uint64_t relPc);
+    static bool IsLastValidFrame(const DfxFrame& frame);
 };
 #else
 class CppCrashTextFormatter : public ICrashFormatter {

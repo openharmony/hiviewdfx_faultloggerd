@@ -27,7 +27,6 @@
 #include "dfx_dump_res.h"
 #include "dfx_exception.h"
 #include "dfx_trace.h"
-#include "dfx_util.h"
 #include "dfx_cutil.h"
 #include "directory_ex.h"
 #include "faultloggerd_client.h"
@@ -61,18 +60,13 @@ void DfxBufferWriter::WriteFormatCrashInfo()
 void DfxBufferWriter::WriteToBuffer(const std::string& msg)
 {
     if (writeFunc_ == nullptr) {
-        writeFunc_ = DfxBufferWriter::DefaultWrite;
+        writeFunc_ = WriteBuf;
     }
-    constexpr size_t step = 1024 * 1024;
-    for (size_t i = 0; i < msg.size(); i += step) {
-        size_t length = (i + step) < msg.size() ? step : msg.size() - i;
-        int cnt = writeFunc_(bufFd_.GetFd(), msg.substr(i, length).c_str(), length);
-        if (cnt > 0) {
-            currentDataLen_ += static_cast<uint32_t>(cnt);
-        } else {
-            DFXLOGW("Write message failed.");
-            break;
-        }
+    int cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
+    if (static_cast<size_t>(cnt) == msg.size()) {
+        currentDataLen_ += static_cast<uint32_t>(cnt);
+    } else {
+        DFXLOGW("Write message failed.");
     }
 }
 
@@ -168,32 +162,6 @@ void DfxBufferWriter::SetWriteBufFd(SmartFd fd)
 void DfxBufferWriter::SetWriteFunc(BufferWriteFunc func)
 {
     writeFunc_ = func;
-}
-
-int DfxBufferWriter::DefaultWrite(int32_t fd, const char *buf, const size_t len)
-{
-    if (buf == nullptr) {
-        return -1;
-    }
-    if (fd > 0) {
-        ssize_t writeSize = 0;
-        int savedErrno = 0;
-        constexpr size_t maxTryTimes = 1000;
-        size_t tryTimes = 0;
-        do {
-            writeSize = write(fd, buf, len);
-            savedErrno = errno;
-            if (++tryTimes >= maxTryTimes) {
-                DFXLOGW("Exceeding the maximum number of retries!");
-                break;
-            }
-            if (writeSize == -1 && savedErrno == EAGAIN) {
-                usleep(1000); // 1000 : sleep 1ms try again
-            }
-        } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
-        return writeSize;
-    }
-    return 0;
 }
 
 int DfxBufferWriter::GetFaultloggerdRequestType()

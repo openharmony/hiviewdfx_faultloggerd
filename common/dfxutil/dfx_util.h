@@ -28,6 +28,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+
+typedef int (*BufferWriteFunc) (int32_t fd, const char *buf, const size_t len);
+
 #ifndef is_host
 AT_SYMBOL_HIDDEN bool TrimAndDupStr(const std::string &source, std::string &str);
 AT_SYMBOL_HIDDEN bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str);
@@ -45,6 +48,8 @@ AT_SYMBOL_HIDDEN off_t GetFileSize(int fd);
 AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
 AT_SYMBOL_HIDDEN uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
 AT_SYMBOL_HIDDEN bool SafeStrtolCpp(const std::string& numStr, long& out, int base);
+AT_SYMBOL_HIDDEN int WriteBuf(int fd, const char* buf, size_t len);
+AT_SYMBOL_HIDDEN int WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc = WriteBuf);
 #if is_ohos && !is_mingw
 AT_SYMBOL_HIDDEN size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif

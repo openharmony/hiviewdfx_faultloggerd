@@ -17,7 +17,7 @@
 
 #ifndef is_ohos_lite
 #include "cJSON.h"
-#include "cppcrash_utils.h"
+#include "dfx_util.h"
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "string_printf.h"
@@ -274,7 +274,7 @@ cJSON* CppCrashJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames
             cJSON_AddItemToArray(framesArray, frameJson);
         }
 #if defined(__aarch64__)
-        if (!frame.isJsFrame && CppCrashUtils::IsLastValidFrame(frame)) {
+        if (!frame.isJsFrame && IsLastValidFrame(frame)) {
             break;
         }
 #endif
@@ -355,6 +355,29 @@ std::string CppCrashJsonFormatter::FormatPc(uint64_t relPc)
 #else
     return StringPrintf("%08llx", relPc);
 #endif
+}
+
+bool CppCrashJsonFormatter::IsLastValidFrame(const DfxFrame& frame)
+{
+    static uintptr_t libcStartPc = 0;
+    static uintptr_t libffrtStartEntry = 0;
+    if (((libcStartPc != 0) && (frame.pc == libcStartPc)) ||
+        ((libffrtStartEntry != 0) && (frame.pc == libffrtStartEntry))) {
+        return true;
+    }
+
+    if (frame.mapName.find("ld-musl-aarch64.so.1") != std::string::npos &&
+        frame.funcName.find("start") != std::string::npos) {
+        libcStartPc = frame.pc;
+        return true;
+    }
+
+    if (frame.mapName.find("libffrt") != std::string::npos &&
+        frame.funcName.find("CoStartEntry") != std::string::npos) {
+        libffrtStartEntry = frame.pc;
+        return true;
+    }
+    return false;
 }
 #else
 std::string CppCrashTextFormatter::FormatCrashInfo()

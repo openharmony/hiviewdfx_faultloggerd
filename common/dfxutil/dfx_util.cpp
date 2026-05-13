@@ -267,6 +267,68 @@ bool SafeStrtolCpp(const std::string& numStr, long& out, int base)
     return true;
 }
 
+int WriteBuf(int fd, const char* buf, size_t len)
+{
+    if (buf == nullptr || fd < 0) {
+        return -1;
+    }
+    ssize_t totalWritten = 0;
+    int savedErrno;
+    size_t tryTimes = 0;
+    constexpr size_t maxTryTimes = 1000;
+    constexpr int sleepIntervalUs = 1000;
+    while (totalWritten < static_cast<ssize_t>(len)) {
+        ssize_t writeSize = write(fd, buf + totalWritten, len - totalWritten);
+        if (writeSize == -1) {
+            savedErrno = errno;
+            if (++tryTimes >= maxTryTimes) {
+                DFXLOGW("Exceeding the maximum number of retries! Written %zd/%zu bytes",
+                    totalWritten, len);
+                break;
+            }
+            if (savedErrno == EINTR) {
+                continue;
+            } else if (savedErrno == EAGAIN || savedErrno == EWOULDBLOCK) {
+                usleep(sleepIntervalUs);
+                continue;
+            } else {
+                DFXLOGE("write() failed with errno=%d, written %zd/%zu bytes",
+                        savedErrno, totalWritten, len);
+                break;
+            }
+        }
+        if (writeSize > 0) {
+            totalWritten += writeSize;
+        } else {
+            DFXLOGW("write() returned 0, unexpected behavior");
+            break;
+        }
+    }
+    return totalWritten;
+}
+
+int WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc)
+{
+    constexpr size_t step = 1024 * 1024;
+    size_t totalWritten = 0;
+    for (size_t i = 0; i < msg.size(); i += step) {
+        size_t length = (i + step) < msg.size() ? step : msg.size() - i;
+        int cnt = writeFunc(fd, msg.substr(i, length).c_str(), length);
+        if (cnt < 0) {
+            DFXLOGE("WriteBuf failed with error, chunk %zu", i / step);
+            break;
+        }
+        if (static_cast<size_t>(cnt) != length) {
+            DFXLOGE("WriteBuf incomplete: expected %zu, got %d, chunk %zu",
+                    length, cnt, i / step);
+            totalWritten += static_cast<size_t>(cnt);
+            break;
+        }
+        totalWritten += static_cast<size_t>(cnt);
+    }
+    return totalWritten;
+}
+
 #if is_ohos && !is_mingw
 size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size)
 {

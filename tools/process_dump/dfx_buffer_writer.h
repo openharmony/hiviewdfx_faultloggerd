@@ -25,11 +25,10 @@
 #include "nocopyable.h"
 #include "smart_fd.h"
 #include "dfx_dump_request.h"
+#include "dfx_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
-
-typedef int (*BufferWriteFunc) (int32_t fd, const char *buf, const size_t len);
 
 class DfxBufferWriter final {
 public:
@@ -56,7 +55,6 @@ public:
     int32_t CreateFileForCrash(int32_t pid, uint64_t time) const;
     void RemoveFileIfNeed(const std::string& dirPath) const;
     int GetBufFd() const;
-    static int DefaultWrite(int32_t fd, const char *buf, const size_t len);
 private:
     bool WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen);
     void WriteToBuffer(const std::string& msg);
