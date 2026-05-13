@@ -150,7 +150,7 @@ HWTEST_F(UnwinderTest, UnwinderLocalTest002, TestSize.Level2)
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
         GTEST_LOG_(INFO) << "UnwinderLocalTest002: frames:\n" << Unwinder::GetFramesStr(frames);
         unwinders_[pid] = unwinder;
-        usleep(1000); // 1000 : 1ms
+        sleep(1);
     };
     GTEST_LOG_(INFO) << "UnwinderLocalTest002: end.";
 }
@@ -247,7 +247,7 @@ HWTEST_F(UnwinderTest, UnwinderRemoteTest002, TestSize.Level2)
         GTEST_LOG_(INFO) << "Elapsed-: " << elapsed1 << "\tElapsed+: " << elapsed2;
         GTEST_LOG_(INFO) << "UnwinderRemoteTest002: frames:\n" << Unwinder::GetFramesStr(frames);
         unwinders_[child] = unwinder;
-        usleep(1000); // 1000 : 1ms
+        sleep(1);
     }
     DfxPtrace::Detach(child);
     GTEST_LOG_(INFO) << "UnwinderRemoteTest002: end.";
