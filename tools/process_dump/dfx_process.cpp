@@ -46,12 +46,12 @@ void DfxProcess::InitProcessInfo(pid_t pid, pid_t nsPid, uid_t uid, const std::s
     processInfo_.processName = processName;
 }
 
-bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request, bool isAttatch)
+bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request, bool isAttach)
 {
     pid_t nsTid = request.tid;
     pid_t tid = ChangeTid(nsTid, true);
     keyThread_ = DfxThread::Create(processInfo_.pid, tid, nsTid, request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
-    if (isAttatch && !keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT)) {
+    if (isAttach && !keyThread_->Attach(PTRACE_ATTACH_KEY_THREAD_TIMEOUT)) {
         DFXLOGE("Failed to attach key thread(%{public}d).", nsTid);
         ReportCrashException(CrashExceptionCode::CRASH_DUMP_EATTACH);
         if (request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
@@ -69,7 +69,7 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request, bool isAttatch
         if (dumpCatchTargetTid != tid) {
             otherThreads_.emplace_back(keyThread_);
             keyThread_ = DfxThread::Create(processInfo_.pid, dumpCatchTargetTid, dumpCatchTargetTid, true);
-            if (keyThread_ != nullptr && keyThread_->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
+            if (keyThread_ != nullptr && keyThread_->Attach(PTRACE_ATTACH_OTHER_THREAD_TIMEOUT)) {
                 keyThread_->SetThreadRegs(DfxRegs::CreateRemoteRegs(dumpCatchTargetTid));
             }
         }
@@ -95,7 +95,7 @@ bool DfxProcess::InitOtherThreads(const ProcessDumpRequest& request)
         }
         auto thread = DfxThread::Create(processInfo_.pid, tids[i], nstids[i],
             request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
-        if (thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT)) {
+        if (thread->Attach(PTRACE_ATTACH_OTHER_THREAD_TIMEOUT)) {
             thread->SetThreadRegs(DfxRegs::CreateRemoteRegs(thread->GetThreadInfo().nsTid));
         }
         otherThreads_.push_back(thread);
@@ -144,7 +144,7 @@ void DfxProcess::ClearOtherThreads()
 void DfxProcess::Attach(bool hasKey)
 {
     if (hasKey && keyThread_) {
-        keyThread_->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
+        keyThread_->Attach(PTRACE_ATTACH_KEY_THREAD_TIMEOUT);
     }
 
     if (otherThreads_.empty()) {
@@ -152,10 +152,10 @@ void DfxProcess::Attach(bool hasKey)
     }
     for (auto& thread : otherThreads_) {
         if (thread->GetThreadInfo().nsTid == processInfo_.nsPid) {
-            thread->Attach(PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
+            thread->Attach(PTRACE_ATTACH_KEY_THREAD_TIMEOUT);
             continue;
         }
-        thread->Attach(PTRACE_ATTATCH_OTHER_THREAD_TIMEOUT);
+        thread->Attach(PTRACE_ATTACH_OTHER_THREAD_TIMEOUT);
     }
 }
 

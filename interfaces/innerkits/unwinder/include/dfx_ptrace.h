@@ -24,7 +24,7 @@ namespace HiviewDFX {
 class DfxPtrace {
 public:
     static void Detach(pid_t tid);
-    static bool Attach(pid_t tid, int timeout = PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
+    static bool Attach(pid_t tid, int timeout = PTRACE_ATTACH_KEY_THREAD_TIMEOUT);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

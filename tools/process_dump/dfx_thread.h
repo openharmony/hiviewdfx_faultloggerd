@@ -61,7 +61,7 @@ public:
     }
 
     void Detach();
-    bool Attach(int timeout = PTRACE_ATTATCH_KEY_THREAD_TIMEOUT);
+    bool Attach(int timeout = PTRACE_ATTACH_KEY_THREAD_TIMEOUT);
     void SetParseSymbolNecessity(bool needParseSymbol);
     const std::shared_ptr<ProcessInfo> GetProcessInfo() const
     {

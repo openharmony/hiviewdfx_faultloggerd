@@ -448,7 +448,7 @@ bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length)
             }
             if (writeSize == -1 && savedErrno == EAGAIN) {
                 ++tryTimes;
-                usleep(1000); // 1000 : sleep 1ms try agin
+                usleep(1000); // 1000 : sleep 1ms try again
             }
         } while (writeSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
     }

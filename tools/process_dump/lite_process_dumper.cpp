@@ -212,7 +212,7 @@ bool LiteProcessDumper::LoopReadPipe(int pipeReadFd, void* buf, size_t length)
             }
             if (readSize == -1 && savedErrno == EAGAIN) {
                 ++tryTimes;
-                usleep(1000); // 1000 : sleep 1ms try agin
+                usleep(1000); // 1000 : sleep 1ms try again
             }
         } while (readSize == -1 && (savedErrno == EINTR || savedErrno == EAGAIN));
     }
@@ -298,7 +298,7 @@ bool LiteProcessDumper::ReadContent(int pipeReadFd)
                 DFXLOGW("read pipe data time out");
                 break;
             }
-            usleep(1000); // 1000 : sleep 1ms try agin
+            usleep(1000); // 1000 : sleep 1ms try again
         }
         if (n > 0) {
             rawData_.append(data.data(), static_cast<size_t>(n));
@@ -333,7 +333,7 @@ bool LiteProcessDumper::ReadPipeData(int pid)
 void LiteProcessDumper::Unwind()
 {
     if (dfxMaps_ == nullptr || stackBuf_.empty()) {
-        DFXLOGE("dfxMaps or stackBuf is empyt");
+        DFXLOGE("dfxMaps or stackBuf is empty");
         return;
     }
     auto& instance = LocalThreadContextMix::GetInstance();
@@ -612,7 +612,7 @@ void LiteProcessDumper::CollectOpenFiles()
     std::string line;
     while (std::getline(iss, line)) {
         if (line == "end trans openfiles") {
-            DFXLOGI("find open file start, end prase_maps");
+            DFXLOGI("find open file start, end parse_maps");
             std::string rest;
             rest.assign(std::istreambuf_iterator<char>(iss),
                         std::istreambuf_iterator<char>());
