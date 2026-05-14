@@ -1331,5 +1331,25 @@ HWTEST_F(SignalHandlerTest, SignalHandlerRlimitTest001, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "SignalHandlerRlimitTest001: end.";
 }
+
+/**
+ * @tc.name: GenerateRandomUint64Test001
+ * @tc.desc: test GenerateRandomUint64 can generate random number successfully
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, GenerateRandomUint64Test001, TestSize.Level0)
+{
+    GTEST_LOG_(INFO) << "GenerateRandomUint64Test001: start.";
+    uint64_t randomId1 = GenerateRandomUint64();
+    GTEST_LOG_(INFO) << "randomId1: " << randomId1;
+    EXPECT_NE(randomId1, 0);
+
+    uint64_t randomId2 = GenerateRandomUint64();
+    GTEST_LOG_(INFO) << "randomId2: " << randomId2;
+    EXPECT_NE(randomId2, 0);
+
+    EXPECT_NE(randomId1, randomId2);
+    GTEST_LOG_(INFO) << "GenerateRandomUint64Test001: end.";
+}
 } // namespace HiviewDFX
 } // namepsace OHOS

@@ -484,7 +484,12 @@ static void DFX_InstallSignalHandler(void)
         g_crashObjInit = true;
     }
 
-    uint64_t runingId = GetAbsTimeMilliSecondsCInterce();
+    uint64_t runingId = GenerateRandomUint64();
+    if (runingId == 0) {
+        DFXLOGE("DFX_InstallSignalHandler :: GenerateRandomUint64 failed");
+        return;
+    }
+
     int ret = snprintf_s(g_appRunningUniqueId, sizeof(g_appRunningUniqueId), sizeof(g_appRunningUniqueId) - 1,
                          "%" PRIu64, runingId);
     if (ret < 0) {
