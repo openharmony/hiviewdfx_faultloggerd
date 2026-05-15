@@ -127,8 +127,6 @@ DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode);
 int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz);
 
 void ReleaseAsyncContext(uint64_t stackId);
-
-void DfxPrintChainedStackTrace();
 #ifdef __cplusplus
 }
 #endif

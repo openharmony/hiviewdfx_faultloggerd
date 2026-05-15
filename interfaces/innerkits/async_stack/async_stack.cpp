@@ -238,13 +238,6 @@ extern "C" void ReleaseAsyncContext(uint64_t stackId)
     DfxAsyncContextManager::Instance()->RecycleAsyncContext(reinterpret_cast<DfxAsyncContext*>(stackId));
 }
 
-extern "C" void DfxPrintChainedStackTrace(void)
-{
-    if (g_mode == MODE_CHAINED_STACKTRACE) {
-        DfxAsyncContextManager::Instance()->PrintChainStack();
-    }
-}
-
 static inline uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
 {
     size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, depth);

@@ -85,7 +85,6 @@ public:
 
     bool RecycleAsyncContext(DfxAsyncContext* ctx);
     bool IsValidAsyncContext(DfxAsyncContext* ctx);
-    void PrintChainStack();
 private:
     DfxAsyncContextManager() = default;
     ~DfxAsyncContextManager() = default;
