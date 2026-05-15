@@ -45,8 +45,9 @@ static pthread_key_t g_stackidKey;
 static std::unique_ptr<OHOS::HiviewDFX::FpBacktrace> g_fpBacktrace = nullptr;
 using SetStackIdFn = void(*)(uint64_t stackId);
 using CollectAsyncStackFn = uint64_t(*)(uint64_t type);
+using ReleaseContextFn = void(*)(uint64_t stackId);
 using GenericSetAsyncStackFn = void(*)(CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn);
-using GenericSetReleaseAsyncStackFn = void(*)(SetStackIdFn setStackIdFn);
+using GenericSetReleaseAsyncStackFn = void(*)(ReleaseContextFn releaseFn);
 
 typedef uint64_t(*GetStackIdFunc)(void);
 extern "C" void DFX_SetAsyncStackCallback(GetStackIdFunc func) __attribute__((weak));
@@ -105,37 +106,44 @@ static void* GetJsvmHandle(uint64_t mask)
     return handle;
 }
 
-void SetAsyncStackCallback(const char* funcName, CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn,
-    uint64_t mask)
+struct AsyncCallback {
+    const char* funcName;
+    const char* releaseFuncName;
+    uint64_t mask;
+};
+
+void SetAsyncStackCallback(const AsyncCallback& callback,
+    CollectAsyncStackFn collectAsyncStackFn, SetStackIdFn setStackIdFn, ReleaseContextFn releaseFn)
 {
     void* handle = nullptr;
-    if (mask & ASYNC_TYPE_ARKWEB) {
-        handle = GetArkwebHandle(mask);
-    } else if (mask & ASYNC_TYPE_JSVM) {
-        handle = GetJsvmHandle(mask);
+    if (callback.mask & ASYNC_TYPE_ARKWEB) {
+        handle = GetArkwebHandle(callback.mask);
+    } else if (callback.mask & ASYNC_TYPE_JSVM) {
+        handle = GetJsvmHandle(callback.mask);
     }
-    auto genericSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(
-        dlsym(handle == nullptr ? RTLD_DEFAULT : handle, funcName));
-    if (genericSetAsyncStackFn != nullptr) {
-        genericSetAsyncStackFn(collectAsyncStackFn, setStackIdFn);
+    if (callback.releaseFuncName != nullptr) {
+        auto releaseFunc = reinterpret_cast<GenericSetReleaseAsyncStackFn>(
+            dlsym(handle == nullptr ? RTLD_DEFAULT : handle, callback.releaseFuncName));
+        if (releaseFunc != nullptr) {
+            releaseFunc(releaseFn);
+        }
+    }
+    auto asyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(
+        dlsym(handle == nullptr ? RTLD_DEFAULT : handle, callback.funcName));
+    if (asyncStackFn != nullptr) {
+        asyncStackFn(collectAsyncStackFn, setStackIdFn);
     }
 }
 
 void UpdateAsyncStackCallbacks(uint64_t lastType, uint64_t currentType)
 {
-    // libuv callback is registered by default in DfxSetAsyncStackCallback().
-    // Other async sources are registered/unregistered incrementally based on type changes.
-    struct AsyncCallback {
-        const char* funcName;
-        uint64_t mask;
-    };
-    const AsyncCallback callbacks[] = {
-        {"EventSetAsyncStackFunc", ASYNC_TYPE_EVENTHANDLER},
-        {"PromiseSetAsyncStackFunc", ASYNC_TYPE_PROMISE},
-        {"CustomizeSetAsyncStackFunc", ASYNC_TYPE_CUSTOMIZE},
-        {"FFRTSetAsyncStackFunc", ASYNC_TYPE_FFRT_POOL | ASYNC_TYPE_FFRT_QUEUE},
-        {"ArkWebSetAsyncStackFunc",  ASYNC_TYPE_ARKWEB},
-        {"JsvmSetAsyncStackFunc",  ASYNC_TYPE_JSVM}
+    static const AsyncCallback callbacks[] = {
+        {"EventSetAsyncStackFunc", nullptr, ASYNC_TYPE_EVENTHANDLER},
+        {"PromiseSetAsyncStackFunc", nullptr, ASYNC_TYPE_PROMISE},
+        {"CustomizeSetAsyncStackFunc", nullptr, ASYNC_TYPE_CUSTOMIZE},
+        {"FFRTSetAsyncStackFunc", nullptr, ASYNC_TYPE_FFRT_POOL | ASYNC_TYPE_FFRT_QUEUE},
+        {"ArkWebSetAsyncStackFunc", "ArkWebSetAsyncStackReleaseFunc", ASYNC_TYPE_ARKWEB},
+        {"JsvmSetAsyncStackFunc", "JsvmSetAsyncStackReleaseFunc", ASYNC_TYPE_JSVM}
     };
     for (const auto& callback : callbacks) {
         // Whether this async type was enabled before the update (lastType).
@@ -143,11 +151,11 @@ void UpdateAsyncStackCallbacks(uint64_t lastType, uint64_t currentType)
         // Whether this async type is enabled after the update (currentType).
         const bool currentEnabled = (currentType & callback.mask) != 0;
         if (lastEnabled && !currentEnabled) {
-            SetAsyncStackCallback(callback.funcName, nullptr, nullptr, callback.mask);
+            SetAsyncStackCallback(callback, nullptr, nullptr, nullptr);
             continue;
         }
         if (!lastEnabled && currentEnabled) {
-            SetAsyncStackCallback(callback.funcName, DfxCollectAsyncStack, DfxSetSubmitterStackId, callback.mask);
+            SetAsyncStackCallback(callback, DfxCollectAsyncStack, DfxSetSubmitterStackId, ReleaseAsyncContext);
         }
     }
 }
