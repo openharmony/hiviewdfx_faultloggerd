@@ -23,6 +23,8 @@
 extern "C" {
 #endif
 
+typedef void(*HiDebugSetSwitchCallbackFunc)(bool enable);
+
 /**
  * @brief init async stack
  *
@@ -124,9 +126,16 @@ typedef struct DfxAsyncCtx {
 
 DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode);
 
+DfxAsyncMode GetAsyncStackMode();
+
 int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz);
 
 void ReleaseAsyncContext(uint64_t stackId);
+
+void DfxSetHiDebugAsyncStackCallback(HiDebugSetSwitchCallbackFunc func);
+
+void DfxPopSubmitterStackId(uint64_t stackId);
+
 #ifdef __cplusplus
 }
 #endif

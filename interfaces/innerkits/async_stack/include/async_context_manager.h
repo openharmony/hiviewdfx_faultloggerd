@@ -82,7 +82,7 @@ public:
     DfxAsyncContext* HandleCollectAsyncStack(uint64_t stackId, uint64_t asyncType);
     DfxAsyncContext* GetCurrentContext();
     void SetCurrentThreadContext(uint64_t stackId);
-
+    void PopCurrentThreadContext(uint64_t stackId);
     bool RecycleAsyncContext(DfxAsyncContext* ctx);
     bool IsValidAsyncContext(DfxAsyncContext* ctx);
 private:

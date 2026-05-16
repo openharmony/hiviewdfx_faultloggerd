@@ -84,6 +84,9 @@ constexpr size_t BUFFER_SIZE = 64 * 1024;
 char *g_stackTrace = new (std::nothrow) char[BUFFER_SIZE];
 int g_result = -1;
 static bool g_done = false;
+#if defined(__aarch64__)
+bool g_hidebugEnable = false;
+#endif
 
 NOINLINE static void WorkCallback(uv_work_t* req)
 {
@@ -101,6 +104,13 @@ static void TimerCallback(uv_timer_t* handle)
 {
     g_done = true;
 }
+
+#if defined(__aarch64__)
+static void TestHidebugCallbackFunc(bool enable)
+{
+    g_hidebugEnable = enable;
+}
+#endif
 /**
  * @tc.name: AsyncStackTest001
  * @tc.desc: test GetAsyncStackLocal
@@ -159,6 +169,9 @@ HWTEST_F(AsyncStackTest, AsyncStackTest003, TestSize.Level2)
     GTEST_LOG_(INFO) << "AsyncStackTest003: start.";
     size_t size = 1024;
     void* buffer = malloc(size);
+#if defined(__aarch64__)
+    DfxSetHiDebugAsyncStackCallback(TestHidebugCallbackFunc);
+#endif
     bool initOnce = DfxInitProfilerAsyncStack(buffer, size);
     GTEST_LOG_(INFO) << "initOnce: " << initOnce;
     bool initSecond = DfxInitProfilerAsyncStack(buffer, size);
@@ -281,7 +294,7 @@ HWTEST_F(AsyncStackTest, AsyncStackTest007, TestSize.Level2)
     for (int i = 0; i < 10000000; i++) {
         uint64_t stackId = DfxCollectAsyncStack(0);
         DfxSetSubmitterStackId(stackId);
-        DfxSetSubmitterStackId(0);
+        DfxPopSubmitterStackId(stackId);
         ReleaseAsyncContext(stackId);
     }
     end = std::chrono::steady_clock::now();
@@ -317,6 +330,8 @@ HWTEST_F(AsyncStackTest, AsyncStackTest008, TestSize.Level2)
     GTEST_LOG_(INFO) << "AsyncStackTestWithLastStackMode: start.";
     DfxInitAsyncStack();
     SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    auto curMode = GetAsyncStackMode();
+    GTEST_LOG_(INFO) << "GetAsyncStackMode: " << curMode << "." << std::endl;
     GTEST_LOG_(INFO) << "DfxCollectAsyncStack: start.";
     auto start = std::chrono::steady_clock::now();
     for (int i = 0; i < 10000000; i++) {

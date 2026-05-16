@@ -15,6 +15,9 @@
       SetAsyncStackMode;
       GetCurrentChainedAsyncContext;
       ReleaseAsyncContext;
+      DfxSetHiDebugAsyncStackCallback;
+      GetAsyncStackMode;
+      DfxPopSubmitterStackId;
     };
   local:
     *;
