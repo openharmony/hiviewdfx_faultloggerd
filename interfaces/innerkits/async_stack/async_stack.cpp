@@ -35,6 +35,7 @@
 
 using namespace OHOS::HiviewDFX;
 static bool g_init = false;
+static std::atomic<HiDebugSetSwitchCallbackFunc> g_hiDebugCallback{nullptr};
 #if defined(__aarch64__)
 // Filter out illegal requests
 static std::atomic<uint64_t> g_enabledAsyncType = DEFAULT_ASYNC_TYPE;
@@ -213,6 +214,11 @@ extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
     return prev;
 }
 
+extern "C" DfxAsyncMode GetAsyncStackMode()
+{
+    return g_mode;
+}
+
 extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
 {
     if (sz == 0) {
@@ -318,6 +324,21 @@ extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
     }
 }
 
+extern "C" void DfxPopSubmitterStackId(uint64_t stackId)
+{
+    if (!g_init) {
+        return;
+    }
+
+    if (g_mode == MODE_LAST_STACKTRACE) {
+        if (stackId == reinterpret_cast<uint64_t>(pthread_getspecific(g_stackidKey))) {
+            pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(0));
+        }
+    } else {
+        DfxAsyncContextManager::Instance()->PopCurrentThreadContext(stackId);
+    }
+}
+
 void DfxSetAsyncStackCallback(void)
 {
     // set callback for DfxSignalHandler to read stackId
@@ -363,6 +384,30 @@ bool DfxInitAsyncStack()
     return g_init;
 }
 
+extern "C" void DfxSetHiDebugAsyncStackCallback(HiDebugSetSwitchCallbackFunc func)
+{
+    g_hiDebugCallback.store(func, std::memory_order_release);
+}
+
+#if defined(__aarch64__)
+static void DfxInvokeHiDebugCallback()
+{
+    const char* debuggableEnv = getenv("HAP_DEBUGGABLE");
+    if (debuggableEnv == nullptr || strcmp(debuggableEnv, "true") != 0) {
+        DFXLOGW("No debuggable env!");
+        return;
+    }
+
+    HiDebugSetSwitchCallbackFunc callback = g_hiDebugCallback.load(std::memory_order_acquire);
+    if (callback != nullptr) {
+        const std::string enableDeveloperStackParam =
+            OHOS::system::GetParameter("hilog.debug.async_stack.enable_developer_stack", "false");
+        bool enableDeveloperStack = (enableDeveloperStackParam == "true");
+        callback(enableDeveloperStack);
+    }
+}
+#endif
+
 extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
 {
 #if defined(__aarch64__)
@@ -373,6 +418,7 @@ extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
         DFXLOGE("failed to init unique stack table?.");
         return false;
     }
+    DfxInvokeHiDebugCallback();
     if (g_init) {
         return g_init;
     }

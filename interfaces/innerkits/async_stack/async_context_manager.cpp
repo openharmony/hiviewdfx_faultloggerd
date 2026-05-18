@@ -283,6 +283,36 @@ void DfxAsyncContextManager::PopAsyncContext(DfxThreadAsyncContext* threadCtx)
     threadCtx->curAsyncContextsCnt--;
 }
 
+void DfxAsyncContextManager::PopCurrentThreadContext(uint64_t stackId)
+{
+    if (!initialized_.load()) {
+        return;
+    }
+
+    if (stackId == 0) {
+        return;
+    }
+
+    DfxAsyncContext* ctx = reinterpret_cast<DfxAsyncContext*>(stackId);
+    if (ctx == nullptr) {
+        return;
+    }
+
+    auto threadCtx = static_cast<DfxThreadAsyncContext*>(pthread_getspecific(threadAsyncCtxKey_));
+    if (threadCtx == nullptr) {
+        threadCtx = DfxAsyncContextPool::Instance()->AcquireThreadContext();
+        if (threadCtx == nullptr) {
+            DFXLOGW("PopCurrentThreadContext acquire thread context failed");
+            return;
+        }
+        pthread_setspecific(threadAsyncCtxKey_, threadCtx);
+    }
+
+    if (ctx == threadCtx->contexts[threadCtx->curAsyncContextsCnt - 1]) {
+        PopAsyncContext(threadCtx);
+    }
+}
+
 void DfxAsyncContextManager::SetCurrentThreadContext(uint64_t stackId)
 {
     if (!initialized_.load()) {
