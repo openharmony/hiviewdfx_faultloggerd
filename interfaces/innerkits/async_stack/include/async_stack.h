@@ -60,6 +60,7 @@ typedef enum {
     ASYNC_TYPE_JSVM             = 1ULL << 19,
     ASYNC_TYPE_ARKTS_WORKER     = 1ULL << 24,
     ASYNC_TYPE_ARKTS_TASKPOOL   = 1ULL << 25,
+    ASYNC_TYPE_ARKTS_STA_LAUNCH = 1ULL << 26,
     ASYNC_TYPE_PROFILER         = 1ULL << 30,
     ASYNC_TYPE_UNKNOWN          = 1ULL << 31,
     ASYNC_TYPE_CUSTOMIZE        = 1ULL << 32
