@@ -111,6 +111,17 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(pid_t tid, size_t index, uintpt
     return startAddr + size * STEP;
 }
 
+static bool IsSpecialMap(const std::string& mapName)
+{
+    // stack trace should end with libc or ffrt or */bin/*
+    if (mapName.find("ld-musl") != std::string::npos ||
+        mapName.find("ffrt") != std::string::npos ||
+        mapName.find("bin") != std::string::npos) {
+        return true;
+    }
+    return false;
+}
+
 void FaultStack::CollectStackInfo(pid_t tid, const std::vector<DfxFrame>& frames, bool needParseStack)
 {
     if (frames.empty()) {
@@ -123,26 +134,34 @@ void FaultStack::CollectStackInfo(pid_t tid, const std::vector<DfxFrame>& frames
     uintptr_t prevSp = 0;
     uintptr_t prevEndAddr = 0;
     uintptr_t highAddrLength = ProcessDumpConfig::GetInstance().GetConfig().faultStackHighAddrStep;
+    const uint64_t minFaultstackBytes = 1024;  // 1K
     if (needParseStack) {
         highAddrLength = 8192; // 8192 : 32k / STEP
     }
 
     auto firstFrame = frames.at(0);
-    prevSp = static_cast<uintptr_t>(firstFrame.sp);
+    uintptr_t firstSp = static_cast<uintptr_t>(firstFrame.sp);
+    prevSp = firstSp;
     constexpr size_t maxFaultStackSz = 4;
     for (index = 1; index < frames.size(); index++) {
-        if (index > maxFaultStackSz) {
+        if ((index > maxFaultStackSz) && (prevEndAddr - firstSp >= minFaultstackBytes)) {
             break;
         }
 
         auto frame = frames.at(index);
+        if ((frame == frames.back()) && !IsSpecialMap(frame.mapName)) {
+            break;
+        }
         uintptr_t curSp = static_cast<uintptr_t>(frame.sp);
 
         size = 0;
         if (curSp > prevSp) {
-            size = std::min(highAddrLength, static_cast<uintptr_t>(((curSp - prevSp) / STEP) - 1));
+            size = std::min(highAddrLength, static_cast<uintptr_t>((curSp - prevSp) / STEP));
         } else {
             break;
+        }
+        if ((index > maxFaultStackSz) && (size * STEP + prevEndAddr > minFaultstackBytes + firstSp)) {
+            size = (firstSp + minFaultstackBytes - prevEndAddr + STEP) / STEP;
         }
 
         prevEndAddr = AdjustAndCreateMemoryBlock(tid, index, prevSp, prevEndAddr, size);
@@ -162,10 +181,7 @@ bool FaultStack::CreateBlockForCorruptedStack(pid_t tid, const std::vector<DfxFr
                                               uintptr_t size)
 {
     const auto& frame = frames.back();
-    // stack trace should end with libc or ffrt or */bin/*
-    if (frame.mapName.find("ld-musl") != std::string::npos ||
-        frame.mapName.find("ffrt") != std::string::npos ||
-        frame.mapName.find("bin") != std::string::npos) {
+    if (IsSpecialMap(frame.mapName)) {
         return false;
     }
 
