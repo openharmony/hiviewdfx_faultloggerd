@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include <time.h>
 
+#include <sys/socket.h>
+#include <sys/syscall.h>
 #include <sys/time.h>
 
 #include "dfx_define.h"
@@ -34,7 +36,7 @@ static bool ReadStringFromFile(const char* path, char* dst, size_t dstSz)
     if ((dst == NULL) || (path == NULL) || (dstSz == 0)) {
         return false;
     }
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(SysOpen(path, O_RDONLY));
     if (fd < 0) {
         return false;
     }
@@ -105,7 +107,7 @@ void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* tid)
 
 bool IsNoNewPriv(const char* statusPath)
 {
-    int fd = open(statusPath, O_RDONLY);
+    int fd = SysOpen(statusPath, O_RDONLY);
     if (fd < 0) {
         return false;
     }
@@ -171,7 +173,7 @@ int TidToNstid(const int pid, const int tid)
         return nstid;
     }
 
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(path, O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(SysOpen(path, O_RDONLY));
     if (fd < 0) {
         return nstid;
     }
@@ -209,4 +211,18 @@ bool IsMiniDumpEnable(uint64_t crashLogConfig)
 {
     const uint64_t minidumpLogMask = 0x8;
     return (crashLogConfig & minidumpLogMask) == minidumpLogMask;
+}
+
+int SysOpen(const char *pathname, int flags)
+{
+    if (pathname == NULL) {
+        errno = EINVAL;
+        return -1;
+    }
+    return (int)syscall(SYS_openat, AT_FDCWD, pathname, flags);
+}
+
+int SysSocket(int domain, int type, int protocol)
+{
+    return (int)syscall(SYS_socket, domain, type, protocol);
 }
