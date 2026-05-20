@@ -127,7 +127,7 @@ typedef struct DfxAsyncCtx {
 
 DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode);
 
-DfxAsyncMode GetAsyncStackMode();
+int GetAsyncStackMode();
 
 int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz);
 
