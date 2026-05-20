@@ -60,6 +60,7 @@ static const int PIPE_RES_INDEX = 1;
 
 static const int DEFAULT_MAX_FRAME_NUM = 256;
 static const int DEFAULT_MAX_LOCAL_FRAME_NUM = 32;
+static const int RESERVED_FD_COUNT = 32;
 static const int PIPE_NUM_SZ = 2;
 static const int PIPE_READ = 0;
 static const int PIPE_WRITE = 1;

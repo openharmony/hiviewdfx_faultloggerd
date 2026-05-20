@@ -25,6 +25,7 @@
 #include <sys/time.h>
 #include <sys/un.h>
 #include "dfx_define.h"
+#include "dfx_cutil.h"
 #include "dfx_log.h"
 #include "dfx_socket_request.h"
 
@@ -61,7 +62,7 @@ static bool StartConnect(const char* socketName, const int timeout, int* sockfd)
         return false;
     }
 
-    if ((*sockfd = socket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
+    if ((*sockfd = SysSocket(AF_LOCAL, SOCK_STREAM, 0)) < 0) {
         DFXLOGE("%{public}s :: Failed to socket, errno(%{public}d)", __func__, errno);
         return false;
     }

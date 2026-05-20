@@ -46,6 +46,10 @@ AT_SYMBOL_HIDDEN int TidToNstid(const int pid, const int tid);
 
 AT_SYMBOL_HIDDEN bool IsMiniDumpEnable(uint64_t crashLogConfig);
 
+AT_SYMBOL_HIDDEN int SysOpen(const char *pathname, int flags);
+
+AT_SYMBOL_HIDDEN int SysSocket(int domain, int type, int protocol);
+
 #ifdef __cplusplus
 }
 #endif

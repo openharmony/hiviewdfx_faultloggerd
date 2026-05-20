@@ -233,7 +233,7 @@ static void CloseFds(void)
 static void DFX_SetUpEnvironment(void)
 {
     // clear stdout and stderr
-    int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
+    int devNull = OHOS_TEMP_FAILURE_RETRY(SysOpen("/dev/null", O_RDWR));
     if (devNull < 0) {
         DFXLOGE("Failed to open dev/null.");
         return;
@@ -465,8 +465,8 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
          * Note: These fds are intentionally not closed as this is a temporary process.
          * All fds will be automatically cleaned up when the process exits.
          */
-        for (int i = 0; i < 32; i++) { // 32 : number of reserved fds
-            open("/dev/null", O_RDONLY);
+        for (int i = 0; i < RESERVED_FD_COUNT; i++) {
+            SysOpen("/dev/null", O_RDONLY);
         }
         if (!InitPipe()) {
             DFXLOGE("init pipe fail");
@@ -618,7 +618,7 @@ void SetKernelSnapshot(bool enable)
     if (access(filePath, F_OK) < 0) {
         return;
     }
-    int dieCatchFd = open(filePath, O_RDWR);
+    int dieCatchFd = SysOpen(filePath, O_RDWR);
     if (dieCatchFd < 0) {
         return;
     }
