@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <regex>
+#include <set>
 #include <sys/inotify.h>
 #include <sys/stat.h>
 #include <sys/timerfd.h>
@@ -338,6 +339,16 @@ bool TempFileManager::Init()
 
 int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time)
 {
+    const std::set<int32_t> needTidFaultTypes = {
+        FaultLoggerType::JS_HEAP_SNAPSHOT, FaultLoggerType::JS_RAW_SNAPSHOT,
+        FaultLoggerType::JSVM_HEAP_SNAPSHOT, FaultLoggerType::ARKWEB_JS_HEAP_SNAPSHOT,
+        FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT
+    };
+
+    const std::set<int32_t> needRawheapExtFaultTypes = {
+        FaultLoggerType::JS_RAW_SNAPSHOT, FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT
+    };
+
     const auto fileConfig = GetTargetFileConfig(type);
     if (fileConfig == nullptr) {
         DFXLOGW("%{public}s :: failed to create fileDescriptor because of unknown file type for %{public}d",
@@ -346,14 +357,12 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
     }
     std::string ss = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/" +
         fileConfig->fileNamePrefix + "-" + std::to_string(pid);
-    if (type == FaultLoggerType::JS_HEAP_SNAPSHOT || type == FaultLoggerType::JS_RAW_SNAPSHOT ||
-        type == FaultLoggerType::JSVM_HEAP_SNAPSHOT || type == FaultLoggerType::ARKWEB_JS_HEAP_SNAPSHOT ||
-        type == FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT) {
+    if (needTidFaultTypes.find(type) != needTidFaultTypes.end() && tid != -1) {
         ss += "-" + std::to_string(tid);
     }
     ss += "-" + std::to_string(time == 0 ? std::chrono::duration_cast<std::chrono::milliseconds>\
 (std::chrono::system_clock::now().time_since_epoch()).count() : time);
-    if (type == FaultLoggerType::JS_RAW_SNAPSHOT || type == FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT) {
+    if (needRawheapExtFaultTypes.find(type) != needRawheapExtFaultTypes.end()) {
         ss += ".rawheap";
     } else if (type == FaultLoggerType::CPP_CRASH) {
 #ifndef is_ohos_lite
