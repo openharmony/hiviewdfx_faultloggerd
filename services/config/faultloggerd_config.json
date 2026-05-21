@@ -173,6 +173,39 @@
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE",
       "fileOwnerUid": 1201
+    },
+    {
+      "type": 119,
+      "fileNamePrefix": "hybrid_jsheap",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
+    },
+    {
+      "type": 120,
+      "fileNamePrefix": "static_jsheap",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
+    },
+    {
+      "type": 121,
+      "fileNamePrefix": "static_jsheap",
+      "maxSingleFileSizeInKB": 2097152,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     }
   ]
 }
