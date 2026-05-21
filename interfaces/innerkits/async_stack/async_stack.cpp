@@ -214,9 +214,9 @@ extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
     return prev;
 }
 
-extern "C" DfxAsyncMode GetAsyncStackMode()
+extern "C" int GetAsyncStackMode()
 {
-    return g_mode;
+    return static_cast<int>(g_mode);
 }
 
 extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
