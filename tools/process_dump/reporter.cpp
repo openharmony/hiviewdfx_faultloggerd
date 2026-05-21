@@ -96,7 +96,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.reason = process.GetReason();
     info.registers = GetRegsString(process.GetFaultThreadRegisters());
     info.summary = GetSummary(process);
-    info.sectionMaps["app_running_unique_id"] = request.appRunningUniqueId;
+    info.sectionMaps["APP_RUNNING_UNIQUE_ID"] = request.appRunningUniqueId;
     info.sectionMaps["PROCESS_RSS_MEMINFO"] = std::to_string(process.GetRss());
     info.sectionMaps["PROCESS_LIFETIME"] = std::to_string(process.GetLifeTime());
     info.sectionMaps["IS_ARKWEB_CORE"] = DfxMaps::IsArkWebProc() ? "true" : "false";

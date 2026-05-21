@@ -93,6 +93,16 @@ uint64_t GetAbsTimeMilliSecondsCInterce(void)
         ((uint64_t)(ts.tv_nsec) / NUMBER_ONE_MILLION);
 }
 
+uint64_t GenerateRandomUint64(void)
+{
+    uint64_t randomId = 0;
+    ssize_t ret = OHOS_TEMP_FAILURE_RETRY(syscall(SYS_getrandom, &randomId, sizeof(uint64_t), 0));
+    if (ret != sizeof(uint64_t)) {
+        return 0;
+    }
+    return randomId;
+}
+
 void ParseSiValue(const siginfo_t* si, uint64_t* endTime, int* tid)
 {
     const int flagOffset = 63;

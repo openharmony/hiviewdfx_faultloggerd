@@ -45,6 +45,7 @@ struct HeadInfo {
     bool simplifyVmaPrinting {false};
     bool mergeAppLog {false};
     bool minidumpLog {false};
+    std::string appRunningUniqueId;
 };
 
 struct SignalInfo {
@@ -85,6 +86,7 @@ public:
     void SetSimplifyVmaPrinting(bool enable);
     void SetMergeAppLog(bool enable);
     void SetMinidumpLog(bool enable);
+    void SetAppRunningUniqueId(const std::string& appRunningUniqueId);
     void SetNeedFormatFlag(bool flag);
     void SetCrashInfoSize(size_t size);
     void Reset();
@@ -116,6 +118,7 @@ public:
     bool GetSimplifyVmaPrinting() const;
     bool GetMergeAppLog() const;
     bool GetMinidumpLog() const;
+    const std::string& GetAppRunningUniqueId() const;
     bool GetNeedFormatFlag() const;
     size_t GetCrashInfoSize() const;
 

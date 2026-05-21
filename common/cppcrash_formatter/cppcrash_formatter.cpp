@@ -92,11 +92,12 @@ void CppCrashJsonFormatter::AddHeadInfo(cJSON* root, CppCrashInfoCollector& coll
     }
     AddStringValue(root, "HITRACEID", collector.GetHiTraceId());
     AddStringValue(root, "PNAME", collector.GetPname(), true);
+    AddStringValue(root, "APP_RUNNING_UNIQUE_ID", collector.GetAppRunningUniqueId());
     AddStringValue(root, "PROCESS_LIFETIME", collector.GetProcessLifeTime());
     AddStringValue(root, "PROCESS_RSS_MEMINFO", collector.GetProcessRssMeminfo());
     AddStringValue(root, "REASON", collector.GetReason());
     AddStringValue(root, "LAST_FATAL_MESSAGE", collector.GetLastFatalMessage());
-    
+
     cJSON* config = cJSON_CreateObject();
     if (config == nullptr) {
         DFXLOGE("Failed to create cJSON object for config");

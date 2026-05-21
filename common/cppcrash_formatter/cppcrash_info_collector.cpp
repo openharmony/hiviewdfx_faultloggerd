@@ -234,6 +234,14 @@ void CppCrashInfoCollector::SetMinidumpLog(bool enable)
     headInfo_.minidumpLog = enable;
 }
 
+void CppCrashInfoCollector::SetAppRunningUniqueId(const std::string& appRunningUniqueId)
+{
+    if (!needFormatFlag_) {
+        return;
+    }
+    headInfo_.appRunningUniqueId = appRunningUniqueId;
+}
+
 void CppCrashInfoCollector::SetNeedFormatFlag(bool flag)
 {
     needFormatFlag_ = flag;
@@ -380,6 +388,11 @@ bool CppCrashInfoCollector::GetMergeAppLog() const
 bool CppCrashInfoCollector::GetMinidumpLog() const
 {
     return headInfo_.minidumpLog;
+}
+
+const std::string& CppCrashInfoCollector::GetAppRunningUniqueId() const
+{
+    return headInfo_.appRunningUniqueId;
 }
 
 bool CppCrashInfoCollector::GetNeedFormatFlag() const

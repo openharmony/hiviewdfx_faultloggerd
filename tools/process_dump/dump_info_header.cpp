@@ -75,7 +75,9 @@ void DumpInfoHeader::CollectProcessInfo(DfxProcess& process, const ProcessDumpRe
     std::string tempStr;
     headerInfo_ += StringPrintf("Process name:%s\n", process.GetProcessInfo().processName.c_str());
     CppCrashInfoCollector::Instance().SetPname(process.GetProcessInfo().processName);
+    CppCrashInfoCollector::Instance().SetAppRunningUniqueId(request.appRunningUniqueId);
     if (request.type != ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
+        headerInfo_ += StringPrintf("App running unique id:%s\n", request.appRunningUniqueId);
         uint64_t lifeTimeSeconds = 0;
         int errCode = GetProcessLifeCycle(process.GetProcessInfo().pid, lifeTimeSeconds);
         process.SetLifeTime(lifeTimeSeconds);
