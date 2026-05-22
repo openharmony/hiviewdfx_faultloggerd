@@ -34,7 +34,6 @@
 
 static const int DUMP_ARG_ONE = 1;
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
-static const std::string DUMP_STACK_TAG_FAILED = "failed:";
 
 static long g_pid = 0;
 
