@@ -39,8 +39,6 @@ namespace HiviewDFX {
 
 #define ARM_EXIDX_TABLE_SIZE 8
 
-static const int FRAME_MAX_SIZE = 64;
-
 /**
  * @brief chip architecture
  */
