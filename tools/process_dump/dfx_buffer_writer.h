@@ -21,7 +21,6 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include "dfx_buffer_writer.h"
 #include "nocopyable.h"
 #include "smart_fd.h"
 #include "dfx_dump_request.h"
