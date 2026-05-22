@@ -81,6 +81,7 @@ void ParseSingleFileConfig(const cJSON* tempFile,  std::vector<SingleFileConfig>
     tempFileConfig.keepFileCount = std::clamp(keeFileCount, -1, MAX_NUM_INT32);
     int32_t maxFileCount = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "maxFileCount"), -1);
     tempFileConfig.maxFileCount = std::clamp(maxFileCount, tempFileConfig.keepFileCount, MAX_NUM_INT32);
+    tempFileConfig.fileOwnerUid = GetInt32ValueFromJson(cJSON_GetObjectItem(tempFile, "fileOwnerUid"), -1);
     if (GetStringValueFromJson(cJSON_GetObjectItem(tempFile, "overFileSizeAction")) ==
         OVER_SIZE_ACTION_DELETE) {
         tempFileConfig.overFileSizeAction = OverFileSizeAction::DELETE;

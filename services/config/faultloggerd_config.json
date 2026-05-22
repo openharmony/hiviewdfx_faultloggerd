@@ -32,7 +32,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     },
     {
       "type": 104,
@@ -42,7 +43,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     },
     {
       "type": 105,
@@ -52,7 +54,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     },
     {
       "type": 106,
@@ -94,7 +97,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     },
     {
       "type": 111,
@@ -134,7 +138,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     },
     {
       "type": 115,
@@ -144,7 +149,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     },
     {
       "type": 117,
@@ -154,7 +160,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     },
     {
       "type": 118,
@@ -164,7 +171,8 @@
       "keepFileCount": 12,
       "maxFileCount": 24,
       "fileExistTimeInSecond": 120,
-      "overTimeFileDeleteType": "ACTIVE"
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1201
     }
   ]
 }
