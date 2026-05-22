@@ -105,6 +105,7 @@ static int g_pipeFds[PIPE_MAX][2] = {
 };
 
 static const int ALARM_TIME_S = 10;
+static const int PRVI_FORK_ALARM_TIME_S = 8;
 static const int TRY_WAIT_SECONDS = 1;
 static const uint32_t CRASH_SNAPSHOT_FLAG = 0x8;
 static const int WAITPID_TIMEOUT = 3000; // 3000 : 3 sec timeout
@@ -366,7 +367,7 @@ static void RestoreDumpState(bool isTracerStatusModified, int signo)
     }
 }
 
-static int WaitProcessExitTimeout(pid_t pid, int timeoutMs)
+static int WaitProcessExitTimeout(pid_t pid, int timeoutMs, bool isPrvi)
 {
     int status = 1; // abnomal exit code
     while (timeoutMs > 0) {
@@ -381,8 +382,10 @@ static int WaitProcessExitTimeout(pid_t pid, int timeoutMs)
         timeoutMs--;
         if (timeoutMs == 0) {
             DFXLOGI("waitpid %{public}d timeout", pid);
-            kill(pid, SIGKILL);
-            FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
+            if (!isPrvi) {
+                kill(pid, SIGKILL);
+                FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
+            }
             return PROCESS_ABNORMAL_EXIT;
         }
     }
@@ -474,7 +477,7 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
         }
         ForkProcessdump(startTime);
     }
-    switch (WaitProcessExitTimeout(pid, WAITPID_TIMEOUT)) {
+    switch (WaitProcessExitTimeout(pid, WAITPID_TIMEOUT, false)) {
         case PROCESS_NORMAL_EXIT:
             return START_PROCESS_DUMP_SUCCESS;
         case PROCESS_ABNORMAL_EXIT:
@@ -505,7 +508,7 @@ static bool StartVMProcessUnwind(void)
         }
     }
 
-    return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT) == PROCESS_NORMAL_EXIT;
+    return WaitProcessExitTimeout(pid, WAITPID_TIMEOUT, false) == PROCESS_NORMAL_EXIT;
 }
 
 static void CleanFd(int *pipeFd)
@@ -721,6 +724,24 @@ void DfxDumpRequest(int signo, struct ProcessDumpRequest *request)
     ProcessDump(signo);
 }
 
+static void ForkLiteCrashHandler(struct ProcessDumpRequest *request)
+{
+    pid_t childPid = ForkBySyscall();
+    if (childPid == 0) {
+        sigset_t mask;
+        sigemptyset(&mask);
+        sigaddset(&mask, SIGALRM);
+        sigprocmask(SIG_UNBLOCK, &mask, NULL);
+        alarm(PRVI_FORK_ALARM_TIME_S);
+        LiteCrashHandler(request);
+        sigprocmask(SIG_BLOCK, &mask, NULL);
+        _exit(0);
+    } else if (childPid < 0) {
+        DFXLOGE("Failed to fork lite crash Handler.");
+        return;
+    }
+}
+
 bool DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
 {
     DFXLOGI("start lite process dump");
@@ -749,10 +770,10 @@ bool DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
     CollectStack(request);
     pid_t pid = ForkBySyscall();
     if (pid == 0) {
-        LiteCrashHandler(request);
+        ForkLiteCrashHandler(request);
         _exit(0);
     }
-    int ret = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT);
+    int ret = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT, true);
     UnmapMemoryOnce(mmapSize);
     DFXLOGI("lite process exit code %{public}d", ret);
 #endif
