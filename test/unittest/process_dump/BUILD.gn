@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+# Copyright (c) 2021-2026 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -95,9 +95,17 @@ if (defined(ohos_lite)) {
     sources = [
       "$faultloggerd_path/tools/process_dump/lperf/lperf_event_record.cpp",
       "$faultloggerd_path/tools/process_dump/lperf/lperf_events.cpp",
+      "$faultloggerd_path/tools/process_dump/lperf/lperf_record.cpp",
+      "$faultloggerd_path/tools/process_dump/lite_perf_dumper.cpp",
+      "$faultloggerd_path/tools/process_dump/reporter.cpp",
       "buffer_writer_test.cpp",
+      "dfx_buffer_writer_extend_test.cpp",
       "dfx_processdump_test.cpp",
+      "dfx_process_test.cpp",
+      "dfx_thread_test.cpp",
+      "dump_info_factory_test.cpp",
       "dump_info_header_test.cpp",
+      "dump_info_json_formatter_test.cpp",
       "fault_stack_test.cpp",
       "lperf_event_record_test.cpp",
       "lperf_events_test.cpp",
@@ -108,8 +116,9 @@ if (defined(ohos_lite)) {
       "process_dump_config_test.cpp",
       "process_dump_test.cpp",
       "registers_test.cpp",
+      "reporter_test.cpp",
       "thread_dump_info_test.cpp",
-      "$faultloggerd_path/tools/process_dump/reporter.cpp",
+      "thread_pool_test.cpp",
     ]
     if (processdump_parse_lock_owner_enable) {
       sources += [ "dump_utils_test.cpp" ]
@@ -117,7 +126,10 @@ if (defined(ohos_lite)) {
 
     if (target_cpu == "arm64") {
       sources += [
+        "coredump_buffer_writer_test.cpp",
+        "coredump_config_manager_test.cpp",
         "extra_crash_info_test.cpp",
+        "lite_perf_dumper_test.cpp",
         "submitter_stack_test.cpp",
       ]
     }
@@ -133,9 +145,12 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_path/common/cutil:dfx_cutil",
+      "$faultloggerd_path/common/trace:dfx_trace",
       "$faultloggerd_path/interfaces/innerkits/async_stack:libasync_stack",
       "$faultloggerd_path/interfaces/innerkits/procinfo:dfx_procinfo_static",
       "$faultloggerd_path/interfaces/innerkits/unwinder:libunwinder_static",
+      "$faultloggerd_path/interfaces/innerkits/crash_exception:crash_exception",
+      "$faultloggerd_path/interfaces/innerkits/stack_printer:libstack_printer",
       "$faultloggerd_path/test/utils:dfx_test_util",
       "$faultloggerd_path/tools/process_dump:process_info_src",
     ]
@@ -149,6 +164,7 @@ if (defined(ohos_lite)) {
       "hilog:libhilog",
       "hisysevent:libhisysevent",
       "hitrace:libhitracechain",
+      "init:libbegetutil",
       "ipc:ipc_core",
       "jsoncpp:jsoncpp",
       "cJSON:cjson",
