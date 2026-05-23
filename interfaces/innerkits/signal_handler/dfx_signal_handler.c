@@ -204,7 +204,8 @@ static void FillLastFatalMessageLocked(int32_t signo)
 static bool FillDebugMessageLocked(int32_t signo, siginfo_t *si)
 {
     if (signo != SIGLEAK_STACK || si == NULL ||
-        (abs(si->si_code) != SIGLEAK_STACK_FDSAN && abs(si->si_code) != SIGLEAK_STACK_JEMALLOC)) {
+        (abs(si->si_code) != SIGLEAK_STACK_FDSAN && abs(si->si_code) != SIGLEAK_STACK_JEMALLOC &&
+         abs(si->si_code) != SIGLEAK_STACK_ARKTS_ENVSAN)) {
         return true;
     }
 
@@ -237,6 +238,8 @@ static enum ProcessDumpType GetDumpType(int signo, siginfo_t *si)
                 return DUMP_TYPE_FDSAN;
             case SIGLEAK_STACK_JEMALLOC:
                 return DUMP_TYPE_JEMALLOC;
+            case SIGLEAK_STACK_ARKTS_ENVSAN:
+                return DUMP_TYPE_ARKTS_ENVSAN;
             case SIGLEAK_STACK_COREDUMP:
                 return DUMP_TYPE_COREDUMP;
             case SIGLEAK_STACK_BADFD:
@@ -268,8 +271,8 @@ static bool FillDumpRequest(int signo, siginfo_t *si, void *context, bool isSigA
                  g_appRunningUniqueId, sizeof(g_appRunningUniqueId)) != EOK) {
         DFXLOGE("FillDumpRequest appRunningUniqueId memcpy fail!");
     }
-    if ((g_request.type == DUMP_TYPE_CPP_CRASH || g_request.type == DUMP_TYPE_FDSAN) &&
-        g_getStackIdCallback != NULL) {
+    if ((g_request.type == DUMP_TYPE_CPP_CRASH || g_request.type == DUMP_TYPE_FDSAN ||
+        g_request.type == DUMP_TYPE_ARKTS_ENVSAN) && g_getStackIdCallback != NULL) {
         g_request.stackId = g_getStackIdCallback();
         DFXLOGI("g_GetStackIdFunc %{private}p.", (void*)g_request.stackId);
     }
