@@ -342,11 +342,13 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
     const std::set<int32_t> needTidFaultTypes = {
         FaultLoggerType::JS_HEAP_SNAPSHOT, FaultLoggerType::JS_RAW_SNAPSHOT,
         FaultLoggerType::JSVM_HEAP_SNAPSHOT, FaultLoggerType::ARKWEB_JS_HEAP_SNAPSHOT,
-        FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT
+        FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT, FaultLoggerType::HYBRID_JS_HEAP_SNAPSHOT,
+        FaultLoggerType::STATIC_JS_HEAP_SNAPSHOT, FaultLoggerType::STATIC_JS_RAW_SNAPSHOT
     };
 
     const std::set<int32_t> needRawheapExtFaultTypes = {
-        FaultLoggerType::JS_RAW_SNAPSHOT, FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT
+        FaultLoggerType::JS_RAW_SNAPSHOT, FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT,
+        FaultLoggerType::STATIC_JS_RAW_SNAPSHOT
     };
 
     const auto fileConfig = GetTargetFileConfig(type);

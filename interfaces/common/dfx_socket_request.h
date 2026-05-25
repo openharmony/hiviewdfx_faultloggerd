@@ -79,7 +79,13 @@ typedef enum FaultLoggerType : int32_t {
     /** arkweb js heap */
     ARKWEB_JS_HEAP_SNAPSHOT = 117,
      /** arkweb js raw heap */
-    ARKWEB_JS_RAW_SNAPSHOT = 118
+    ARKWEB_JS_RAW_SNAPSHOT = 118,
+     /** hybrid js heap */
+    HYBRID_JS_HEAP_SNAPSHOT = 119,
+     /** static js heap */
+    STATIC_JS_HEAP_SNAPSHOT = 120,
+     /** static js raw heap */
+    STATIC_JS_RAW_SNAPSHOT = 121
 } FaultLoggerType;
 
 /**
