@@ -95,4 +95,21 @@ HWTEST_F(ProcessDumpConfigTest, ProcessDumpConfigTest001, TestSize.Level2)
     ASSERT_EQ(dumpInfoCoreDump, config.dumpInfo[ProcessDumpType::DUMP_TYPE_COREDUMP]);
     GTEST_LOG_(INFO) << "ProcessDumpConfigTest001: end.";
 }
+
+/**
+ * @tc.name: ProcessDumpConfigTest002
+ * @tc.desc: test process dump config of arkts_envsan
+ * @tc.type: FUNC
+ */
+HWTEST_F(ProcessDumpConfigTest, ProcessDumpConfigTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ProcessDumpConfigTest002: start.";
+    auto config = ProcessDumpConfig::GetInstance().GetConfig();
+    std::vector<std::string> dumpInfoArktsEnvSan = {
+        "KeyThreadDumpInfo", "DumpInfoHeader", "SubmitterStack",
+        "Registers", "MemoryNearRegister", "FaultStack", "Maps", "OpenFiles",
+    };
+    ASSERT_EQ(dumpInfoArktsEnvSan, config.dumpInfo[ProcessDumpType::DUMP_TYPE_ARKTS_ENVSAN]);
+    GTEST_LOG_(INFO) << "ProcessDumpConfigTest002: end.";
+}
 }
