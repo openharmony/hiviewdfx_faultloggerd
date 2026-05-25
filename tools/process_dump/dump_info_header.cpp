@@ -233,7 +233,8 @@ std::string DumpInfoHeader::UpdateFatalMessageWhenDebugSignal(const DfxProcess& 
     const ProcessDumpRequest& request)
 {
     if (request.type != ProcessDumpType::DUMP_TYPE_BADFD && request.type != ProcessDumpType::DUMP_TYPE_FDSAN &&
-        request.type != ProcessDumpType::DUMP_TYPE_JEMALLOC) {
+        request.type != ProcessDumpType::DUMP_TYPE_JEMALLOC &&
+        request.type != ProcessDumpType::DUMP_TYPE_ARKTS_ENVSAN) {
         return "";
     }
     pid_t pid = process.GetVmPid() != 0 ? process.GetVmPid() : request.nsPid;

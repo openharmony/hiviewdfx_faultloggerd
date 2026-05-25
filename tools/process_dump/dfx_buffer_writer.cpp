@@ -171,6 +171,8 @@ int DfxBufferWriter::GetFaultloggerdRequestType()
             switch (abs(request_.siginfo.si_code)) {
                 case SIGLEAK_STACK_FDSAN:
                     FALLTHROUGH_INTENDED;
+                case SIGLEAK_STACK_ARKTS_ENVSAN:
+                    FALLTHROUGH_INTENDED;
                 case SIGLEAK_STACK_JEMALLOC:
                     FALLTHROUGH_INTENDED;
                 case SIGLEAK_STACK_BADFD:

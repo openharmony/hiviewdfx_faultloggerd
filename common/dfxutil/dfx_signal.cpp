@@ -241,6 +241,8 @@ std::string DfxSignal::FormatSIGLEAKCodeName(const int32_t signalCode)
     switch (abs(signalCode)) {
         case SIGLEAK_STACK_FDSAN:
             return "FDSAN";
+        case SIGLEAK_STACK_ARKTS_ENVSAN:
+            return "ARKTS_ENVSAN";
         case SIGLEAK_STACK_JEMALLOC:
             return "JEMALLOC";
         case SIGLEAK_STACK_BADFD:
