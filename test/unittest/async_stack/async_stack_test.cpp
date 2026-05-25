@@ -331,6 +331,7 @@ HWTEST_F(AsyncStackTest, AsyncStackTest008, TestSize.Level2)
     DfxInitAsyncStack();
     SetAsyncStackMode(MODE_LAST_STACKTRACE);
     auto curMode = GetAsyncStackMode();
+    ASSERT_EQ(MODE_LAST_STACKTRACE, curMode);
     GTEST_LOG_(INFO) << "GetAsyncStackMode: " << curMode << "." << std::endl;
     GTEST_LOG_(INFO) << "DfxCollectAsyncStack: start.";
     auto start = std::chrono::steady_clock::now();
