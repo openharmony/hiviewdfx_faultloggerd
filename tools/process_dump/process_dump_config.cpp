@@ -170,10 +170,6 @@ void ProcessDumpConfig::LoadDefaultConfig()
         KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER, SUBMITTER_STACK,
         REGISTERS, MEMORY_NEAR_REGISTER, FAULT_STACK, MAPS, OPEN_FILES,
     };
-    dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_ARKTS_ENVSAN] = {
-        KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER, SUBMITTER_STACK,
-        REGISTERS, MEMORY_NEAR_REGISTER, FAULT_STACK, MAPS, OPEN_FILES,
-    };
     dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_JEMALLOC] = {
         KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER, REGISTERS,
         MEMORY_NEAR_REGISTER, FAULT_STACK, MAPS,
@@ -187,6 +183,10 @@ void ProcessDumpConfig::LoadDefaultConfig()
     };
     dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_PIPE] = {
         KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER,
+    };
+    dumpConfig_.dumpInfo[ProcessDumpType::DUMP_TYPE_ARKTS_ENVSAN] = {
+        KEY_THREAD_DUMP_INFO, DUMP_INFO_HEADER, SUBMITTER_STACK,
+        REGISTERS, MEMORY_NEAR_REGISTER, FAULT_STACK, MAPS, OPEN_FILES,
     };
 }
 
