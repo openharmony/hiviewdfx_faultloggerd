@@ -45,8 +45,9 @@ SysEventReporter::SysEventReporter(const ProcessDumpType& processDumpType)
 {
     if (processDumpType == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         reporter_ = std::make_shared<CppCrashReporter>();
-    } else if (processDumpType >=  ProcessDumpType::DUMP_TYPE_FDSAN
-        && processDumpType <=  ProcessDumpType::DUMP_TYPE_BADFD) {
+    } else if ((processDumpType >=  ProcessDumpType::DUMP_TYPE_FDSAN
+        && processDumpType <=  ProcessDumpType::DUMP_TYPE_BADFD)
+        || processDumpType == ProcessDumpType::DUMP_TYPE_ARKTS_ENVSAN) {
         reporter_ = std::make_shared<AddrSanitizerReporter>();
     }
 }
