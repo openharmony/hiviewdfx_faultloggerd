@@ -34,7 +34,7 @@
 #include "async_context_manager.h"
 
 using namespace OHOS::HiviewDFX;
-static bool g_init = false;
+static std::atomic<bool> g_init{false};
 static std::atomic<HiDebugSetSwitchCallbackFunc> g_hiDebugCallback{nullptr};
 #if defined(__aarch64__)
 // Filter out illegal requests
@@ -53,7 +53,7 @@ using GenericSetReleaseAsyncStackFn = void(*)(ReleaseContextFn releaseFn);
 typedef uint64_t(*GetStackIdFunc)(void);
 extern "C" void DFX_SetAsyncStackCallback(GetStackIdFunc func) __attribute__((weak));
 
-static DfxAsyncMode g_mode = MODE_LAST_STACKTRACE;
+static std::atomic<DfxAsyncMode> g_mode{MODE_LAST_STACKTRACE};
 
 namespace {
 
@@ -164,14 +164,14 @@ void UpdateAsyncStackCallbacks(uint64_t lastType, uint64_t currentType)
 
 extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
 {
-    if (mode == g_mode) {
-        return g_mode;
+    if (mode == g_mode.load()) {
+        return g_mode.load();
     }
     
     if (mode == MODE_CHAINED_STACKTRACE) {
         if (!DfxAsyncContextManager::Instance()->Init()) {
             DFXLOGE("SetAsyncStackMode init async context manager failed");
-            return g_mode;
+            return g_mode.load();
         }
         auto releaseFuncEH =
         reinterpret_cast<GenericSetReleaseAsyncStackFn>(dlsym(RTLD_DEFAULT, "EventSetReleaseAsyncStackFunc"));
@@ -208,15 +208,15 @@ extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
     } else {
         DfxAsyncContextManager::Instance()->DeInit();
     }
-    DfxAsyncMode prev = g_mode;
-    g_mode = mode;
-    DFXLOGI("SetAsyncStackMode %{public}d", static_cast<int>(g_mode));
+    DfxAsyncMode prev = g_mode.load();
+    g_mode.store(mode);
+    DFXLOGI("SetAsyncStackMode %{public}d", static_cast<int>(g_mode.load()));
     return prev;
 }
 
 extern "C" int GetAsyncStackMode()
 {
-    return static_cast<int>(g_mode);
+    return static_cast<int>(g_mode.load());
 }
 
 extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
@@ -245,7 +245,7 @@ extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
 
 extern "C" void ReleaseAsyncContext(uint64_t stackId)
 {
-    if (g_mode == MODE_LAST_STACKTRACE) {
+    if (g_mode.load() == MODE_LAST_STACKTRACE) {
         return;
     }
 
@@ -264,7 +264,7 @@ static inline uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
 
 extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
 {
-    if (!g_init || g_fpBacktrace == nullptr) {
+    if (!g_init.load() || g_fpBacktrace == nullptr) {
         return DFX_INVALID_STACK_ID;
     }
     uint64_t isTargetType = type & g_enabledAsyncType;
@@ -274,7 +274,7 @@ extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
     const uint32_t depth = 16;
     void* pcArray[depth] = {0};
     uint64_t stackId = CollectStackByFp(pcArray, depth);
-    if ((g_mode == MODE_CHAINED_STACKTRACE) &&
+    if ((g_mode.load() == MODE_CHAINED_STACKTRACE) &&
         !(type & UNSUPPORTED_CHAINED_STACK_TYPE)) {
         stackId =
             reinterpret_cast<uint64_t>(DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type));
@@ -284,7 +284,7 @@ extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
 
 extern "C" uint64_t DfxCollectStackWithDepth(uint64_t type, size_t depth)
 {
-    if (!g_init || g_fpBacktrace == nullptr) {
+    if (!g_init.load() || g_fpBacktrace == nullptr) {
         return DFX_INVALID_STACK_ID;
     }
     uint64_t isTargetType = type & g_enabledAsyncType;
@@ -296,7 +296,7 @@ extern "C" uint64_t DfxCollectStackWithDepth(uint64_t type, size_t depth)
     const uint32_t realDepth = depth > maxSize ? maxSize : static_cast<uint32_t>(depth);
     void* pcArray[maxSize] = {0};
     uint64_t stackId = CollectStackByFp(pcArray, realDepth);
-    if ((g_mode == MODE_CHAINED_STACKTRACE) &&
+    if ((g_mode.load() == MODE_CHAINED_STACKTRACE) &&
         !(type & UNSUPPORTED_CHAINED_STACK_TYPE)) {
         stackId =
             reinterpret_cast<uint64_t>(DfxAsyncContextManager::Instance()->HandleCollectAsyncStack(stackId, type));
@@ -313,11 +313,11 @@ extern "C" uint64_t DfxSetAsyncStackType(uint64_t asyncType)
 
 extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
 {
-    if (!g_init) {
+    if (!g_init.load()) {
         return;
     }
 
-    if (g_mode == MODE_LAST_STACKTRACE) {
+    if (g_mode.load() == MODE_LAST_STACKTRACE) {
         pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(stackId));
     } else {
         DfxAsyncContextManager::Instance()->SetCurrentThreadContext(stackId);
@@ -326,11 +326,11 @@ extern "C" void DfxSetSubmitterStackId(uint64_t stackId)
 
 extern "C" void DfxPopSubmitterStackId(uint64_t stackId)
 {
-    if (!g_init) {
+    if (!g_init.load()) {
         return;
     }
 
-    if (g_mode == MODE_LAST_STACKTRACE) {
+    if (g_mode.load() == MODE_LAST_STACKTRACE) {
         if (stackId == reinterpret_cast<uint64_t>(pthread_getspecific(g_stackidKey))) {
             pthread_setspecific(g_stackidKey, reinterpret_cast<void *>(0));
         }
@@ -379,9 +379,9 @@ bool DfxInitAsyncStack()
     }
     g_fpBacktrace = std::unique_ptr<OHOS::HiviewDFX::FpBacktrace>(OHOS::HiviewDFX::FpBacktrace::CreateInstance());
     DfxSetAsyncStackCallback();
-    g_init = true;
+    g_init.store(true);
 #endif
-    return g_init;
+    return g_init.load();
 }
 
 extern "C" void DfxSetHiDebugAsyncStackCallback(HiDebugSetSwitchCallbackFunc func)
@@ -419,8 +419,8 @@ extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
         return false;
     }
     DfxInvokeHiDebugCallback();
-    if (g_init) {
-        return g_init;
+    if (g_init.load()) {
+        return g_init.load();
     }
     if (pthread_key_create(&g_stackidKey, nullptr) != 0) {
         DFXLOGE("failed to create key for stackId.");
@@ -428,15 +428,15 @@ extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
     }
     g_fpBacktrace = std::unique_ptr<OHOS::HiviewDFX::FpBacktrace>(OHOS::HiviewDFX::FpBacktrace::CreateInstance());
     DfxSetAsyncStackCallback();
-    g_init = true;
+    g_init.store(true);
 #endif
-    return g_init;
+    return g_init.load();
 }
 
 extern "C" uint64_t DfxGetSubmitterStackId()
 {
 #if defined(__aarch64__)
-    if (!g_init) {
+    if (!g_init.load()) {
         return 0;
     }
     return reinterpret_cast<uint64_t>(pthread_getspecific(g_stackidKey));
