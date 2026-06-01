@@ -85,7 +85,7 @@ pid_t GetProcId(const char *statusPath, const char *item)
         return pid;
     }
 
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(statusPath, O_RDONLY));
+    int fd = OHOS_TEMP_FAILURE_RETRY(SysOpen(statusPath, O_RDONLY));
     if (fd < 0) {
         DFXLOGE("GetRealPid:: open failed! pid:%{public}d, errno:%{public}d).", pid, errno);
         return pid;
@@ -190,7 +190,7 @@ bool CollectStat(const struct ProcessDumpRequest *request)
         g_mmapPos += PROC_STAT_BUF_SIZE;
         return false;
     }
-    int fd = open(path, O_RDONLY);
+    int fd = SysOpen(path, O_RDONLY);
     if (fd < 0) {
         DFXLOGI("failed open %{public}s errno %{public}d", path, errno);
         g_mmapPos += PROC_STAT_BUF_SIZE;
@@ -226,7 +226,7 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
         g_mmapPos += PROC_STATM_BUF_SIZE;
         return false;
     }
-    int fd = open(path, O_RDONLY);
+    int fd = SysOpen(path, O_RDONLY);
     if (fd < 0) {
         DFXLOGI("failed to open %{public}s errno %{public}d", path, errno);
         g_mmapPos += PROC_STATM_BUF_SIZE;
@@ -320,7 +320,7 @@ bool CollectMaps(const int pipeFd, const char* path)
         return false;
     }
 
-    int fd = open(path, O_RDONLY);
+    int fd = SysOpen(path, O_RDONLY);
     if (fd < 0) {
         DFXLOGI("open %{public}s failed, errno %{public}d", path, errno);
         return false;

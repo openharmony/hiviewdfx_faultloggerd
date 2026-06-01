@@ -40,6 +40,10 @@ AT_SYMBOL_HIDDEN bool IsNoNewPriv(const char* statusPath);
 
 AT_SYMBOL_HIDDEN bool SafeStrtol(const char* numStr, long* out, int base);
 
+AT_SYMBOL_HIDDEN int SysOpen(const char *pathname, int flags);
+
+AT_SYMBOL_HIDDEN int SysSocket(int domain, int type, int protocol);
+
 #ifdef __cplusplus
 }
 #endif

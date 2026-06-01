@@ -233,7 +233,7 @@ static void CloseFds(void)
 static void DFX_SetUpEnvironment(void)
 {
     // clear stdout and stderr
-    int devNull = OHOS_TEMP_FAILURE_RETRY(open("/dev/null", O_RDWR));
+    int devNull = OHOS_TEMP_FAILURE_RETRY(SysOpen("/dev/null", O_RDWR));
     if (devNull < 0) {
         DFXLOGE("Failed to open dev/null.");
         return;
@@ -604,7 +604,7 @@ void SetKernelSnapshot(bool enable)
     if (access(filePath, F_OK) < 0) {
         return;
     }
-    int dieCatchFd = open(filePath, O_RDWR);
+    int dieCatchFd = SysOpen(filePath, O_RDWR);
     if (dieCatchFd < 0) {
         return;
     }
