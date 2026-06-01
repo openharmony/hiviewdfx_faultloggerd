@@ -57,7 +57,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 #ifndef is_host
-bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str)
+bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str, size_t maxLength)
 {
     if (buff == nullptr || buffSize == 0) {
         DFXLOGE("Source is empty");
@@ -77,7 +77,7 @@ bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str)
     while (isspace(buff[endOffSet - 1])) {
         endOffSet--;
     }
-    validLen = std::min(endOffSet - buffOffset, static_cast<size_t>(NAME_BUF_LEN));
+    validLen = std::min(endOffSet - buffOffset, maxLength);
     str.assign(buff + buffOffset, validLen);
     return true;
 }

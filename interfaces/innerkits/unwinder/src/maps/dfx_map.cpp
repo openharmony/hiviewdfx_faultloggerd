@@ -226,7 +226,8 @@ bool DfxMap::Parse(const char* buff, size_t buffSize)
     ScanDec(buff, buffSize, inodeValue, buffOffset);
     inode = static_cast<ino_t>(inodeValue);
     if (buffOffset < buffSize) {
-        TrimAndDupStr(buff + buffOffset, buffSize - buffOffset, name);
+        constexpr size_t maxMapsNameLen = 256;
+        TrimAndDupStr(buff + buffOffset, buffSize - buffOffset, name, maxMapsNameLen);
     }
     return true;
 #else
