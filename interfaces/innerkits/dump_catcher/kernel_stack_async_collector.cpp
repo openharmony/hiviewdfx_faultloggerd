@@ -52,10 +52,15 @@ const struct KerrCodeToErrCode ERR_CODE_CONVERT_TABLE[] = {
 };
 
 struct AsyncCollect {
-    AsyncCollect(int pid, std::promise<KernelStackAsyncCollector::KernelResult> result)
-        : pid(pid), result(std::move(result)) {}
     int pid;
     std::promise<KernelStackAsyncCollector::KernelResult> result;
+
+    explicit AsyncCollect(int pid) : pid(pid) {}
+
+    void SetPromise(std::promise<KernelStackAsyncCollector::KernelResult> prom)
+    {
+        result = std::move(prom);
+    }
 };
 
 void* KernelStackAsyncCollector::CollectKernelStackTaskWrapper(void *arg)
@@ -81,14 +86,19 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessSta
     auto f = result.get_future();
     // kernel may take much time
     pthread_t tid = -1;
-    AsyncCollect *collect = new (std::nothrow) AsyncCollect(pid, std::move(result));
+    AsyncCollect *collect = new (std::nothrow) AsyncCollect(pid);
     if (collect == nullptr) {
         DFXLOGE("new collect failed, pid:%{public}d", pid);
+        result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
         return KernelResult {STACK_RESOURCE_LIMIT};
     }
+
+    collect->SetPromise(std::move(result));
+
     auto err = pthread_create(&tid, nullptr, CollectKernelStackTaskWrapper, collect);
     if (err != 0) {
         DFXLOGE("create thread failed, pid:%{public}d, error: %{public}s", pid, strerror(err));
+        collect->result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
         delete collect;
         return KernelResult {STACK_RESOURCE_LIMIT};
     }
@@ -115,14 +125,19 @@ bool KernelStackAsyncCollector::NotifyStartCollect(int pid)
     stackFuture_ = result.get_future();
     // kernel may take much time
     pthread_t tid = -1;
-    AsyncCollect *collect = new (std::nothrow) AsyncCollect(pid, std::move(result));
+    AsyncCollect *collect = new (std::nothrow) AsyncCollect(pid);
     if (collect == nullptr) {
         DFXLOGE("new collect failed, pid:%{public}d", pid);
+        result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
         return false;
     }
+
+    collect->SetPromise(std::move(result));
+
     auto err = pthread_create(&tid, nullptr, CollectKernelStackTaskWrapper, collect);
     if (err != 0) {
         DFXLOGE("create thread failed, pid:%{public}d, error: %{public}s", pid, strerror(err));
+        collect->result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
         delete collect;
         return false;
     }
