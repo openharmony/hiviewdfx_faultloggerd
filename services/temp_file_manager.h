@@ -31,7 +31,7 @@ class TempFileManager {
 public:
     bool Init();
 
-    static int32_t CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time);
+    static int32_t CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time, std::string& filePath);
 #ifndef is_ohos_lite
     static bool CheckCrashFileRecord(int32_t pid);
     static void RecordFileCreation(int32_t type, int32_t pid);

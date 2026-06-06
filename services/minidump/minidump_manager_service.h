@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+#include <unordered_set>
 #include "pdump.h"
 
 #include "epoll_manager.h"
@@ -36,9 +37,8 @@ class MinidumpManagerService {
 public:
     static MinidumpManagerService& GetInstance();
     bool Init();
-    static bool GenerateMinidump(int pipeFd, pid_t pid);
     bool ParsePDumpData(const struct __pdump_data_s& data);
-    int SetMiniDump(pid_t pid, bool enable);
+    int SetMiniDump(pid_t pid, int8_t enableMinidump, int8_t enableMinidumpToCrashLog);
 
 private:
     MinidumpManagerService() = default;
@@ -48,6 +48,9 @@ private:
     void ProcessWorkStart(const struct __pdump_data_s& data);
     void ProcessWorkEnd(const struct __pdump_data_s& data);
     int pFd_ {-1};
+    std::mutex configsMutex_;
+    std::unordered_set<pid_t> enableMinidumpConfigs;
+    std::unordered_set<pid_t> disableMinidumpToCrashLogConfigs;
 };
 }
 }

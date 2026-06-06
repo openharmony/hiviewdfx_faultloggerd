@@ -40,11 +40,14 @@
 #include "hisysevent.h"
 #endif
 
+#ifdef LOG_TAG
+#undef LOG_TAG
+#define LOG_TAG "TEMP_FILE_MANAGER"
+#endif
 namespace OHOS {
 namespace HiviewDFX {
 
 namespace {
-constexpr const char *const TEMP_FILE_MANAGER_TAG = "TEMP_FILE_MANAGER";
 constexpr uint64_t SECONDS_TO_MILLISECONDS = 1000;
 
 const SingleFileConfig* GetTargetFileConfig(const std::function<bool(const SingleFileConfig&)>& filter)
@@ -107,7 +110,7 @@ uint64_t GetTimeFromFileName(const std::string& fileName)
     errno = 0;
     uint64_t num = strtoull(timeStr.c_str(), nullptr, decimal);
     if (errno == ERANGE) {
-        DFXLOGE("%{public}s :: invalid timeStr for file: %{public}s", TEMP_FILE_MANAGER_TAG, timeStr.c_str());
+        DFXLOGE("invalid timeStr for file: %{public}s", timeStr.c_str());
         return 0;
     }
     return num;
@@ -118,7 +121,7 @@ bool CreateFileDir(const std::string& filePath)
     if (access(filePath.c_str(), F_OK) == 0 || OHOS::ForceCreateDirectory(filePath)) {
         return true;
     }
-    DFXLOGE("%{public}s :: failed to create dirs: %{public}s.", TEMP_FILE_MANAGER_TAG, filePath.c_str());
+    DFXLOGE("failed to create dirs: %{public}s.", filePath.c_str());
     return false;
 }
 
@@ -128,10 +131,10 @@ bool RemoveTempFile(const std::string& filePath)
         return true;
     }
     if (!OHOS::RemoveFile(filePath)) {
-        DFXLOGE("%{public}s :: failed to remove file: %{public}s.", TEMP_FILE_MANAGER_TAG, filePath.c_str());
+        DFXLOGE("failed to remove file: %{public}s.", filePath.c_str());
         return false;
     }
-    DFXLOGI("%{public}s :: success to remove file: %{public}s.", TEMP_FILE_MANAGER_TAG, filePath.c_str());
+    DFXLOGI("success to remove file: %{public}s.", filePath.c_str());
     return true;
 }
 
@@ -193,8 +196,7 @@ uint64_t CheckTempFileSize(const SingleFileConfig& fileConfig, const std::string
         (originFileSize <= fileConfig.maxSingleFileSize || fileConfig.maxSingleFileSize == 0)) {
         return originFileSize;
     }
-    DFXLOGW("%{public}s :: invalid file size %{public}" PRIu64 " of: %{public}s.",
-        TEMP_FILE_MANAGER_TAG, originFileSize, filePath.c_str());
+    DFXLOGW("invalid file size %{public}" PRIu64 " of: %{public}s.", originFileSize, filePath.c_str());
     if (fileConfig.overFileSizeAction == OverFileSizeAction::DELETE || originFileSize == 0) {
         RemoveTempFile(filePath);
         return 0;
@@ -330,14 +332,15 @@ bool TempFileManager::Init()
 {
     auto& tempFilePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
     if (tempFilePath.empty() || !CreateFileDir(tempFilePath)) {
-        DFXLOGE("%{public}s :: invalid temp file path %{public}s", TEMP_FILE_MANAGER_TAG, tempFilePath.c_str());
+        DFXLOGE("invalid temp file path %{public}s", tempFilePath.c_str());
         return false;
     }
     ScanTempFilesOnStart();
     return InitTempFileWatcher();
 }
 
-int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time)
+int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time,
+    std::string& filePath)
 {
     const std::set<int32_t> needTidFaultTypes = {
         FaultLoggerType::JS_HEAP_SNAPSHOT, FaultLoggerType::JS_RAW_SNAPSHOT,
@@ -353,39 +356,38 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
 
     const auto fileConfig = GetTargetFileConfig(type);
     if (fileConfig == nullptr) {
-        DFXLOGW("%{public}s :: failed to create fileDescriptor because of unknown file type for %{public}d",
-            TEMP_FILE_MANAGER_TAG, type);
+        DFXLOGW("failed to create fd, unknown file type for %{public}d", type);
         return -1;
     }
-    std::string ss = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/" +
+    filePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/" +
         fileConfig->fileNamePrefix + "-" + std::to_string(pid);
     if (needTidFaultTypes.find(type) != needTidFaultTypes.end() && tid != -1) {
-        ss += "-" + std::to_string(tid);
+        filePath += "-" + std::to_string(tid);
     }
-    ss += "-" + std::to_string(time == 0 ? std::chrono::duration_cast<std::chrono::milliseconds>\
+    filePath += "-" + std::to_string(time == 0 ? std::chrono::duration_cast<std::chrono::milliseconds>\
 (std::chrono::system_clock::now().time_since_epoch()).count() : time);
     if (needRawheapExtFaultTypes.find(type) != needRawheapExtFaultTypes.end()) {
-        ss += ".rawheap";
+        filePath += ".rawheap";
     } else if (type == FaultLoggerType::CPP_CRASH) {
 #ifndef is_ohos_lite
-        ss += ".json";
+        filePath += ".json";
 #endif
+    } else if (type == FaultLoggerType::MINIDUMP) {
+        filePath += ".dmp";
     }
-    DFXLOGI("%{public}s :: create file for path(%{public}s).", TEMP_FILE_MANAGER_TAG, ss.c_str());
-    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(ss.c_str(), O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP));
+    DFXLOGI("create file for filePath(%{public}s).", filePath.c_str());
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(),
+        O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP));
     if (fd < 0) {
-        int openErrno = errno;
+        DFXLOGE("Failed to create log file, errno(%{public}d)", errno);
         const auto& dirPath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
         if (access(dirPath.c_str(), F_OK) != 0) {
-            DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d). %{public}s does not exist!!!",
-                    TEMP_FILE_MANAGER_TAG, openErrno, dirPath.c_str());
-        } else {
-            DFXLOGE("%{public}s :: Failed to create log file, errno(%{public}d)", TEMP_FILE_MANAGER_TAG, openErrno);
+            DFXLOGE("%{public}s does not exist, errno(%{public}d).", dirPath.c_str(), errno);
         }
     } else if (fileConfig->fileOwnerUid >= 0) {
-        if (chown(ss.c_str(), fileConfig->fileOwnerUid, -1) != 0) {
-            DFXLOGE("%{public}s :: Failed to chown file %{public}s to uid %{public}d, errno(%{public}d)",
-                TEMP_FILE_MANAGER_TAG, ss.c_str(), fileConfig->fileOwnerUid, errno);
+        if (chown(filePath.c_str(), fileConfig->fileOwnerUid, -1) != 0) {
+            DFXLOGE("Failed to chown file %{public}s to uid %{public}d, errno(%{public}d)", filePath.c_str(),
+                fileConfig->fileOwnerUid, errno);
         }
     }
     return fd;
@@ -441,7 +443,7 @@ std::unique_ptr<TempFileManager::TempFileWatcher> TempFileManager::TempFileWatch
 {
     SmartFd watchFd{inotify_init()};
     if (!watchFd) {
-        DFXLOGE("%{public}s :: failed to init inotify fd: %{public}d.", TEMP_FILE_MANAGER_TAG, watchFd.GetFd());
+        DFXLOGE("failed to init inotify fd: %{public}d.", watchFd.GetFd());
         return nullptr;
     }
     return std::unique_ptr<TempFileManager::TempFileWatcher>(new (std::nothrow)TempFileWatcher(tempFileManager,
@@ -457,7 +459,7 @@ bool TempFileManager::TempFileWatcher::AddWatchEvent(const char* watchPath, uint
         return false;
     }
     if (inotify_add_watch(GetFd(), watchPath, watchEvent) < 0) {
-        DFXLOGE("%{public}s :: failed to add watch for file: %{public}s.", TEMP_FILE_MANAGER_TAG, watchPath);
+        DFXLOGE("failed to add watch for file: %{public}s.", watchPath);
         return false;
     }
     return true;
@@ -520,9 +522,9 @@ void TempFileManager::TempFileWatcher::HandleEvent(uint32_t eventMask, const std
 void TempFileManager::TempFileWatcher::HandleFileCreate(const std::string& filePath, const SingleFileConfig& fileConfig)
 {
     int32_t currentFileCount = ++(tempFileManager_.GetTargetFileCount(fileConfig.type));
-    DFXLOGD("%{public}s :: file %{public}s is created, currentFileCount: %{public}d, keepFileCount: %{public}d, "
+    DFXLOGD("file %{public}s is created, currentFileCount: %{public}d, keepFileCount: %{public}d, "
             "maxFileCount: %{public}d, existTime %{public}d, overTimeDeleteType %{public}d",
-            TEMP_FILE_MANAGER_TAG, filePath.c_str(), currentFileCount, fileConfig.keepFileCount,
+            filePath.c_str(), currentFileCount, fileConfig.keepFileCount,
             fileConfig.maxFileCount, fileConfig.fileExistTime, fileConfig.overTimeFileDeleteType);
     if (fileConfig.overTimeFileDeleteType == OverTimeFileDeleteType::ACTIVE) {
         DelayTaskQueue::GetInstance().AddDelayTask(
@@ -546,8 +548,7 @@ void TempFileManager::TempFileWatcher::HandleFileDeleteOrMove(const std::string&
     if (currentFileCount > 0) {
         currentFileCount--;
     }
-    DFXLOGD("%{public}s :: file %{public}s is deleted or moved, currentFileCount: %{public}d",
-            TEMP_FILE_MANAGER_TAG, filePath.c_str(), currentFileCount);
+    DFXLOGD("file %{public}s is deleted or moved, currentFileCount: %{public}d", filePath.c_str(), currentFileCount);
 }
 
 void TempFileManager::TempFileWatcher::HandleFileWrite(const std::string& filePath, const SingleFileConfig& fileConfig)
@@ -561,7 +562,7 @@ void TempFileManager::TempFileWatcher::HandleDirRemoved()
 {
     std::string summary = "The temp file directory: " +
         FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + " was removed unexpectedly";
-    DFXLOGE("%{public}s :: %{public}s", TEMP_FILE_MANAGER_TAG, summary.c_str());
+    DFXLOGE("%{public}s", summary.c_str());
 #ifndef HISYSEVENT_DISABLE
     auto now = std::chrono::system_clock::now();
     auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();

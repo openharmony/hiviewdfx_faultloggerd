@@ -54,6 +54,10 @@ public:
         return keyThread_;
     }
 
+    void SetKeyThread(std::shared_ptr<DfxThread> keyThread)
+    {
+        keyThread_ = keyThread;
+    }
     const DfxProcessInfo& GetProcessInfo() const
     {
         return processInfo_;

@@ -101,7 +101,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest001, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         exit(0);
     }
     pid_t tid = pid;
@@ -155,7 +155,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest002, TestSize.Level2)
         int threadID[1] = {1};
         pthread_create(&childThread, NULL, SleepThread, &threadID[0]);
         pthread_detach(childThread);
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         exit(0);
     }
     sleep(1);
@@ -208,7 +208,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest003, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         exit(0);
     }
     pid_t tid = pid;
@@ -236,6 +236,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest003, TestSize.Level2)
         "#00",
         "#01",
     };
+    process.Detach();
     for (const std::string& keyWord : keyWords) {
         EXPECT_TRUE(CheckContent(result, keyWord, true));
     }
@@ -383,7 +384,7 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         exit(0);
     }
     pid_t tid = pid;

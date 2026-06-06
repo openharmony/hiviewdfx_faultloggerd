@@ -156,7 +156,11 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
         if (IsValid()) {
             DFXLOGU("mapStart: %{public}" PRIx64 ", mapOffset: %{public}" PRIx64 "",
                 (uint64_t)mapStart, (uint64_t)mapOffset);
-            loadBase_ = mapStart - mapOffset - static_cast<uint64_t>(GetLoadBias());
+            if (mapOffset == 0) {
+                loadBase_ = mapStart;
+            } else {
+                loadBase_ = mapStart - mapOffset - static_cast<uint64_t>(GetLoadBias());
+            }
             DFXLOGU("Elf loadBase: %{public}" PRIx64 "", (uint64_t)loadBase_);
         }
     }

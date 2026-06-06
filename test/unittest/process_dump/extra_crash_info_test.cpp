@@ -77,7 +77,7 @@ HWTEST_F(ExtraCrashInfoTest, ExtraCrashInfoTest001, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         exit(0);
     }
     pid_t tid = pid;
@@ -104,10 +104,10 @@ HWTEST_F(ExtraCrashInfoTest, ExtraCrashInfoTest001, TestSize.Level2)
         "0x000:", "0x020:", "0x040:", "0x060:", "0x080:",
         "0x0a0:", "0x0c0:", "0x0e0:", "0x100:", "0x120:",
     };
+    process.Detach();
     for (const std::string& keyWord : keyWords) {
         ASSERT_TRUE(CheckContent(result, keyWord, true));
     }
-    process.Detach();
     GTEST_LOG_(INFO) << "ExtraCrashInfoTest001: end.";
 }
 }

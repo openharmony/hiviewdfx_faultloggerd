@@ -68,6 +68,7 @@
       OHOS::HiviewDFX::DfxMaps::FindMapsByName*;
       OHOS::HiviewDFX::DfxMaps::GetStackRange*;
       OHOS::HiviewDFX::DfxMaps::IsArkWebProc*;
+      OHOS::HiviewDFX::DfxMaps::AddMap*;
       OHOS::HiviewDFX::DfxRegs::CreateRemoteRegs*;
       OHOS::HiviewDFX::DfxRegs::CreateFromUcontext*;
       OHOS::HiviewDFX::DfxRegs::GetRegsData*;
@@ -118,6 +119,8 @@
       OHOS::HiviewDFX::LocalThreadContextMix::AccessMem*;
       OHOS::HiviewDFX::LocalThreadContextMix::CreateAccessors*;
       OHOS::HiviewDFX::LocalThreadContextMix::CopyRegister*;
+      OHOS::HiviewDFX::LocalThreadContextMix::SetRegister*;
+      OHOS::HiviewDFX::LocalThreadContextMix::SetSp*;
       OHOS::HiviewDFX::RegularElfFactory::Create*;
       OHOS::HiviewDFX::CompressHapElfFactory::Create*;
       OHOS::HiviewDFX::GetFileSize*;

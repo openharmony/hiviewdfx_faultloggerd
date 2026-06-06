@@ -28,12 +28,13 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
         return 0;
     }
     const FaultLoggerdRequest& requestData = *reinterpret_cast<const FaultLoggerdRequest*>(data);
+    std::string filePath;
     if (requestData.head.clientType & 1) {
         OHOS::HiviewDFX::SmartFd socketFd(OHOS::HiviewDFX::TempFileManager::CreateFileDescriptor(
-            FaultLoggerType::CPP_CRASH, requestData.pid, requestData.tid, requestData.time));
+            FaultLoggerType::CPP_CRASH, requestData.pid, requestData.tid, requestData.time, filePath));
     } else {
         OHOS::HiviewDFX::SmartFd socketFd(OHOS::HiviewDFX::TempFileManager::CreateFileDescriptor(
-            FaultLoggerType::JS_RAW_SNAPSHOT, requestData.pid, requestData.tid, requestData.time));
+            FaultLoggerType::JS_RAW_SNAPSHOT, requestData.pid, requestData.tid, requestData.time, filePath));
     }
     return 0;
 }

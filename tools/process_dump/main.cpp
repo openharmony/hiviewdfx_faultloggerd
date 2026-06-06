@@ -24,9 +24,11 @@
 #include "dfx_log.h"
 #include "dfx_util.h"
 #include "lite_perf_dumper.h"
-#include "process_dumper.h"
-
 #include "lite_process_dumper.h"
+#ifndef is_ohos_lite
+#include "minidump_dumper.h"
+#endif
+#include "process_dumper.h"
 
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
@@ -34,8 +36,6 @@
 
 static const int DUMP_ARG_ONE = 1;
 static const std::string DUMP_STACK_TAG_USAGE = "usage:";
-
-static long g_pid = 0;
 
 static void PrintCommandHelp()
 {
@@ -57,7 +57,28 @@ static bool StartLitePerf(int argc, char *argv[])
     return true;
 }
 
-static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &isRender)
+static bool StartMinidump(int argc, char *argv[])
+{
+    if (argc < 3) { // 3 : contain param
+        return false;
+    }
+    int pid = 0;
+    int pipeFd = -1;
+    int enableMinidump = 0;
+    int enableMinidumpToCrashLog = 0;
+    int ret = sscanf_s(argv[2], "%d %d %d %d", &pid, &pipeFd, &enableMinidump, &enableMinidumpToCrashLog);
+    if (ret != 4) { // 4 : four params
+        return false;
+    }
+#ifndef is_ohos_lite
+    OHOS::HiviewDFX::MinidumpDumper minidumpDumper;
+    return minidumpDumper.Dump(pid, pipeFd, static_cast<bool>(enableMinidump),
+        static_cast<bool>(enableMinidumpToCrashLog));
+#endif
+    return true;
+}
+
+static bool ParseParameters(int argc, char *argv[])
 {
     if (argc <= DUMP_ARG_ONE) {
         return false;
@@ -65,7 +86,8 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
     DFXLOGD("[%{public}d]: argc: %{public}d, argv1: %{public}s", __LINE__, argc, argv[1]);
 
     if (!strcmp("-signalhandler", argv[DUMP_ARG_ONE])) {
-        isSignalHdlr = true;
+        alarm(PROCESSDUMP_TIMEOUT);
+        OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
         return true;
     }
     if (!strcmp("-liteperf", argv[DUMP_ARG_ONE])) {
@@ -75,9 +97,18 @@ static bool ParseParameters(int argc, char *argv[], bool &isSignalHdlr, bool &is
         if (argc < 3) { // 3 : contain type pid
             return false;
         }
-        SafeStrtol(argv[2], &g_pid, DECIMAL_BASE); // 2 : the index of pid
-        isRender = true;
+        long pid = 0;
+        if (!SafeStrtol(argv[2], &pid, DECIMAL_BASE)) { // 2 : the index of pid
+            return false;
+        }
+        DFXLOGI("start lite processdump");
+        OHOS::HiviewDFX::LiteProcessDumper liteProcessDumper;
+        liteProcessDumper.Dump(static_cast<int>(pid));
         return true;
+    }
+    if (!strcmp("-minidump", argv[DUMP_ARG_ONE])) {
+        alarm(PROCESSDUMP_TIMEOUT);
+        return StartMinidump(argc, argv);
     }
     return false;
 }
@@ -91,26 +122,12 @@ int main(int argc, char *argv[])
     if (signal(SIGCHLD, SIG_IGN) == SIG_ERR) {
         DFXLOGE("Processdump ignore SIGCHLD failed.");
     }
-
-    bool isSignalHdlr = false;
-    bool isRender = false;
-
     setsid();
 
-    if (!ParseParameters(argc, argv, isSignalHdlr, isRender)) {
+    if (!ParseParameters(argc, argv)) {
+        DFXLOGI("invalid param");
         PrintCommandHelp();
         return 0;
-    }
-
-    if (isSignalHdlr) {
-        alarm(PROCESSDUMP_TIMEOUT);
-        OHOS::HiviewDFX::ProcessDumper::GetInstance().Dump();
-    } else if (isRender) {
-        DFXLOGI("start lite processdump");
-        OHOS::HiviewDFX::LiteProcessDumper liteProcessDumper;
-        liteProcessDumper.Dump(static_cast<int>(g_pid));
-    } else {
-        DFXLOGI("invalid param");
     }
 #ifndef CLANG_COVERAGE
     _exit(0);

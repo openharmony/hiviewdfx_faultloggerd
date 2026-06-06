@@ -30,6 +30,7 @@ processdump_sources = [
   "process_dumper.cpp",
   "registers.cpp",
   "lite_process_dumper.cpp",
+  "minidump_dumper.cpp",
   "submitter_stack.cpp",
   "utils/dump_utils.cpp",
   "utils/thread_pool.cpp",
@@ -187,6 +188,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
       "$faultloggerd_frameworks_path/limited:dfx_limited_src",
+      "minidump_parser:minidump_parser",
     ]
 
     external_deps = [
@@ -262,6 +264,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/stack_printer:libstack_printer",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+      "minidump_parser:minidump_parser_cfi",
       "$faultloggerd_frameworks_path/limited:dfx_limited_src_cfi",
     ]
 

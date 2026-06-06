@@ -59,6 +59,25 @@ public:
     {
         threadInfo_.threadName = threadName;
     }
+    void SetThreadStackBuffer(std::shared_ptr<std::vector<uint8_t>> stackBuf)
+    {
+        stackBuf_ = stackBuf;
+    }
+
+    std::shared_ptr<std::vector<uint8_t>> GetThreadStackBuffer()
+    {
+        return stackBuf_;
+    }
+    
+    void SetStartOfStackMemory(uint64_t startOfStarkMemory)
+    {
+        startOfStarkMemory_ = startOfStarkMemory;
+    }
+
+    uint64_t GetStartOfStackMemory()
+    {
+        return startOfStarkMemory_;
+    }
 
     void Detach();
     bool Attach(int timeout = PTRACE_ATTACH_KEY_THREAD_TIMEOUT);
@@ -83,6 +102,8 @@ private:
     std::vector<DfxFrame> frames_;
     bool needParseSymbol_ = true;
     std::shared_ptr<ProcessInfo> processInfo_ = nullptr;
+    std::shared_ptr<std::vector<uint8_t>> stackBuf_;
+    uint64_t startOfStarkMemory_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

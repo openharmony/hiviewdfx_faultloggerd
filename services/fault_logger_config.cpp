@@ -145,6 +145,10 @@ void InitFaultloggerTestConfig(DirectoryConfig& directoryConfig)
             .overTimeFileDeleteType = OverTimeFileDeleteType::ACTIVE,
             .keepFileCount = -1,
             .maxFileCount = 2,
+        },
+        {
+            .type = FaultLoggerType::MINIDUMP,
+            .fileNamePrefix = "minidump",
         }
     };
 }

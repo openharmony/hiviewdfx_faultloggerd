@@ -138,6 +138,9 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest003, TestSize.Level2)
     }
     waitpid(pid, 0, 0);
     std::string snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 5);
+    if (snapshotFilePath.find(".json") != std::string::npos) {
+        snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 5);
+    }
 
     std::ifstream snapshotFile(snapshotFilePath);
     if (snapshotFile.is_open()) {
@@ -180,6 +183,12 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest004, TestSize.Level2)
     waitpid(pid, 0, 0);
 
     std::string snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 2);
+    if (snapshotFilePath.find(".json") != std::string::npos) {
+        snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 2);
+        if (snapshotFilePath.find(".json") != std::string::npos) {
+            snapshotFilePath = "";
+        }
+    }
     EXPECT_TRUE(snapshotFilePath.empty());
 
     std::string recoverProcessdump = "mv /system/bin/processdump.bak /system/bin/processdump";
@@ -204,8 +213,10 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest005, TestSize.Level2)
         *p = 0;
     }
     waitpid(pid, 0, 0);
-    WaitCreateCrashFile("cppcrash", pid, 5);
-
+    std::string snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 5);
+    if (snapshotFilePath.find(".json") != std::string::npos) {
+        snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 5);
+    }
     string getHilogCmd = "hilog -x | grep -i c02d11";
     string content = ExecuteCommands(getHilogCmd);
     EXPECT_TRUE(content.find("Build info") != std::string::npos) << "KernelSnapshotTest005 Failed";

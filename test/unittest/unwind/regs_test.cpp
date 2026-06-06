@@ -322,6 +322,56 @@ HWTEST_F(DfxRegsTest, DfxRegsTest006, TestSize.Level2)
     ASSERT_EQ(status, 0);
     GTEST_LOG_(INFO) << "DfxRegsTest006: end.";
 }
+
+/**
+ * @tc.name: DfxRegsTest007
+ * @tc.desc: test CreateFromRegs DWARF_UNWIND uses size param instead of REG_LAST
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxRegsTest, DfxRegsTest007, TestSize.Level2)
+{
+    uintptr_t regs[33] = {0};
+    for (size_t i = 0; i < 33; ++i) {
+        regs[i] = i + 0x100;
+    }
+    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, 33);
+    ASSERT_TRUE(dfxRegs != nullptr);
+    uintptr_t regsSmall[16] = {0};
+    for (size_t i = 0; i < 16; ++i) {
+        regsSmall[i] = i + 0x200;
+    }
+    auto dfxRegsSmall = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regsSmall, 16);
+    ASSERT_TRUE(dfxRegsSmall != nullptr);
+}
+
+/**
+ * @tc.name: DfxRegsTest008
+ * @tc.desc: test CreateFromRegs DWARF_UNWIND with size=0
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxRegsTest, DfxRegsTest008, TestSize.Level2)
+{
+    uintptr_t regs[33] = {1};
+    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, 0);
+    ASSERT_TRUE(dfxRegs != nullptr);
+    ASSERT_EQ(dfxRegs->GetRegsData()[0], 0u);
+}
+
+/**
+ * @tc.name: DfxRegsTest009
+ * @tc.desc: test CreateFromRegs DWARF_UNWIND with size exceeding RegsSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxRegsTest, DfxRegsTest009, TestSize.Level2)
+{
+    uintptr_t regs[33] = {0};
+    for (size_t i = 0; i < 33; ++i) {
+        regs[i] = i + 0x300;
+    }
+    auto dfxRegs = DfxRegs::CreateFromRegs(UnwindMode::DWARF_UNWIND, regs, 100);
+    ASSERT_TRUE(dfxRegs != nullptr);
+    ASSERT_EQ(dfxRegs->GetRegsData().size(), static_cast<size_t>(dfxRegs->RegsSize()));
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS

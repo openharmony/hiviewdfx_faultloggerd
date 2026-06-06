@@ -72,7 +72,7 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest001, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         exit(0);
     }
     pid_t tid = pid;
@@ -108,6 +108,7 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest001, TestSize.Level2)
         "LastFatalMessage:" + msg,
 #endif
     };
+    process.Detach();
     for (const std::string& keyWord : keyWords) {
         ASSERT_TRUE(CheckContent(result, keyWord, true));
     }
@@ -127,7 +128,7 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest002, TestSize.Level2)
     if (pid < 0) {
         GTEST_LOG_(ERROR) << "Failed to fork new test process.";
     } else if (pid == 0) {
-        sleep(3); // 3 : sleep 3 seconds
+        sleep(2); // 2 : sleep 2 seconds
         exit(0);
     }
     pid_t tid = pid;
@@ -152,6 +153,7 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest002, TestSize.Level2)
         "Uid:",
         "Process name",
     };
+    process.Detach();
     for (const std::string& keyWord : keyWords) {
         ASSERT_TRUE(CheckContent(result, keyWord, true));
     }

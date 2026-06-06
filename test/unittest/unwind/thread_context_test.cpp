@@ -158,6 +158,21 @@ HWTEST(LocalThreadContextMixTest, AccessMem004, testing::ext::TestSize.Level0)
     uintptr_t val = -1;
     ASSERT_EQ(instance.AccessMem(addr, &val), -1);
 }
+
+/**
+ * @tc.name: LocalThreadContextMixSetSp001
+ * @tc.desc: test LocalThreadContextMix SetSp sets sp value
+ * @tc.type: FUNC
+ */
+HWTEST(LocalThreadContextMixTest, SetSp001, testing::ext::TestSize.Level2)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    uintptr_t testSp = 0x10000;
+    instance.SetSp(testSp);
+    EXPECT_EQ(instance.sp_, testSp);
+    instance.SetSp(0);
+    EXPECT_EQ(instance.sp_, 0);
+}
 } // namespace HiviewDFX
 } // namepsace OHOS
 

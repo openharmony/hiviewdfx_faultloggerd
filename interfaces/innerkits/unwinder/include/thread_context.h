@@ -94,6 +94,7 @@ public:
     void CopyRegister(void *context);
     void CopyStackBuf();
     void SetRegister(std::shared_ptr<DfxRegs> regs);
+    void SetSp(uintptr_t sp);
     void SetStackRang(uintptr_t stackTop, uintptr_t stackBottom);
     int GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map) const;
     int FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo) const;

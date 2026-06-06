@@ -34,6 +34,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <info/fatal_message.h>
+#include <linux/capability.h>
 #include <sys/capability.h>
 #include <sys/mman.h>
 #include <sys/prctl.h>
@@ -42,8 +44,6 @@
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <sys/wait.h>
-#include <info/fatal_message.h>
-#include <linux/capability.h>
 
 #include "dfx_cutil.h"
 #include "dfx_define.h"
@@ -51,6 +51,7 @@
 #include "dfx_log.h"
 #include "dfx_signalhandler_exception.h"
 #ifndef is_ohos_lite
+#include "faultlog_client.h"
 #include "hilog_snapshot/log_snapshot.h"
 #endif
 
@@ -669,6 +670,9 @@ static void ReadUnwindFinishMsg(int signo)
         g_unwindResult, g_blockExit);
     if (g_unwindResult == CRASH_UNWIND_SUCCESS_FLAG) {
         SetKernelSnapshot(false);
+#ifndef is_ohos_lite
+        RequestSetMinidumpToCrashLog(false);
+#endif
     }
     if (g_blockExit == CRASH_BLOCK_EXIT_FLAG) {
         syscall(SYS_tgkill, g_request->nsPid, g_request->tid, SIGSTOP);

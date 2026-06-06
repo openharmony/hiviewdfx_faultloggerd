@@ -29,11 +29,14 @@
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "faultloggerd_client.h"
+#include "faultlog_client.h"
 #include "fault_common_util.h"
 #include "faultloggerd_test.h"
 #include "faultloggerd_test_server.h"
 #include "fault_logger_daemon.h"
 #include "smart_fd.h"
+#include "minidump_manager_service.h"
+#include "dfx_socket_request.h"
 
 using namespace testing;
 using namespace testing::ext;
@@ -205,6 +208,185 @@ HWTEST_F(FaultloggerdClientTest, ReportDumpStatsTest001, TestSize.Level2)
     FaultLoggerdStatsRequest request;
     ASSERT_EQ(ReportDumpStats(&request), 0);
     GTEST_LOG_(INFO) << "FaultloggerdClientTest001: end.";
+}
+
+#ifdef __aarch64__
+/**
+ * @tc.name: RequestSetMinidumpToCrashLogTest001
+ * @tc.desc: test RequestSetMinidumpToCrashLog enable
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest001: start.";
+    int32_t ret = RequestSetMinidumpToCrashLog(true);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest001: end.";
+}
+
+/**
+ * @tc.name: RequestSetMinidumpToCrashLogTest002
+ * @tc.desc: test RequestSetMinidumpToCrashLog disable
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest002, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest002: start.";
+    int32_t ret = RequestSetMinidumpToCrashLog(false);
+    EXPECT_EQ(ret, 0);
+    GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest002: end.";
+}
+
+/**
+ * @tc.name: MiniDumpRequestDataFieldTest001
+ * @tc.desc: test MiniDumpRequestData enableMinidumpToCrashLog field
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, MiniDumpRequestDataFieldTest001, TestSize.Level2)
+{
+    MiniDumpRequestData data{};
+    data.head.clientType = MINIDUMP_CLIENT;
+    data.pid = getpid();
+    data.enableMinidump = 1;
+    data.enableMinidumpToCrashLog = 1;
+    EXPECT_EQ(data.enableMinidump, 1);
+    EXPECT_EQ(data.enableMinidumpToCrashLog, 1);
+    data.enableMinidump = 0;
+    data.enableMinidumpToCrashLog = 0;
+    EXPECT_EQ(data.enableMinidump, 0);
+    EXPECT_EQ(data.enableMinidumpToCrashLog, 0);
+    data.enableMinidump = -1;
+    data.enableMinidumpToCrashLog = -1;
+    EXPECT_EQ(data.enableMinidump, -1);
+    EXPECT_EQ(data.enableMinidumpToCrashLog, -1);
+}
+
+/**
+ * @tc.name: MinidumpManagerServiceSetMiniDumpTest001
+ * @tc.desc: test SetMiniDump with enableMinidump=1 adds to configs
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest001, TestSize.Level2)
+{
+    auto& svc = MinidumpManagerService::GetInstance();
+    pid_t testPid = getpid();
+    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+    int ret = svc.SetMiniDump(testPid, 1, -1);
+    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
+    svc.enableMinidumpConfigs.erase(testPid);
+}
+
+/**
+ * @tc.name: MinidumpManagerServiceSetMiniDumpTest002
+ * @tc.desc: test SetMiniDump with enableMinidump=0 removes from configs
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest002, TestSize.Level2)
+{
+    auto& svc = MinidumpManagerService::GetInstance();
+    pid_t testPid = getpid();
+    svc.enableMinidumpConfigs.emplace(testPid);
+    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
+    int ret = svc.SetMiniDump(testPid, 0, -1);
+    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+}
+
+/**
+ * @tc.name: MinidumpManagerServiceSetMiniDumpTest003
+ * @tc.desc: test SetMiniDump with enableMinidumpToCrashLog=0 adds to disable set
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest003, TestSize.Level2)
+{
+    auto& svc = MinidumpManagerService::GetInstance();
+    svc.disableMinidumpToCrashLogConfigs.clear();
+    pid_t testPid = getpid();
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    int ret = svc.SetMiniDump(testPid, -1, 0);
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
+    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
+}
+
+/**
+ * @tc.name: MinidumpManagerServiceSetMiniDumpTest004
+ * @tc.desc: test SetMiniDump with enableMinidumpToCrashLog=1 removes from disable set
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest004, TestSize.Level2)
+{
+    auto& svc = MinidumpManagerService::GetInstance();
+    svc.disableMinidumpToCrashLogConfigs.clear();
+    pid_t testPid = getpid();
+    svc.disableMinidumpToCrashLogConfigs.emplace(testPid);
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
+    int ret = svc.SetMiniDump(testPid, -1, 1);
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+}
+
+/**
+ * @tc.name: MinidumpManagerServiceSetMiniDumpTest005
+ * @tc.desc: test SetMiniDump both disabled triggers clear_dumpable and erase
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest005, TestSize.Level2)
+{
+    auto& svc = MinidumpManagerService::GetInstance();
+    pid_t testPid = getpid();
+    svc.enableMinidumpConfigs.erase(testPid);
+    svc.disableMinidumpToCrashLogConfigs.emplace(testPid);
+    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
+    int ret = svc.SetMiniDump(testPid, -1, -1);
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
+}
+
+/**
+ * @tc.name: MinidumpManagerServiceSetMiniDumpTest006
+ * @tc.desc: test SetMiniDump with pFd_ < 0 returns error
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest006, TestSize.Level2)
+{
+    auto& svc = MinidumpManagerService::GetInstance();
+    pid_t testPid = getpid();
+    svc.enableMinidumpConfigs.erase(testPid);
+    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
+    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    int ret = svc.SetMiniDump(testPid, 1, 1);
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
+    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+}
+#endif
+
+/**
+ * @tc.name: TempFileManagerCreateFileDescriptorMinidumpTest001
+ * @tc.desc: test CreateFileDescriptor for MINIDUMP type creates .dmp extension
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, TempFileManagerCreateFileDescriptorMinidumpTest001, TestSize.Level2)
+{
+    std::string filePath;
+    SmartFd fd(TempFileManager::CreateFileDescriptor(
+        FaultLoggerType::MINIDUMP, getpid(), gettid(), GetTimeMilliSeconds(), filePath));
+    ASSERT_GE(fd.GetFd(), 0);
+    EXPECT_TRUE(filePath.find(".dmp") != std::string::npos);
+}
+
+/**
+ * @tc.name: TempFileManagerCreateFileDescriptorFilePathTest002
+ * @tc.desc: test CreateFileDescriptor returns filePath for CPP_CRASH
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdClientTest, TempFileManagerCreateFileDescriptorFilePathTest002, TestSize.Level2)
+{
+    std::string filePath;
+    SmartFd fd(TempFileManager::CreateFileDescriptor(
+        FaultLoggerType::CPP_CRASH, getpid(), gettid(), GetTimeMilliSeconds(), filePath));
+    ASSERT_GE(fd.GetFd(), 0);
+    EXPECT_TRUE(!filePath.empty());
+    EXPECT_TRUE(filePath.find("cppcrash") != std::string::npos);
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

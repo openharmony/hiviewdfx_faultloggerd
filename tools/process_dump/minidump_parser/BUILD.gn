@@ -1,0 +1,91 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+if (!defined(ohos_lite)) {
+  config("minidump_config") {
+    visibility = [ "*:*" ]
+    include_dirs = [
+      "include",
+      "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_interfaces_path/common",
+    ]
+  }
+
+  ohos_source_set("minidump_parser") {
+    sources = [
+      "minidump_context.cpp",
+      "minidump_memory.cpp",
+      "minidump_thread.cpp",
+      "minidump_thread_name.cpp",
+      "minidump_module.cpp",
+      "minidump_memory_reader.cpp",
+      "minidump_exception.cpp",
+      "minidump_system_info.cpp",
+      "minidump_misc_info.cpp",
+      "minidump_parser.cpp",
+      "minidump_factory.cpp",
+      "minidump_optimizer.cpp",
+      "minidump_config.cpp",
+      "minidump_esr_info.cpp",
+      "minidump_maps.cpp",
+      "minidump_observer.cpp"
+    ]
+
+    public_configs = [ ":minidump_config" ]
+    deps = [ "$faultloggerd_common_path/dfxlog:dfx_hilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+    subsystem_name = "hiviewdfx"
+    part_name = "faultloggerd"
+  }
+
+  ohos_source_set("minidump_parser_cfi") {
+    sanitize = {
+      cfi = true
+      cfi_cross_dso = true
+      cfi_vcall_icall_only = true
+      debug = false
+    }
+    sources = [
+      "minidump_context.cpp",
+      "minidump_memory.cpp",
+      "minidump_thread.cpp",
+      "minidump_thread_name.cpp",
+      "minidump_module.cpp",
+      "minidump_memory_reader.cpp",
+      "minidump_exception.cpp",
+      "minidump_system_info.cpp",
+      "minidump_misc_info.cpp",
+      "minidump_parser.cpp",
+      "minidump_factory.cpp",
+      "minidump_optimizer.cpp",
+      "minidump_config.cpp",
+      "minidump_esr_info.cpp",
+      "minidump_maps.cpp",
+      "minidump_observer.cpp"
+    ]
+
+    public_configs = [ ":minidump_config" ]
+    deps = [ "$faultloggerd_common_path/dfxlog:dfx_hilog" ]
+    external_deps = [
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+    subsystem_name = "hiviewdfx"
+    part_name = "faultloggerd"
+  }
+}
