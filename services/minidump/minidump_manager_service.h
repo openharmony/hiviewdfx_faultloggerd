@@ -33,12 +33,22 @@ public:
     void OnEventPoll() override;
 };
 
+class PidFdListener : public EpollListener {
+public:
+    explicit PidFdListener(SmartFd fd) : EpollListener(std::move(fd), true) {}
+    void OnEventPoll() override;
+    void SetPid(pid_t pid) { pid_ = pid; }
+private:
+    pid_t pid_ = 0;
+};
+
 class MinidumpManagerService {
 public:
     static MinidumpManagerService& GetInstance();
     bool Init();
     bool ParsePDumpData(const struct __pdump_data_s& data);
     int SetMiniDump(pid_t pid, int8_t enableMinidump, int8_t enableMinidumpToCrashLog);
+    void ProcessEnableMinidumpConfigs(pid_t pid);
 
 private:
     MinidumpManagerService() = default;
