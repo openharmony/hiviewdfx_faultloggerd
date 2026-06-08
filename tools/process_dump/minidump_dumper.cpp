@@ -64,7 +64,6 @@ bool MinidumpDumper::Dump(int pid, int pipeFd, bool enableMinidump, bool enableM
         UnwindProcess();
         PrintDumpInfo();
         DfxBufferWriter::GetInstance().WriteFormatCrashInfo();
-        Report();
     }
     return true;
 }
