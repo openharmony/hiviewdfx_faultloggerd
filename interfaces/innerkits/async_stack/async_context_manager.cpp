@@ -17,6 +17,8 @@
 
 #include <pthread.h>
 #include <string>
+#include <cerrno>
+#include <sys/mman.h>
 
 #include "dfx_frame_formatter.h"
 #include "dfx_log.h"
@@ -27,6 +29,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
+
 #if defined(__aarch64__)
 DfxAsyncContextPool* DfxAsyncContextPool::Instance()
 {
@@ -41,15 +44,28 @@ bool DfxAsyncContextPool::Init()
     }
     DFXLOGI("init async context pool");
     std::lock_guard<std::mutex> lock(mutex_);
-    memset_s(&(pool_[0]), sizeof(pool_), 0, sizeof(pool_));
-    freeListHead_ = &pool_[0];
-    for (uint32_t i = 0; i < CHAIN_POOL_SIZE - 1; i++) {
-        pool_[i].valid = false;
-        pool_[i].next = &pool_[i + 1];
+    poolSize_ = GetChainPoolSize();
+    if (poolSize_ == 0) {
+        DFXLOGE("init async context pool invalid poolSize %{public}u", poolSize_);
+        return false;
     }
-    pool_[CHAIN_POOL_SIZE - 1].next = nullptr;
-    pool_[CHAIN_POOL_SIZE - 1].valid = false;
-    freeListTail_ = &pool_[CHAIN_POOL_SIZE - 1];
+    size_t poolMemSize = static_cast<size_t>(poolSize_) * sizeof(DfxAsyncContext);
+    pool_ = static_cast<DfxAsyncContext*>(mmap(nullptr, poolMemSize, PROT_READ | PROT_WRITE,
+        MAP_ANONYMOUS | MAP_PRIVATE, -1, 0));
+    if (pool_ == MAP_FAILED) {
+        pool_ = nullptr;
+        DFXLOGE("init async context pool mmap failed poolSize %{public}u, errno %{public}d",
+            poolSize_, errno);
+        return false;
+    }
+    freeListHead_ = &pool_[0];
+    for (uint32_t i = 0; i < poolSize_ - 1; i++) {
+        pool_[i].next = &pool_[i + 1];
+        pool_[i].valid = false;
+    }
+    pool_[poolSize_ - 1].next = nullptr;
+    pool_[poolSize_ - 1].valid = false;
+    freeListTail_ = &pool_[poolSize_ - 1];
 
     freeThreadList_ = &threadCtxPool_[0];
     for (uint32_t i = 0; i < THREAD_POOL_SIZE - 1; i++) {
@@ -74,6 +90,14 @@ void DfxAsyncContextPool::DeInit()
     }
     std::lock_guard<std::mutex> lock(mutex_);
     initialized_.store(false);
+    if (pool_ != nullptr) {
+        size_t poolMemSize = static_cast<size_t>(poolSize_) * sizeof(DfxAsyncContext);
+        munmap(pool_, poolMemSize);
+        pool_ = nullptr;
+    }
+    poolSize_ = 0;
+    freeListHead_ = nullptr;
+    freeListTail_ = nullptr;
     DFXLOGI("async contextPool deinit success");
 }
 
@@ -107,7 +131,7 @@ void DfxAsyncContextPool::ReleaseAsyncContext(DfxAsyncContext* ctx)
         DFXLOGW("ReleaseAsyncContext ctx is invalid");
         return;
     }
-    memset_s(&ctx->ctxs[0], sizeof(ctx->ctxs), 0, sizeof(ctx->ctxs));
+    (void)memset_s(&ctx->ctxs[0], sizeof(ctx->ctxs), 0, sizeof(ctx->ctxs));
     freeListTail_->next = ctx;
     freeListTail_ = ctx;
     ctx->valid = false;
@@ -351,7 +375,8 @@ DfxAsyncContext* DfxAsyncContextManager::HandleCollectAsyncStack(uint64_t stackI
     ctx->ctxs[0].type = asyncType;
     auto curCtx = GetCurrentContext();
     if (curCtx != nullptr) {
-        for (int i = 0; i < DEFAULT_MAX_ASYNC_CHAIN_LAYERS - 1; i++) {
+        int32_t copyLimit = GetMaxAsyncChainLayers() - 1;
+        for (int i = 0; i < copyLimit; i++) {
             if (curCtx->ctxs[i].id == 0) {
                 break;
             }

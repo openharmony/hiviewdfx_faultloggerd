@@ -137,7 +137,28 @@ void DfxSetHiDebugAsyncStackCallback(HiDebugSetSwitchCallbackFunc func);
 
 void DfxPopSubmitterStackId(uint64_t stackId);
 
+/**
+ * @brief Set chained async stack configuration parameters
+ *
+ * @param maxLayer  max async chain nesting layers (range: [1, 17], default: 10)
+ *                   Values outside range will be clamped to boundary.
+ * @param maxStackDepth  max async call stack depth (range: [1, 256], default: 16)
+ *                        Values outside range will be clamped to boundary.
+ * @param maxChainPoolSize  max async context pool size (range: [maxLayer+1, 640*1024], default: 64*1024)
+ *                           Values < maxLayer+1 will be clamped to maxLayer+1.
+ *                           Values >640*1024 will be clamped to 640*1024.
+ * @note maxLayer and maxStackDepth can be set dynamically.
+ */
+void SetChainedAsyncStackConfig(int maxLayer, int maxStackDepth, int maxChainPoolSize);
+
 #ifdef __cplusplus
 }
 #endif
+
+#ifdef __cplusplus
+int32_t GetMaxAsyncChainLayers();
+uint32_t GetMaxStackDepth();
+uint32_t GetChainPoolSize();
+#endif
+
 #endif
