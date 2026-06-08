@@ -138,6 +138,10 @@ struct ProcessDumpRequest {
     uint64_t crashLogConfig;
     bool isSigAction;
 #ifndef is_ohos_lite
+    /** ffrt coroutine stack begin address, ABI synced with processdump receiver */
+    uintptr_t ffrtStackBegin;
+    /** ffrt coroutine stack size, ABI synced with processdump receiver */
+    size_t ffrtStackSize;
     DumpHiTraceIdStruct hitraceId;
 #endif
 };
