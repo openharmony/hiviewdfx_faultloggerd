@@ -86,6 +86,7 @@
       OHOS::HiviewDFX::DfxMemory::ReadProcMemByPid*;
       "vtable for OHOS::HiviewDFX::DfxRegsArm";
       "vtable for OHOS::HiviewDFX::DfxRegsArm64";
+      "vtable for OHOS::HiviewDFX::DfxRegsX86_64";
       "vtable for OHOS::HiviewDFX::DfxRegsRiscv64";
       "vtable for OHOS::HiviewDFX::DfxRegsLoongArch64";
       "vtable for OHOS::HiviewDFX::RegularElfFactory";
@@ -138,6 +139,7 @@
       OHOS::HiviewDFX::DfxElf::GetAdltStrtab*;
       OHOS::HiviewDFX::DfxElf::GetAdltMap*;
       OHOS::HiviewDFX::DfxElf::IsAdlt*;
+      _x86_64_getcontext;
     };
   local:
     *;

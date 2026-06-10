@@ -17,7 +17,6 @@
     int _x86_64_getcontext (void* regs)
 */
 .global _x86_64_getcontext
-.hidden _x86_64_getcontext
 .type _x86_64_getcontext, @function
 _x86_64_getcontext:
   .cfi_startproc
