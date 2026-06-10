@@ -332,7 +332,14 @@ bool MinidumpDumper::ParseMapListStream(MinidumpParser& minidumpParser)
     }
     auto mapContent = mapList->GetContents();
     std::string mapBuffer(mapContent.begin(), mapContent.end());
-    dfxMaps_ = DfxMaps::CreateByBuffer(request_.processName, mapBuffer);
+    AppExecFwk::BundleMgrClient client;
+    std::string bundleName;
+    if (client.GetNameForUid(request_.uid, bundleName) != ERR_OK) {
+        DFXLOGW("Failed to query bundleName from bms, uid:%{public}d.", request_.uid);
+    } else {
+        DFXLOGI("bundleName of uid:%{public}u is %{public}s", request_.uid, bundleName.c_str());
+    }
+    dfxMaps_ = DfxMaps::CreateByBuffer(bundleName, mapBuffer);
     return true;
 }
 

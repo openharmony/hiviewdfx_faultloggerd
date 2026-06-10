@@ -19,8 +19,10 @@
 #include <memory>
 #include <securec.h>
 #include <sys/ioctl.h>
+#include <sys/syscall.h>
 #include <sys/wait.h>
 #include <thread>
+#include <unistd.h>
 
 #include "dfx_log.h"
 #include "dfx_util.h"
@@ -82,6 +84,13 @@ void PDumpListener::OnEventPoll()
     DFXLOGI("finish deal pdump event");
 }
 
+void PidFdListener::OnEventPoll()
+{
+    DFXLOGI("recv pid(%{public}d) exit event", pid_);
+    MinidumpManagerService::GetInstance().ProcessEnableMinidumpConfigs(pid_);
+    EpollManager::GetInstance().RemoveListener(GetFd());
+}
+
 MinidumpManagerService& MinidumpManagerService::GetInstance()
 {
     static MinidumpManagerService instance;
@@ -125,8 +134,17 @@ int MinidumpManagerService::SetMiniDump(pid_t pid, int8_t enableMinidump, int8_t
         return -1;
     }
     std::lock_guard<std::mutex> lock(configsMutex_);
-    if (enableMinidump == 1) {
+    if (enableMinidump == 1 && enableMinidumpConfigs.find(pid) == enableMinidumpConfigs.end()) {
+        int pfd = syscall(__NR_pidfd_open, pid, 0);
+        if (pfd == -1) {
+            DFXLOGE("pidfd open failed!");
+            return -1;
+        }
+        DFXLOGI("open pidfd of pid(%{public}d) success", pid);
         enableMinidumpConfigs.emplace(pid);
+        auto listener = std::make_unique<PidFdListener>(SmartFd{pfd});
+        listener->SetPid(pid);
+        EpollManager::GetInstance().AddListener(std::move(listener));
     } else if (enableMinidump == 0) {
         enableMinidumpConfigs.erase(pid);
     }
@@ -212,6 +230,12 @@ void MinidumpManagerService::ProcessWorkEnd(const struct __pdump_data_s& data)
         DumpTypeToString(data.data.result_data.dump_type),
         data.data.result_data.errcode,
         data.data.result_data.output_bytes);
+}
+
+void MinidumpManagerService::ProcessEnableMinidumpConfigs(pid_t pid)
+{
+    std::lock_guard<std::mutex> lock(configsMutex_);
+    enableMinidumpConfigs.erase(pid);
 }
 }
 }
