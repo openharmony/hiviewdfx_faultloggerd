@@ -430,5 +430,252 @@ HWTEST_F(AsyncStackTest, AsyncStackTest009, TestSize.Level2)
     ASSERT_EQ(premode, MODE_CHAINED_STACKTRACE);
 #endif
 }
+
+/**
+ * @tc.name: AsyncStackTest010
+ * @tc.desc: test SetChainedAsyncStackConfig with valid parameters
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest010, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest010: start.";
+#if defined(__aarch64__)
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(5, 32, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    DfxAsyncCtx buffer[5];
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    int count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    ASSERT_EQ(buffer[0].type, ASYNC_TYPE_LIBUV_QUEUE);
+    ASSERT_NE(buffer[0].id, 0);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest010: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest011
+ * @tc.desc: test SetChainedAsyncStackConfig clamps out-of-range maxLayer
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest011, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest011: start.";
+#if defined(__aarch64__)
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(0, 16, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    DfxAsyncCtx buffer[5];
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    int count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+
+    SetChainedAsyncStackConfig(-1, 16, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+
+    SetChainedAsyncStackConfig(18, 16, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest011: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest012
+ * @tc.desc: test SetChainedAsyncStackConfig clamps out-of-range maxStackDepth
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest012, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest012: start.";
+#if defined(__aarch64__)
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 0, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    DfxAsyncCtx buffer[5];
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    int count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+
+    SetChainedAsyncStackConfig(10, 257, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest012: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest013
+ * @tc.desc: test SetChainedAsyncStackConfig clamps out-of-range maxChainPoolSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest013, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest013: start.";
+#if defined(__aarch64__)
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 0);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    DfxAsyncCtx buffer[5];
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    int count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+
+    SetChainedAsyncStackConfig(17, 16, 5);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+
+    SetChainedAsyncStackConfig(10, 16, 640 * 1024 + 1);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest013: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest014
+ * @tc.desc: test manual mode switch triggers DeInit for reconfiguration
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest014, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest014: start.";
+#if defined(__aarch64__)
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    ASSERT_EQ(GetAsyncStackMode(), MODE_CHAINED_STACKTRACE);
+
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(5, 16, 32 * 1024);
+    ASSERT_EQ(GetAsyncStackMode(), MODE_LAST_STACKTRACE);
+
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId);
+    DfxAsyncCtx buffer[5];
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    int count = GetCurrentChainedAsyncContext(buffer, 5);
+    ASSERT_GE(count, 1);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId);
+
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest014: end.";
+}
+
+/**
+ * @tc.name: AsyncStackTest015
+ * @tc.desc: test SetChainedAsyncStackConfig maxLayer limit
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest015, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "AsyncStackTest015: start.";
+#if defined(__aarch64__)
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(3, 16, 64 * 1024);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+
+    uint64_t stackId1 = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId1);
+
+    uint64_t stackId2 = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_TIMER);
+    DfxSetSubmitterStackId(stackId2);
+
+    uint64_t stackId3 = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+    DfxSetSubmitterStackId(stackId3);
+
+    uint64_t stackId4 = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_TIMER);
+    DfxSetSubmitterStackId(stackId4);
+
+    DfxAsyncCtx buffer[10];
+    (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+    int count = GetCurrentChainedAsyncContext(buffer, 10);
+    ASSERT_EQ(count, 3);
+    ASSERT_EQ(buffer[0].type, ASYNC_TYPE_LIBUV_TIMER);
+    ASSERT_NE(buffer[0].id, 0);
+
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId4);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId3);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId2);
+    DfxSetSubmitterStackId(0);
+    ReleaseAsyncContext(stackId1);
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+#endif
+    GTEST_LOG_(INFO) << "AsyncStackTest015: end.";
+}
 } // namespace HiviewDFX
 } // namespace OHOS

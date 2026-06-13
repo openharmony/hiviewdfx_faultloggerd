@@ -25,7 +25,11 @@ namespace OHOS {
 namespace HiviewDFX {
 
 constexpr int32_t DEFAULT_MAX_ASYNC_CHAIN_LAYERS = 10;
+constexpr int32_t MAX_ASYNC_CHAIN_LAYERS_LIMIT = 17;
+constexpr uint32_t DEFAULT_MAX_STACK_DEPTH = 16;
+constexpr uint32_t MAX_STACK_DEPTH_LIMIT = 256;
 constexpr uint32_t CHAIN_POOL_SIZE = 1024 * 64;
+constexpr uint32_t MAX_CHAIN_POOL_SIZE_LIMIT = 640 * 1024;
 constexpr int32_t MAX_THREAD_ASYNC_CTX_DEPTH = 64;
 constexpr uint32_t THREAD_POOL_SIZE = 1024;
 constexpr uint32_t PRINT_CHAIN_INTERVAL = 10;
@@ -33,7 +37,7 @@ constexpr uint32_t PRINT_CHAIN_INTERVAL = 10;
 typedef struct DfxAsyncContext {
     DfxAsyncContext* next;
     bool valid;
-    DfxAsyncCtx ctxs[DEFAULT_MAX_ASYNC_CHAIN_LAYERS];
+    DfxAsyncCtx ctxs[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
 } DfxAsyncContext;
 
 typedef struct DfxThreadAsyncContext {
@@ -57,15 +61,16 @@ public:
     void ReleaseThreadContext(DfxThreadAsyncContext* ctx);
     void GetAsyncContextRange(DfxAsyncContext** begin, DfxAsyncContext** end)
     {
-        *begin = &pool_[0];
-        *end = &pool_[CHAIN_POOL_SIZE - 1];
+        *begin = (pool_ != nullptr && poolSize_ > 0) ? &pool_[0] : nullptr;
+        *end = (pool_ != nullptr && poolSize_ > 0) ? &pool_[poolSize_ - 1] : nullptr;
     }
 private:
     DfxAsyncContextPool() = default;
     ~DfxAsyncContextPool() = default;
     DfxAsyncContextPool(const DfxAsyncContextPool&) = delete;
     DfxAsyncContextPool& operator=(const DfxAsyncContextPool&) = delete;
-    DfxAsyncContext pool_[CHAIN_POOL_SIZE];
+    DfxAsyncContext* pool_{nullptr};
+    uint32_t poolSize_{0};
     DfxThreadAsyncContext threadCtxPool_[THREAD_POOL_SIZE];
     DfxAsyncContext* freeListHead_{nullptr};
     DfxAsyncContext* freeListTail_{nullptr};

@@ -36,6 +36,25 @@
 using namespace OHOS::HiviewDFX;
 static std::atomic<bool> g_init{false};
 static std::atomic<HiDebugSetSwitchCallbackFunc> g_hiDebugCallback{nullptr};
+static std::atomic<int32_t> g_maxAsyncChainLayers{DEFAULT_MAX_ASYNC_CHAIN_LAYERS};
+static std::atomic<uint32_t> g_maxStackDepth{DEFAULT_MAX_STACK_DEPTH};
+static std::atomic<uint32_t> g_chainPoolSize{CHAIN_POOL_SIZE};
+
+int32_t GetMaxAsyncChainLayers()
+{
+    return g_maxAsyncChainLayers.load();
+}
+
+uint32_t GetMaxStackDepth()
+{
+    return g_maxStackDepth.load();
+}
+
+uint32_t GetChainPoolSize()
+{
+    return g_chainPoolSize.load();
+}
+
 #if defined(__aarch64__)
 // Filter out illegal requests
 static std::atomic<uint64_t> g_enabledAsyncType = DEFAULT_ASYNC_TYPE;
@@ -231,7 +250,8 @@ extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
         return 0;
     }
     int32_t count = 0;
-    size_t loopCount = sz > DEFAULT_MAX_ASYNC_CHAIN_LAYERS ? DEFAULT_MAX_ASYNC_CHAIN_LAYERS : sz;
+    int32_t layerLimit = g_maxAsyncChainLayers.load();
+    size_t loopCount = sz > static_cast<size_t>(layerLimit) ? static_cast<size_t>(layerLimit) : sz;
     for (size_t i = 0; i < loopCount; i++) {
         if (ctx->ctxs[i].id == 0) {
             break;
@@ -271,8 +291,12 @@ extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
     if (isTargetType == 0) {
         return DFX_INVALID_STACK_ID;
     }
-    const uint32_t depth = 16;
-    void* pcArray[depth] = {0};
+    const uint32_t maxDepthLimit = MAX_STACK_DEPTH_LIMIT;
+    uint32_t depth = g_maxStackDepth.load();
+    if (depth > maxDepthLimit) {
+        depth = maxDepthLimit;
+    }
+    void* pcArray[maxDepthLimit] = {0};
     uint64_t stackId = CollectStackByFp(pcArray, depth);
     if ((g_mode.load() == MODE_CHAINED_STACKTRACE) &&
         !(type & UNSUPPORTED_CHAINED_STACK_TYPE)) {
@@ -431,6 +455,40 @@ extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
     g_init.store(true);
 #endif
     return g_init.load();
+}
+
+extern "C" void SetChainedAsyncStackConfig(int maxLayer, int maxStackDepth, int maxChainPoolSize)
+{
+    if (maxLayer <= 0) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxLayer %{public}d to 1", maxLayer);
+        maxLayer = 1;
+    } else if (maxLayer > MAX_ASYNC_CHAIN_LAYERS_LIMIT) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxLayer %{public}d to %{public}d",
+            maxLayer, MAX_ASYNC_CHAIN_LAYERS_LIMIT);
+        maxLayer = MAX_ASYNC_CHAIN_LAYERS_LIMIT;
+    }
+    if (maxStackDepth <= 0) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxStackDepth %{public}d to 1", maxStackDepth);
+        maxStackDepth = 1;
+    } else if (maxStackDepth > MAX_STACK_DEPTH_LIMIT) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxStackDepth %{public}d to %{public}d",
+            maxStackDepth, MAX_STACK_DEPTH_LIMIT);
+        maxStackDepth = MAX_STACK_DEPTH_LIMIT;
+    }
+    if (maxChainPoolSize < maxLayer + 1) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxChainPoolSize %{public}d to %{public}d",
+            maxChainPoolSize, maxLayer + 1);
+        maxChainPoolSize = maxLayer + 1;
+    } else if (maxChainPoolSize > MAX_CHAIN_POOL_SIZE_LIMIT) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxChainPoolSize %{public}d to %{public}d",
+            maxChainPoolSize, MAX_CHAIN_POOL_SIZE_LIMIT);
+        maxChainPoolSize = MAX_CHAIN_POOL_SIZE_LIMIT;
+    }
+    g_maxAsyncChainLayers.store(maxLayer);
+    g_maxStackDepth.store(static_cast<uint32_t>(maxStackDepth));
+    g_chainPoolSize.store(static_cast<uint32_t>(maxChainPoolSize));
+    DFXLOGI("SetChainedAsyncStackConfig maxLayer %{public}d, maxStackDepth %{public}d, maxChainPoolSize %{public}d",
+        maxLayer, maxStackDepth, maxChainPoolSize);
 }
 
 extern "C" uint64_t DfxGetSubmitterStackId()
