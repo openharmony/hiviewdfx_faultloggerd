@@ -184,7 +184,7 @@ bool MinidumpThreadList::ReadThreadData(uint32_t threadCount)
             return false;
         }
 
-        if (GetThreadByID(threadId)) {
+        if (idToThreadMap_.find(threadId) != idToThreadMap_.end()) {
             lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_ALREADY_EXISTS, "Duplicate thread ID", __LINE__);
             return false;
         }
