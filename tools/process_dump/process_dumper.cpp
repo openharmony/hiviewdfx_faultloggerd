@@ -151,15 +151,18 @@ DumpErrorCode ProcessDumper::DumpProcess()
         "threadname(%{public}s).",
         request_.siginfo.si_value.sival_int, request_.pid, request_.nsPid, request_.tid, request_.threadName);
     SetProcessdumpTimeout(request_.siginfo);
-    dumpRes = DumpPreparation();
-    if (dumpRes != DumpErrorCode::DUMP_ESUCCESS) {
-        return dumpRes;
+    DumpErrorCode prepareRes = DumpPreparation();
+    if (prepareRes != DumpErrorCode::DUMP_ESUCCESS && prepareRes != DumpErrorCode::DUMP_THREAD_OVER_LIMIT) {
+        return prepareRes;
     }
     CppCrashInfoCollector::Instance().SetNeedFormatFlag(request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     PrintDumpInfo(dumpRes);
     DfxBufferWriter::GetInstance().WriteFormatCrashInfo();
     UnwindWriteJit();
     DfxPtrace::Detach(process_->GetVmPid());
+    if (prepareRes != DumpErrorCode::DUMP_ESUCCESS) {
+        return prepareRes;
+    }
     return dumpRes;
 }
 
@@ -181,7 +184,8 @@ std::future<DumpErrorCode> ProcessDumper::AsyncInitialization()
 DumpErrorCode ProcessDumper::DumpPreparation()
 {
     UpdateConfigByRequest();
-    if (!InitDfxProcess()) {
+    auto initRetCode = InitDfxProcess();
+    if (initRetCode != DumpErrorCode::DUMP_ESUCCESS && initRetCode != DumpErrorCode::DUMP_THREAD_OVER_LIMIT) {
         DFXLOGE("Failed to init crash process info.");
         return DumpErrorCode::DUMP_EATTACH;
     }
@@ -214,7 +218,7 @@ DumpErrorCode ProcessDumper::DumpPreparation()
     if (!InitUnwinder(dumpRes)) {
         return dumpRes;
     }
-    return DumpErrorCode::DUMP_ESUCCESS;
+    return initRetCode;
 }
 
 void ProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
@@ -273,6 +277,7 @@ void ProcessDumper::FormatJsonInfoIfNeed(const DumpErrorCode& resDump)
     }
     std::string jsonInfo;
     int dumpError = 0;
+    constexpr auto dumpThreadOverLimit = -2;
     switch (resDump) {
         case DUMP_ESUCCESS:
             dumpError = 0;
@@ -280,6 +285,9 @@ void ProcessDumper::FormatJsonInfoIfNeed(const DumpErrorCode& resDump)
         case DUMP_ESYMBOL_NO_PARSE:
         case DUMP_ESYMBOL_PARSE_TIMEOUT:
             dumpError = 1;
+            break;
+        case DUMP_THREAD_OVER_LIMIT:
+            dumpError = dumpThreadOverLimit;
             break;
         default:
             dumpError = -1;
@@ -626,18 +634,18 @@ std::vector<std::string> ProcessDumper::FindDumpInfoByType(const ProcessDumpType
     return dumpInfoComponent;
 }
 
-bool ProcessDumper::InitDfxProcess()
+DumpErrorCode ProcessDumper::InitDfxProcess()
 {
     DFX_TRACE_SCOPED("InitDfxProcess");
     if (request_.pid <= 0) {
-        return false;
+        return DumpErrorCode::DUMP_EATTACH;
     }
     process_ = std::make_shared<DfxProcess>();
     process_->InitProcessInfo(request_.pid, request_.nsPid, request_.uid, std::string(request_.processName));
     process_->SetLogSource("processdump");
     if (!process_->InitKeyThread(request_)) {
         DumpUtils::NotifyOperateResult(request_, OPE_FAIL);
-        return false;
+        return DumpErrorCode::DUMP_EATTACH;
     }
     DFXLOGI("Init key thread successfully.");
 #if defined(__aarch64__) && !defined(is_ohos_lite)
@@ -647,14 +655,14 @@ bool ProcessDumper::InitDfxProcess()
     }
 #endif
     DumpUtils::NotifyOperateResult(request_, OPE_SUCCESS);
-    process_->InitOtherThreads(request_);
+    auto ret =  process_->InitOtherThreads(request_);
     DFXLOGI("Finish create all thread.");
 #if defined(__aarch64__) && !defined(is_ohos_lite)
     if (coredumpManager_) {
         coredumpManager_->TriggerCoredump();
     }
 #endif
-    return true;
+    return ret;
 }
 
 int ProcessDumper::ReadVmPid()

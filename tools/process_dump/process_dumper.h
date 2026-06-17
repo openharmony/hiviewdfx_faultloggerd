@@ -58,7 +58,7 @@ private:
     DISALLOW_COPY_AND_MOVE(ProcessDumper);
     DumpErrorCode DumpProcess();
     DumpErrorCode ReadRequestAndCheck();
-    bool InitDfxProcess();
+    DumpErrorCode InitDfxProcess();
     bool InitUnwinder(DumpErrorCode &dumpRes);
     void UnwindWriteJit();
     void FormatJsonInfoIfNeed(const DumpErrorCode& resDump);

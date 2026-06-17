@@ -55,6 +55,7 @@ const DumpCatchErrInfo ERROR_CODE_MAPS[] = {
     { DUMPCATCH_DUMP_ESYMBOL_NO_PARSE, "no enough time to parse symbol" },
     { DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT, "parse symbol timeout" },
     { DUMPCATCH_DUMP_SELF_FAIL, "dump self fail" },
+    { DUMPCATCH_THREAD_COUNT_OVERLIMIT, "the thread count of target process is overlimit" },
     { DUMPCATCH_UNKNOWN, "unknown reason" }
 };
 

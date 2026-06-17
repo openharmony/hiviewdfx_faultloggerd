@@ -375,7 +375,10 @@ bool DfxJsonFormatter::FormatJsonStack(std::string& jsonStack, std::string& outS
         jsonStack = "";
         return false;
     }
-
+    constexpr auto dumpThreadOverLimit = -2;
+    if (dumpResult == dumpThreadOverLimit) {
+        outStackStr.append("Threads count exceeds limit(2000), partial stack traces may be missing.\n");
+    }
     auto onlyParseBuildIdTask = [&jsonStack, &threads, &outStackStr, &bundleName]() {
         std::string outStackJson;
         StackJsonFormatter tool(bundleName, true);

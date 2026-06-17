@@ -79,6 +79,8 @@ enum DumpErrorCode : int32_t {
     DUMP_COREDUMP,
     /** main thread stack has been written to bufFd, other threads still collecting */
     DUMP_EMAIN_THREAD_DONE,
+    /** target thread num is over limit */
+    DUMP_THREAD_OVER_LIMIT,
 };
 
 /**
@@ -122,6 +124,7 @@ private:
             { DUMP_EREADPID, "fail to read real pid" },
             { DUMP_ESYMBOL_NO_PARSE, "no enough time to parse symbol" },
             { DUMP_ESYMBOL_PARSE_TIMEOUT, "parse symbol timeout" },
+            { DUMP_THREAD_OVER_LIMIT, "the thread count of target process is over limit" },
         };
 
         auto iter = std::find_if(std::begin(errInfos), std::end(errInfos), [res](const DumpErrInfo &ele) {
