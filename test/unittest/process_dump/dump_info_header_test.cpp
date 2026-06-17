@@ -50,6 +50,7 @@ void DumpInfoHeaderTest::SetUpTestCase(void)
 
 void DumpInfoHeaderTest::SetUp(void)
 {
+    result = "";
     DfxBufferWriter::GetInstance().SetWriteFunc(DumpInfoHeaderTest::WriteLogFunc);
 }
 
@@ -159,4 +160,109 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest002, TestSize.Level2)
     }
     GTEST_LOG_(INFO) << "DumpInfoHeaderTest002: end.";
 }
+
+#ifndef is_ohos_lite
+HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest003_FfrtCoroutineStackOverflow, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest003_FfrtCoroutineStackOverflow: start.";
+    pid_t pid = getpid();
+    uintptr_t stackBegin = 0x100000;
+    size_t stackSize = 0x8000;
+    uintptr_t faultAddr = stackBegin - 0x100;
+
+    ProcessDumpRequest request = {};
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    request.tid = pid;
+    request.pid = pid;
+    request.nsPid = pid;
+    request.timeStamp = GetTimeMilliSeconds();
+    request.ffrtStackBegin = stackBegin;
+    request.ffrtStackSize = stackSize;
+    siginfo_t siginfo = {};
+    siginfo.si_signo = SIGSEGV;
+    siginfo.si_code = SEGV_MAPERR;
+    siginfo.si_addr = reinterpret_cast<void*>(faultAddr);
+    request.siginfo = siginfo;
+
+    DfxProcess process;
+    process.InitProcessInfo(pid, pid, getuid(), "test_process");
+    process.keyThread_ = DfxThread::Create(pid, pid, pid, false);
+
+    Unwinder unwinder(pid, pid, false);
+    DumpInfoHeader dumpInfoHeader;
+    dumpInfoHeader.Collect(process, request, unwinder);
+    dumpInfoHeader.Print(process, request, unwinder);
+    ASSERT_TRUE(CheckContent(result, "coroutine stack-buffer-overflow", true));
+    ASSERT_TRUE(CheckContent(result, "current thread stack low address = ", true));
+    process.Detach();
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest003_FfrtCoroutineStackOverflow: end.";
+}
+
+HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest004_NonFfrtThreadNoFalsePositive, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest004_NonFfrtThreadNoFalsePositive: start.";
+    pid_t pid = getpid();
+
+    ProcessDumpRequest request = {};
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    request.tid = pid;
+    request.pid = pid;
+    request.nsPid = pid;
+    request.timeStamp = GetTimeMilliSeconds();
+    request.ffrtStackBegin = 0;
+    request.ffrtStackSize = 0;
+    siginfo_t siginfo = {};
+    siginfo.si_signo = SIGSEGV;
+    siginfo.si_code = SEGV_MAPERR;
+    siginfo.si_addr = reinterpret_cast<void*>(0x100000);
+    request.siginfo = siginfo;
+
+    DfxProcess process;
+    process.InitProcessInfo(pid, pid, getuid(), "test_process");
+    process.keyThread_ = DfxThread::Create(pid, pid, pid, false);
+
+    Unwinder unwinder(pid, pid, false);
+    DumpInfoHeader dumpInfoHeader;
+    dumpInfoHeader.Collect(process, request, unwinder);
+    dumpInfoHeader.Print(process, request, unwinder);
+    ASSERT_TRUE(CheckContent(result, "coroutine stack-buffer-overflow", false));
+    process.Detach();
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest004_NonFfrtThreadNoFalsePositive: end.";
+}
+
+HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest005_FfrtAddrAboveStackBegin, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest005_FfrtAddrAboveStackBegin: start.";
+    pid_t pid = getpid();
+    uintptr_t stackBegin = 0x100000;
+    size_t stackSize = 0x8000;
+    uintptr_t faultAddr = stackBegin + 0x100;
+
+    ProcessDumpRequest request = {};
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    request.tid = pid;
+    request.pid = pid;
+    request.nsPid = pid;
+    request.timeStamp = GetTimeMilliSeconds();
+    request.ffrtStackBegin = stackBegin;
+    request.ffrtStackSize = stackSize;
+    siginfo_t siginfo = {};
+    siginfo.si_signo = SIGSEGV;
+    siginfo.si_code = SEGV_MAPERR;
+    siginfo.si_addr = reinterpret_cast<void*>(faultAddr);
+    request.siginfo = siginfo;
+
+    DfxProcess process;
+    process.InitProcessInfo(pid, pid, getuid(), "test_process");
+    process.keyThread_ = DfxThread::Create(pid, pid, pid, false);
+
+    Unwinder unwinder(pid, pid, false);
+    DumpInfoHeader dumpInfoHeader;
+    dumpInfoHeader.Collect(process, request, unwinder);
+    dumpInfoHeader.Print(process, request, unwinder);
+    ASSERT_TRUE(CheckContent(result, "coroutine stack-buffer-overflow", false));
+    process.Detach();
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest005_FfrtAddrAboveStackBegin: end.";
+}
+#endif
 }

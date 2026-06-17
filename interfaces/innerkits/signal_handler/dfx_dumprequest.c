@@ -126,6 +126,14 @@ static bool ReadProcessDumpGetRegsMsg(void);
 
 #ifndef is_ohos_lite
 DumpHiTraceIdStruct HiTraceChainGetId() __attribute__((weak));
+bool ffrt_get_current_coroutine_stack(void** stack_addr, size_t* size) __attribute__((weak));
+static bool GetFfrtCoroutineStack(void** stackAddr, size_t* stackSize)
+{
+    if (ffrt_get_current_coroutine_stack == NULL) {
+        return false;
+    }
+    return ffrt_get_current_coroutine_stack(stackAddr, stackSize);
+}
 #endif
 
 void __attribute__((constructor)) InitMutex(void)
@@ -412,6 +420,20 @@ static void TryNonSafeOperate(bool isCrash)
         if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
             &hitraceChainId, sizeof(hitraceChainId)) != 0) {
             DFXLOGE("memcpy hitrace fail");
+        }
+    }
+    // ffrt_get_current_coroutine_stack is not async-signal-safe, but called in forked child process
+    // with alarm timeout protection, safe in this context
+    g_request->ffrtStackBegin = 0;
+    g_request->ffrtStackSize = 0;
+    void* stackAddr = NULL;
+    size_t stackSize = 0;
+    if (GetFfrtCoroutineStack(&stackAddr, &stackSize)) {
+        if (stackSize <= UINTPTR_MAX - (uintptr_t)stackAddr) {
+            g_request->ffrtStackBegin = (uintptr_t)stackAddr;
+            g_request->ffrtStackSize = stackSize;
+        } else {
+            DFXLOGE("ffrt stack range overflow");
         }
     }
 #endif

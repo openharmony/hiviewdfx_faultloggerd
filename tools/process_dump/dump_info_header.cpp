@@ -131,6 +131,18 @@ std::string DumpInfoHeader::GetReasonInfo(const ProcessDumpRequest& request, Dfx
                 DFXLOGW("%{public}s is nullptr", "keyThread_");
                 break;
             }
+#ifndef is_ohos_lite
+            // FFRT coroutine stack: fields are non-zero only when crash thread is in coroutine,
+            // non-ffrt threads have ffrtStackBegin=0 && ffrtStackSize=0, won't enter this branch
+            if (request.ffrtStackBegin != 0 && request.ffrtStackSize != 0 &&
+                addr < request.ffrtStackBegin) {
+                reasonInfo += StringPrintf(
+                    " current thread stack low address = %" PRIX64_ADDR
+                    ", probably caused by coroutine stack-buffer-overflow",
+                    static_cast<uint64_t>(request.ffrtStackBegin));
+                break;
+            }
+#endif
             std::vector<std::shared_ptr<DfxMap>> map;
             std::string elfName;
             if (process.GetKeyThread()->GetThreadInfo().tid == process.GetProcessInfo().pid) {
