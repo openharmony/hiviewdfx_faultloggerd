@@ -179,10 +179,8 @@ bool MinidumpManagerService::ParsePDumpData(const struct __pdump_data_s& data)
 void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
 {
     DFXLOGI("dump started: workid=%{public}u, type=%{public}s pid=%{public}d, pipeFd=%{public}d",
-        data.header.workid,
-        DumpTypeToString(data.data.work_data.dump_type),
-        data.data.work_data.pid,
-        data.data.work_data.pipefd);
+        data.header.workid, DumpTypeToString(data.data.work_data.dump_type),
+        data.data.work_data.pid, data.data.work_data.pipefd);
     bool enableMinidump = false;
     bool enableMinidumpToCrashLog = false;
     {
@@ -195,7 +193,13 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
     if (!enableMinidump && !enableMinidumpToCrashLog) {
         struct __pdump_work_cancel_arg_s arg = {0};
         arg.workid = data.header.workid;
-        int ret = ioctl(pFd_, __PDUMP_IOCTL_CANCEL, &arg);
+        int ret = -1;
+        int retryTimes = 0;
+        int retryMaxTimes = 3;
+        do {
+            ret = ioctl(pFd_, __PDUMP_IOCTL_CANCEL, &arg);
+            usleep(1000); // 1000 : 1ms
+        } while (ret < 0 && ++retryTimes < retryMaxTimes);
         if (ret < 0) {
             DFXLOGE("failed to ioctl cancel pdump, errno=%{public}d", errno);
         }

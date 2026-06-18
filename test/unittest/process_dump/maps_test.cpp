@@ -17,6 +17,7 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
+#include <securec.h>
 #include <stack>
 
 #include "dfx_buffer_writer.h"
@@ -94,8 +95,10 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
             uintptr_t leftAddr = std::stoll(preLineMap.substr(0, mid), nullptr, 16);
             // Convert to uintptr_t type
             uintptr_t rightAddr = std::stoll(preLineMap.substr(mid + 1, mid), nullptr, 16);
-            std::string curInode = preLineMap.substr(preLineMap.length() - 8, 8);
-            if (!mapsAddr.empty() && preInode == curInode) {
+            char nameBuf[256];
+            (void)sscanf_s(preLineMap.c_str(), "%*s %*s %*s %255s", nameBuf, sizeof(nameBuf));
+            std::string curInode = nameBuf;
+            if (!mapsAddr.empty() && preInode == curInode && curInode.find("[anon:") == std::string::npos) {
                 mapsAddr.pop();
                 mapsAddr.push(rightAddr);
             } else {
