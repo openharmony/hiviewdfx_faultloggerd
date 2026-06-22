@@ -24,8 +24,8 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-constexpr int32_t DEFAULT_MAX_ASYNC_CHAIN_LAYERS = 10;
-constexpr int32_t MAX_ASYNC_CHAIN_LAYERS_LIMIT = 17;
+constexpr uint32_t DEFAULT_MAX_ASYNC_CHAIN_LAYERS = 10;
+constexpr uint32_t MAX_ASYNC_CHAIN_LAYERS_LIMIT = 17;
 constexpr uint32_t DEFAULT_MAX_STACK_DEPTH = 16;
 constexpr uint32_t MAX_STACK_DEPTH_LIMIT = 256;
 constexpr uint32_t CHAIN_POOL_SIZE = 1024 * 64;

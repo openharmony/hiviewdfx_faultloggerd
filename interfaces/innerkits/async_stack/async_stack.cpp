@@ -36,11 +36,11 @@
 using namespace OHOS::HiviewDFX;
 static std::atomic<bool> g_init{false};
 static std::atomic<HiDebugSetSwitchCallbackFunc> g_hiDebugCallback{nullptr};
-static std::atomic<int32_t> g_maxAsyncChainLayers{DEFAULT_MAX_ASYNC_CHAIN_LAYERS};
+static std::atomic<uint32_t> g_maxAsyncChainLayers{DEFAULT_MAX_ASYNC_CHAIN_LAYERS};
 static std::atomic<uint32_t> g_maxStackDepth{DEFAULT_MAX_STACK_DEPTH};
 static std::atomic<uint32_t> g_chainPoolSize{CHAIN_POOL_SIZE};
 
-int32_t GetMaxAsyncChainLayers()
+uint32_t GetMaxAsyncChainLayers()
 {
     return g_maxAsyncChainLayers.load();
 }
@@ -246,11 +246,11 @@ extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
     }
     DfxAsyncContext* ctx = DfxAsyncContextManager::Instance()->GetCurrentContext();
     if (ctx == nullptr) {
-        DFXLOGW("GetCurrentContext failed, ctx is nullptr");
+        DFXLOGD("GetCurrentContext failed, ctx is nullptr");
         return 0;
     }
     int32_t count = 0;
-    int32_t layerLimit = g_maxAsyncChainLayers.load();
+    uint32_t layerLimit = g_maxAsyncChainLayers.load();
     size_t loopCount = sz > static_cast<size_t>(layerLimit) ? static_cast<size_t>(layerLimit) : sz;
     for (size_t i = 0; i < loopCount; i++) {
         if (ctx->ctxs[i].id == 0) {
@@ -457,37 +457,37 @@ extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
     return g_init.load();
 }
 
-extern "C" void SetChainedAsyncStackConfig(int maxLayer, int maxStackDepth, int maxChainPoolSize)
+extern "C" void SetChainedAsyncStackConfig(uint32_t maxLayer, uint32_t maxStackDepth, uint32_t maxChainPoolSize)
 {
-    if (maxLayer <= 0) {
-        DFXLOGW("SetChainedAsyncStackConfig clamp maxLayer %{public}d to 1", maxLayer);
+    if (maxLayer == 0) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxLayer %{public}u to 1", maxLayer);
         maxLayer = 1;
     } else if (maxLayer > MAX_ASYNC_CHAIN_LAYERS_LIMIT) {
-        DFXLOGW("SetChainedAsyncStackConfig clamp maxLayer %{public}d to %{public}d",
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxLayer %{public}u to %{public}u",
             maxLayer, MAX_ASYNC_CHAIN_LAYERS_LIMIT);
         maxLayer = MAX_ASYNC_CHAIN_LAYERS_LIMIT;
     }
-    if (maxStackDepth <= 0) {
-        DFXLOGW("SetChainedAsyncStackConfig clamp maxStackDepth %{public}d to 1", maxStackDepth);
+    if (maxStackDepth == 0) {
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxStackDepth %{public}u to 1", maxStackDepth);
         maxStackDepth = 1;
     } else if (maxStackDepth > MAX_STACK_DEPTH_LIMIT) {
-        DFXLOGW("SetChainedAsyncStackConfig clamp maxStackDepth %{public}d to %{public}d",
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxStackDepth %{public}u to %{public}u",
             maxStackDepth, MAX_STACK_DEPTH_LIMIT);
         maxStackDepth = MAX_STACK_DEPTH_LIMIT;
     }
     if (maxChainPoolSize < maxLayer + 1) {
-        DFXLOGW("SetChainedAsyncStackConfig clamp maxChainPoolSize %{public}d to %{public}d",
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxChainPoolSize %{public}u to %{public}u",
             maxChainPoolSize, maxLayer + 1);
         maxChainPoolSize = maxLayer + 1;
     } else if (maxChainPoolSize > MAX_CHAIN_POOL_SIZE_LIMIT) {
-        DFXLOGW("SetChainedAsyncStackConfig clamp maxChainPoolSize %{public}d to %{public}d",
+        DFXLOGW("SetChainedAsyncStackConfig clamp maxChainPoolSize %{public}u to %{public}u",
             maxChainPoolSize, MAX_CHAIN_POOL_SIZE_LIMIT);
         maxChainPoolSize = MAX_CHAIN_POOL_SIZE_LIMIT;
     }
     g_maxAsyncChainLayers.store(maxLayer);
-    g_maxStackDepth.store(static_cast<uint32_t>(maxStackDepth));
-    g_chainPoolSize.store(static_cast<uint32_t>(maxChainPoolSize));
-    DFXLOGI("SetChainedAsyncStackConfig maxLayer %{public}d, maxStackDepth %{public}d, maxChainPoolSize %{public}d",
+    g_maxStackDepth.store(maxStackDepth);
+    g_chainPoolSize.store(maxChainPoolSize);
+    DFXLOGI("SetChainedAsyncStackConfig maxLayer %{public}u, maxStackDepth %{public}u, maxChainPoolSize %{public}u",
         maxLayer, maxStackDepth, maxChainPoolSize);
 }
 

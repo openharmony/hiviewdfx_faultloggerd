@@ -229,7 +229,7 @@ DfxAsyncContext* DfxAsyncContextManager::GetCurrentContext()
     }
     auto threadCtx = static_cast<DfxThreadAsyncContext*>(pthread_getspecific(threadAsyncCtxKey_));
     if (threadCtx == nullptr) {
-        DFXLOGW("GetCurrentContext thread context is nullptr");
+        DFXLOGD("GetCurrentContext thread context is nullptr");
         return nullptr;
     }
     if (threadCtx->curAsyncContextsCnt <= 0 || threadCtx->curAsyncContextsCnt > MAX_THREAD_ASYNC_CTX_DEPTH ||
@@ -266,7 +266,7 @@ bool DfxAsyncContextManager::IsValidAsyncContext(DfxAsyncContext* ctx)
 bool DfxAsyncContextManager::RecycleAsyncContext(DfxAsyncContext* ctx)
 {
     if (ctx == nullptr) {
-        DFXLOGW("RecycleAsyncContext ctx is nullptr");
+        DFXLOGD("RecycleAsyncContext ctx is nullptr");
         return false;
     }
     DfxAsyncContext* begin = nullptr;
@@ -375,8 +375,8 @@ DfxAsyncContext* DfxAsyncContextManager::HandleCollectAsyncStack(uint64_t stackI
     ctx->ctxs[0].type = asyncType;
     auto curCtx = GetCurrentContext();
     if (curCtx != nullptr) {
-        int32_t copyLimit = GetMaxAsyncChainLayers() - 1;
-        for (int i = 0; i < copyLimit; i++) {
+        uint32_t copyLimit = GetMaxAsyncChainLayers() - 1;
+        for (uint32_t i = 0; i < copyLimit; i++) {
             if (curCtx->ctxs[i].id == 0) {
                 break;
             }
