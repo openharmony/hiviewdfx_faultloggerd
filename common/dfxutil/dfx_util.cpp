@@ -345,7 +345,7 @@ size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t
         std::vector<iovec> remoteIovs;
         size_t batchTotal = 0;
         while (remaining > 0 && remoteIovs.size() < IOV_MAX) {
-            uintptr_t misalign = currentAddr & (getpagesize() - 1);
+            uintptr_t misalign = currentAddr & static_cast<uint64_t>(getpagesize() - 1);
             size_t iovLen = std::min(getpagesize() - misalign, remaining);
             iovec remoteIov = {
                 .iov_base = reinterpret_cast<void*>(currentAddr),

@@ -203,7 +203,6 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         if (ret < 0) {
             DFXLOGE("failed to ioctl cancel pdump, errno=%{public}d", errno);
         }
-        close(data.data.work_data.pipefd);
         return;
     }
     pid_t pid = fork();
