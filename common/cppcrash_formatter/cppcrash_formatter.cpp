@@ -95,6 +95,7 @@ void CppCrashJsonFormatter::AddHeadInfo(cJSON* root, CppCrashInfoCollector& coll
     AddStringValue(root, "APP_RUNNING_UNIQUE_ID", collector.GetAppRunningUniqueId());
     AddStringValue(root, "PROCESS_LIFETIME", collector.GetProcessLifeTime());
     AddStringValue(root, "PROCESS_RSS_MEMINFO", collector.GetProcessRssMeminfo());
+    AddStringValue(root, "LOG_SOURCE", collector.GetLogSource());
     AddStringValue(root, "REASON", collector.GetReason());
     AddStringValue(root, "LAST_FATAL_MESSAGE", collector.GetLastFatalMessage());
 

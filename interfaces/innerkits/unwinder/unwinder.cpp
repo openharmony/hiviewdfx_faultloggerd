@@ -668,7 +668,7 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
     context_.pid = UNWIND_TYPE_LOCAL;
     context_.regs = regs_;
     context_.maps = maps_;
-    context_.stackCheck = false;
+    context_.stackCheck = true;
     context_.stackBottom = stackBottom;
     context_.stackTop = stackTop;
 #if defined(__aarch64__) || defined(__x86_64__)

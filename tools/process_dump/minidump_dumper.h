@@ -41,7 +41,6 @@ private:
     bool SetupKeyThreadStack(MinidumpThreadList* threadList, std::shared_ptr<DfxThread> keyThread);
     void PopulateOtherThreadFromMinidump(std::shared_ptr<DfxThread> dfxThread, MinidumpThreadList* threadList);
     bool ParseThreadNameStream(MinidumpParser& minidumpParser);
-    bool ParseModuleListStream(MinidumpParser& minidumpParser);
     bool ParseMemoryListStream(MinidumpParser& minidumpParser);
     bool ParseMapListStream(MinidumpParser& minidumpParser);
 
@@ -58,6 +57,7 @@ private:
     void PrintRegsNearMemory();
     void PrintFaultStack();
     void PrintMaps();
+    void PrintOpenFiles();
     void Report();
     DfxProcess process_;
     ProcessDumpRequest request_ {};

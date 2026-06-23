@@ -88,6 +88,14 @@ void CppCrashInfoCollector::SetProcessRssMeminfo(const std::string& rssMeminfo)
     headInfo_.rssMeminfo = rssMeminfo;
 }
 
+void CppCrashInfoCollector::SetLogSource(const std::string& logSource)
+{
+    if (!needFormatFlag_) {
+        return;
+    }
+    headInfo_.logSource = logSource;
+}
+
 void CppCrashInfoCollector::SetReason(const std::string& reason)
 {
     if (!needFormatFlag_) {
@@ -293,6 +301,11 @@ const std::string& CppCrashInfoCollector::GetProcessLifeTime() const
 const std::string& CppCrashInfoCollector::GetProcessRssMeminfo() const
 {
     return headInfo_.rssMeminfo;
+}
+
+const std::string& CppCrashInfoCollector::GetLogSource() const
+{
+    return headInfo_.logSource;
 }
 
 const std::string& CppCrashInfoCollector::GetReason() const

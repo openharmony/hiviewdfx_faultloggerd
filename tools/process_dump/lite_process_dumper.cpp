@@ -479,7 +479,7 @@ void LiteProcessDumper::PrintHeader()
         tempStr = StringPrintf("%" PRIu64 "(Rss)\n", rss);
         headInfo += "Process Memory(kB):" + tempStr;
         CppCrashInfoCollector::Instance().SetProcessRssMeminfo(tempStr);
-
+        CppCrashInfoCollector::Instance().SetLogSource("liteprocessdump");
         if (request_.siginfo.si_pid == request_.pid) {
             request_.siginfo.si_uid = request_.uid;
         }

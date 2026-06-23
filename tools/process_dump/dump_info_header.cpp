@@ -93,6 +93,7 @@ void DumpInfoHeader::CollectProcessInfo(DfxProcess& process, const ProcessDumpRe
         tempStr = StringPrintf("%" PRIu64 "(Rss)\n", rss);
         headerInfo_ += "Process Memory(kB):" + tempStr;
         CppCrashInfoCollector::Instance().SetProcessRssMeminfo(tempStr);
+        CppCrashInfoCollector::Instance().SetLogSource("processdump");
         tempStr = GetReasonInfo(request, process, *unwinder.GetMaps());
         headerInfo_ += ("Reason:" + tempStr);
         CppCrashInfoCollector::Instance().SetReason(tempStr);

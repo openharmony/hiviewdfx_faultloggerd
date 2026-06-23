@@ -64,6 +64,7 @@ bool MinidumpDumper::Dump(int pid, int pipeFd, bool enableMinidump, bool enableM
         UnwindProcess();
         PrintDumpInfo();
         DfxBufferWriter::GetInstance().WriteFormatCrashInfo();
+        Report();
     }
     return true;
 }
@@ -131,9 +132,6 @@ bool MinidumpDumper::ParseMinidump()
     }
     if (!ParseThreadListStream(minidumpParser)) {
         DFXLOGE("Failed to parse thread list stream");
-    }
-    if (!ParseModuleListStream(minidumpParser)) {
-        DFXLOGE("Failed to parse module list stream");
     }
     if (!ParseMemoryListStream(minidumpParser)) {
         DFXLOGE("Failed to parse memory list stream");
@@ -259,32 +257,6 @@ bool MinidumpDumper::ParseThreadNameStream(MinidumpParser& minidumpParser)
         auto thread = DfxThread::Create(request_.pid, tid, tid, false);
         thread->SetThreadName(name);
         process_.GetOtherThreads().emplace_back(std::move(thread));
-    }
-    return true;
-}
-
-bool MinidumpDumper::ParseModuleListStream(MinidumpParser& minidumpParser)
-{
-    MinidumpModuleList* moduleList = minidumpParser.GetModuleList();
-    dfxMaps_ = std::make_shared<DfxMaps>();
-    if (moduleList == nullptr) {
-        DFXLOGE("moduleList is nullptr");
-        return false;
-    }
-    DFXLOGI("Module count: %{public}u", moduleList->ModuleCount());
-    auto modules = moduleList->GetModules();
-    for (const auto& module : modules) {
-        if (module == nullptr) {
-            DFXLOGE("module is nullptr");
-            continue;
-        }
-        auto map = std::make_shared<DfxMap>(module->BaseAddress(),
-            module->BaseAddress() + module->Size(), 0, PROT_READ | PROT_WRITE | PROT_EXEC, module->CodeFile());
-        if (map == nullptr) {
-            DFXLOGE("map is nullptr");
-            continue;
-        }
-        dfxMaps_->AddMap(map);
     }
     return true;
 }
@@ -573,6 +545,7 @@ void MinidumpDumper::PrintDumpInfo()
     PrintRegsNearMemory();
     PrintFaultStack();
     PrintMaps();
+    PrintOpenFiles();
 }
 
 void MinidumpDumper::PrintHeader()
@@ -599,6 +572,7 @@ void MinidumpDumper::PrintHeader()
     headInfo += "Process Memory(kB): " + tempStr + "\n";
     CppCrashInfoCollector::Instance().SetProcessRssMeminfo(tempStr);
 
+    CppCrashInfoCollector::Instance().SetLogSource("pdump");
     std::string reason = process_.GetReason() + "\n";
     headInfo += "Reason:" + reason;
     CppCrashInfoCollector::Instance().SetReason(reason);
@@ -703,6 +677,12 @@ void MinidumpDumper::PrintMaps()
     }
     CppCrashInfoCollector::Instance().SetMaps(mapsStr);
     DfxBufferWriter::GetInstance().WriteMsg("Maps:\n" + mapsStr);
+}
+
+void MinidumpDumper::PrintOpenFiles()
+{
+    CppCrashInfoCollector::Instance().SetOpenFiles("this is a kernel dump log, so this field is empty.");
+    DfxBufferWriter::GetInstance().WriteMsg("OpenFiles:\nthis is a kernel dump log, so this field is empty.");
 }
 
 void MinidumpDumper::Report()
