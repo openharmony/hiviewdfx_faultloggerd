@@ -149,14 +149,14 @@ void DfxPopSubmitterStackId(uint64_t stackId);
  *                           Values >640*1024 will be clamped to 640*1024.
  * @note maxLayer and maxStackDepth can be set dynamically.
  */
-void SetChainedAsyncStackConfig(int maxLayer, int maxStackDepth, int maxChainPoolSize);
+void SetChainedAsyncStackConfig(uint32_t maxLayer, uint32_t maxStackDepth, uint32_t maxChainPoolSize);
 
 #ifdef __cplusplus
 }
 #endif
 
 #ifdef __cplusplus
-int32_t GetMaxAsyncChainLayers();
+uint32_t GetMaxAsyncChainLayers();
 uint32_t GetMaxStackDepth();
 uint32_t GetChainPoolSize();
 #endif

@@ -483,7 +483,7 @@ HWTEST_F(AsyncStackTest, AsyncStackTest011, TestSize.Level2)
     ReleaseAsyncContext(stackId);
     SetAsyncStackMode(MODE_LAST_STACKTRACE);
 
-    SetChainedAsyncStackConfig(-1, 16, 64 * 1024);
+    SetChainedAsyncStackConfig(4294967295u, 16, 64 * 1024);
     SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
     stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
     DfxSetSubmitterStackId(stackId);
