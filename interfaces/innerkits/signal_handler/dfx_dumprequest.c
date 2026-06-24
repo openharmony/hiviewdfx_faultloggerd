@@ -118,6 +118,24 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
+static void DFX_ChildProcessSigHandler(int signo)
+{
+    DFXLOGI("Child process received SIGSEGV(%{public}d), exiting", signo);
+    _exit(0);
+}
+
+static void DFX_SetUpChildSigHandler(void)
+{
+    sigset_t set;
+    sigemptyset(&set);
+    sigaddset(&set, SIGSEGV);
+    sigprocmask(SIG_UNBLOCK, &set, NULL);
+
+    if (signal(SIGSEGV, DFX_ChildProcessSigHandler) == SIG_ERR) {
+        DFXLOGW("Failed to set SIGSEGV handler for child process");
+    }
+}
+
 static void CleanFd(int *pipeFd);
 static void CleanPipe(void);
 static bool InitPipe(void);
@@ -480,6 +498,7 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
     } else if (pid == 0) {
         // for avoid dummy process crash but send signal to parent process
         ((DfxMuslPthread*)pthread_self())->tid = syscall(SYS_gettid);
+        DFX_SetUpChildSigHandler();
         if (gettid() != syscall(SYS_gettid)) {
             DFXLOGE("Failed to set dummy pthread!");
         }
