@@ -40,6 +40,7 @@ if (defined(ohos_lite)) {
     defines = [
       "is_ohos=${is_ohos}",
       "ENABLE_PARAMETER",
+      "DFX_LOG_HILOG_BASE",
     ]
 
     sources = [
@@ -56,7 +57,6 @@ if (defined(ohos_lite)) {
     external_deps = [
       "bounds_checking_function:libsec_shared",
       "c_utils:utils",
-      "hilog:libhilog",
       "init:libbegetutil",
     ]
     version_script = "libasync_stack.map"
