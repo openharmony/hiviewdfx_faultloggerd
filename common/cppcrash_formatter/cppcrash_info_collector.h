@@ -38,6 +38,7 @@ struct HeadInfo {
     std::string pname;
     std::string lifeTime;
     std::string rssMeminfo;
+    std::string logSource;
     std::string reason;
     std::string lastFatalMessage;
     bool extendPcLrPrinting {false};
@@ -69,6 +70,7 @@ public:
     void SetPname(const std::string& pname);
     void SetProcessLifeTime(const std::string& lifeTime);
     void SetProcessRssMeminfo(const std::string& rssMeminfo);
+    void SetLogSource(const std::string& logSource);
     void SetReason(const std::string& reason);
     void SetSignal(int32_t signo, int32_t code, const std::string& address);
     void SetLastFatalMessage(const std::string& message);
@@ -99,6 +101,7 @@ public:
     const std::string& GetPname() const;
     const std::string& GetProcessLifeTime() const;
     const std::string& GetProcessRssMeminfo() const;
+    const std::string& GetLogSource() const;
     const std::string& GetReason() const;
     int32_t GetSignalSigno() const;
     int32_t GetSignalCode() const;

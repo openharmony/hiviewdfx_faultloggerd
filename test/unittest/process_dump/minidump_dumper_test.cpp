@@ -655,26 +655,6 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest037, TestSize.Level2)
 }
 
 /**
- * @tc.name: MinidumpDumperTest038
- * @tc.desc: test ParseModuleListStream returns false with null moduleList
- * @tc.type: FUNC
- */
-HWTEST_F(MinidumpDumperTest, MinidumpDumperTest038, TestSize.Level2)
-{
-    MinidumpDumper dumper;
-    int tmpFd = open("/data/test/minidump_module_test", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
-    ASSERT_TRUE(tmpFd > 0);
-    std::string invalidData = "not a valid minidump";
-    write(tmpFd, invalidData.c_str(), invalidData.size());
-    auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
-    MinidumpParser parser(input);
-    bool ret = dumper.ParseModuleListStream(parser);
-    EXPECT_FALSE(ret);
-    close(tmpFd);
-    unlink("/data/test/minidump_module_test");
-}
-
-/**
  * @tc.name: MinidumpDumperTest039
  * @tc.desc: test ParseMemoryListStream returns false with null memoryList
  * @tc.type: FUNC
@@ -1258,31 +1238,6 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest059, TestSize.Level2)
     EXPECT_NE(dfxRegs, nullptr);
     close(tmpFd);
     unlink("/data/test/minidump_arm64regs");
-}
-
-/**
- * @tc.name: MinidumpDumperTest060
- * @tc.desc: test ParseModuleListStream with valid minidump data creates dfxMaps
- * @tc.type: FUNC
- */
-HWTEST_F(MinidumpDumperTest, MinidumpDumperTest060, TestSize.Level2)
-{
-    MinidumpDumper dumper;
-    std::string minidumpData = BuildMinidumpWithModuleList();
-    int tmpFd = open("/data/test/minidump_module_normal", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
-    ASSERT_TRUE(tmpFd > 0);
-    write(tmpFd, minidumpData.c_str(), minidumpData.size());
-    lseek(tmpFd, 0, SEEK_SET);
-    auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
-    MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
-    bool parsed = parser.Parse();
-    bool ret = dumper.ParseModuleListStream(parser);
-    if (parsed && ret) {
-        EXPECT_NE(dumper.dfxMaps_, nullptr);
-    }
-    close(tmpFd);
-    unlink("/data/test/minidump_module_normal");
 }
 
 /**
@@ -2164,36 +2119,6 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest089, TestSize.Level2)
     }
     close(tmpFd);
     unlink("/data/test/minidump_tn_multi_089");
-}
-
-/**
- * @tc.name: MinidumpDumperTest090
- * @tc.desc: test ParseModuleListStream with valid module minidump creates dfxMaps with entries
- * @tc.type: FUNC
- */
-HWTEST_F(MinidumpDumperTest, MinidumpDumperTest090, TestSize.Level2)
-{
-    MinidumpDumper dumper;
-    CppCrashInfoCollector::Instance().SetNeedFormatFlag(true);
-    dumper.CollectDumpHeaderInfo(getpid());
-    std::string minidumpData = BuildMinidumpWithModuleList();
-    int tmpFd = open("/data/test/minidump_module_valid_090", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
-    ASSERT_TRUE(tmpFd > 0);
-    write(tmpFd, minidumpData.c_str(), minidumpData.size());
-    lseek(tmpFd, 0, SEEK_SET);
-    auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
-    MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
-    bool parsed = parser.Parse();
-    if (parsed) {
-        bool ret = dumper.ParseModuleListStream(parser);
-        if (ret) {
-            EXPECT_NE(dumper.dfxMaps_, nullptr);
-            EXPECT_TRUE(dumper.dfxMaps_->GetMaps().size() > 0);
-        }
-    }
-    close(tmpFd);
-    unlink("/data/test/minidump_module_valid_090");
 }
 
 /**

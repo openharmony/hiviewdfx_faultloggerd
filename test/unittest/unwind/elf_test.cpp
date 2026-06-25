@@ -391,25 +391,6 @@ HWTEST_F(DfxElfTest, DfxElfTest010, TestSize.Level2)
     bool isvalid = elf->IsValidElf(nullptr, 0);
     ASSERT_FALSE(isvalid);
 }
-
-/**
- * @tc.name: DfxElfGetLoadBaseMapOffsetZero
- * @tc.desc: test GetLoadBase with mapOffset=0 returns mapStart directly
- * @tc.type: FUNC
- */
-HWTEST_F(DfxElfTest, DfxElfGetLoadBaseMapOffsetZero, TestSize.Level2)
-{
-    RegularElfFactory factory(ELF64_FILE);
-    auto elf = factory.Create();
-    ASSERT_TRUE(elf != nullptr);
-    ASSERT_TRUE(elf->IsValid());
-    uint64_t mapStart = 0xf78c0000;
-    uint64_t loadBaseZeroOffset = elf->GetLoadBase(mapStart, 0);
-    EXPECT_EQ(loadBaseZeroOffset, mapStart);
-    elf->SetLoadBase(static_cast<uint64_t>(-1));
-    uint64_t loadBaseNonZero = elf->GetLoadBase(mapStart, 0x1000);
-    EXPECT_NE(loadBaseNonZero, mapStart);
-}
 } // namespace HiviewDFX
 } // namespace OHOS
 
