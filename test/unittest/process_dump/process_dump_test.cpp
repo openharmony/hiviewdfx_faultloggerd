@@ -89,7 +89,7 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest003, TestSize.Level0)
         .nsPid = getpid(),
     };
     auto ret = process.InitOtherThreads(request);
-    EXPECT_EQ(true, ret) << "DfxProcessTest003 Failed";
+    EXPECT_EQ(DumpErrorCode::DUMP_ESUCCESS, ret) << "DfxProcessTest003 Failed";
     auto threads = process.GetOtherThreads();
     EXPECT_GT(threads.size(), 0) << "DfxProcessTest003 Failed";
     process.ClearOtherThreads();
@@ -115,7 +115,7 @@ HWTEST_F (ProcessDumpTest, DfxProcessTest004, TestSize.Level2)
         .nsPid = getpid(),
     };
     auto ret = process.InitOtherThreads(request);
-    EXPECT_EQ(true, ret) << "DfxProcessTest004 Failed";
+    EXPECT_EQ(DumpErrorCode::DUMP_ESUCCESS, ret) << "DfxProcessTest004 Failed";
     process.Attach();
     process.Detach();
     GTEST_LOG_(INFO) << "DfxProcessTest004: end.";

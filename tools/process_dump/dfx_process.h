@@ -23,6 +23,7 @@
 #include <string>
 
 #include "dfx_dump_request.h"
+#include "dfx_dump_res.h"
 #include "dfx_regs.h"
 #include "dfx_thread.h"
 
@@ -47,7 +48,7 @@ public:
     void Attach(bool hasKey = false);
     void Detach();
     bool InitKeyThread(const ProcessDumpRequest& request, bool isAttach = true);
-    bool InitOtherThreads(const ProcessDumpRequest& request);
+    DumpErrorCode InitOtherThreads(const ProcessDumpRequest& request);
     std::vector<std::shared_ptr<DfxThread>>& GetOtherThreads();
     std::shared_ptr<DfxThread>& GetKeyThread()
     {
@@ -158,6 +159,8 @@ public:
 
     void AppendFatalMessage(const std::string &msg);
     const std::string& GetFatalMessage() const;
+    uint32_t GetThreadCount() const;
+
 private:
     DfxProcessInfo processInfo_;
     CrashLogConfig crashLogConfig_;
@@ -173,6 +176,7 @@ private:
     pid_t vmPid_ = 0;
     std::set<uintptr_t> memoryValues_;
     std::map<uint64_t, DfxFrame> nativeFramesTable_;
+    uint32_t threadCount_{0};
 };
 } // namespace HiviewDFX
 } // namespace OHOS

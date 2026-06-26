@@ -77,13 +77,14 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request, bool isAttach)
     return true;
 }
 
-bool DfxProcess::InitOtherThreads(const ProcessDumpRequest& request)
+DumpErrorCode DfxProcess::InitOtherThreads(const ProcessDumpRequest& request)
 {
     std::vector<int> tids;
     std::vector<int> nstids;
     if (!GetTidsByPid(processInfo_.pid, tids, nstids)) {
-        return false;
+        return DumpErrorCode::DUMP_ESUCCESS;
     }
+    threadCount_ = static_cast<uint32_t>(tids.size());
     pid_t keyThreadNsTid = 0;
     if (keyThread_ != nullptr) {
         keyThreadNsTid = keyThread_->GetThreadInfo().nsTid;
@@ -93,6 +94,12 @@ bool DfxProcess::InitOtherThreads(const ProcessDumpRequest& request)
         if ((nstids[i] == keyThreadNsTid) || nstids[i] == request.tid) {
             continue;
         }
+        constexpr size_t threadLimit = 2000;
+        if (otherThreads_.size() >= threadLimit) {
+            DFXLOGW("Thread count(%{public}zu) exceeds limit(%{public}zu), only dumped %{public}zu threads.",
+                    nstids.size(), threadLimit, otherThreads_.size());
+            return DumpErrorCode::DUMP_THREAD_OVER_LIMIT;
+        }
         auto thread = DfxThread::Create(processInfo_.pid, tids[i], nstids[i],
             request.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH);
         if (thread->Attach(PTRACE_ATTACH_OTHER_THREAD_TIMEOUT)) {
@@ -100,7 +107,7 @@ bool DfxProcess::InitOtherThreads(const ProcessDumpRequest& request)
         }
         otherThreads_.push_back(thread);
     }
-    return true;
+    return DumpErrorCode::DUMP_ESUCCESS;
 }
 
 pid_t DfxProcess::ChangeTid(pid_t tid, bool ns)
@@ -180,6 +187,11 @@ void DfxProcess::AppendFatalMessage(const std::string &msg)
 const std::string& DfxProcess::GetFatalMessage() const
 {
     return fatalMsg_;
+}
+
+uint32_t DfxProcess::GetThreadCount() const
+{
+    return threadCount_;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

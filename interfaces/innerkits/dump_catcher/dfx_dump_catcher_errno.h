@@ -65,6 +65,7 @@ enum DumpCatchErrorCode : int32_t {
     DUMPCATCH_KERNELSTACK_OVER_LIMIT,                /* kernelstack fail due to over limit */
     DUMPCATCH_KERNELSTACK_RESOURCE_LIMIT,             /* kernelstack fail due to resource limit */
     DUMPCATCH_KERNELSTACK_NONEED,                     /* no need to dump kernelstack */
+    DUMPCATCH_THREAD_COUNT_OVERLIMIT,                 /* the thread of target process is over limit */
 };
 
 class DfxDumpCatchError {

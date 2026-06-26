@@ -25,6 +25,7 @@
 
 #include "dfx_buffer_writer.h"
 #include "dfx_define.h"
+#include "dfx_dump_res.h"
 #include "dfx_test_util.h"
 #include "dfx_util.h"
 #include "directory_ex.h"
@@ -418,11 +419,11 @@ HWTEST_F(DfxProcessDumpTest, DfxProcessDumpTest017, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: start.";
     ProcessDumper& ins = ProcessDumper::GetInstance();
-    ASSERT_FALSE(ins.InitDfxProcess());
+    ASSERT_NE(ins.InitDfxProcess(), DumpErrorCode::DUMP_ESUCCESS);
 
     ins.request_.pid = -1;
     ins.request_.nsPid = -1;
-    ASSERT_FALSE(ins.InitDfxProcess());
+    ASSERT_NE(ins.InitDfxProcess(), DumpErrorCode::DUMP_ESUCCESS);
     GTEST_LOG_(INFO) << "DfxProcessDumpTest017: end.";
 }
 

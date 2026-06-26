@@ -443,9 +443,12 @@ void DfxDumpCatcher::Impl::DealWithPollRet(int pollRet, int pid, int32_t& ret, s
                                            DumpCatcherPipeData& pipeData)
 {
     bool isPollFail = true;
-
     switch (pollRet) {
         case DUMP_POLL_OK:
+            if (pipeData.resMsg.find("the thread count of target process is over limit") != std::string::npos) {
+                ret = DUMPCATCH_THREAD_COUNT_OVERLIMIT;
+                break;
+            }
             ret = DUMPCATCH_ESUCCESS;
             isPollFail = false;
             break;
@@ -536,7 +539,8 @@ std::pair<int, std::string> DfxDumpCatcher::Impl::DealWithDumpCatchRet(int pid, 
     std::string reason;
     if (result == 0) {
         reason = "Reason:" + DfxDumpCatchError::ToString(ret) + "\n";
-    } else if (ret == DUMPCATCH_DUMP_ESYMBOL_NO_PARSE || ret == DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT) {
+    } else if (ret == DUMPCATCH_DUMP_ESYMBOL_NO_PARSE || ret == DUMPCATCH_DUMP_ESYMBOL_PARSE_TIMEOUT ||
+        ret == DUMPCATCH_THREAD_COUNT_OVERLIMIT) {
         reason = "Reason:" + DfxDumpCatchError::ToString(ret) + "\n";
         result = 0;
     } else {
@@ -927,6 +931,7 @@ bool DfxDumpCatcher::Impl::DoReadRes(int& pollRet, DumpCatcherPipeData& pipeData
 
     switch (resMsg.code) {
         case DUMP_ESUCCESS:
+        case DUMP_THREAD_OVER_LIMIT:
             pollRet = DUMP_POLL_OK;
             break;
         case DUMP_ESYMBOL_NO_PARSE:

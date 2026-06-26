@@ -104,7 +104,7 @@ void CppCrashReporter::ReportToHiview(DfxProcess& process, const ProcessDumpRequ
     info.sectionMaps["IS_SIG_ACTION"] = request.isSigAction ? "Yes" : "No";
     info.sectionMaps["LOG_SOURCE"] = process.GetLogSource();
     info.sectionMaps["ENABLE_MINIDUMP"] = process.GetCrashLogConfig().minidumpLog ? "true" : "false";
-
+    info.sectionMaps["THREAD_COUNT"] = std::to_string(process.GetThreadCount());
     if (info.reason.find("SIGABRT") != std::string::npos) {
         DFXLOGI("Current abort crash(pid=%{public}d) info has lastfatalmessage: %{public}s", info.pid,
             info.summary.find("LastFatalMessage:") != std::string::npos ? "true" : "false");
