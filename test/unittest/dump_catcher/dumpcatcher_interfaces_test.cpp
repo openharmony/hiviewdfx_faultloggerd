@@ -1189,6 +1189,8 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
 
     // get kernel stack (may be unavailable on kernels without bbox/hicollie support)
     int32_t kernelStackRet = DfxGetKernelStack(gettid(), msg);
+    GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: DfxGetKernelStack ret=" << kernelStackRet
+                     << ", msg.size=" << msg.size();
     if (kernelStackRet != 0) {
         GTEST_LOG_(INFO) << "Kernel stack unavailable (ret=" << kernelStackRet
                          << "), skip kernel stack format checks";

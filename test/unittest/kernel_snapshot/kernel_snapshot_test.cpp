@@ -138,6 +138,7 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest003, TestSize.Level2)
     }
     waitpid(pid, 0, 0);
     std::string snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 10);
+    GTEST_LOG_(INFO) << "KernelSnapshotTest003: snapshotFilePath=\"" << snapshotFilePath << "\"";
 
     std::ifstream snapshotFile(snapshotFilePath);
     if (snapshotFile.is_open()) {

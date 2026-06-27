@@ -388,10 +388,12 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     KeyThreadDumpInfo dumpInfo;
     dumpInfo.UnwindStack(process, request, unwinder);
     dumpInfo.Print(process, request, unwinder);
+    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: dump result:\n" << result;
     // This test unwinds with no regs and falls back to kernel stack. When kernel stack capture
     // is unavailable (kernel without bbox/hicollie support), no frames are produced; in that
     // case only the non-frame keywords can be checked.
     bool framesProduced = (result.find("#00") != std::string::npos);
+    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: framesProduced=" << framesProduced;
     std::vector<std::string> keyWords;
     if (framesProduced) {
         keyWords = {"Tid:", to_string(tid), "Name:", "#00", "#01", "(", ")"};

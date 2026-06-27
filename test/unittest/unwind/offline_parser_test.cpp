@@ -263,6 +263,8 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest012, TestSize.Level2)
     std::string kernelStack;
     // Kernel stack capture may be unavailable on kernels without bbox/hicollie support.
     int32_t kernelStackRet = DfxGetKernelStack(gettid(), kernelStack);
+    GTEST_LOG_(INFO) << "DfxOfflineParserTest012: DfxGetKernelStack ret=" << kernelStackRet
+                     << ", kernelStack.size=" << kernelStack.size();
     if (kernelStackRet != 0) {
         GTEST_LOG_(INFO) << "Kernel stack unavailable (ret=" << kernelStackRet
                          << "), skip DfxOfflineParserTest012";
