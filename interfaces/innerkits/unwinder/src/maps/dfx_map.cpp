@@ -43,6 +43,9 @@ const char* const MAP_ARKWEB_CORE_PREFIX = "/data/storage/el1/bundle/arkwebcore/
 const char* const SANDBOX_PATH_PREFIX = "/data/storage/el1/bundle/";
 const char* const BUNDLE_PATH_PREFIX = "/data/app/el1/bundle/public/";
 
+const char* const HANDLE_FAST_PREFIX = "HANDLE_FAST_";
+const char* const LLVM_SUFFIX = "_LLVM";
+
 #if defined(is_ohos) && is_ohos
 
 AT_ALWAYS_INLINE bool SkipWhiteSpace(const char* buff, const size_t buffSize, size_t& buffOffset)
@@ -282,10 +285,59 @@ bool DfxMap::GetStaticArkRange(uintptr_t& start, uintptr_t& end)
     }
     return true;
 }
+
+std::vector<DfxMap::MapRange> DfxMap::BuildStaticArkLLVMRanges()
+{
+    auto elf = GetElf();
+    if (!elf || prevMap == nullptr) {
+        DFXLOGI("Failed to build static ark llvm ranges, elf or prevMap is null.");
+        return {};
+    }
+
+    constexpr uint32_t prefixLen = 12;
+    constexpr uint32_t suffixLen = 5;
+    std::vector<MapRange> rawRanges;
+    for (const auto& sym : elf->GetFuncSymbols()) {
+        const std::string &name = sym.nameStr;
+        if (name.length() < prefixLen + suffixLen ||
+            !StartsWith(name, HANDLE_FAST_PREFIX) ||
+            !EndsWith(name, LLVM_SUFFIX)) {
+            continue;
+        }
+        rawRanges.push_back({sym.value, sym.value + sym.size});
+    }
+    if (rawRanges.empty()) {
+        DFXLOGE("Failed to build static ark llvm ranges, no valid symbol found.");
+        return {};
+    }
+
+    // Merge adjacent/overlapping ranges. rawRanges are sorted by begin (inherited from std::set order).
+    // Allow 16-byte alignment padding gaps to avoid splitting adjacent handlers.
+    constexpr uint64_t mergeGap = 16;
+    std::vector<MapRange> ranges;
+    ranges.reserve(rawRanges.size());
+    ranges.push_back(rawRanges[0]);
+    for (size_t i = 1; i < rawRanges.size(); ++i) {
+        MapRange& last = ranges.back();
+        if (rawRanges[i].begin <= last.end + mergeGap) {
+            if (rawRanges[i].end > last.end) {
+                last.end = rawRanges[i].end;
+            }
+        } else {
+            ranges.push_back(rawRanges[i]);
+        }
+    }
+
+    // Symbol value is offset within .so, add map base address to get runtime absolute address
+    for (auto& r : ranges) {
+        r.begin += prevMap->begin;
+        r.end += prevMap->begin;
+    }
+    return ranges;
+}
+
 bool DfxMap::IsStaticArkExecutable(uintptr_t pc)
 {
-    static uint64_t arkInterpreterBegin = 0;
-    static uint64_t arkInterpreterEnd = 0;
     if (name.empty()) {
         return false;
     }
@@ -299,6 +351,31 @@ bool DfxMap::IsStaticArkExecutable(uintptr_t pc)
         return false;
     }
 
+    // arkllvm Interpreter
+    static std::vector<MapRange> llvmMapRanges;
+    static bool initialized = false;
+
+    if (!initialized) {
+        initialized = true;
+        DFXLOGI("ark llvm start to initialize");
+        llvmMapRanges = BuildStaticArkLLVMRanges();
+    }
+
+    if (!llvmMapRanges.empty()) {
+        // Ranges are sorted by begin, use binary search to find first begin > pc
+        auto cmp = [](uint64_t value, const MapRange& r) { return value < r.begin; };
+        auto it = std::upper_bound(llvmMapRanges.begin(), llvmMapRanges.end(),
+            static_cast<uint64_t>(pc), cmp);
+        if (it != llvmMapRanges.begin()) {
+            --it;
+            if (pc >= it->begin && pc < it->end) {
+                return true;
+            }
+        }
+    }
+    // irtoc Interpreter
+    static uint64_t arkInterpreterBegin = 0;
+    static uint64_t arkInterpreterEnd = 0;
     if (arkInterpreterBegin == 0 && arkInterpreterEnd == 0) {
         uintptr_t start = 0;
         uintptr_t end = 0;
@@ -308,10 +385,7 @@ bool DfxMap::IsStaticArkExecutable(uintptr_t pc)
         arkInterpreterBegin = start;
         arkInterpreterEnd = end;
     }
-    if (pc >= arkInterpreterBegin && pc < arkInterpreterEnd) {
-        return true;
-    }
-    return false;
+    return pc >= arkInterpreterBegin && pc < arkInterpreterEnd;
 }
 
 bool DfxMap::IsJsvmExecutable()
