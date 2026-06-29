@@ -43,15 +43,6 @@ private:
     static bool IsAuthorizedUid(int32_t connectionFd);
     static bool CheckCoredumpUID(uint32_t callerUid);
 };
-
-class FaultCoredumpConfig {
-public:
-    static std::unique_ptr<FaultCoredumpConfig> Create(const std::string& jsonFilePath);
-    bool Contains(uint32_t uid) const;
-private:
-    bool Parse(const std::string& jsonText);
-    std::vector<uint32_t> uids;
-};
 }
 }
 #endif

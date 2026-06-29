@@ -21,7 +21,6 @@
 #include "dfx_log.h"
 #include "fault_common_util.h"
 #include "faultloggerd_socket.h"
-#include "file_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -81,19 +80,13 @@ int32_t CoredumpManagerService::HandleCancelEvent(const CoreDumpRequestData& req
 
 bool CoredumpRequestValidator::CheckCoredumpUID(uint32_t callerUid)
 {
-    constexpr const char* const configPath = "/system/etc/fault_coredump.json";
-    auto config = FaultCoredumpConfig::Create(configPath);
-    if (!config) {
-        return false;
-    }
-
-    if (config->Contains(callerUid)) {
-        DFXLOGI("UID %{public}d is whitelisted.", callerUid);
+    std::vector<int> coredumpUids = {0, 1202, 7005};
+    if (std::find(coredumpUids.begin(), coredumpUids.end(), callerUid) != coredumpUids.end()) {
+        DFXLOGI("UID %{public}d is in uidList.", callerUid);
         return true;
-    } else {
-        DFXLOGI("UID %{public}d is NOT whitelisted.", callerUid);
-        return false;
     }
+    DFXLOGI("UID %{public}d is not in uidList.", callerUid);
+    return false;
 }
 
 int32_t CoredumpRequestValidator::ValidateRequest(const std::string& socketName, int32_t connectionFd,
@@ -139,63 +132,6 @@ bool CoredumpRequestValidator::IsAuthorizedUid(int32_t connectionFd)
         return false;
     }
     return CheckCoredumpUID(creds.uid);
-}
-
-std::unique_ptr<FaultCoredumpConfig> FaultCoredumpConfig::Create(const std::string& jsonFilePath)
-{
-    if (jsonFilePath.empty()) {
-        return nullptr;
-    }
-
-    std::string jsonText;
-    if (!LoadStringFromFile(jsonFilePath, jsonText)) {
-        DFXLOGE("Failed to read JSON file.");
-        return nullptr;
-    }
-
-    auto config = std::make_unique<FaultCoredumpConfig>();
-    if (!config->Parse(jsonText)) {
-        DFXLOGE("Failed to parse whitelist.");
-        return nullptr;
-    }
-
-    return config;
-}
-
-bool FaultCoredumpConfig::Contains(uint32_t uid) const
-{
-    return std::find(uids.begin(), uids.end(), uid) != uids.end();
-}
-
-bool FaultCoredumpConfig::Parse(const std::string& jsonText)
-{
-    cJSON* root = cJSON_Parse(jsonText.c_str());
-    if (!root) {
-        DFXLOGE("Failed to parse JSON: %{public}s", cJSON_GetErrorPtr());
-        return false;
-    }
-
-    const cJSON* whitelistArray = cJSON_GetObjectItem(root, "whitelist");
-    if (!cJSON_IsArray(whitelistArray)) {
-        DFXLOGE("whitelist is missing or not an array");
-        cJSON_Delete(root);
-        return false;
-    }
-    uids.clear();
-
-    cJSON* uid = nullptr;
-    cJSON_ArrayForEach(uid, whitelistArray) {
-        if (!cJSON_IsNumber(uid) || uid->valueint < 0) {
-            char *printed = cJSON_Print(uid);
-            DFXLOGE("Invalid UID in whitelist: %{public}s", printed);
-            cJSON_free(printed);
-            continue;
-        }
-        uids.push_back(static_cast<uint32_t>(uid->valueint));
-    }
-
-    cJSON_Delete(root);
-    return true;
 }
 }
 }

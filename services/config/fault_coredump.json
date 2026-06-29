@@ -1,5 +1,4 @@
 {
-    "whitelist": [0, 1202, 7005],
     "coredumpProfiles": {
         "FULL": {
             "process": {

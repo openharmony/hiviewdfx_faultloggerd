@@ -383,55 +383,7 @@ HWTEST_F(FaultloggerdCoredumpTest, CoredumpSessionService001, TestSize.Level2)
 }
 
 /**
- * @tc.name: FaultCoredumpConfig001
- * @tc.desc: test FaultCoredumpConfig
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdCoredumpTest, FaultCoredumpConfig001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "FaultCoredumpConfig001: start.";
-    EXPECT_FALSE(FaultCoredumpConfig::Create(""));
-    EXPECT_FALSE(FaultCoredumpConfig::Create("/fault_coredump_test.json"));
-    auto coredumpConfig = FaultCoredumpConfig::Create("/system/etc/fault_coredump.json");
-    EXPECT_TRUE(coredumpConfig);
-    EXPECT_FALSE(coredumpConfig->Contains(999999));
-
-    std::string content = R"({
-        "Profiles": {
-
-    })";
-    auto ret = coredumpConfig->Parse(content);
-    EXPECT_FALSE(ret);
-
-    content = R"({
-        "Profiles": {
-        }
-    })";
-    ret = coredumpConfig->Parse(content);
-    EXPECT_FALSE(ret);
-
-    content = R"({
-        "whitelist": 123
-    })";
-    ret = coredumpConfig->Parse(content);
-    EXPECT_FALSE(ret);
-
-    content = R"({
-        "whitelist": ["ABC"]
-    })";
-    ret = coredumpConfig->Parse(content);
-
-    content = R"({
-        "whitelist": [0, 134]
-    })";
-    ret = coredumpConfig->Parse(content);
-    EXPECT_TRUE(ret);
-
-    GTEST_LOG_(INFO) << "FaultCoredumpConfig001: end.";
-}
-
-/**
- * @tc.name: CoredumpRequestValidator001
+  * @tc.name: CoredumpRequestValidator001
  * @tc.desc: test CoredumpRequestValidator
  * @tc.type: FUNC
  */
@@ -451,7 +403,13 @@ HWTEST_F(FaultloggerdCoredumpTest, CoredumpRequestValidator001, TestSize.Level2)
     socketName = "faultloggerd.server";
     validator.ValidateRequest(socketName, -1, request);
 
-    auto ret = CoredumpRequestValidator::CheckCoredumpUID(9999);
+    auto ret = CoredumpRequestValidator::CheckCoredumpUID(0);
+    EXPECT_TRUE(ret);
+    ret = CoredumpRequestValidator::CheckCoredumpUID(1202);
+    EXPECT_TRUE(ret);
+    ret = CoredumpRequestValidator::CheckCoredumpUID(7005);
+    EXPECT_TRUE(ret);
+    ret = CoredumpRequestValidator::CheckCoredumpUID(9999);
     EXPECT_FALSE(ret);
 
     int fd = open("dev/null", O_RDONLY);

@@ -30,8 +30,8 @@ namespace {
 
 std::string CoredumpController::GetCoredumpHapList()
 {
-    static std::string whiteList = OHOS::system::GetParameter(COREDUMP_HAP_LIST, "");
-    return whiteList;
+    static std::string uidList = OHOS::system::GetParameter(COREDUMP_HAP_LIST, "");
+    return uidList;
 }
 
 bool CoredumpController::IsHwasanCoredumpEnabled()
