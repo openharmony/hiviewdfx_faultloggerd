@@ -22,6 +22,7 @@
 #include <filesystem>
 #include "dfx_kernel_stack.h"
 #include "dfx_offline_parser.h"
+#include "dfx_test_util.h"
 
 using namespace OHOS::HiviewDFX;
 using namespace testing::ext;
@@ -260,6 +261,11 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest011, TestSize.Level2)
 HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxOfflineParserTest012: start.";
+    // Kernel stack capture depends on the linux bbox/hicollie driver; isolate to aarch64+Linux.
+    if (ExecuteCommands("uname").find("Linux") == std::string::npos) {
+        GTEST_LOG_(INFO) << "DfxOfflineParserTest012: non-Linux kernel, skip";
+        return;
+    }
     std::string kernelStack;
     // Kernel stack capture may be unavailable on kernels without bbox/hicollie support.
     int32_t kernelStackRet = DfxGetKernelStack(gettid(), kernelStack);

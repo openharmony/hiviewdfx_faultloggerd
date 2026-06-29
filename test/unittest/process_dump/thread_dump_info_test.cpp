@@ -389,16 +389,18 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     dumpInfo.UnwindStack(process, request, unwinder);
     dumpInfo.Print(process, request, unwinder);
     GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: dump result:\n" << result;
-    // This test unwinds with no regs and falls back to kernel stack. When kernel stack capture
-    // is unavailable (kernel without bbox/hicollie support), no frames are produced; in that
-    // case only the non-frame keywords can be checked.
+    // This test unwinds with no regs and falls back to kernel stack. Kernel stack capture
+    // depends on the linux bbox/hicollie driver; isolate to aarch64+Linux, and when no frames
+    // are produced (bbox unavailable on this kernel) only the non-frame keywords are checked.
+    bool isLinuxKernel = ExecuteCommands("uname").find("Linux") != std::string::npos;
     bool framesProduced = (result.find("#00") != std::string::npos);
-    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: framesProduced=" << framesProduced;
+    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: isLinuxKernel=" << isLinuxKernel
+                     << ", framesProduced=" << framesProduced;
     std::vector<std::string> keyWords;
-    if (framesProduced) {
+    if (isLinuxKernel && framesProduced) {
         keyWords = {"Tid:", to_string(tid), "Name:", "#00", "#01", "(", ")"};
     } else {
-        GTEST_LOG_(INFO) << "No frames produced (kernel stack unavailable),"
+        GTEST_LOG_(INFO) << "Kernel stack unavailable (non-Linux or no frames),"
                             " check non-frame keywords only";
         keyWords = {"Tid:", to_string(tid), "Name:"};
     }
