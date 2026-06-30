@@ -190,6 +190,7 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         enableMinidumpConfigs.erase(data.data.work_data.pid);
         disableMinidumpToCrashLogConfigs.erase(data.data.work_data.pid);
     }
+    SmartFd pipeGuard(data.data.work_data.pipefd);
     if (!enableMinidump && !enableMinidumpToCrashLog) {
         struct __pdump_work_cancel_arg_s arg = {0};
         arg.workid = data.header.workid;
@@ -213,7 +214,7 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
                 enableMinidump, enableMinidumpToCrashLog);
             char argStr[32]; // 32 : pid buf len
             int ret = snprintf_s(argStr, sizeof(argStr), sizeof(argStr) - 1, "%d %d %d %d",
-                data.data.work_data.pid, data.data.work_data.pipefd,
+                data.data.work_data.pid, pipeGuard.GetFd(),
                 static_cast<int8_t>(enableMinidump), static_cast<int8_t>(enableMinidumpToCrashLog));
             if (ret < 0) {
                 DFXLOGE("fill dumpPid fail, not launch processdump %{public}d", ret);
