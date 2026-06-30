@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <sstream>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -94,8 +95,17 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
             uintptr_t leftAddr = std::stoll(preLineMap.substr(0, mid), nullptr, 16);
             // Convert to uintptr_t type
             uintptr_t rightAddr = std::stoll(preLineMap.substr(mid + 1, mid), nullptr, 16);
-            std::string curInode = preLineMap.substr(preLineMap.length() - 8, 8);
-            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && preInode == curInode) {
+            // Parse the real inode (5th whitespace-delimited field of /proc/<pid>/maps:
+            // begin-end perms offset dev inode pathname). Grouping by the real inode keeps
+            // this model consistent with production DfxMaps::FindMapGroupByAddr.
+            std::istringstream iss(preLineMap);
+            std::string beginEnd, perms, offset, dev, curInode;
+            iss >> beginEnd >> perms >> offset >> dev >> curInode;
+            // Merge contiguous maps sharing the same non-anonymous inode (matches production's
+            // same-inode up/down grouping). Anonymous maps (inode == "0") are never merged
+            // across segments, matching production's anonymous short-circuit.
+            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && preInode == curInode &&
+                curInode != "0") {
                 mapsAddr.pop();
                 mapsAddr.push(rightAddr);
             } else {
@@ -228,15 +238,7 @@ HWTEST_F(MapsTest, MapsTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "MapsTest001: simplified maps:\n" << result;
     auto simplifyMaps = GetAddrFromMaps(result);
     GTEST_LOG_(INFO) << "MapsTest001: simplifyMaps.size=" << simplifyMaps.size();
-#if !defined(__aarch64__)
     ASSERT_TRUE(CheckSimplify(unSimplifyMaps, simplifyMaps));
-#else
-    // On aarch64 the simplify logic may drop a map containing an interested address located
-    // at a section boundary; keep the check informative but non-fatal there.
-    if (!CheckSimplify(unSimplifyMaps, simplifyMaps)) {
-        GTEST_LOG_(INFO) << "MapsTest001: simplify dropped a map with an interested addr on aarch64, relaxed";
-    }
-#endif
     process.Detach();
     int status;
     waitpid(pid, &status, 0);
