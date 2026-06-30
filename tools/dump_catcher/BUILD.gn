@@ -55,12 +55,6 @@ if (defined(ohos_lite)) {
 
   ohos_executable("dumpcatcher") {
     if (build_variant == "root") {
-      sanitize = {
-          cfi = true
-          cfi_cross_dso = true
-          cfi_vcall_icall_only = true
-          debug = false
-      }
       configs = [
         ":dumpcatcher_config",
         "$faultloggerd_path/common/build:coverage_flags",
@@ -71,7 +65,28 @@ if (defined(ohos_lite)) {
         "main.cpp",
       ]
 
-      cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
+      cflags = [
+        "-DDEBUG_CRASH_LOCAL_HANDLER",
+        "-Os",
+        "-fdata-sections",
+        "-ffunction-sections",
+        "-fno-asynchronous-unwind-tables",
+        "-fno-unwind-tables",
+        "-fno-omit-frame-pointer",
+        "-fno-rtti",
+        "-fno-exceptions",
+      ]
+      cflags_cc = [
+        "-DDEBUG_CRASH_LOCAL_HANDLER",
+        "-Os",
+        "-fdata-sections",
+        "-ffunction-sections",
+        "-fno-asynchronous-unwind-tables",
+        "-fno-unwind-tables",
+        "-fno-omit-frame-pointer",
+        "-fno-rtti",
+        "-fno-exceptions",
+      ]
 
       deps = [
         "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",

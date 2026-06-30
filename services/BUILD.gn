@@ -155,12 +155,6 @@ if (defined(ohos_lite)) {
   }
 
   ohos_executable("faultloggerd") {
-    sanitize = {
-        cfi = true
-        cfi_cross_dso = true
-        cfi_vcall_icall_only = true
-        debug = false
-    }
     install_enable = true
     configs = [
       ":faultloggerd_config",
@@ -168,7 +162,28 @@ if (defined(ohos_lite)) {
     ]
     sources = faultloggerd_sources
     sources += [ "main.cpp" ]
-    cflags_cc = [ "-DDEBUG_CRASH_LOCAL_HANDLER" ]
+    cflags = [
+      "-DDEBUG_CRASH_LOCAL_HANDLER",
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
+    cflags_cc = [
+      "-DDEBUG_CRASH_LOCAL_HANDLER",
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
     defines = [ "DFX_ENABLE_TRACE" ]
 
     deps = [
