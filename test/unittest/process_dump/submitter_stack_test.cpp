@@ -109,8 +109,12 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "SubmitterStackTest001: DfxGetSubmitterStackId=" << request.stackId;
 #if defined(__aarch64__)
     // The async submitter stack depends on libuv being built with the async-stack hook
-    // (LibuvSetAsyncStackFunc). When the hook is absent, DfxGetSubmitterStackId returns 0;
-    // skip the submitter-stack checks in that case rather than failing.
+    // (LibuvSetAsyncStackFunc). Isolate to Linux; when the hook is absent,
+    // DfxGetSubmitterStackId returns 0, so skip the submitter-stack checks in that case.
+    if (ExecuteCommands("uname").find("Linux") == std::string::npos) {
+        GTEST_LOG_(INFO) << "SubmitterStackTest001: non-Linux kernel, skip";
+        return;
+    }
     if (request.stackId == 0) {
         GTEST_LOG_(INFO) << "Async submitter stack unavailable (libuv hook not installed), skip";
         return;

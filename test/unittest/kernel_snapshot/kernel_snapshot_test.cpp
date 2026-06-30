@@ -154,11 +154,13 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest003, TestSize.Level2)
         EXPECT_TRUE(content.find("Memory near registers:") != std::string::npos) << "KernelSnapshotTest003 Failed";
         EXPECT_TRUE(content.find("FaultStack:") != std::string::npos) << "KernelSnapshotTest003 Failed";
         EXPECT_TRUE(content.find("Elfs:") != std::string::npos) << "KernelSnapshotTest003 Failed";
+    } else if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        // On Linux boards the crash snapshot file may not be generated within the wait window;
+        // the crash pipeline itself is covered by other passing tests, so treat the missing file
+        // as non-fatal here.
+        GTEST_LOG_(INFO) << "KernelSnapshotTest003: crash snapshot file not generated in time on Linux, skip content checks";
     } else {
-        // On some aarch64 boards the crash snapshot file is not generated within the wait
-        // window; the crash pipeline itself is covered by other passing tests, so treat the
-        // missing file as non-fatal here.
-        GTEST_LOG_(INFO) << "KernelSnapshotTest003: crash snapshot file not generated in time, skip content checks";
+        EXPECT_TRUE(false) << "KernelSnapshotTest003 Failed";
     }
 
     GTEST_LOG_(INFO) << "KernelSnapshotTest003: end.";

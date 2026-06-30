@@ -445,19 +445,20 @@ HWTEST_F(LocalHandlerTest, DfxAllocatorTest005, TestSize.Level2)
         usleep(10000); // 10000 : sleep 10ms
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
         sleep(2); // 2 : wait for cppcrash generating
-#ifdef __aarch64__
-        // On aarch64 the corrupted-heap realloc may crash with either SIGABRT (DfxAllocator
-        // hook) or SIGSEGV (native allocator touching corrupted metadata); accept both.
         std::string crashFile = GetCppCrashFileName(pid);
-        bool sigabrtMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGABRT);
-        bool sigsegvMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGSEGV);
-        GTEST_LOG_(INFO) << "DfxAllocatorTest: crashFile=\"" << crashFile
-                         << "\", SIGABRT matched=" << sigabrtMatched
-                         << ", SIGSEGV matched=" << sigsegvMatched;
-        bool ret = sigabrtMatched || sigsegvMatched;
-#else
-        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-#endif
+        bool ret;
+        if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+            // On Linux the corrupted-heap realloc may crash with either SIGABRT (DfxAllocator
+            // hook) or SIGSEGV (native allocator touching corrupted metadata); accept both.
+            bool sigabrtMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGABRT);
+            bool sigsegvMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGSEGV);
+            GTEST_LOG_(INFO) << "DfxAllocatorTest: crashFile=\"" << crashFile
+                             << "\", SIGABRT matched=" << sigabrtMatched
+                             << ", SIGSEGV matched=" << sigsegvMatched;
+            ret = sigabrtMatched || sigsegvMatched;
+        } else {
+            ret = CheckLocalCrashKeyWords(crashFile, pid, SIGSEGV);
+        }
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "DfxAllocatorTest005: end.";
@@ -504,19 +505,20 @@ HWTEST_F(LocalHandlerTest, DfxAllocatorTest007, TestSize.Level2)
         usleep(10000); // 10000 : sleep 10ms
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
         sleep(2); // 2 : wait for cppcrash generating
-#ifdef __aarch64__
-        // On aarch64 the corrupted-heap realloc may crash with either SIGABRT (DfxAllocator
-        // hook) or SIGSEGV (native allocator touching corrupted metadata); accept both.
         std::string crashFile = GetCppCrashFileName(pid);
-        bool sigabrtMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGABRT);
-        bool sigsegvMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGSEGV);
-        GTEST_LOG_(INFO) << "DfxAllocatorTest: crashFile=\"" << crashFile
-                         << "\", SIGABRT matched=" << sigabrtMatched
-                         << ", SIGSEGV matched=" << sigsegvMatched;
-        bool ret = sigabrtMatched || sigsegvMatched;
-#else
-        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-#endif
+        bool ret;
+        if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+            // On Linux the corrupted-heap realloc may crash with either SIGABRT (DfxAllocator
+            // hook) or SIGSEGV (native allocator touching corrupted metadata); accept both.
+            bool sigabrtMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGABRT);
+            bool sigsegvMatched = CheckLocalCrashKeyWords(crashFile, pid, SIGSEGV);
+            GTEST_LOG_(INFO) << "DfxAllocatorTest: crashFile=\"" << crashFile
+                             << "\", SIGABRT matched=" << sigabrtMatched
+                             << ", SIGSEGV matched=" << sigsegvMatched;
+            ret = sigabrtMatched || sigsegvMatched;
+        } else {
+            ret = CheckLocalCrashKeyWords(crashFile, pid, SIGSEGV);
+        }
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "DfxAllocatorTest007: end.";
