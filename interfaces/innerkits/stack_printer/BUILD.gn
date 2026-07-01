@@ -25,12 +25,6 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libstack_printer") {
-    sanitize = {
-        cfi = true
-        cfi_cross_dso = true
-        cfi_vcall_icall_only = true
-        debug = false
-    }
     sources = [ "src/stack_printer.cpp" ]
 
     public_configs = [ ":stack_printer_config" ]
@@ -55,5 +49,26 @@ if (defined(ohos_lite)) {
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
     version_script = "libstack_printer.map"
+
+    cflags = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
+    cflags_cc = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
   }
 }

@@ -44,13 +44,6 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libdfx_procinfo") {
-    branch_protector_ret = "pac_ret"
-    sanitize = {
-        cfi = true
-        cfi_cross_dso = true
-        cfi_vcall_icall_only = true
-        debug = false
-    }
     public_configs = [
       ":dfx_procinfo_config",
       "$faultloggerd_path/common/build:coverage_flags",
@@ -74,6 +67,27 @@ if (defined(ohos_lite)) {
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
+
+    cflags = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
+    cflags_cc = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
   }
 
   ohos_static_library("dfx_procinfo_static") {

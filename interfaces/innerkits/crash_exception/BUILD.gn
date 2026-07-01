@@ -43,12 +43,6 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("crash_exception") {
-    sanitize = {
-        cfi = true
-        cfi_cross_dso = true
-        cfi_vcall_icall_only = true
-        debug = false
-    }
     sources = crash_exception_sources
     public_configs = [ ":crash_exception_config" ]
     version_script = "libcrash_exception.map"
@@ -63,5 +57,26 @@ if (defined(ohos_lite)) {
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
+
+    cflags = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
+    cflags_cc = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
   }
 }

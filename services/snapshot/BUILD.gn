@@ -15,12 +15,6 @@ import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
 
 ohos_shared_library("kernel_snapshot") {
   branch_protector_ret = "pac_ret"
-  sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      cfi_vcall_icall_only = true
-      debug = false
-  }
   install_enable = true
   sources = [
     "kernel_snapshot_content_builder.cpp",
@@ -37,6 +31,26 @@ ohos_shared_library("kernel_snapshot") {
     "hilog:libhilog",
     "hisysevent:libhisysevent",
     "init:libbegetutil",
+  ]
+  cflags = [
+    "-Os",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-fno-omit-frame-pointer",
+    "-fno-rtti",
+    "-fno-exceptions",
+  ]
+  cflags_cc = [
+    "-Os",
+    "-fdata-sections",
+    "-ffunction-sections",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-unwind-tables",
+    "-fno-omit-frame-pointer",
+    "-fno-rtti",
+    "-fno-exceptions",
   ]
   install_images = [ "system" ]
   part_name = "faultloggerd"
