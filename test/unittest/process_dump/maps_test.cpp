@@ -99,7 +99,11 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
             // begin-end perms offset dev inode pathname). Grouping by the real inode keeps
             // this model consistent with production DfxMaps::FindMapGroupByAddr.
             std::istringstream iss(preLineMap);
-            std::string beginEnd, perms, offset, dev, curInode;
+            std::string beginEnd;
+            std::string perms;
+            std::string offset;
+            std::string dev;
+            std::string curInode;
             iss >> beginEnd >> perms >> offset >> dev >> curInode;
             // Merge contiguous maps sharing the same non-anonymous inode (matches production's
             // same-inode up/down grouping). Anonymous maps (inode == "0") are never merged

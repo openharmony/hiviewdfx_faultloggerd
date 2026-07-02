@@ -82,6 +82,19 @@ static void TimerCallback(uv_timer_t* handle)
 {
     g_done = true;
 }
+#if defined(__aarch64__)
+static bool CheckSubmitterKeywords(const std::string& result)
+{
+    const std::vector<std::string> keyWords = {"SubmitterStacktrace", "#00", "#01", "#02"};
+    for (const std::string& keyWord : keyWords) {
+        if (!CheckContent(result, keyWord, true)) {
+            return false;
+        }
+    }
+    return true;
+}
+#endif
+
 /**
  * @tc.name: SubmitterStackTest001
  * @tc.desc: test print submitter stack
@@ -130,15 +143,7 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
     submitterStack.Collect(process, request, unwinder);
     submitterStack.Print(process, request, unwinder);
 #if defined(__aarch64__)
-    std::vector<std::string> keyWords = {
-        "SubmitterStacktrace",
-        "#00",
-        "#01",
-        "#02",
-    };
-    for (const std::string& keyWord : keyWords) {
-        ASSERT_TRUE(CheckContent(result, keyWord, true));
-    }
+    ASSERT_TRUE(CheckSubmitterKeywords(result));
 #endif
     process.Detach();
     GTEST_LOG_(INFO) << "SubmitterStackTest001: end.";
