@@ -16,34 +16,12 @@
 #ifndef FILE_UTIL_H
 #define FILE_UTIL_H
 
-#include <fstream>
-#include <algorithm>
 #include <string>
 
 namespace OHOS {
 namespace HiviewDFX {
-namespace {
-const int MAX_FILE_LENGTH = 32 * 1024 * 1024;
-}
 
-static bool LoadStringFromFile(const std::string& filePath, std::string& content)
-{
-    std::ifstream file(filePath.c_str());
-    if (!file.is_open()) {
-        return false;
-    }
-
-    file.seekg(0, std::ios::end);
-    const long fileLength = file.tellg();
-    if (fileLength > MAX_FILE_LENGTH) {
-        return false;
-    }
-
-    content.clear();
-    file.seekg(0, std::ios::beg);
-    std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(content));
-    return true;
-}
+bool LoadStringFromFile(const std::string& filePath, std::string& content);
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif
