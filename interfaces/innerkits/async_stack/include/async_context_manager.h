@@ -59,11 +59,7 @@ public:
     void ReleaseAsyncContext(DfxAsyncContext* ctx);
     DfxThreadAsyncContext* AcquireThreadContext();
     void ReleaseThreadContext(DfxThreadAsyncContext* ctx);
-    void GetAsyncContextRange(DfxAsyncContext** begin, DfxAsyncContext** end)
-    {
-        *begin = (pool_ != nullptr && poolSize_ > 0) ? &pool_[0] : nullptr;
-        *end = (pool_ != nullptr && poolSize_ > 0) ? &pool_[poolSize_ - 1] : nullptr;
-    }
+    bool IsValidAsyncContextAddress(DfxAsyncContext* ctx);
 private:
     DfxAsyncContextPool() = default;
     ~DfxAsyncContextPool() = default;

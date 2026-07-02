@@ -39,11 +39,11 @@ DfxAsyncContextPool* DfxAsyncContextPool::Instance()
 
 bool DfxAsyncContextPool::Init()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (initialized_.load()) {
         return true;
     }
     DFXLOGI("init async context pool");
-    std::lock_guard<std::mutex> lock(mutex_);
     poolSize_ = GetChainPoolSize();
     if (poolSize_ == 0) {
         DFXLOGE("init async context pool invalid poolSize %{public}u", poolSize_);
@@ -85,10 +85,10 @@ bool DfxAsyncContextPool::Init()
 
 void DfxAsyncContextPool::DeInit()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (!initialized_.load()) {
         return;
     }
-    std::lock_guard<std::mutex> lock(mutex_);
     initialized_.store(false);
     if (pool_ != nullptr) {
         size_t poolMemSize = static_cast<size_t>(poolSize_) * sizeof(DfxAsyncContext);
@@ -103,10 +103,10 @@ void DfxAsyncContextPool::DeInit()
 
 DfxAsyncContext* DfxAsyncContextPool::AcquireAsyncContext()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (!initialized_.load()) {
         return nullptr;
     }
-    std::lock_guard<std::mutex> lock(mutex_);
     if (freeListHead_ == freeListTail_) {
         DFXLOGW("DfxAsyncContext exhausted");
         return nullptr;
@@ -119,14 +119,14 @@ DfxAsyncContext* DfxAsyncContextPool::AcquireAsyncContext()
 
 void DfxAsyncContextPool::ReleaseAsyncContext(DfxAsyncContext* ctx)
 {
-    if (!initialized_.load()) {
-        return;
-    }
     if (ctx == nullptr) {
         DFXLOGW("ReleaseAsyncContext ctx is nullptr");
         return;
     }
     std::lock_guard<std::mutex> lock(mutex_);
+    if (!initialized_.load()) {
+        return;
+    }
     if (!ctx->valid) {
         DFXLOGW("ReleaseAsyncContext ctx is invalid");
         return;
@@ -140,10 +140,10 @@ void DfxAsyncContextPool::ReleaseAsyncContext(DfxAsyncContext* ctx)
 
 DfxThreadAsyncContext* DfxAsyncContextPool::AcquireThreadContext()
 {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (!initialized_.load()) {
         return nullptr;
     }
-    std::lock_guard<std::mutex> lock(mutex_);
     if (freeThreadList_ == nullptr) {
         DFXLOGW("DfxThreadAsyncContext exhausted");
         return nullptr;
@@ -157,14 +157,14 @@ DfxThreadAsyncContext* DfxAsyncContextPool::AcquireThreadContext()
 
 void DfxAsyncContextPool::ReleaseThreadContext(DfxThreadAsyncContext* ctx)
 {
-    if (!initialized_.load()) {
-        return;
-    }
     if (ctx == nullptr) {
         DFXLOGW("ReleaseThreadContext ctx is nullptr");
         return;
     }
     std::lock_guard<std::mutex> lock(mutex_);
+    if (!initialized_.load()) {
+        return;
+    }
     ctx->valid = false;
     ctx->next = freeThreadList_;
     ctx->curAsyncContextsCnt = 0;
@@ -255,12 +255,21 @@ void DfxAsyncContextManager::ClearThreadContext(DfxThreadAsyncContext* threadCtx
     threadCtx->curAsyncContextsCnt = 0;
 }
 
+bool DfxAsyncContextPool::IsValidAsyncContextAddress(DfxAsyncContext* ctx)
+{
+    if (ctx == nullptr) {
+        return false;
+    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (!initialized_.load() || pool_ == nullptr || poolSize_ == 0) {
+        return false;
+    }
+    return (ctx >= &pool_[0] && ctx <= &pool_[poolSize_ - 1]);
+}
+
 bool DfxAsyncContextManager::IsValidAsyncContext(DfxAsyncContext* ctx)
 {
-    DfxAsyncContext* begin = nullptr;
-    DfxAsyncContext* end = nullptr;
-    DfxAsyncContextPool::Instance()->GetAsyncContextRange(&begin, &end);
-    return ((ctx >= begin) && (ctx <= end));
+    return DfxAsyncContextPool::Instance()->IsValidAsyncContextAddress(ctx);
 }
 
 bool DfxAsyncContextManager::RecycleAsyncContext(DfxAsyncContext* ctx)
@@ -269,10 +278,7 @@ bool DfxAsyncContextManager::RecycleAsyncContext(DfxAsyncContext* ctx)
         DFXLOGD("RecycleAsyncContext ctx is nullptr");
         return false;
     }
-    DfxAsyncContext* begin = nullptr;
-    DfxAsyncContext* end = nullptr;
-    DfxAsyncContextPool::Instance()->GetAsyncContextRange(&begin, &end);
-    if (ctx < begin || ctx > end) {
+    if (!IsValidAsyncContext(ctx)) {
         DFXLOGW("RecycleAsyncContext ctx invalid");
         return false;
     }
