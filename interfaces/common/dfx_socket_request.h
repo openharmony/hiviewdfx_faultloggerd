@@ -85,7 +85,9 @@ typedef enum FaultLoggerType : int32_t {
      /** static js heap */
     STATIC_JS_HEAP_SNAPSHOT = 120,
      /** static js raw heap */
-    STATIC_JS_RAW_SNAPSHOT = 121
+    STATIC_JS_RAW_SNAPSHOT = 121,
+    /** js map */
+    JS_MAP = 122
 } FaultLoggerType;
 
 /**
