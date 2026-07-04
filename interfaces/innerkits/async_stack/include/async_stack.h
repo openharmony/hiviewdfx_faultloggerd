@@ -157,7 +157,6 @@ void SetChainedAsyncStackConfig(uint32_t maxLayer, uint32_t maxStackDepth, uint3
 
 #ifdef __cplusplus
 uint32_t GetMaxAsyncChainLayers();
-uint32_t GetMaxStackDepth();
 uint32_t GetChainPoolSize();
 #endif
 
