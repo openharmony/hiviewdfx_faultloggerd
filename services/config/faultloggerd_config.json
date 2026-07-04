@@ -206,6 +206,17 @@
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE",
       "fileOwnerUid": 1201
+    },
+    {
+      "type": 122,
+      "fileNamePrefix": "js_map",
+      "maxSingleFileSizeInKB": 2726298,
+      "overFileSizeAction": "DELETE",
+      "keepFileCount": 12,
+      "maxFileCount": 24,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE",
+     "fileOwnerUid": 1201
     }
   ]
 }
