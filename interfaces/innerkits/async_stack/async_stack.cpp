@@ -45,11 +45,6 @@ uint32_t GetMaxAsyncChainLayers()
     return g_maxAsyncChainLayers.load();
 }
 
-uint32_t GetMaxStackDepth()
-{
-    return g_maxStackDepth.load();
-}
-
 uint32_t GetChainPoolSize()
 {
     return g_chainPoolSize.load();
@@ -186,7 +181,7 @@ extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
     if (mode == g_mode.load()) {
         return g_mode.load();
     }
-    
+
     if (mode == MODE_CHAINED_STACKTRACE) {
         if (!DfxAsyncContextManager::Instance()->Init()) {
             DFXLOGE("SetAsyncStackMode init async context manager failed");
