@@ -92,7 +92,7 @@ if (defined(ohos_lite)) {
         "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",
         "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
         "$faultloggerd_path/common/dfxlog:dfx_hilog_cfi",
-        "$faultloggerd_path/common/dfxutil:dfx_util_cfi",
+        "$faultloggerd_path/common/dfxutil:libdfx_util",
         "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local",
         "$faultloggerd_path/interfaces/innerkits/dump_catcher:libdfx_dumpcatcher",
         "$faultloggerd_path/interfaces/innerkits/formatter:libjson_stack_formatter",

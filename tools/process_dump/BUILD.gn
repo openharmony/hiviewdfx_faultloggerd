@@ -270,7 +270,7 @@ if (defined(ohos_lite)) {
     deps = [
       "$faultloggerd_common_path/cutil:dfx_cutil_cfi",
       "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
-      "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
+      "$faultloggerd_common_path/dfxutil:libdfx_util",
       "$faultloggerd_common_path/trace:dfx_trace_cfi",
       "$faultloggerd_common_path/cppcrash_formatter:cppcrash_formatter_src_cfi",
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",

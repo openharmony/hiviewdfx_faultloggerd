@@ -93,7 +93,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
-      "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
+      "$faultloggerd_common_path/dfxutil:libdfx_util",
       "$faultloggerd_common_path/trace:dfx_trace_dlsym_cfi",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
