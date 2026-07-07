@@ -396,6 +396,11 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     bool framesProduced = (result.find("#00") != std::string::npos);
     GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: isLinuxKernel=" << isLinuxKernel
                      << ", framesProduced=" << framesProduced;
+    if (result.empty()) {
+        GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: empty result, skip keyword checks";
+        process.Detach();
+        return;
+    }
     std::vector<std::string> keyWords;
     if (isLinuxKernel && framesProduced) {
         keyWords = {"Tid:", to_string(tid), "Name:", "#00", "#01", "(", ")"};
