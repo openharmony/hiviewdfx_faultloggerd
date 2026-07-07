@@ -86,7 +86,7 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
     size_t end = result.find('\n');
     size_t start = 0;
     std::stack<uintptr_t> mapsAddr;
-    std::string preInode = "";
+    std::string prePath = "";
     while (end != std::string::npos) {
         std::string preLineMap = result.substr(start, end - start);
         size_t mid = preLineMap.find('-');
@@ -95,25 +95,24 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
             uintptr_t leftAddr = std::stoll(preLineMap.substr(0, mid), nullptr, 16);
             // Convert to uintptr_t type
             uintptr_t rightAddr = std::stoll(preLineMap.substr(mid + 1, mid), nullptr, 16);
-            // Parse the real inode (5th whitespace-delimited field of /proc/<pid>/maps:
-            // begin-end perms offset dev inode pathname). Grouping by the real inode keeps
-            // this model consistent with production DfxMaps::FindMapGroupByAddr.
+            // Parse the pathname (4th field of the printed maps line:
+            // begin-end perms offset pathname). The printed format omits dev/inode,
+            // so group by pathname as a proxy (same pathname = same file = same inode).
             std::istringstream iss(preLineMap);
             std::string beginEnd;
             std::string perms;
             std::string offset;
-            std::string dev;
-            std::string curInode;
-            iss >> beginEnd >> perms >> offset >> dev >> curInode;
-            // Merge contiguous maps sharing the same non-anonymous inode (matches production's
-            // same-inode up/down grouping). Anonymous maps (inode == "0") are never merged
-            // across segments, matching production's anonymous short-circuit.
-            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && preInode == curInode &&
-                curInode != "0") {
+            std::string curPath;
+            iss >> beginEnd >> perms >> offset >> curPath;
+            // Merge contiguous maps sharing the same non-empty pathname (same file).
+            // Anonymous maps (no pathname) are never merged, matching production's
+            // anonymous short-circuit.
+            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && prePath == curPath &&
+                !curPath.empty()) {
                 mapsAddr.pop();
                 mapsAddr.push(rightAddr);
             } else {
-                preInode = curInode;
+                prePath = curPath;
                 mapsAddr.push(leftAddr);
                 mapsAddr.push(rightAddr);
             }
