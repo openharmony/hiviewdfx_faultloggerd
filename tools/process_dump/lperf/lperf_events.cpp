@@ -17,7 +17,6 @@
 
 #include <chrono>
 #include <fcntl.h>
-#include <iostream>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
