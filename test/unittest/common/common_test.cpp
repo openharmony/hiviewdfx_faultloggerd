@@ -283,9 +283,6 @@ HWTEST_F(CommonTest, ROMBaselineTest001, TestSize.Level2)
     constexpr long long baseline = 1435;
 #endif
     // There is a 5% threshold for the baseline value
-    GTEST_LOG_(INFO) << "ROMBaselineTest001: totalSize=" << totalSize
-                     << ", baseline=" << baseline
-                     << ", threshold=" << static_cast<long long>(baseline * 1.05);
     EXPECT_LT(totalSize, static_cast<long long>(baseline * 1.05));
     GTEST_LOG_(INFO) << "ROMBaselineTest001: end.";
 }

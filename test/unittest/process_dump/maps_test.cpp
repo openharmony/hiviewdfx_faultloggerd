@@ -194,8 +194,7 @@ bool CheckSimplify(std::vector<std::pair<uintptr_t, uintptr_t>>& unSimplifyMaps,
     for (auto& deletedMap : deletedMaps) {
         for (const auto& addr : interestedAddrs) {
             if (addr >= deletedMap.first && addr < deletedMap.second) {
-                GTEST_LOG_(INFO) << "CheckDeletedMap Failed " << deletedMap.first << "-" << deletedMap.second
-                                 << " (contains interested addr 0x" << std::hex << addr << std::dec << ")";
+                GTEST_LOG_(INFO) << "CheckDeletedMap Failed" << deletedMap.first << "-" << deletedMap.second;
                 return false;
             }
         }
@@ -224,23 +223,15 @@ HWTEST_F(MapsTest, MapsTest001, TestSize.Level2)
     Init(pid, process, request, unwinder);
     Maps maps;
     maps.Print(process, request, unwinder);
-    GTEST_LOG_(INFO) << "MapsTest001: unsimplified maps:\n" << result;
     auto unSimplifyMaps = GetAddrFromMaps(result);
-    GTEST_LOG_(INFO) << "MapsTest001: unSimplifyMaps.size=" << unSimplifyMaps.size();
     result = "";
     CrashLogConfig crashLogConfig = {
         .simplifyVmaPrinting = true,
     };
     process.SetCrashLogConfig(crashLogConfig);
     InitInterestedAddrs(process, request);
-    GTEST_LOG_(INFO) << "MapsTest001: interestedAddrs count=" << interestedAddrs.size();
-    for (auto addr : interestedAddrs) {
-        GTEST_LOG_(INFO) << "MapsTest001: interestedAddr=0x" << std::hex << addr << std::dec;
-    }
     maps.Print(process, request, unwinder);
-    GTEST_LOG_(INFO) << "MapsTest001: simplified maps:\n" << result;
     auto simplifyMaps = GetAddrFromMaps(result);
-    GTEST_LOG_(INFO) << "MapsTest001: simplifyMaps.size=" << simplifyMaps.size();
     ASSERT_TRUE(CheckSimplify(unSimplifyMaps, simplifyMaps));
     process.Detach();
     int status;

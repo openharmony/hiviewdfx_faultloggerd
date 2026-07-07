@@ -591,8 +591,6 @@ void Compare(const std::string& oldStr, const std::string& mixStr, int colNumber
 {
     std::vector<std::string> oldStrAddrs = GetLastLineAddr(oldStr, colNumber);
     std::vector<std::string> mixStrAddrs = GetLastLineAddr(mixStr, colNumber);
-    GTEST_LOG_(INFO) << "Compare: oldStrAddrs.size=" << oldStrAddrs.size()
-                     << ", mixStrAddrs.size=" << mixStrAddrs.size();
     if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
         // On Linux the mix (FP-chain) unwinder may unwind fewer frames than the standard (DWARF)
         // unwinder when the frame chain is incomplete; require mix to be a non-empty prefix of

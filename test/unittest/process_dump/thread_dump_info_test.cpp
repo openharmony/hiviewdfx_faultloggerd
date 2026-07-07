@@ -406,13 +406,9 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     result = "";
     dumpInfo.UnwindStack(process, request, unwinder);
     dumpInfo.Print(process, request, unwinder);
-    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: dump result:\n" << result;
     bool isLinuxKernel = ExecuteCommands("uname").find("Linux") != std::string::npos;
     bool framesProduced = (result.find("#00") != std::string::npos);
-    GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: isLinuxKernel=" << isLinuxKernel
-                     << ", framesProduced=" << framesProduced;
     if (isLinuxKernel && !framesProduced) {
-        GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: kernel stack unavailable, skip checks";
         process.Detach();
         return;
     }

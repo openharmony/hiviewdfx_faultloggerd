@@ -1187,38 +1187,35 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
 
-    // Kernel stack capture depends on the linux bbox/hicollie driver; isolate to aarch64+Linux.
-    if (ExecuteCommands("uname").find("Linux") == std::string::npos) {
-        GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: non-Linux kernel, skip kernel stack checks";
-    } else {
-        // get kernel stack (may be unavailable on kernels without bbox/hicollie support)
-        int32_t kernelStackRet = DfxGetKernelStack(gettid(), msg);
-        GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: DfxGetKernelStack ret=" << kernelStackRet
-                         << ", msg.size=" << msg.size();
+    // get kernel stack (may be unavailable on Linux kernels without bbox/hicollie support)
+    int32_t kernelStackRet = DfxGetKernelStack(gettid(), msg);
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
         if (kernelStackRet != 0) {
-            GTEST_LOG_(INFO) << "Kernel stack unavailable (ret=" << kernelStackRet
-                             << "), skip kernel stack format checks";
-        } else {
-            // not thread stat
-            ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
-            GTEST_LOG_(INFO) << "formattedStack is not json :\n" << formattedStack;
-            ASSERT_FALSE(formattedStack.empty());
-            ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
-            GTEST_LOG_(INFO) << "formattedStack is json :\n" << formattedStack;
-            ASSERT_NE(formattedStack, std::string("null\n"));
-
-            // get thread stat
-            ProcessInfo info;
-            ASSERT_TRUE(ParseProcInfo(gettid(), info));
-            msg.append(FomatProcessInfoToString(info)).append("\n");
-            ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
-            GTEST_LOG_(INFO) << "formattedStack is not json :\n" << formattedStack;
-            ASSERT_FALSE(formattedStack.empty());
-            ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
-            GTEST_LOG_(INFO) << "formattedStack is json :\n" << formattedStack;
-            ASSERT_FALSE(formattedStack.empty());
+            GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: end.";
+            return;
         }
+    } else {
+        ASSERT_EQ(kernelStackRet, 0);
     }
+
+    // not thread stat
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
+    GTEST_LOG_(INFO) << "formattedStack is not json :\n" << formattedStack;
+    ASSERT_FALSE(formattedStack.empty());
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+    GTEST_LOG_(INFO) << "formattedStack is json :\n" << formattedStack;
+    ASSERT_NE(formattedStack, std::string("null\n"));
+
+    // get thread stat
+    ProcessInfo info;
+    ASSERT_TRUE(ParseProcInfo(gettid(), info));
+    msg.append(FomatProcessInfoToString(info)).append("\n");
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
+    GTEST_LOG_(INFO) << "formattedStack is not json :\n" << formattedStack;
+    ASSERT_FALSE(formattedStack.empty());
+    ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
+    GTEST_LOG_(INFO) << "formattedStack is json :\n" << formattedStack;
+    ASSERT_FALSE(formattedStack.empty());
 #endif
     GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: end.";
 }

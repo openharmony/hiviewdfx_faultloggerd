@@ -138,7 +138,6 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest003, TestSize.Level2)
     }
     waitpid(pid, 0, 0);
     std::string snapshotFilePath = WaitCreateCrashFile("cppcrash", pid, 10);
-    GTEST_LOG_(INFO) << "KernelSnapshotTest003: snapshotFilePath=\"" << snapshotFilePath << "\"";
 
     std::ifstream snapshotFile(snapshotFilePath);
     if (snapshotFile.is_open()) {
@@ -158,8 +157,6 @@ HWTEST_F(KernelSnapshotTest, KernelSnapshotTest003, TestSize.Level2)
         // On Linux boards the crash snapshot file may not be generated within the wait window;
         // the crash pipeline itself is covered by other passing tests, so treat the missing file
         // as non-fatal here.
-        GTEST_LOG_(INFO) << "KernelSnapshotTest003: crash snapshot file not generated in"
-                         << " time on Linux, skip content checks";
     } else {
         EXPECT_TRUE(false) << "KernelSnapshotTest003 Failed";
     }

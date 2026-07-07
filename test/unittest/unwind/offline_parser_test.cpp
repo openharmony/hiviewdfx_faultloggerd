@@ -261,21 +261,11 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest011, TestSize.Level2)
 HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxOfflineParserTest012: start.";
-    // Kernel stack capture depends on the linux bbox/hicollie driver; isolate to aarch64+Linux.
-    if (ExecuteCommands("uname").find("Linux") == std::string::npos) {
-        GTEST_LOG_(INFO) << "DfxOfflineParserTest012: non-Linux kernel, skip";
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
         return;
     }
     std::string kernelStack;
-    // Kernel stack capture may be unavailable on kernels without bbox/hicollie support.
-    int32_t kernelStackRet = DfxGetKernelStack(gettid(), kernelStack);
-    GTEST_LOG_(INFO) << "DfxOfflineParserTest012: DfxGetKernelStack ret=" << kernelStackRet
-                     << ", kernelStack.size=" << kernelStack.size();
-    if (kernelStackRet != 0) {
-        GTEST_LOG_(INFO) << "Kernel stack unavailable (ret=" << kernelStackRet
-                         << "), skip DfxOfflineParserTest012";
-        return;
-    }
+    ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
     std::vector<DfxThreadStack> processStack;
     ASSERT_TRUE(FormatProcessKernelStack(kernelStack, processStack));
     DfxOfflineParser parser("testhap");
