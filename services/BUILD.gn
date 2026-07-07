@@ -194,7 +194,7 @@ if (defined(ohos_lite)) {
       ":fault_coredump.json",
       "$faultloggerd_frameworks_path/localhandler:dfx_local_handler_src_cfi",
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
-      "$faultloggerd_path/common/dfxutil:dfx_util_cfi",
+      "$faultloggerd_path/common/dfxutil:libdfx_util",
       "$faultloggerd_path/common/trace:dfx_trace_cfi",
       "$faultloggerd_path/interfaces/innerkits/faultloggerd_client:libfaultloggerd",
     ]

@@ -42,6 +42,7 @@ dfx_unwinder_sources = [
   "src/utils/dfx_offline_parser.cpp",
   "src/utils/dfx_ptrace.cpp",
   "src/utils/safe_reader.cpp",
+  "src/utils/stack_utils.cpp",
   "src/utils/unwinder_config.cpp",
   "unwinder.cpp",
 ]
@@ -192,7 +193,7 @@ if (defined(ohos_lite)) {
 
     deps = [
       "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
-      "$faultloggerd_common_path/dfxutil:dfx_util_cfi",
+      "$faultloggerd_common_path/dfxutil:libdfx_util",
       "$faultloggerd_common_path/trace:dfx_trace_dlsym_cfi",
     ]
 

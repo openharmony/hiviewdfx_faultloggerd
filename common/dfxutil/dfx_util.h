@@ -32,27 +32,27 @@ namespace HiviewDFX {
 typedef int (*BufferWriteFunc) (int32_t fd, const char *buf, const size_t len);
 
 #ifndef is_host
-AT_SYMBOL_HIDDEN bool TrimAndDupStr(const std::string &source, std::string &str);
-AT_SYMBOL_HIDDEN bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str,
-                                    size_t maxLength = static_cast<size_t>(NAME_BUF_LEN));
-AT_SYMBOL_HIDDEN uint64_t GetTimeMilliSeconds(void);
-AT_SYMBOL_HIDDEN uint64_t GetAbsTimeMilliSeconds(void);
+bool TrimAndDupStr(const std::string &source, std::string &str);
+bool TrimAndDupStr(const char* buff, size_t buffSize, std::string &str,
+    size_t maxLength = static_cast<size_t>(NAME_BUF_LEN));
+uint64_t GetTimeMilliSeconds(void);
+uint64_t GetAbsTimeMilliSeconds(void);
 AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
-AT_SYMBOL_HIDDEN bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
-AT_SYMBOL_HIDDEN void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
-AT_SYMBOL_HIDDEN bool IsBetaVersion();
-AT_SYMBOL_HIDDEN bool IsDeveloperMode();
-AT_SYMBOL_HIDDEN bool IsOversea();
+bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
+void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
+bool IsBetaVersion();
+bool IsDeveloperMode();
+bool IsOversea();
 #endif
-AT_SYMBOL_HIDDEN std::string GetArkWebCorePathPrefix();
-AT_SYMBOL_HIDDEN off_t GetFileSize(int fd);
-AT_SYMBOL_HIDDEN bool ReadFdToString(int fd, std::string& content);
-AT_SYMBOL_HIDDEN uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
-AT_SYMBOL_HIDDEN bool SafeStrtolCpp(const std::string& numStr, long& out, int base);
-AT_SYMBOL_HIDDEN int WriteBuf(int fd, const char* buf, size_t len);
-AT_SYMBOL_HIDDEN int WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc = WriteBuf);
+std::string GetArkWebCorePathPrefix();
+off_t GetFileSize(int fd);
+bool ReadFdToString(int fd, std::string& content);
+uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
+bool SafeStrtolCpp(const std::string& numStr, long& out, int base);
+int WriteBuf(int fd, const char* buf, size_t len);
+int WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc = WriteBuf);
 #if is_ohos && !is_mingw
-AT_SYMBOL_HIDDEN size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
+size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif
 } // nameapace HiviewDFX
 } // nameapace OHOS

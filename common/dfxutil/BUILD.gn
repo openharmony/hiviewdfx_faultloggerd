@@ -19,7 +19,6 @@ dfx_util_sources = [
   "elapsed_time.cpp",
   "file_util.cpp",
   "proc_util.cpp",
-  "stack_utils.cpp",
 ]
 
 if (defined(ohos_lite)) {
@@ -71,13 +70,7 @@ if (defined(ohos_lite)) {
     subsystem_name = "hiviewdfx"
   }
 
-  ohos_static_library("dfx_util_cfi") {
-    sanitize = {
-        cfi = true
-        cfi_cross_dso = true
-        cfi_vcall_icall_only = true
-        debug = false
-    }
+  ohos_shared_library("libdfx_util") {
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_cfi" ]
@@ -89,6 +82,15 @@ if (defined(ohos_lite)) {
     ]
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
+    version_script = "libdfx_util.map"
+    install_images = [
+      "system",
+      "updater",
+    ]
+    innerapi_tags = [
+      "chipsetsdk_sp_indirect",
+      "platformsdk_indirect",
+    ]
   }
 
   ohos_static_library("dfx_util_static") {
