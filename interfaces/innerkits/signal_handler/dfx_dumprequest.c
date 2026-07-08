@@ -121,7 +121,7 @@ enum DumpPreparationStage {
 static void DFX_ChildProcessSigHandler(int signo)
 {
     DFXLOGI("Child process received SIGSEGV(%{public}d), exiting", signo);
-    _exit(0);
+    syscall(SYS_exit, signo);
 }
 
 static void DFX_SetUpChildSigHandler(void)
@@ -740,12 +740,12 @@ static int ProcessDump(int signo)
             DFXLOGI("enter processdump has coat all time, just exit");
             break;
         }
-        int result = StartProcessdump(true, isCrash);
-        // not allow non-safe operate and try again
-        if (result == START_PROCESS_DUMP_FAIL || (result == START_PROCESS_DUMP_RETRY &&
-                StartProcessdump(false, isCrash) != START_PROCESS_DUMP_SUCCESS)) {
-            DFXLOGE("start processdump fail");
-            break;
+        if (StartProcessdump(true, isCrash) != START_PROCESS_DUMP_SUCCESS) {
+            DFXLOGW("start processdump fail, not allow non-safe operate and try again");
+            if (StartProcessdump(false, isCrash) != START_PROCESS_DUMP_SUCCESS) {
+                DFXLOGE("start processdump fail after retry");
+                break;
+            }
         }
 
         if (!StartVMProcessUnwind()) {
