@@ -1187,16 +1187,13 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
 
-    // get kernel stack (may be unavailable on Linux kernels without bbox/hicollie support)
-    int32_t kernelStackRet = DfxGetKernelStack(gettid(), msg);
+#if defined(__aarch64__)
     if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
-        if (kernelStackRet != 0) {
-            GTEST_LOG_(INFO) << "DumpCatcherInterfacesTest042: end.";
-            return;
-        }
-    } else {
-        ASSERT_EQ(kernelStackRet, 0);
+        return;
     }
+#endif
+    // get kernel stack
+    ASSERT_EQ(DfxGetKernelStack(gettid(), msg), 0);
 
     // not thread stat
     ASSERT_TRUE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));

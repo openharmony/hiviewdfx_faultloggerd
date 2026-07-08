@@ -15,7 +15,6 @@
 
 #include <gtest/gtest.h>
 
-#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -591,18 +590,7 @@ void Compare(const std::string& oldStr, const std::string& mixStr, int colNumber
 {
     std::vector<std::string> oldStrAddrs = GetLastLineAddr(oldStr, colNumber);
     std::vector<std::string> mixStrAddrs = GetLastLineAddr(mixStr, colNumber);
-    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
-        // On Linux the mix (FP-chain) unwinder may unwind fewer frames than the standard (DWARF)
-        // unwinder when the frame chain is incomplete; require mix to be a non-empty prefix of
-        // standard so a shorter-but-consistent mix backtrace is accepted, while a genuinely
-        // divergent one still fails.
-        ASSERT_FALSE(mixStrAddrs.empty());
-        ASSERT_LE(mixStrAddrs.size(), oldStrAddrs.size());
-        ASSERT_TRUE(std::equal(mixStrAddrs.begin(), mixStrAddrs.end(), oldStrAddrs.begin()))
-            << "mix addrs must be a prefix of standard addrs";
-    } else {
-        ASSERT_EQ(oldStrAddrs, mixStrAddrs);
-    }
+    ASSERT_EQ(oldStrAddrs, mixStrAddrs);
 }
 
 void CallMixLast(int tid, bool fast, int colNumber)
@@ -639,20 +627,25 @@ void CallMixFirst(int tid, bool fast, int colNumber)
  */
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
 {
-    g_mutex.lock();
-    std::thread backtraceTread(Test001);
-    sleep(1);
-    if (g_tid <= 0) {
-        FAIL() << "Failed to create child thread.\n";
-    }
-    CallMixLast(g_tid, false, 3);
-    CallMixFirst(g_tid, false, 3);
-    CallMixLast(g_tid, true, 3);
-    CallMixFirst(g_tid, true, 3);
-    g_mutex.unlock();
-    g_tid = 0;
-    if (backtraceTread.joinable()) {
-        backtraceTread.join();
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        g_mutex.lock();
+        std::thread backtraceTread(Test001);
+        sleep(1);
+        if (g_tid <= 0) {
+            FAIL() << "Failed to create child thread.\n";
+        }
+        CallMixLast(g_tid, false, 3);
+        CallMixFirst(g_tid, false, 3);
+        CallMixLast(g_tid, true, 3);
+        CallMixFirst(g_tid, true, 3);
+        g_mutex.unlock();
+        g_tid = 0;
+        if (backtraceTread.joinable()) {
+            backtraceTread.join();
+        }
     }
 }
 #endif

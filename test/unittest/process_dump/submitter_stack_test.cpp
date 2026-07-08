@@ -64,10 +64,12 @@ int SubmitterStackTest::WriteLogFunc(int32_t fd, const char *buf, size_t len)
 namespace {
 static bool g_done = false;
 pid_t g_testTid = 0;
+uint64_t g_stackId = 0;
 
 NOINLINE static void WorkCallback(uv_work_t* req)
 {
     g_testTid = gettid();
+    g_stackId = DfxGetSubmitterStackId();
     sleep(3); // 3 : sleep 3 seconds
 }
 
@@ -82,19 +84,6 @@ static void TimerCallback(uv_timer_t* handle)
 {
     g_done = true;
 }
-#if defined(__aarch64__)
-static bool CheckSubmitterKeywords(const std::string& result)
-{
-    const std::vector<std::string> keyWords = {"SubmitterStacktrace", "#00", "#01", "#02"};
-    for (const std::string& keyWord : keyWords) {
-        if (!CheckContent(result, keyWord, true)) {
-            return false;
-        }
-    }
-    return true;
-}
-#endif
-
 /**
  * @tc.name: SubmitterStackTest001
  * @tc.desc: test print submitter stack
@@ -117,12 +106,9 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
         .tid = g_testTid,
         .pid = g_testTid,
         .nsPid = g_testTid,
-        .stackId = DfxGetSubmitterStackId(),
+        .stackId = g_stackId,
     };
 #if defined(__aarch64__)
-    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
-        return;
-    }
     ASSERT_NE(request.stackId, 0);
 #endif
     DfxProcess process;
@@ -134,7 +120,20 @@ HWTEST_F(SubmitterStackTest, SubmitterStackTest001, TestSize.Level2)
     submitterStack.Collect(process, request, unwinder);
     submitterStack.Print(process, request, unwinder);
 #if defined(__aarch64__)
-    ASSERT_TRUE(CheckSubmitterKeywords(result));
+    // On Linux aarch64 (kernel < 5.17), prctl(PR_SET_VMA) is unsupported,
+    // so the async_stack_table buffer is unnamed in /proc/maps and
+    // FindMapsByName fails; Collect produces no output. Skip on Linux.
+    if (ExecuteCommands("uname").find("Linux") == std::string::npos) {
+        std::vector<std::string> keyWords = {
+            "SubmitterStacktrace",
+            "#00",
+            "#01",
+            "#02",
+        };
+        for (const std::string& keyWord : keyWords) {
+            ASSERT_TRUE(CheckContent(result, keyWord, true));
+        }
+    }
 #endif
     process.Detach();
     GTEST_LOG_(INFO) << "SubmitterStackTest001: end.";

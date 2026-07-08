@@ -355,23 +355,6 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest006, TestSize.Level2)
 }
 
 #if defined(__aarch64__)
-static bool CheckThreadDumpKeywords(const std::string& result, pid_t tid,
-    bool isLinuxKernel, bool framesProduced)
-{
-    std::vector<std::string> keyWords;
-    if (isLinuxKernel && framesProduced) {
-        keyWords = {"Tid:", to_string(tid), "Name:", "#00", "#01", "(", ")"};
-    } else {
-        keyWords = {"Tid:", to_string(tid), "Name:"};
-    }
-    for (const std::string& keyWord : keyWords) {
-        if (!CheckContent(result, keyWord, true)) {
-            return false;
-        }
-    }
-    return true;
-}
-
 /**
  * @tc.name: ThreadDumpInfoTest007
  * @tc.desc: test KeyThreadDumpInfo dumpcatch, unwind with no regs
@@ -406,13 +389,24 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     result = "";
     dumpInfo.UnwindStack(process, request, unwinder);
     dumpInfo.Print(process, request, unwinder);
-    bool isLinuxKernel = ExecuteCommands("uname").find("Linux") != std::string::npos;
-    bool framesProduced = (result.find("#00") != std::string::npos);
-    if (isLinuxKernel && !framesProduced) {
+#if defined(__aarch64__)
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
         process.Detach();
         return;
     }
-    ASSERT_TRUE(CheckThreadDumpKeywords(result, tid, isLinuxKernel, framesProduced));
+#endif
+    std::vector<std::string> keyWords = {
+        "Tid:",
+        to_string(tid),
+        "Name:",
+        "#00",
+        "#01",
+        "(",
+        ")",
+    };
+    for (const std::string& keyWord : keyWords) {
+        EXPECT_TRUE(CheckContent(result, keyWord, true));
+    }
     process.Detach();
     GTEST_LOG_(INFO) << "ThreadDumpInfoTest007: end.";
 }

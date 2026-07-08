@@ -261,9 +261,11 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest011, TestSize.Level2)
 HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest012, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "DfxOfflineParserTest012: start.";
+#if defined(__aarch64__)
     if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
         return;
     }
+#endif
     std::string kernelStack;
     ASSERT_EQ(DfxGetKernelStack(gettid(), kernelStack), 0);
     std::vector<DfxThreadStack> processStack;

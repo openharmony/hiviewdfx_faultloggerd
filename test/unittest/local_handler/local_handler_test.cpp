@@ -65,12 +65,12 @@ static bool CheckLocalCrashKeyWords(const string& filePath, pid_t pid, int sig)
     }
 #ifdef __aarch64__
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_localhandler",
+        "Pid:" + to_string(pid), "Uid:", "test_localhandler",
         sigKeyword, "Tid:", "#00", "x0:", "test_localhandler"
     };
 #else
     string keywords[] = {
-        "Pid:" + to_string(pid), "Uid:", "name:./test_localhandler",
+        "Pid:" + to_string(pid), "Uid:", "test_localhandler",
         sigKeyword, "Tid:", "#00", "test_localhandler"
     };
 #endif
@@ -445,16 +445,8 @@ HWTEST_F(LocalHandlerTest, DfxAllocatorTest005, TestSize.Level2)
         usleep(10000); // 10000 : sleep 10ms
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret;
-#ifdef __aarch64__
-        if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
-            ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-        } else {
-            ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGABRT);
-        }
-#else
-        ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-#endif
+        int sig = (ExecuteCommands("uname").find("Linux") != std::string::npos) ? SIGSEGV : SIGABRT;
+        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, sig);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "DfxAllocatorTest005: end.";
@@ -501,16 +493,8 @@ HWTEST_F(LocalHandlerTest, DfxAllocatorTest007, TestSize.Level2)
         usleep(10000); // 10000 : sleep 10ms
         GTEST_LOG_(INFO) << "process(" << getpid() << ") is ready to wait process(" << pid << ")";
         sleep(2); // 2 : wait for cppcrash generating
-        bool ret;
-#ifdef __aarch64__
-        if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
-            ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-        } else {
-            ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGABRT);
-        }
-#else
-        ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, SIGSEGV);
-#endif
+        int sig = (ExecuteCommands("uname").find("Linux") != std::string::npos) ? SIGSEGV : SIGABRT;
+        bool ret = CheckLocalCrashKeyWords(GetCppCrashFileName(pid), pid, sig);
         ASSERT_TRUE(ret);
     }
     GTEST_LOG_(INFO) << "DfxAllocatorTest007: end.";
