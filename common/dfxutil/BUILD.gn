@@ -71,6 +71,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libdfx_util") {
+    branch_protector_ret = "pac_ret"
     sources = dfx_util_sources
     public_configs = [ ":dfx_util_config" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog_cfi" ]
