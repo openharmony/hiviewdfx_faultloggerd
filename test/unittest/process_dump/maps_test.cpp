@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <sstream>
 #include <string>
 #include <unistd.h>
 #include <vector>
@@ -85,7 +86,7 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
     size_t end = result.find('\n');
     size_t start = 0;
     std::stack<uintptr_t> mapsAddr;
-    std::string preInode = "";
+    std::string prePath = "";
     while (end != std::string::npos) {
         std::string preLineMap = result.substr(start, end - start);
         size_t mid = preLineMap.find('-');
@@ -94,12 +95,18 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
             uintptr_t leftAddr = std::stoll(preLineMap.substr(0, mid), nullptr, 16);
             // Convert to uintptr_t type
             uintptr_t rightAddr = std::stoll(preLineMap.substr(mid + 1, mid), nullptr, 16);
-            std::string curInode = preLineMap.substr(preLineMap.length() - 8, 8);
-            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && preInode == curInode) {
+            std::istringstream iss(preLineMap);
+            std::string beginEnd;
+            std::string perms;
+            std::string offset;
+            std::string curPath;
+            iss >> beginEnd >> perms >> offset >> curPath;
+            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && prePath == curPath &&
+                !curPath.empty() && curPath.find("[anon:") == std::string::npos) {
                 mapsAddr.pop();
                 mapsAddr.push(rightAddr);
             } else {
-                preInode = curInode;
+                prePath = curPath;
                 mapsAddr.push(leftAddr);
                 mapsAddr.push(rightAddr);
             }

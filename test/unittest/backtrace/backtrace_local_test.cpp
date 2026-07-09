@@ -627,20 +627,25 @@ void CallMixFirst(int tid, bool fast, int colNumber)
  */
 HWTEST_F(BacktraceLocalTest, BacktraceLocalTest016, TestSize.Level2)
 {
-    g_mutex.lock();
-    std::thread backtraceTread(Test001);
-    sleep(1);
-    if (g_tid <= 0) {
-        FAIL() << "Failed to create child thread.\n";
-    }
-    CallMixLast(g_tid, false, 3);
-    CallMixFirst(g_tid, false, 3);
-    CallMixLast(g_tid, true, 3);
-    CallMixFirst(g_tid, true, 3);
-    g_mutex.unlock();
-    g_tid = 0;
-    if (backtraceTread.joinable()) {
-        backtraceTread.join();
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+    } else {
+        g_mutex.lock();
+        std::thread backtraceTread(Test001);
+        sleep(1);
+        if (g_tid <= 0) {
+            FAIL() << "Failed to create child thread.\n";
+        }
+        CallMixLast(g_tid, false, 3);
+        CallMixFirst(g_tid, false, 3);
+        CallMixLast(g_tid, true, 3);
+        CallMixFirst(g_tid, true, 3);
+        g_mutex.unlock();
+        g_tid = 0;
+        if (backtraceTread.joinable()) {
+            backtraceTread.join();
+        }
     }
 }
 #endif

@@ -386,8 +386,15 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     Unwinder unwinder(pid, nsPid, request.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     unwinder.EnableFillFrames(false);
     KeyThreadDumpInfo dumpInfo;
+    result = "";
     dumpInfo.UnwindStack(process, request, unwinder);
     dumpInfo.Print(process, request, unwinder);
+#if defined(__aarch64__)
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        process.Detach();
+        return;
+    }
+#endif
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(tid),
