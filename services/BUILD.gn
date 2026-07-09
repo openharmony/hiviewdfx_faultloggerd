@@ -156,6 +156,7 @@ if (defined(ohos_lite)) {
 
   ohos_executable("faultloggerd") {
     install_enable = true
+    branch_protector_ret = "pac_ret"
     configs = [
       ":faultloggerd_config",
       "$faultloggerd_path/common/build:coverage_flags",

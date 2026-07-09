@@ -57,6 +57,7 @@ if (defined(ohos_lite)) {
 
   ohos_source_set("cppcrash_formatter_src") {
     sources = cppcrash_formatter_sources
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":cppcrash_formatter_src_config" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",
@@ -74,6 +75,7 @@ if (defined(ohos_lite)) {
       debug = false
     }
     sources = cppcrash_formatter_sources
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":cppcrash_formatter_src_config" ]
     external_deps = [
       "bounds_checking_function:libsec_shared",

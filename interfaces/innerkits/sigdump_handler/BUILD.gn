@@ -28,6 +28,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("dfx_sigdump_handler") {
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":dfx_sigdump_handler_config" ]
 
     sources = dfx_sigdump_handler_sources
