@@ -55,6 +55,7 @@ if (defined(ohos_lite)) {
 
   ohos_executable("dumpcatcher") {
     if (build_variant == "root") {
+      branch_protector_ret = "pac_ret"
       configs = [
         ":dumpcatcher_config",
         "$faultloggerd_path/common/build:coverage_flags",

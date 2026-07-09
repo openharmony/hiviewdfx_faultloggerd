@@ -42,6 +42,7 @@ if (defined(ohos_lite)) {
 
   ohos_static_library("dfx_hilog") {
     public_configs = [ ":dfx_log_config" ]
+    branch_protector_ret = "pac_ret"
     external_deps = [
       "c_utils:utils",
       "hilog:libhilog",
@@ -57,6 +58,7 @@ if (defined(ohos_lite)) {
         cfi_vcall_icall_only = true
         debug = false
     }
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":dfx_log_config" ]
     external_deps = [
       "c_utils:utils",

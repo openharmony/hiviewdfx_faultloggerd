@@ -59,6 +59,7 @@ if (defined(ohos_lite)) {
 
   ohos_static_library("dfx_util") {
     sources = dfx_util_sources
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":dfx_util_config" ]
     deps = [ "$faultloggerd_path/common/dfxlog:dfx_hilog" ]
     external_deps = [
@@ -94,6 +95,7 @@ if (defined(ohos_lite)) {
   ohos_static_library("dfx_util_static") {
     sources = dfx_util_sources
     include_dirs = [ "$faultloggerd_common_path/dfxlog" ]
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":dfx_util_config" ]
     defines = [
       "DFX_LOG_HILOG_BASE",
@@ -109,6 +111,7 @@ if (defined(ohos_lite)) {
 
   ohos_static_library("dfx_util_host") {
     sources = [ "dfx_util.cpp" ]
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":dfx_util_config" ]
     defines = [ "DFX_NO_PRINT_LOG" ]
     if (is_ohos) {
