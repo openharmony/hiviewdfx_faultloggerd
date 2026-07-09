@@ -258,6 +258,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("libunwinder_base") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
@@ -293,6 +294,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("libunwinder_src") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":dfx_unwinder_config",
       ":lzma_config",
@@ -355,6 +357,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_static_library("unwinder_host") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":unwinder_host_config",
       ":lzma_config",
