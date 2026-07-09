@@ -71,6 +71,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("dfx_trace_dlsym_static") {
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":dfx_trace_config" ]
     defines = [
       "DFX_ENABLE_TRACE",
@@ -87,6 +88,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("dfx_trace") {
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":dfx_trace_config" ]
     defines = [ "DFX_ENABLE_TRACE" ]
     sources = [ "dfx_trace.cpp" ]
@@ -100,6 +102,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_source_set("dfx_trace_cfi") {
+    branch_protector_ret = "pac_ret"
     sanitize = {
         cfi = true
         cfi_cross_dso = true
