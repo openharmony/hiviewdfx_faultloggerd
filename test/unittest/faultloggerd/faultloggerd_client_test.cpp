@@ -225,7 +225,7 @@ HWTEST_F(FaultloggerdClientTest, ReportDumpStatsTest001, TestSize.Level2)
 HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest001: start.";
-    int32_t ret = RequestSetMinidumpToCrashLog(true);
+    int32_t ret = RequestSetMinidumpToCrashLog(true, getpid());
     EXPECT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest001: end.";
 }
@@ -238,7 +238,7 @@ HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest001, TestSize.L
 HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest002: start.";
-    int32_t ret = RequestSetMinidumpToCrashLog(false);
+    int32_t ret = RequestSetMinidumpToCrashLog(false, getpid());
     EXPECT_EQ(ret, 0);
     GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest002: end.";
 }

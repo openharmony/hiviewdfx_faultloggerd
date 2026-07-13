@@ -278,13 +278,13 @@ int32_t RequestSetMiniDump(bool able)
 #endif
 }
 
-int32_t RequestSetMinidumpToCrashLog(bool enable)
+int32_t RequestSetMinidumpToCrashLog(bool enable, pid_t pid)
 {
 #ifndef is_ohos_lite
     MiniDumpRequestData request = {0};
     request.head.clientType = MINIDUMP_CLIENT;
     request.head.clientPid = getpid();
-    request.pid = getpid();
+    request.pid = pid;
     request.enableMinidump = -1;
     request.enableMinidumpToCrashLog = (int8_t)enable;
     return RequestServer(&request, sizeof(request), NULL);
