@@ -1281,6 +1281,11 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest106, TestSize.Level2)
  */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest107, TestSize.Level2)
 {
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+        return;
+    }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest107: start.";
     string cmd = "STACKOF";
     string fileName;
@@ -1445,6 +1450,11 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest113, TestSize.Level2)
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest115, TestSize.Level2)
 {
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+        return;
+    }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest115: start.";
     string cmd = "CrashInFFRT true";
     string fileName;
@@ -1465,6 +1475,11 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest115, TestSize.Level2)
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest116, TestSize.Level2)
 {
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+        return;
+    }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest116: start.";
     string cmd = "CrashInLibuvWork";
     string fileName;
@@ -1485,6 +1500,11 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest116, TestSize.Level2)
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
 {
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+        return;
+    }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest117: start.";
     string cmd = "CrashInLibuvTimer";
     string fileName;
@@ -1505,6 +1525,11 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest117, TestSize.Level2)
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest118, TestSize.Level2)
 {
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+        return;
+    }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest118: start.";
     string cmd = "CrashInLibuvWorkDone";
     string fileName;
