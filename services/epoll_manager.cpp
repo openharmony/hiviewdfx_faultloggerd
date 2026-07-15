@@ -287,6 +287,13 @@ void TimerTaskAdapter::OnTimer()
     work_();
 }
 
+DelayTaskQueue::~DelayTaskQueue()
+{
+    if (executor_ != nullptr) {
+        EpollManager::GetInstance().RemoveListener(executor_->GetFd());
+    }
+}
+
 DelayTaskQueue& DelayTaskQueue::GetInstance()
 {
     static thread_local DelayTaskQueue queue;

@@ -399,12 +399,12 @@ std::list<std::pair<int32_t, int64_t>> TempFileManager::crashFileRecords_{};
 void TempFileManager::ClearTimeOutRecords()
 {
 #ifdef FAULTLOGGERD_TEST
-    constexpr int validTime = 1;
+    constexpr int64_t validTime = 1;
 #else
-    constexpr int validTime = 8;
+    constexpr int64_t validTime = 8;
 #endif
     auto currentTime = time(nullptr);
-    crashFileRecords_.remove_if([currentTime](const std::pair<int32_t, int32_t>& pair) {
+    crashFileRecords_.remove_if([currentTime](const std::pair<int32_t, int64_t>& pair) {
         return pair.second + validTime <= currentTime;
     });
 }

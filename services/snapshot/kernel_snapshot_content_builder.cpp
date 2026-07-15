@@ -28,6 +28,7 @@ constexpr const char * const KERNEL_SNAPSHOT_REASON = "CppCrashKernelSnapshot";
 
 std::string FormatTimestamp(const std::string& timestamp)
 {
+    errno = 0;
     uint64_t time = strtoul(timestamp.c_str(), nullptr, DECIMAL_BASE);
     if (errno == ERANGE) {
         DFXLOGE("Failed to convert timestamp to uint64_t");

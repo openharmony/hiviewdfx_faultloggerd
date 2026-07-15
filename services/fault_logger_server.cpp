@@ -110,7 +110,7 @@ IFaultLoggerService* SocketServer::ClientRequestListener::GetTargetService(int32
 void SocketServer::ClientRequestListener::OnEventPoll()
 {
     constexpr int32_t maxBuffSize = 2048;
-    std::vector<uint8_t> buf(maxBuffSize, 0);
+    std::vector<uint8_t> buf(maxBuffSize + 1, 0);
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), buf.data(), maxBuffSize));
     if (nread >= static_cast<ssize_t>(sizeof(RequestDataHead))) {
         auto dataHead = reinterpret_cast<RequestDataHead*>(buf.data());
@@ -156,10 +156,11 @@ void SocketServer::SocketServerListener::OnEventPoll()
         DFXLOGE("%{public}s :: reject new connection for uid %{public}d.", FAULTLOGGERD_SERVER_TAG, credentials.uid);
         return;
     }
-    connectionNum++;
     std::unique_ptr<EpollListener> clientRequestListener(
         new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid));
-    EpollManager::GetInstance().AddListener(std::move(clientRequestListener));
+    if (EpollManager::GetInstance().AddListener(std::move(clientRequestListener))) {
+        connectionNum++;
+    }
 }
 }
 }
