@@ -50,14 +50,16 @@ constexpr uint64_t MAX_LOG_GENERATE_TIME = 600; // 600 seconds
 constexpr int32_t KMSG_SIZE = 2049;
 }
 CrashValidator::CrashValidator() : stopReadKmsg_(false), totalEventCount_(0),
-    normalEventCount_(0), kmsgReaderThread_(nullptr)
-{
-}
+    normalEventCount_(0) {}
 
 CrashValidator::~CrashValidator()
 {
-    if (kmsgReaderThread_ != nullptr) {
-        kmsgReaderThread_ = nullptr;
+    {
+        std::lock_guard<std::mutex> lock(kmsgReaderLock_);
+        stopReadKmsg_ = true;
+    }
+    if (kmsgReaderThread_.joinable()) {
+        kmsgReaderThread_.join();
     }
 }
 
@@ -90,10 +92,9 @@ bool CrashValidator::InitSysEventListener()
         return false;
     }
 
-    kmsgReaderThread_ = std::make_unique<std::thread>([this] {
+    kmsgReaderThread_ = std::thread([this] {
         ReadServiceCrashStatus();
     });
-    kmsgReaderThread_->detach();
     return true;
 }
 
@@ -292,6 +293,12 @@ void CrashValidator::ReadServiceCrashStatus()
     lseek(fd.GetFd(), 0, 3); // 3 : SEEK_DATA
     char kmsg[KMSG_SIZE];
     while (true) {
+        {
+            std::lock_guard<std::mutex> lock(kmsgReaderLock_);
+            if (stopReadKmsg_) {
+                return;
+            }
+        }
         ssize_t len;
         if (((len = read(fd.GetFd(), kmsg, sizeof(kmsg) - 1)) == -1) && errno == EPIPE) {
             continue;
@@ -304,9 +311,6 @@ void CrashValidator::ReadServiceCrashStatus()
             continue;
         }
         kmsg[len] = 0;
-        if (stopReadKmsg_) {
-            break;
-        }
         std::string line = kmsg;
         auto pos = line.find(INIT_LOG_PATTERN);
         if (pos == std::string::npos) {

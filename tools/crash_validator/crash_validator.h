@@ -61,11 +61,12 @@ private:
     bool stopReadKmsg_;
     uint32_t totalEventCount_;
     uint32_t normalEventCount_;
-    std::unique_ptr<std::thread> kmsgReaderThread_;
+    std::thread kmsgReaderThread_;
     std::vector<CrashEvent> pendingEvents_;
     std::vector<CrashEvent> noLogEvents_;
     std::vector<CrashEvent> matchedEvents_;
     std::mutex lock_;
+    std::mutex kmsgReaderLock_;
 };
 } // namespace HiviewDFX
 } // namespace OHOS
