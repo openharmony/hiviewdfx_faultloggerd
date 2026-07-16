@@ -475,7 +475,7 @@ static void ForkProcessdump(uint64_t startTime)
         uint64_t curTime = GetAbsTimeMilliSecondsCInterce();
         DFXLOGI("start processdump, fork spend time %{public}" PRIu64 "ms", curTime - startTime);
         if (endTime != 0) {
-            DFXLOGI("dump remain %{public}" PRId64 "ms", endTime - curTime);
+            DFXLOGI("dump remain %{public}" PRIu64 "ms", endTime - curTime);
         }
         if (endTime == 0 || endTime > curTime) {
             g_request->blockCrashExitAddr = (intptr_t)&g_blockExit;

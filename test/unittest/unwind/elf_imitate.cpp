@@ -176,14 +176,16 @@ bool ElfImitate::ParseElfHeaders()
         DFXLOGE("ElfImitate::InitClass(ehdrFP_) failed:");
         return false;
     }
-    constexpr int numSkip {6};
-    // drop unused 6 lines
+    constexpr int numSkip {5};
+    // drop unused 5 lines
     for (int count = 0; count < numSkip; ++count) {
         GetNextLine(ehdrFP_, &status);
     }
     if (!GetMachine(ehdrFP_)) {
         DFXLOGE("ElfImitate::InitMachine(ehdrFP_) failed:");
     }
+    // drop e_version line
+    GetNextLine(ehdrFP_, &status);
 
     if (machine_ == "ARM") {
         archType_ = ARCH_ARM;
@@ -303,8 +305,8 @@ bool ElfImitate::GetMachine(FILE * const fp)
         return false;
     }
     auto strVec = StringSplit(machineLine, " ");
-    constexpr int len {2};
-    if (strVec.size() != len) {
+    constexpr int minLen {2};
+    if (strVec.size() < minLen) {
         DFXLOGE("line format incorrect:");
         DFXLOGE("    line = %{public}s", machineLine.c_str());
         return false;
