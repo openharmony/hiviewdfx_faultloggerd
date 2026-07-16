@@ -97,6 +97,14 @@ MinidumpManagerService& MinidumpManagerService::GetInstance()
     return instance;
 }
 
+MinidumpManagerService::~MinidumpManagerService()
+{
+    if (pFd_ >= 0) {
+        close(pFd_);
+        pFd_ = -1;
+    }
+}
+
 bool MinidumpManagerService::Init()
 {
     DFXLOGI("minidump manager init");
@@ -122,7 +130,7 @@ bool MinidumpManagerService::Init()
     }
     DFXLOGI("pdump init successfully");
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{pFd_}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{dup(pFd_)}, true);
     EpollManager::GetInstance().AddListener(std::move(listener));
     return true;
 }

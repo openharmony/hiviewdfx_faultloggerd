@@ -52,7 +52,7 @@ public:
 
 private:
     MinidumpManagerService() = default;
-    ~MinidumpManagerService() = default;
+    ~MinidumpManagerService();
     MinidumpManagerService(const MinidumpManagerService&) = delete;
     MinidumpManagerService& operator=(const MinidumpManagerService&) = delete;
     void ProcessWorkStart(const struct __pdump_data_s& data);

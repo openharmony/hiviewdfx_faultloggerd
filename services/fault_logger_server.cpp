@@ -15,6 +15,7 @@
 
 #include "fault_logger_server.h"
 
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -32,6 +33,20 @@ namespace HiviewDFX {
 
 namespace {
 constexpr const char* const FAULTLOGGERD_SERVER_TAG = "FAULT_LOGGER_SERVER";
+
+inline bool SetSocketTimeOut(int fd)
+{
+    struct timeval tv;
+    constexpr int32_t clientSocketTimeOut = 3;
+    tv.tv_sec  = clientSocketTimeOut;
+    tv.tv_usec = 0;
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) != 0) {
+        DFXLOGW("%{public}s :: failed set timeout for socket and errorcode %{public}s",
+            FAULTLOGGERD_SERVER_TAG, strerror(errno));
+        return false;
+    }
+    return true;
+}
 }
 
 bool SocketServer::Init()
@@ -156,11 +171,13 @@ void SocketServer::SocketServerListener::OnEventPoll()
         DFXLOGE("%{public}s :: reject new connection for uid %{public}d.", FAULTLOGGERD_SERVER_TAG, credentials.uid);
         return;
     }
-    std::unique_ptr<EpollListener> clientRequestListener(
-        new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid));
-    if (EpollManager::GetInstance().AddListener(std::move(clientRequestListener))) {
-        connectionNum++;
+    SetSocketTimeOut(connectionFd.GetFd());
+    auto listener = new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid);
+    if (listener == nullptr) {
+        return;
     }
+    connectionNum++;
+    EpollManager::GetInstance().AddListener(std::unique_ptr<EpollListener>(listener));
 }
 }
 }

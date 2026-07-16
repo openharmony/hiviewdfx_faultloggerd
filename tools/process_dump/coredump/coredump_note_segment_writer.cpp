@@ -86,7 +86,7 @@ bool ThreadNoteWriter::ArmPacMaskWrite(pid_t tid)
         return false;
     }
 
-    UserPacMask ntUserPacMask;
+    UserPacMask ntUserPacMask{};
     if (tid == targetTid_) {
         ntUserPacMask = coredumpKeyThread_.ntUserPacMask;
     } else {
@@ -104,7 +104,7 @@ bool ThreadNoteWriter::PrstatusWrite(pid_t tid)
     if (!NoteUtil().NoteWrite(bw_, NT_PRSTATUS, sizeof(prstatus_t), NOTE_NAME_CORE)) {
         return false;
     }
-    prstatus_t ntPrstatus;
+    prstatus_t ntPrstatus{};
     GetPrStatus(ntPrstatus, tid);
     GetPrReg(ntPrstatus, tid);
     if (!bw_.Write(&ntPrstatus, sizeof(ntPrstatus))) {
@@ -120,7 +120,7 @@ bool ThreadNoteWriter::FpregsetWrite(pid_t tid)
         return false;
     }
 
-    struct user_fpsimd_struct ntFpregset;
+    struct user_fpsimd_struct ntFpregset{};
     if (tid == targetTid_) {
         ntFpregset = coredumpKeyThread_.ntFpregset;
     } else {
@@ -211,7 +211,7 @@ bool ThreadNoteWriter::GetPrStatus(prstatus_t &ntPrstatus, pid_t tid)
 
 bool ThreadNoteWriter::GetRusage(prstatus_t &ntPrstatus)
 {
-    struct rusage selfUsage;
+    struct rusage selfUsage{};
     getrusage(RUSAGE_SELF, &selfUsage);
     if (memcpy_s(&ntPrstatus.pr_utime, sizeof(ntPrstatus.pr_utime),
         &selfUsage.ru_utime, sizeof(selfUsage.ru_utime)) != 0) {
@@ -221,7 +221,7 @@ bool ThreadNoteWriter::GetRusage(prstatus_t &ntPrstatus)
         &selfUsage.ru_stime, sizeof(selfUsage.ru_stime)) != 0) {
         return false;
     }
-    struct rusage childrenUsage;
+    struct rusage childrenUsage{};
     getrusage(RUSAGE_CHILDREN, &childrenUsage);
     if (memcpy_s(&ntPrstatus.pr_cutime, sizeof(ntPrstatus.pr_cutime),
         &childrenUsage.ru_utime, sizeof(childrenUsage.ru_utime)) != 0) {
@@ -247,7 +247,7 @@ bool ThreadNoteWriter::GetPrReg(prstatus_t &ntPrstatus, pid_t tid)
         }
         ntPrstatus.pr_fpvalid = coredumpKeyThread_.fpRegValid;
     } else {
-        struct iovec iov;
+        struct iovec iov{};
         (void)memset_s(&iov, sizeof(iov), 0, sizeof(iov));
         iov.iov_base = &(ntPrstatus.pr_reg);
         iov.iov_len = sizeof(ntPrstatus.pr_reg);
@@ -255,7 +255,7 @@ bool ThreadNoteWriter::GetPrReg(prstatus_t &ntPrstatus, pid_t tid)
             DFXLOGE("ptrace failed NT_PRSTATUS, tid:%{public}d, errno:%{public}d", tid, errno);
             return false;
         }
-        struct user_fpsimd_struct ntFpregset;
+        struct user_fpsimd_struct ntFpregset{};
         if (GetRegset(tid, NT_FPREGSET, ntFpregset)) {
             ntPrstatus.pr_fpvalid = 1;
         } else {
@@ -322,7 +322,7 @@ bool MultiThreadNoteWriter::Write()
 bool PrpsinfoWriter::Write()
 {
     NoteUtil().NoteWrite(bw_, NT_PRPSINFO, sizeof(prpsinfo_t), NOTE_NAME_CORE);
-    prpsinfo_t ntPrpsinfo;
+    prpsinfo_t ntPrpsinfo{};
     FillPrpsinfo(ntPrpsinfo);
     if (!bw_.Write(&ntPrpsinfo, sizeof(ntPrpsinfo))) {
         DFXLOGE("Write ntPrpsinfo fail, errno:%{public}d", errno);
