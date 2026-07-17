@@ -159,7 +159,7 @@ HWTEST_F(DfxElfTest, DfxElfTestAdltStrTabSection, TestSize.Level2)
     GTEST_LOG_(INFO) << elf->GetElfName();
     ASSERT_TRUE(elf->IsValid());
     ASSERT_TRUE(elf->IsAdlt());
- 
+
     // check .adlt.strtab section
     std::string strTab = elf->GetAdltStrtab();
     EXPECT_EQ(strTab.size(), 0x67);
@@ -168,7 +168,7 @@ HWTEST_F(DfxElfTest, DfxElfTestAdltStrTabSection, TestSize.Level2)
     GTEST_LOG_(INFO) << secName;
     ASSERT_TRUE(elf->GetSectionInfo(shdr, secName));
     EXPECT_EQ(shdr.size, strTab.size());
- 
+
     GTEST_LOG_(INFO) << "DfxElfTestAdltStrTabSection: end.";
 }
 
@@ -218,7 +218,7 @@ HWTEST_F(DfxElfTest, DfxElfTestAdltGetOriginSoFunc, TestSize.Level2)
     ASSERT_TRUE(elf != nullptr);
     GTEST_LOG_(INFO) << elf->GetElfName();
     ASSERT_TRUE(elf->IsValid());
- 
+
     // get .adlt.map section
     std::string secName = ".adlt.map";
     ShdrInfo shdr;
@@ -227,7 +227,7 @@ HWTEST_F(DfxElfTest, DfxElfTestAdltGetOriginSoFunc, TestSize.Level2)
     std::vector<uint8_t> buf(shdr.size);
     ASSERT_TRUE(elf->GetSectionData(buf.data(), shdr.size, secName));
     EXPECT_EQ(shdr.size, buf.size());
- 
+
     // check func: GetAdltOriginSoNameByRelPc
     // legal relPc
     AdltMapInfo* mapInfo = reinterpret_cast<AdltMapInfo*>(buf.data());
@@ -238,7 +238,7 @@ HWTEST_F(DfxElfTest, DfxElfTestAdltGetOriginSoFunc, TestSize.Level2)
     relPc = mapInfo[0].pcEnd;
     originSoName = elf->GetAdltOriginSoNameByRelPc(relPc);
     ASSERT_TRUE(originSoName.empty());
- 
+
     GTEST_LOG_(INFO) << "DfxElfTestAdltGetOriginSoFunc: end.";
 }
 
@@ -393,4 +393,3 @@ HWTEST_F(DfxElfTest, DfxElfTest010, TestSize.Level2)
 }
 } // namespace HiviewDFX
 } // namespace OHOS
-

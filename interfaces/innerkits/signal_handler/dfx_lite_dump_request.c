@@ -374,14 +374,14 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
     }
 
     char* statm = (char*)g_mmapSpace + g_mmapPos;
-    statm[PROC_STAT_BUF_SIZE - 1] = '\0';
+    statm[PROC_STATM_BUF_SIZE - 1] = '\0';
 
     ssize_t n = syscall(SYS_read, fd, statm, PROC_STATM_BUF_SIZE - 1);
     g_mmapPos += PROC_STATM_BUF_SIZE;
     if (n > 0) {
         statm[n] = '\0';
     }
-    DFXLOGI("finish collect proc stam");
+    DFXLOGI("finish collect proc statm");
     syscall(SYS_close, fd);
     return true;
 }
@@ -391,7 +391,7 @@ bool CollectArkWebJitSymbol(const int pipeWriteFd, uint64_t arkWebJitSymbolAddr)
     if (arkWebJitSymbolAddr == 0) {
         return false;
     }
-    
+
     if (!LoopWritePipe(pipeWriteFd, (void*)arkWebJitSymbolAddr, ARKWEB_JIT_SYMBOL_BUF_SIZE)) {
         DFXLOGE("failed to write arkweb jit symbol buf %{public}d", errno);
         return false;

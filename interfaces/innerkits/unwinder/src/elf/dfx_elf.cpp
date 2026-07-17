@@ -134,7 +134,7 @@ uint8_t DfxElf::GetClassType()
 ArchType DfxElf::GetArchType()
 {
     if (IsValid()) {
-        elfParse_->GetArchType();
+        return elfParse_->GetArchType();
     }
     return ARCH_UNKNOWN;
 }
