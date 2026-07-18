@@ -304,9 +304,8 @@ bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
         return true;
     }
     if (name.empty() || name.find(':') != std::string::npos || name.front() == '[' ||
-        name.back() == ']' || std::strncmp(name.c_str(), "/dev/", sizeof("/dev/")) == 0 ||
-        std::strncmp(name.c_str(), "/memfd:", sizeof("/memfd:")) == 0 ||
-        std::strncmp(name.c_str(), "//anon", sizeof("//anon")) == 0 ||
+        name.back() == ']' || StartsWith(name, "/dev/") ||
+        StartsWith(name, "/memfd:") || StartsWith(name, "//anon") ||
         EndsWith(name, ".ttf") || EndsWith(name, ".ai")) {
         return false;
     }
@@ -320,6 +319,7 @@ void DfxMaps::AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex)
         mapIndex_.emplace_back(maps_.size() - 1);
     }
 }
+
 int DfxMaps::FindMapIndexByAddr(uintptr_t addr) const
 {
     size_t first = 0;
@@ -328,7 +328,7 @@ int DfxMaps::FindMapIndexByAddr(uintptr_t addr) const
         size_t index = (first + last) / 2;
         const auto& cur = maps_[index];
         if (cur == nullptr) {
-            continue;
+            break;
         }
         if (addr >= cur->begin && addr < cur->end) {
             if (StartsWith(cur->name, ADLT_PATH_NAME_START) &&
@@ -446,10 +446,10 @@ void DfxMaps::Sort(bool less)
     } else {
         std::sort(maps_.begin(), maps_.end(),
             [](const std::shared_ptr<DfxMap>& a, const std::shared_ptr<DfxMap>& b) {
-            if (a == nullptr) {
-                return true;
-            } else if (b == nullptr) {
+            if (b == nullptr) {
                 return false;
+            } else if (a == nullptr) {
+                return true;
             }
             return a->begin > b->begin;
         });

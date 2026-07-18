@@ -117,6 +117,9 @@ public:
         // section offset + page off set = file offset
         return vaddr - begin + offset;
     }
+
+private:
+    mutable std::shared_ptr<std::mutex> elfMutex_ = std::make_shared<std::mutex>();
 };
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 #include "coredump_callback_service.h"
+
 #include "dfx_log.h"
 #include "faultloggerd_socket.h"
 
@@ -54,9 +55,10 @@ int32_t CoredumpCallbackService::HandleUpdateWorkerPid(const CoreDumpStatusData&
 
 int32_t CoredumpCallbackService::HandleReport(const CoreDumpStatusData& requestData)
 {
-    CoredumpCallbackReport req;
+    CoredumpCallbackReport req {};
     req.status = requestData.retCode == 0 ? CoredumpStatus::SUCCESS : CoredumpStatus::FAILED;
-    req.filePath = requestData.fileName;
+    req.filePath.assign(requestData.fileName,
+        strnlen(requestData.fileName, sizeof(requestData.fileName)));
     cf_.ReportResult(requestData.pid, req);
 
     return ResponseCode::REQUEST_SUCCESS;

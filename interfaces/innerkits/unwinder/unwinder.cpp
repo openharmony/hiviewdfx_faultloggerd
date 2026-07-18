@@ -1098,7 +1098,7 @@ void Unwinder::Impl::StepToNextFpIfNeed()
     // if the pc which is step by fp is duplicated with the current frame, update fp val to next frame
     if (regs_->GetPc() == fpStepPc) {
         auto fp = regs_->GetFp();
-        uintptr_t nextFp;
+        uintptr_t nextFp = 0;
         memory_->Read<uintptr_t>(fp, &nextFp, false);
         regs_->SetFp(nextFp);
     }
@@ -1465,7 +1465,7 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
     }
     DFX_TRACE_SCOPED_DLSYM("FillJsFrame:%s", frame.map->name.c_str());
     DFXLOGU("Fill js frame, map name: %{public}s", frame.map->name.c_str());
-    JsFunction jsFunction;
+    JsFunction jsFunction {};
     if ((pid_ == UNWIND_TYPE_LOCAL) || (pid_ == UNWIND_TYPE_CUSTOMIZE_LOCAL)) {
         if (!FillJsFrameLocal(frame, &jsFunction)) {
             return;
@@ -1482,9 +1482,11 @@ void Unwinder::Impl::FillJsFrame(DfxFrame& frame)
         }
     }
     frame.isJsFrame = true;
-    frame.mapName = std::string(jsFunction.url);
-    frame.funcName = std::string(jsFunction.functionName);
-    frame.packageName = std::string(jsFunction.packageName);
+    frame.mapName = std::string(jsFunction.url, strnlen(jsFunction.url, sizeof(jsFunction.url)));
+    frame.funcName = std::string(jsFunction.functionName,
+        strnlen(jsFunction.functionName, sizeof(jsFunction.functionName)));
+    frame.packageName = std::string(jsFunction.packageName,
+        strnlen(jsFunction.packageName, sizeof(jsFunction.packageName)));
     frame.line = static_cast<int32_t>(jsFunction.line);
     frame.column = jsFunction.column;
     DFXLOGU("Js frame mapName: %{public}s, funcName: %{public}s, line: %{public}d, column: %{public}d",
@@ -1515,7 +1517,7 @@ bool Unwinder::Impl::GetFrameByPc(uintptr_t pc, std::shared_ptr<DfxMaps> maps, D
 {
     frame.pc = static_cast<uint64_t>(StripPac(pc, 0));
     std::shared_ptr<DfxMap> map = nullptr;
-    if ((maps == nullptr) || !maps->FindMapByAddr(pc, map) || map == nullptr) {
+    if ((maps == nullptr) || !maps->FindMapByAddr(frame.pc, map) || map == nullptr) {
         DFXLOGE("Find map error");
         return false;
     }

@@ -91,7 +91,7 @@ size_t DfxMemory::Read(uintptr_t& addr, void* val, size_t size, bool incre)
     if (alignAddr_ && (alignBytes_ != 0)) {
         size_t alignBytes = tmpAddr & (static_cast<size_t>(alignBytes_) - 1);
         if (alignBytes != 0) {
-            uintptr_t alignedAddr = tmpAddr & (~(static_cast<uintptr_t>(alignBytes_)) - 1);
+            uintptr_t alignedAddr = tmpAddr & (~(static_cast<uintptr_t>(alignBytes_) - 1));
             DFXLOGU("alignBytes: %{public}zu, alignedAddr: %{public}" PRIx64 "", alignBytes,
                 static_cast<uint64_t>(alignedAddr));
             if (!ReadMem(alignedAddr, &tmpVal)) {
@@ -165,6 +165,9 @@ bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bo
 
 bool DfxMemory::ReadPrel31(uintptr_t& addr, uintptr_t* val)
 {
+    if (val == nullptr) {
+        return false;
+    }
     uintptr_t offset;
     if (!Read<uintptr_t>(addr, &offset, false)) {
         return false;

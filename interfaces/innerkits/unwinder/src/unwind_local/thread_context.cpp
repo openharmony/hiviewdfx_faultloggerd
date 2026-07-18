@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Huawei Device Co., Ltd.
+ * Copyright (c) 2024-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -413,6 +413,10 @@ int LocalThreadContextMix::GetMapByPc(uintptr_t pc, std::shared_ptr<DfxMap>& map
 
 int LocalThreadContextMix::FindUnwindTable(uintptr_t pc, UnwindTableInfo& outTableInfo) const
 {
+    if (maps_ == nullptr) {
+        DFXLOGE("maps_ is nullptr.");
+        return -1;
+    }
     std::shared_ptr<DfxMap> dfxMap;
     if (maps_->FindMapByAddr(pc, dfxMap)) {
         if (dfxMap == nullptr) {
@@ -437,6 +441,10 @@ int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
         DFXLOGE("Failed to access addr, the addr is invalid");
         return -1;
     }
+    if (maps_ == nullptr) {
+        DFXLOGE("maps_ is nullptr.");
+        return -1;
+    }
     if (addr < sp_ - stackForward_ || result > sp_ + STACK_BUFFER_SIZE) {
         std::shared_ptr<DfxMap> map;
         if (!(maps_->FindMapByAddr(addr, map)) || map == nullptr) {
@@ -452,7 +460,7 @@ int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
         return -1;
     }
     size_t stackOffset = addr - (sp_ - stackForward_);
-    if (stackOffset > stackBuf_.size() - sizeof(uintptr_t)) {
+    if (stackBuf_.size() < sizeof(uintptr_t) || stackOffset > stackBuf_.size() - sizeof(uintptr_t)) {
         DFXLOGE("Failed to access addr, the stackOffset is invalid");
         return -1;
     }

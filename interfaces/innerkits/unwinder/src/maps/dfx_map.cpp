@@ -278,8 +278,17 @@ bool DfxMap::GetStaticArkRange(uintptr_t& start, uintptr_t& end)
     if (prevMap == nullptr) {
         return false;
     }
-    start = handleNopSymbol.value + prevMap->begin;
-    end = handleExcepSymbol.value + handleExcepSymbol.size + prevMap->begin;
+    uint64_t startVal = 0;
+    uint64_t excepEnd = 0;
+    uint64_t endVal = 0;
+    if (__builtin_add_overflow(handleNopSymbol.value, prevMap->begin, &startVal) ||
+        __builtin_add_overflow(handleExcepSymbol.value, handleExcepSymbol.size, &excepEnd) ||
+        __builtin_add_overflow(excepEnd, prevMap->begin, &endVal)) {
+        DFXLOGE("Failed to get static ark range, value overflow.");
+        return false;
+    }
+    start = startVal;
+    end = endVal;
     if (start >= end) {
         return false;
     }
@@ -353,13 +362,11 @@ bool DfxMap::IsStaticArkExecutable(uintptr_t pc)
 
     // arkllvm Interpreter
     static std::vector<MapRange> llvmMapRanges;
-    static bool initialized = false;
-
-    if (!initialized) {
-        initialized = true;
+    static std::once_flag llvmInitFlag;
+    std::call_once(llvmInitFlag, [this]() {
         DFXLOGI("ark llvm start to initialize");
         llvmMapRanges = BuildStaticArkLLVMRanges();
-    }
+    });
 
     if (!llvmMapRanges.empty()) {
         // Ranges are sorted by begin, use binary search to find first begin > pc
@@ -376,14 +383,17 @@ bool DfxMap::IsStaticArkExecutable(uintptr_t pc)
     // irtoc Interpreter
     static uint64_t arkInterpreterBegin = 0;
     static uint64_t arkInterpreterEnd = 0;
-    if (arkInterpreterBegin == 0 && arkInterpreterEnd == 0) {
+    static std::once_flag irtocInitFlag;
+    std::call_once(irtocInitFlag, [this]() {
         uintptr_t start = 0;
         uintptr_t end = 0;
-        if (!GetStaticArkRange(start, end)) {
-            return false;
+        if (GetStaticArkRange(start, end)) {
+            arkInterpreterBegin = start;
+            arkInterpreterEnd = end;
         }
-        arkInterpreterBegin = start;
-        arkInterpreterEnd = end;
+    });
+    if (arkInterpreterBegin == 0 && arkInterpreterEnd == 0) {
+        return false;
     }
     return pc >= arkInterpreterBegin && pc < arkInterpreterEnd;
 }
@@ -488,6 +498,7 @@ const std::shared_ptr<DfxHap> DfxMap::GetHap()
 
 const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
 {
+    std::lock_guard<std::mutex> lock(*elfMutex_);
     if (elf == nullptr) {
         if (name.empty()) {
             DFXLOGE("Invalid map, name empty.");
@@ -511,7 +522,11 @@ const std::shared_ptr<DfxElf> DfxMap::GetElf(pid_t pid)
 
 std::string DfxMap::GetElfName()
 {
-    if (name.empty() || GetElf() == nullptr) {
+    if (name.empty()) {
+        return name;
+    }
+    auto elf = GetElf();
+    if (elf == nullptr) {
         return name;
     }
     std::string soName = name;
@@ -566,6 +581,7 @@ std::string DfxMap::UnFormatMapName(const std::string& mapName)
 
 void DfxMap::ReleaseElf()
 {
+    std::lock_guard<std::mutex> lock(*elfMutex_);
     if (elf != nullptr) {
         elf = nullptr;
     }

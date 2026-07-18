@@ -68,7 +68,7 @@ int CoredumpSessionService::GetClientFd(SessionId sessionId) const
 
 bool CoredumpSessionService::WriteTimeout(SessionId sessionId) const
 {
-    CoreDumpResult coredumpRequest;
+    CoreDumpResult coredumpRequest {};
     coredumpRequest.retCode = -1;
     coredumpRequest.fileName[0] = '\0';
     return WriteResult(sessionId, coredumpRequest);
@@ -83,7 +83,7 @@ bool CoredumpSessionService::WriteResult(SessionId sessionId) const
         return false;
     }
 
-    CoreDumpResult coredumpResult;
+    CoreDumpResult coredumpResult {};
     if (strncpy_s(coredumpResult.fileName, sizeof(coredumpResult.fileName),
         session->filePath.c_str(), session->filePath.size()) != 0) {
         DFXLOGE("%{public}s :: strncpy failed.", __func__);
