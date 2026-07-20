@@ -103,7 +103,7 @@ int32_t CoredumpRequestValidator::ValidateRequest(const std::string& socketName,
     }
 
     if (!IsAuthorizedUid(connectionFd)) {
-        DFXLOGE("Unauthorized UID:");
+        DFXLOGE("Unauthorized UID.");
         return ResponseCode::REQUEST_REJECT;
     }
 
