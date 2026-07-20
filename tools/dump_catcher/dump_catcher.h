@@ -29,11 +29,11 @@ enum class DumpType {
 
 struct DumpOptions {
     DumpType type = DumpType::DUMP_USER_STACK;
-    int32_t pid = 0;
-    int32_t tid = 0;
-    int timeout = 3000; // 3000 : default timeout 3000ms in dump user stack
-    bool needArk = false;
-    bool needParse = false;
+    int32_t pid {0};
+    int32_t tid {0};
+    int timeout {3000}; // 3000 : default timeout 3000ms in dump user stack
+    bool needArk {false};
+    bool needParse {false};
 };
 class DumpCatcher final {
 public:
