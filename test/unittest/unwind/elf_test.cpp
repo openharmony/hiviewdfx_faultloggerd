@@ -335,7 +335,7 @@ HWTEST_F(DfxElfTest, DfxElfTest007, TestSize.Level2)
 HWTEST_F(DfxElfTest, DfxElfTest008, TestSize.Level2)
 {
     auto elfParse = std::unique_ptr<ElfParser>(std::make_unique<ElfParser32>(nullptr));
-    std::string str = "";
+    std::string str;
     elfParse->GetSectionNameByIndex(str, 0);
     elfParse->sectionNames_ = "test";
     const size_t num = 10;
