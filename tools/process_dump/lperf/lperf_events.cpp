@@ -131,6 +131,7 @@ bool LperfEvents::PrepareFdEvents()
     CHECK_ERR(lperfFd_, "open lperfFd_ failed");
     int err = ioctl(lperfFd_, LPERF_IOCTL_INIT, &initArg);
     CHECK_ERR(err, "init lperf failed");
+    CHECK_TRUE_AND_RET(initArg.rbAddr != 0, false, "lperf init rbAddr is 0");
     lperfMmap_.fd = lperfFd_;
     lperfMmap_.mmapPage = reinterpret_cast<perf_event_mmap_page *>(initArg.rbAddr);
     lperfMmap_.buf = reinterpret_cast<uint8_t *>(initArg.rbAddr) + pageSize_;

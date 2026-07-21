@@ -59,7 +59,12 @@ void Maps::SimplifyVma(DfxProcess& process, const ProcessDumpRequest& request,
                        const std::shared_ptr<DfxMaps>& maps, std::set<DfxMap>& mapSet)
 {
     std::set<uintptr_t> interestedAddrs = process.GetMemoryValues();
-    auto regsData = process.GetFaultThreadRegisters()->GetRegsData();
+    auto regs = process.GetFaultThreadRegisters();
+    if (regs == nullptr) {
+        DFXLOGE("regs is nullptr");
+        return;
+    }
+    auto regsData = regs->GetRegsData();
     interestedAddrs.insert(regsData.begin(), regsData.end());
     DfxSignal dfxSignal(request.siginfo.si_signo);
     if (dfxSignal.IsAddrAvailable()) {
@@ -69,6 +74,9 @@ void Maps::SimplifyVma(DfxProcess& process, const ProcessDumpRequest& request,
     threads.emplace_back(process.GetKeyThread());
     std::set<std::string> mapNames;
     for (const auto& thread : threads) {
+        if (thread == nullptr) {
+            continue;
+        }
         for (const auto &frame : thread->GetFrames()) {
             interestedAddrs.emplace(frame.pc);
         }

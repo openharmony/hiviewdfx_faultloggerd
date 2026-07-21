@@ -79,6 +79,9 @@ std::string MinidumpModule::CodeFile() const
 
 std::string MinidumpModule::CodeIdentifier() const
 {
+    if (!isValid_) {
+        return "";
+    }
     char identifier[128] = { 0 };
     if (snprintf_s(identifier, sizeof(identifier), sizeof(identifier) - 1,
         "%08x%x", module_.timeDataStamp, module_.sizeOfImage) <= 0) {
@@ -94,6 +97,9 @@ std::string MinidumpModule::DebugFile() const
 
 std::string MinidumpModule::DebugIdentifier() const
 {
+    if (!isValid_) {
+        return "";
+    }
     char identifier[128];
     if (snprintf_s(identifier, sizeof(identifier), sizeof(identifier) - 1,
         "%08x%08x", module_.timeDataStamp, module_.checksum) <= 0) {

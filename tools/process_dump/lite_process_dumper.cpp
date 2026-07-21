@@ -566,7 +566,7 @@ void LiteProcessDumper::PrintRegsNearMemory()
     if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         return;
     }
-    if (unwinder_ == nullptr) {
+    if (unwinder_ == nullptr || process_ == nullptr) {
         return;
     }
     MemoryNearRegister nearRegMemory;
@@ -580,7 +580,7 @@ void LiteProcessDumper::PrintFaultStack()
     if (request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH) {
         return;
     }
-    if (unwinder_ == nullptr) {
+    if (unwinder_ == nullptr || process_ == nullptr) {
         return;
     }
     faultStack_.Print(*process_, request_, *unwinder_);

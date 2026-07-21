@@ -158,6 +158,9 @@ void DfxProcess::Attach(bool hasKey)
         return;
     }
     for (auto& thread : otherThreads_) {
+        if (thread == nullptr) {
+            continue;
+        }
         if (thread->GetThreadInfo().nsTid == processInfo_.nsPid) {
             thread->Attach(PTRACE_ATTACH_KEY_THREAD_TIMEOUT);
             continue;

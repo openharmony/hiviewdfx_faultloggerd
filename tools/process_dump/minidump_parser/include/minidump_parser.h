@@ -78,7 +78,10 @@ public:
     void PrintPerformanceStats() const;
 
 private:
-    MinidumpParser() = default;
+    MinidumpParser()
+        : streamMap_(std::make_shared<MinidumpStreamMap>()),
+          isValid_(false),
+          minidumpSubject_(std::make_shared<MinidumpSubject>()) {}
     struct MinidumpStreamInfo {
         MinidumpStreamInfo() : streamIndex_(0), stream_(nullptr) {}
         ~MinidumpStreamInfo() = default;
