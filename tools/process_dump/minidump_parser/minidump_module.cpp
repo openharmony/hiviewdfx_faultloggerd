@@ -163,6 +163,13 @@ bool MinidumpModuleList::ReadModuleAuxiliaryDataAndIndex(uint32_t moduleCount)
             DFXLOGE("MinidumpModuleList found bad base address for module %{public}u", i);
             return false;
         }
+        uint64_t endAddress = 0;
+        if (__builtin_add_overflow(baseAddress, moduleSize, &endAddress)) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
+                std::string("Module range overflow"), __LINE__);
+            DFXLOGE("MinidumpModuleList range overflow for module %{public}u", i);
+            continue;
+        }
         if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
             if (!PerformanceOptimizer::Instance().GetModuleRangeMap().StoreRange(baseAddress, moduleSize, i)) {
                 lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
@@ -172,7 +179,7 @@ bool MinidumpModuleList::ReadModuleAuxiliaryDataAndIndex(uint32_t moduleCount)
         }
         if (PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
             auto& moduleTree = PerformanceOptimizer::Instance().GetModuleIntervalTree();
-            if (!moduleTree.Insert(baseAddress, baseAddress + moduleSize, i)) {
+            if (!moduleTree.Insert(baseAddress, endAddress, i)) {
                 lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
                     std::string("Module range overlap detected"), __LINE__);
                 DFXLOGW("MinidumpModuleList detected range overlap for module %{public}u", i);
@@ -180,7 +187,7 @@ bool MinidumpModuleList::ReadModuleAuxiliaryDataAndIndex(uint32_t moduleCount)
         }
         if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
             auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
-            bitmapIndex.MarkRange(baseAddress, baseAddress + moduleSize);
+            bitmapIndex.MarkRange(baseAddress, endAddress);
         }
     }
     return true;

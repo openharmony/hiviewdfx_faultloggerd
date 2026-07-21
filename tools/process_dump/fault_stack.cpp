@@ -88,7 +88,11 @@ uintptr_t FaultStack::AdjustAndCreateMemoryBlock(pid_t tid, size_t index, uintpt
                                                  uintptr_t prevEndAddr, uintptr_t size)
 {
     uintptr_t lowAddrLength = ProcessDumpConfig::GetInstance().GetConfig().faultStackLowAddrStep;
-    uintptr_t startAddr = prevSp - lowAddrLength * STEP;
+    uintptr_t lowAddrBytes = lowAddrLength * STEP;
+    if (prevSp < lowAddrBytes) {
+        return prevEndAddr;
+    }
+    uintptr_t startAddr = prevSp - lowAddrBytes;
     if (prevEndAddr != 0 && startAddr <= prevEndAddr) {
         startAddr = prevEndAddr;
     } else {

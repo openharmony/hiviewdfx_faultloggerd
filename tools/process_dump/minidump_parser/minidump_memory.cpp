@@ -114,7 +114,7 @@ bool MinidumpMemoryRegion::GetMemoryAtAddressInternal(uint64_t address, T& value
     }
     uint64_t offset = address - base;
 
-    if (offset + sizeof(T) > memory_->size()) {
+    if (sizeof(T) > memory_->size() || offset > memory_->size() - sizeof(T)) {
         DFXLOGE("MinidumpMemoryRegion greater size");
         return false;
     }
