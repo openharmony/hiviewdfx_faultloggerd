@@ -36,17 +36,15 @@ struct LperfRecordSampleData {
 
 inline std::string StringFormat(const char* fmt, ...)
 {
-    va_list vargs;
-    char buf[1024] = {0}; // 1024: buf size
-    std::string format(fmt);
-    va_start(vargs, fmt);
-    if (vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, format.c_str(), vargs) < 0) {
-        va_end(vargs);
+    if (fmt == nullptr) {
         return "";
     }
-
+    va_list vargs;
+    char buf[1024] = {0}; // 1024: buf size
+    va_start(vargs, fmt);
+    int ret = vsnprintf_s(buf, sizeof(buf), sizeof(buf) - 1, fmt, vargs);
     va_end(vargs);
-    return buf;
+    return ret < 0 ? "" : std::string(buf);
 }
 
 class LperfRecordSample {
