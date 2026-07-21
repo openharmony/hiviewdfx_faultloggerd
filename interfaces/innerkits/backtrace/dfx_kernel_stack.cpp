@@ -35,7 +35,7 @@ namespace HiviewDFX {
 namespace {
 // keep sync with defines in kernel/hicollie
 const char* const BBOX_PATH = "/dev/bbox";
-const int BUFF_STACK_SIZE = 20 * 1024;
+constexpr int BUFF_STACK_SIZE = 20 * 1024;
 const uint32_t MAGIC_NUM = 0x9517;
 typedef struct HstackVal {
     uint32_t magic {0};
