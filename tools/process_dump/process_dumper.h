@@ -75,7 +75,7 @@ private:
     void ReadAppLog();
     std::string ReadFileWithTimeHeader(const std::string& filePath);
     std::string GetFileModificationTime(const struct stat& fileInfo);
-    std::string ReadFileContent(const std::string& filePath, size_t fileSize);
+    std::string ReadFileContent(int fd, size_t fileSize);
     void EnableMergeAppLog()
     {
         needMergeLog_ = true;

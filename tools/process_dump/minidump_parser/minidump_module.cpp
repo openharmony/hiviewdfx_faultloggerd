@@ -228,18 +228,19 @@ std::shared_ptr<MinidumpModule> MinidumpModuleList::GetModuleForAddress(uint64_t
         return nullptr;
     }
 
-    uint32_t moduleIndex = 0;
-    bool found = false;
-    if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
-        found = PerformanceOptimizer::Instance().GetModuleRangeMap().RetrieveRange(address, &moduleIndex);
-    }
     if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
         auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
         if (!bitmapIndex.IsInRange(address) && bitmapIndex.Size() != 0) {
             return nullptr;
         }
     }
-    if (PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
+
+    uint32_t moduleIndex = 0;
+    bool found = false;
+    if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
+        found = PerformanceOptimizer::Instance().GetModuleRangeMap().RetrieveRange(address, &moduleIndex);
+    }
+    if (!found && PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
         auto& moduleTree = PerformanceOptimizer::Instance().GetModuleIntervalTree();
         found = moduleTree.Search(address, &moduleIndex);
     }

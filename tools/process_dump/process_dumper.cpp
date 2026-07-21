@@ -15,6 +15,7 @@
 
 #include "process_dumper.h"
 
+#include <sys/stat.h>
 #include <fstream>
 #include <algorithm>
 #include <cerrno>
@@ -464,20 +465,14 @@ std::string ProcessDumper::GetFileModificationTime(const struct stat& fileInfo)
     return "Last Modified: " + std::string(timeBuffer) + "\n";
 }
 
-std::string ProcessDumper::ReadFileContent(const std::string& filePath, size_t fileSize)
+std::string ProcessDumper::ReadFileContent(int fd, size_t fileSize)
 {
-    std::ifstream file(filePath, std::ios::binary | std::ios::in);
-    if (!file.is_open()) {
-        DFXLOGE("Open file failed: %{public}s", filePath.c_str());
-        return "";
-    }
-
-    size_t readLen = std::min(fileSize, static_cast<size_t>(APP_CRASH_LOG_MAX_READ_SIZE));
+    size_t readLen = std::min(fileSize, APP_CRASH_LOG_MAX_READ_SIZE);
     std::string content;
     if (readLen > 0) {
         content.resize(readLen);
-        file.read(&content[0], static_cast<std::streamsize>(readLen));
-        content.resize(static_cast<size_t>(file.gcount()));
+        ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(fd, &content[0], readLen));
+        content.resize(static_cast<size_t>(nread > 0 ? nread : 0));
     }
     return content;
 }
@@ -488,16 +483,29 @@ std::string ProcessDumper::ReadFileWithTimeHeader(const std::string& filePath)
         return "Error: File path empty";
     }
 
-    struct stat fileInfo = {0};
-    if (stat(filePath.c_str(), &fileInfo) != 0) {
-        std::string errMsg = "Error: File not found or stat failed. Path:" + filePath +
+    int fd = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDONLY | O_NOFOLLOW));
+    if (fd < 0) {
+        std::string errMsg = "Error: File not found or open failed. Path:" + filePath +
                              ", errno:" + std::to_string(errno) + ", desc: " + strerror(errno);
         DFXLOGE("readFileWithTimeHeader error msg:%{public}s", errMsg.c_str());
         return errMsg;
     }
 
+    struct stat fileInfo = {0};
+    if (fstat(fd, &fileInfo) != 0) {
+        DFXLOGE("readFileWithTimeHeader fstat failed: %{public}s", filePath.c_str());
+        close(fd);
+        return "Error: fstat failed";
+    }
+    if (!S_ISREG(fileInfo.st_mode)) {
+        DFXLOGE("readFileWithTimeHeader not a regular file: %{public}s", filePath.c_str());
+        close(fd);
+        return "Error: not a regular file";
+    }
+
     std::string result = GetFileModificationTime(fileInfo);
-    result += ReadFileContent(filePath, static_cast<size_t>(fileInfo.st_size));
+    result += ReadFileContent(fd, static_cast<size_t>(fileInfo.st_size));
+    close(fd);
     return result;
 }
 

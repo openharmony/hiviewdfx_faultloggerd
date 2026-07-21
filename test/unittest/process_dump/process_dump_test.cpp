@@ -25,6 +25,8 @@
 #include "dfx_dump_request.h"
 #include "dfx_thread.h"
 #include "dump_utils.h"
+#include <fcntl.h>
+#include <unistd.h>
 #include <pthread.h>
 #include "process_dumper.h"
 #include "dfx_util.h"
@@ -495,10 +497,14 @@ HWTEST_F(ProcessDumpTest, ProcessDumperFileTest002, TestSize.Level0)
         fclose(fp);
     }
 
-    std::string readContent = dumper.ReadFileContent(tempFile, content.size());
+    int fd = open(tempFile.c_str(), O_RDONLY);
+    std::string readContent = dumper.ReadFileContent(fd, content.size());
+    close(fd);
     EXPECT_EQ(readContent, content);
 
-    std::string emptyContent = dumper.ReadFileContent("/data/not_exist_file.log", 100);
+    int emptyFd = open("/data/not_exist_file.log", O_RDONLY);
+    std::string emptyContent = dumper.ReadFileContent(emptyFd, 100);
+    if (emptyFd >= 0) { close(emptyFd); }
     EXPECT_EQ(emptyContent, "");
 
     unlink(tempFile.c_str());
