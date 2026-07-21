@@ -102,8 +102,12 @@ bool UniqueStackTable::InitWithExternalBuffer(void* buffer, size_t size)
         snapshot_.reset();
         return false;
     }
-    constexpr int kb = 1024;
-    deconflictTimes_ = static_cast<int>(log2(size / (kb * kb)) * DECONFLICT_INCREASE_STEP + INIT_DECONFLICT_ALLOWED);
+    constexpr int mb = 1024 * 1024;
+    if (size <= mb) {
+        deconflictTimes_ = INIT_DECONFLICT_ALLOWED;
+    } else {
+        deconflictTimes_ = static_cast<int>(log2(size / mb) * DECONFLICT_INCREASE_STEP + INIT_DECONFLICT_ALLOWED);
+    }
     stackTable_.hashModulus = stackTable_.availableNodes - 1;
     stackTable_.hashStep = (stackTable_.totalNodes / (deconflictTimes_ * 2 + 1)); // 2 : double times
     stackTable_.tableBufMMap = buffer;
@@ -131,8 +135,7 @@ bool UniqueStackTable::Resize()
 
     if ((stackTable_.totalNodes << RESIZE_MULTIPLE) > MAX_NODES_CNT) {
         DFXLOGW("Hashtable size limit, resize failed current cnt: %{public}u, max cnt: %{public}u",
-            stackTable_.totalNodes,
-            MAX_NODES_CNT);
+            stackTable_.totalNodes, MAX_NODES_CNT);
         return false;
     }
 
@@ -144,17 +147,23 @@ bool UniqueStackTable::Resize()
     prctl(PR_SET_VMA, PR_SET_VMA_ANON_NAME, newTableBuf, newtableSize, "async_stack_table");
     if (memcpy_s(newTableBuf, newtableSize, stackTable_.tableBufMMap, stackTable_.tableSize) != 0) {
         DFXLOGE("Failed to memcpy table buffer");
+        munmap(newTableBuf, newtableSize);
+        return false;
+    }
+    uint32_t newTotalNodes = ((newtableSize / sizeof(Node)) >> 1) << 1; // make it even.
+    uint32_t newAvailableNodes = newTotalNodes - oldNumNodes;
+    if (newAvailableNodes == 0) {
+        DFXLOGE("Resize would result in zero available nodes");
+        munmap(newTableBuf, newtableSize);
+        return false;
     }
     munmap(stackTable_.tableBufMMap, stackTable_.tableSize);
     stackTable_.tableBufMMap = newTableBuf;
     stackTable_.tableSize = newtableSize;
     deconflictTimes_ += DECONFLICT_INCREASE_STEP;
     stackTable_.availableIndex += stackTable_.availableNodes;
-    stackTable_.totalNodes = ((newtableSize / sizeof(Node)) >> 1) << 1; // make it even.
-    stackTable_.availableNodes = stackTable_.totalNodes - oldNumNodes;
-    if (stackTable_.availableNodes == 0) {
-        return false;
-    }
+    stackTable_.totalNodes = newTotalNodes;
+    stackTable_.availableNodes = newAvailableNodes;
     stackTable_.hashModulus = stackTable_.availableNodes - 1;
     stackTable_.hashStep = stackTable_.availableNodes / (deconflictTimes_ * 2 + 1); // 2: double times
     DFXLOGW("After resize, totalNodes_: %{public}u, availableNodes_: %{public}u, " \
@@ -203,6 +212,10 @@ uint64_t UniqueStackTable::PutPcInSlot(uint64_t thisPc, uint64_t prevIdx)
 
 uint64_t UniqueStackTable::PutPcsInTable(StackId *stackId, const uintptr_t* pcs, size_t nr)
 {
+    if (stackId == nullptr || pcs == nullptr) {
+        DFXLOGW("stackId or pcs is null");
+        return 0;
+    }
     std::shared_lock<std::shared_mutex> readlock(structureMutex_);
     if (!IsTableValid()) {
         return 0;
@@ -245,6 +258,10 @@ size_t UniqueStackTable::GetWriteSize()
 Node* UniqueStackTable::GetFrame(uint64_t stackId)
 {
     Node *tableHead = GetHeadNode();
+    if (tableHead == nullptr) {
+        DFXLOGE("GetFrame tableHead is nullptr");
+        return nullptr;
+    }
     if (stackId >= stackTable_.totalNodes) {
         // should not occur
         DFXLOGW("Failed to find frame by index: %{public}" PRIu64 "", stackId);
@@ -306,6 +323,10 @@ bool UniqueStackTable::ImportNode(uint32_t index, const Node& node)
 {
     std::unique_lock<std::shared_mutex> writelock(structureMutex_);
     Node *tableHead = GetHeadNode();
+    if (tableHead == nullptr) {
+        DFXLOGW("ImportNode tableHead is nullptr");
+        return false;
+    }
     if (index >= stackTable_.tableSize) {
         return false;
     }

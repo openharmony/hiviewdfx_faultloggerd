@@ -45,9 +45,11 @@ namespace HiviewDFX {
 
 static SmartFd GetServerSocket(const char* name)
 {
+    mode_t oldUmask = umask(0);
     SmartFd sockFd{static_cast<int>(OHOS_TEMP_FAILURE_RETRY(socket(AF_LOCAL, SOCK_STREAM, 0)))};
     if (!sockFd) {
         DFXLOGE("%{public}s :: Failed to create socket, errno(%{public}d)", __func__, errno);
+        umask(oldUmask);
         return {};
     }
 
@@ -56,10 +58,12 @@ static SmartFd GetServerSocket(const char* name)
     server.sun_family = AF_LOCAL;
     if (strncpy_s(server.sun_path, sizeof(server.sun_path), path.c_str(), sizeof(server.sun_path) - 1) != 0) {
         DFXLOGE("%{public}s :: strncpy failed.", __func__);
+        umask(oldUmask);
         return {};
     }
 
     chmod(path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IWOTH);
+    umask(oldUmask);
     unlink(path.c_str());
 
     int optval = 1;
@@ -285,7 +289,7 @@ bool FaultLoggerdSocket::GetMsgFromSocket(void* data, uint32_t dataLength) const
         return false;
     }
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(socketFd_, data, dataLength));
-    if (nread <= 0) {
+    if (nread != dataLength) {
         LOGE(signalSafely_, "Failed to get message from socket, %{public}zd, errno(%{public}d). ", nread, errno);
         return false;
     }
@@ -298,7 +302,10 @@ int32_t FaultLoggerdSocket::RequestServer(const SocketRequestData& socketRequest
         return ResponseCode::SEND_DATA_FAILED;
     }
     int32_t retCode{ResponseCode::RECEIVE_DATA_FAILED};
-    GetMsgFromSocket(&retCode, sizeof (retCode));
+    if (!GetMsgFromSocket(&retCode, sizeof(retCode))) {
+        LOGE(signalSafely_, "GetMsgFromSocket failed.");
+        return ResponseCode::RECEIVE_DATA_FAILED;
+    }
     return retCode;
 }
 

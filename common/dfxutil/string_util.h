@@ -36,6 +36,8 @@ inline bool RealPath(const std::string& path, std::string& realPath)
     if (realpath(path.c_str(), &(realPath[0])) == nullptr) {
         return false;
     }
+    size_t actualLen = strlen(realPath.c_str());
+    realPath.resize(actualLen);
 #else
     realPath = path;
 #endif
@@ -77,8 +79,12 @@ inline bool EndsWithIgnoreCase(const std::string& s, const std::string& suffix)
 inline void Trim(std::string& str)
 {
     std::string blanks("\f\v\r\t\n ");
-    str.erase(0, str.find_first_not_of(blanks));
-    str.erase(str.find_last_not_of(blanks) + sizeof(char));
+    size_t first = str.find_first_not_of(blanks);
+    str.erase(0, first);
+    size_t last = str.find_last_not_of(blanks);
+    if (last != std::string::npos) {
+        str.erase(last + sizeof(char));
+    }
 }
 } // namespace HiviewDFX
 } // namespace OHOS

@@ -77,11 +77,16 @@ void* KernelStackAsyncCollector::CollectKernelStackTaskWrapper(void *arg)
 KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessStackWithTimeout(int pid,
     uint32_t timeoutMs) const
 {
-    if (asyncCount_ > maxAsyncTaskNum_) {
-        DFXLOGE("GetProcessStackWithTimeout fail, overlimit pid:%{public}d count:%{public}d",
-            pid, static_cast<int>(asyncCount_));
-        return KernelResult {STACK_OVER_LIMIT};
-    }
+    int expected = asyncCount_.load();
+    do {
+        if (expected > maxAsyncTaskNum_) {
+            DFXLOGE("GetProcessStackWithTimeout fail, overlimit pid:%{public}d count:%{public}d",
+                pid, static_cast<int>(asyncCount_));
+            return KernelResult {STACK_OVER_LIMIT};
+        }
+    } while (!asyncCount_.compare_exchange_weak(expected, expected + 1,
+        std::memory_order_seq_cst, std::memory_order_relaxed));
+
     std::promise<KernelResult> result;
     auto f = result.get_future();
     // kernel may take much time
@@ -90,6 +95,7 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessSta
     if (collect == nullptr) {
         DFXLOGE("new collect failed, pid:%{public}d", pid);
         result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
+        asyncCount_--; //Decrement on failure
         return KernelResult {STACK_RESOURCE_LIMIT};
     }
 
@@ -100,6 +106,7 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessSta
         DFXLOGE("create thread failed, pid:%{public}d, error: %{public}s", pid, strerror(err));
         collect->result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
         delete collect;
+        asyncCount_--; //Decrement on failure
         return KernelResult {STACK_RESOURCE_LIMIT};
     }
     (void)pthread_detach(tid);
@@ -116,11 +123,15 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetProcessSta
 
 bool KernelStackAsyncCollector::NotifyStartCollect(int pid)
 {
-    if (asyncCount_ > maxAsyncTaskNum_) {
-        DFXLOGE("NotifyStartCollect fail, overlimit pid:%{public}d count:%{public}d",
-            pid, static_cast<int>(asyncCount_));
-        return false;
-    }
+    int expected = asyncCount_.load();
+    do {
+        if (expected > maxAsyncTaskNum_) {
+            DFXLOGE("NotifyStartCollect fail, overlimit pid:%{public}d count:%{public}d",
+                pid, static_cast<int>(asyncCount_));
+            return false;
+        }
+    } while (!asyncCount_.compare_exchange_weak(expected, expected + 1,
+        std::memory_order_seq_cst, std::memory_order_relaxed));
     std::promise<KernelResult> result;
     stackFuture_ = result.get_future();
     // kernel may take much time
@@ -129,6 +140,7 @@ bool KernelStackAsyncCollector::NotifyStartCollect(int pid)
     if (collect == nullptr) {
         DFXLOGE("new collect failed, pid:%{public}d", pid);
         result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
+        asyncCount_--; //Decrement on failure
         return false;
     }
 
@@ -139,6 +151,7 @@ bool KernelStackAsyncCollector::NotifyStartCollect(int pid)
         DFXLOGE("create thread failed, pid:%{public}d, error: %{public}s", pid, strerror(err));
         collect->result.set_value(KernelResult {STACK_RESOURCE_LIMIT});
         delete collect;
+        asyncCount_--; //Decrement on failure
         return false;
     }
     (void)pthread_detach(tid);
@@ -162,30 +175,15 @@ KernelStackAsyncCollector::KernelResult KernelStackAsyncCollector::GetCollectedS
     return stackFuture_.get();
 }
 
-class AutoCounter {
-public:
-    explicit AutoCounter(std::atomic<int> &count) : count_(count)
-    {
-        count_++;
-    }
-    AutoCounter(const AutoCounter&) = delete;
-    AutoCounter& operator=(const AutoCounter&) = delete;
-
-    ~AutoCounter()
-    {
-        count_--;
-    }
-private:
-    std::atomic<int> &count_;
-};
-
 void KernelStackAsyncCollector::CollectKernelStackTask(int pid, std::promise<KernelResult> result)
 {
-    AutoCounter autoCounter(asyncCount_);
+    // Note: asyncCount_ was already incremented by caller before thread creation
+    // to prevent TOCTOU race. Must decrement when function returns.
     ElapsedTime timer;
     if (!CheckProcessValid(pid)) {
         DFXLOGW("No process(%{public}d) status file exist!", pid);
         result.set_value(KernelResult {STACK_NO_PROCESS});
+        asyncCount_--; //Decrement on failure
         return;
     }
     std::string kernelStackInfo;
@@ -216,10 +214,11 @@ void KernelStackAsyncCollector::CollectKernelStackTask(int pid, std::promise<Ker
     if (kernelStackInfo.empty()) {
         DFXLOGE("Process(%{public}d) collect kernel stack fail!", pid);
         result.set_value({ToErrCode(kernelRet), threadCount});
+        asyncCount_--; //Decrement on failure
         return;
     }
     result.set_value({STACK_SUCCESS, std::move(kernelStackInfo), threadCount});
-
+    asyncCount_--; //Decrement on success
     DFXLOGI("finish collect all tid info for pid(%{public}d) time(%{public}" PRId64 ")ms", pid,
         timer.Elapsed<std::chrono::milliseconds>());
 }

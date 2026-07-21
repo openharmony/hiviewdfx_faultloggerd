@@ -162,7 +162,10 @@ static bool ReadFileDescriptorFromSocket(int sockfd, int* fd)
         DFXLOGE("%{public}s :: data is null or len is error", __func__);
         return false;
     }
-    *fd = *((int *)data);
+    if (memcpy_s(fd, sizeof(int), data, sizeof(int)) != EOK) {
+        DFXLOGE("%{public}s :: memcpy error", __func__);
+        return false;
+    }
     DFXLOGD("%{public}s :: fd: %{public}d", __func__, *fd);
     return true;
 }
@@ -190,7 +193,7 @@ static int32_t RequestServer(const void *buf, int len, int* fd)
 
     retCode = RECEIVE_DATA_FAILED;
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockfd, &retCode, sizeof(retCode)));
-    if (nread <= 0) {
+    if (nread != sizeof(retCode)) {
         DFXLOGE("Failed to get message from socket, %{public}zd, errno(%{public}d). ", nread, errno);
     }
 
@@ -237,7 +240,7 @@ int32_t RequestLimitedPipeFd(const int32_t pipeType, int* pipeFd, int pid, const
 int32_t RequestLimitedDelPipeFd(int pid)
 {
 #ifndef is_ohos_lite
-    LiteDumpFdRequestData  request;
+    LiteDumpFdRequestData  request = {0};
     request.head.clientType = PIPE_FD_LIMITED_CLIENT;
     request.head.clientPid = getpid();
     request.pipeType = PIPE_FD_DELETE;
@@ -252,7 +255,7 @@ int32_t RequestLimitedDelPipeFd(int pid)
 int32_t RequestLimitedProcessDump(int pid)
 {
 #ifndef is_ohos_lite
-    FaultLoggerdRequest request;
+    FaultLoggerdRequest request = {0};
     request.head.clientType = LIMITED_PROCESS_DUMP_CLIENT;
     request.head.clientPid = getpid();
     request.pid = pid;

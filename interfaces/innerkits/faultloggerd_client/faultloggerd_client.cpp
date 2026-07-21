@@ -34,7 +34,7 @@ constexpr int32_t COREDUMP_SOCKET_TIMEOUT = 5;
 constexpr int32_t CRASHDUMP_SOCKET_TIMEOUT = 3;
 std::string GetSocketName()
 {
-    char content[NAME_BUF_LEN];
+    char content[NAME_BUF_LEN] = {0};
     GetProcessName(content, sizeof(content));
     return strcmp(content, "processdump") == 0 ? SERVER_CRASH_SOCKET_NAME : SERVER_SOCKET_NAME;
 }
@@ -166,6 +166,10 @@ int32_t RequestLitePerfDelPipeFd()
 int32_t RequestPipeFd(int32_t pid, int32_t pipeType, int (&pipeFd)[2])
 {
 #ifndef is_ohos_lite
+    if (pid <= 0) {
+        DFXLOGE("%{public}s.%{public}s :: pid: %{public}d invalid.", FAULTLOGGERD_CLIENT_TAG, __func__, pid);
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
     if (pipeType < FaultLoggerPipeType::PIPE_FD_READ || pipeType > FaultLoggerPipeType::PIPE_FD_DELETE) {
         DFXLOGE("%{public}s.%{public}s :: pipeType: %{public}d failed.", FAULTLOGGERD_CLIENT_TAG, __func__, pipeType);
         return ResponseCode::DEFAULT_ERROR_CODE;

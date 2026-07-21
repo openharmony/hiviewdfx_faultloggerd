@@ -102,13 +102,14 @@ static __attribute__((noinline)) void CrashLocalUnwind(const int fd,
     collector.SetRegisters(regsSubStr);
     logContext.append(regsStr);
     logContext.append("\nMaps:\n");
-
-    std::string mapStr;
-    for (const auto &map : unwind.GetMaps()->GetMaps()) {
-        mapStr.append(map->ToString());
+    if (unwind.GetMaps() != nullptr) {
+        std::string mapStr;
+        for (const auto &map : unwind.GetMaps()->GetMaps()) {
+            mapStr.append(map->ToString());
+        }
+        collector.SetMaps(mapStr);
+        logContext.append(mapStr);
     }
-    collector.SetMaps(mapStr);
-    logContext.append(mapStr);
 
     for (unsigned int i = 0; i < logContext.length(); i += BUF_SZ_SMALL) {
         PrintLog("%s", logContext.substr(i, BUF_SZ_SMALL).c_str());

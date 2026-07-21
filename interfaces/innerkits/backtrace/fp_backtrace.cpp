@@ -39,8 +39,8 @@ namespace {
 #define LOG_TAG "FpBacktrace"
 #define LOG_DOMAIN 0xD002D11
 
-uintptr_t g_arkStubBegin{0};
-uintptr_t g_arkStubEnd{0};
+std::atomic<uintptr_t> g_arkStubBegin{0};
+std::atomic<uintptr_t> g_arkStubEnd{0};
 std::atomic_bool g_updateArkStubFlag{false};
 }
 
@@ -127,11 +127,11 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
     uintptr_t sp = 0;
     uintptr_t arkStubBegin{0};
     uintptr_t arkStubEnd{0};
-    if (!g_updateArkStubFlag.load(std::memory_order_relaxed)) {
+    if (!g_updateArkStubFlag.load(std::memory_order_acquire)) {
         maps_->GetArkStackRange(arkStubBegin, arkStubEnd);
     } else {
-        arkStubBegin = g_arkStubBegin;
-        arkStubEnd = g_arkStubEnd;
+        arkStubBegin = g_arkStubBegin.load(std::memory_order_relaxed);
+        arkStubEnd = g_arkStubEnd.load(std::memory_order_relaxed);
     }
     while (index < size) {
         constexpr auto fpIndex = 0;
@@ -232,9 +232,10 @@ void FpBacktrace::UpdateArkStackRange(uintptr_t arkStubBegin, uintptr_t arkStubE
 {
 #if is_ohos && !is_mingw && (defined(__aarch64__) || defined(__x86_64__))
     DFXLOGI("UpdateArkStackRange.");
-    g_arkStubBegin = arkStubBegin;
-    g_arkStubEnd = arkStubEnd;
-    g_updateArkStubFlag = true;
+    g_arkStubBegin.store(arkStubBegin, std::memory_order_relaxed);
+    g_arkStubEnd.store(arkStubEnd, std::memory_order_relaxed);
+    std::atomic_thread_fence(std::memory_order_release);
+    g_updateArkStubFlag.store(true, std::memory_order_relaxed);
 #endif
 }
 }

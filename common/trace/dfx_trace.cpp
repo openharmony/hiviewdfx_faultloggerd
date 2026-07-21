@@ -19,6 +19,9 @@
 #include <securec.h>
 void DfxStartTrace(const char *fmt, ...)
 {
+    if (fmt == nullptr) {
+        return;
+    }
     va_list args;
     va_start(args, fmt);
     char traceName[TRACE_BUF_LEN] = {0};
@@ -32,7 +35,7 @@ void DfxStartTrace(const char *fmt, ...)
 
 void FormatTraceName(char *name, size_t size, const char *fmt, ...)
 {
-    if (size < 1 || name == nullptr) {
+    if (size < 1 || name == nullptr || fmt == nullptr) {
         return;
     }
     va_list args;

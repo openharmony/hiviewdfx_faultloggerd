@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <pthread.h>
 #include <mutex>
+#include <shared_mutex>
 #include <atomic>
 #include "async_stack.h"
 
@@ -36,14 +37,14 @@ constexpr uint32_t PRINT_CHAIN_INTERVAL = 10;
 
 typedef struct DfxAsyncContext {
     DfxAsyncContext* next;
-    bool valid;
+    std::atomic<bool> valid;
     DfxAsyncCtx ctxs[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
 } DfxAsyncContext;
 
 typedef struct DfxThreadAsyncContext {
     DfxAsyncContext* contexts[MAX_THREAD_ASYNC_CTX_DEPTH];
     DfxThreadAsyncContext* next;
-    bool valid;
+    std::atomic<bool> valid;
     int32_t curAsyncContextsCnt;
 } DfxThreadAsyncContext;
 
@@ -60,6 +61,8 @@ public:
     DfxThreadAsyncContext* AcquireThreadContext();
     void ReleaseThreadContext(DfxThreadAsyncContext* ctx);
     bool IsValidAsyncContextAddress(DfxAsyncContext* ctx);
+    std::shared_lock<std::shared_mutex> AcquireReadLock();
+    bool IsValidAsyncContextAddressLocked(DfxAsyncContext* ctx);
 private:
     DfxAsyncContextPool() = default;
     ~DfxAsyncContextPool() = default;
@@ -71,7 +74,7 @@ private:
     DfxAsyncContext* freeListHead_{nullptr};
     DfxAsyncContext* freeListTail_{nullptr};
     DfxThreadAsyncContext* freeThreadList_{nullptr};
-    std::mutex mutex_;
+    std::shared_mutex sharedMutex_;
     std::atomic<bool> initialized_{false};
 };
 
@@ -95,7 +98,8 @@ private:
     void PushAsyncContext(DfxThreadAsyncContext* threadCtx, DfxAsyncContext* ctx);
     void PopAsyncContext(DfxThreadAsyncContext* threadCtx);
     pthread_key_t threadAsyncCtxKey_;
-    std::atomic<bool> initialized_;
+    std::atomic<bool> initialized_{false};
+    std::mutex mutex_;
 };
 
 } // namespace HiviewDFX
