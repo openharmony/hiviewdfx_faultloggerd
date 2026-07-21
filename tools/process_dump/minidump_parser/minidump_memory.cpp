@@ -193,23 +193,12 @@ bool MinidumpMemoryList::BuildMemoryRegions(const std::vector<MDMemoryDescriptor
 {
     regions_.reserve(regionCount_);
     for (uint32_t i = 0; i < descriptors.size(); ++i) {
-        if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
-            PerformanceOptimizer::Instance().GetMemoryRangeMap().StoreRange(descriptors[i].startOfMemoryRange,
-                descriptors[i].memory.dataSize, i);
-        }
-        if (PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
-            auto& memoryTree = PerformanceOptimizer::Instance().GetMemoryIntervalTree();
-            if (!memoryTree.Insert(descriptors[i].startOfMemoryRange,
-                descriptors[i].startOfMemoryRange + descriptors[i].memory.dataSize, i)) {
-                lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
-                    std::string("memory range overlap detected"), __LINE__);
-                DFXLOGW("MinidumpMemoryList detected range overlap for memory %{public}u", i);
-            }
-        }
-        if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
-            auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
-            bitmapIndex.MarkRange(descriptors[i].startOfMemoryRange,
-                descriptors[i].startOfMemoryRange + descriptors[i].memory.dataSize);
+        uint64_t start = descriptors[i].startOfMemoryRange;
+        uint32_t size = descriptors[i].memory.dataSize;
+        if (size <= std::numeric_limits<uint64_t>::max() - start) {
+            RegisterMemoryRange(start, start + size, size, i);
+        } else {
+            DFXLOGE("MinidumpMemoryList range overflow for memory %{public}u", i);
         }
         auto region = std::make_shared<MinidumpMemoryRegion>(memoryReader_);
         region->SetDescriptor(descriptors[i]);
@@ -217,6 +206,24 @@ bool MinidumpMemoryList::BuildMemoryRegions(const std::vector<MDMemoryDescriptor
     }
     descriptors_ = descriptors;
     return true;
+}
+
+void MinidumpMemoryList::RegisterMemoryRange(uint64_t start, uint64_t end, uint32_t size, uint32_t index)
+{
+    if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
+        PerformanceOptimizer::Instance().GetMemoryRangeMap().StoreRange(start, size, index);
+    }
+    if (PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
+        auto& memoryTree = PerformanceOptimizer::Instance().GetMemoryIntervalTree();
+        if (!memoryTree.Insert(start, end, index)) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
+                std::string("memory range overlap detected"), __LINE__);
+            DFXLOGW("MinidumpMemoryList detected range overlap for memory %{public}u", index);
+        }
+    }
+    if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
+        PerformanceOptimizer::Instance().GetBitmapIndex().MarkRange(start, end);
+    }
 }
 
 bool MinidumpMemoryList::Read(uint32_t expectedSize)

@@ -164,6 +164,7 @@ public:
 private:
     bool ReadRegionCountAndDescriptors(std::vector<MDMemoryDescriptor>& descriptors);
     bool BuildMemoryRegions(const std::vector<MDMemoryDescriptor>& descriptors);
+    void RegisterMemoryRange(uint64_t start, uint64_t end, uint32_t size, uint32_t index);
 
     std::vector<MDMemoryDescriptor> descriptors_;
     std::vector<std::shared_ptr<MinidumpMemoryRegion>> regions_;
