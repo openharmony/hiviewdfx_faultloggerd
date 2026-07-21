@@ -63,6 +63,7 @@ void DfxThread::InitThreadInfo(pid_t pid, pid_t tid, pid_t nsTid)
 
 DfxThread::~DfxThread()
 {
+    Detach();
     threadStatus = ThreadStatus::THREAD_STATUS_INVALID;
 }
 

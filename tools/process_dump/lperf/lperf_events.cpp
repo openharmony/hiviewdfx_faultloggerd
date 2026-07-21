@@ -56,7 +56,10 @@ struct LperfThreadInputArg {
 
 LperfEvents::LperfEvents()
 {
-    pageSize_ = static_cast<unsigned int>(sysconf(_SC_PAGESIZE));
+    long pageSize = sysconf(_SC_PAGESIZE);
+    if (pageSize > 0) {
+        pageSize_ = static_cast<unsigned int>(pageSize);
+    }
 }
 
 LperfEvents::~LperfEvents()
@@ -245,6 +248,8 @@ void LperfEvents::Clear()
         lperfFd_ = -1;
     }
     lperfMmap_.mmapPage = nullptr;
+    lperfMmap_.buf = nullptr;
+    lperfMmap_.bufSize = 0;
 }
 } // namespace HiviewDFX
 } // namespace OHOS
