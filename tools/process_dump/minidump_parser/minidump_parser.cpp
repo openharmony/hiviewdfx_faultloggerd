@@ -161,6 +161,12 @@ bool MinidumpParser::ReadMinidumpHeader()
         return false;
     }
     uint32_t curProcess = 1;
+    if (header_.numberOfStreams > 0xFFFFFFFD) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
+            "numberOfStreams too large", __LINE__);
+        DFXLOGE("MinidumpParser numberOfStreams too large: %{public}u", header_.numberOfStreams);
+        return false;
+    }
     uint32_t totalStep = header_.numberOfStreams + 2;
     minidumpSubject_->NotifyParseProgress(curProcess++, totalStep, "header");
 

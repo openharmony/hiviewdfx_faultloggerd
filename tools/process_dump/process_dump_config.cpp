@@ -93,6 +93,11 @@ void ParseDumpInfoConfig(const cJSON* json, DumpConfig& dumpConfig)
     for (int i = 0; i < size; i++) {
         auto* dumpInfo = cJSON_GetArrayItem(dumpInfos, i);
         int32_t code = GetInt32ValueFromJson(cJSON_GetObjectItem(dumpInfo, "Code"));
+        if (code < static_cast<int32_t>(ProcessDumpType::DUMP_TYPE_CPP_CRASH) ||
+            code > static_cast<int32_t>(ProcessDumpType::DUMP_TYPE_ARKTS_ENVSAN)) {
+            DFXLOGE("invalid dump type code: %{public}d", code);
+            continue;
+        }
         std::string typeName = GetStringValueFromJson(cJSON_GetObjectItem(dumpInfo, "TypeName"));
         std::vector<std::string> dumpInfoComponent;
         for (const auto& componentName : DUMP_INFO_COMPONENT_NAME) {
