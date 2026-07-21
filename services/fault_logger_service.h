@@ -21,8 +21,8 @@
 #include <vector>
 
 #include "dfx_socket_request.h"
-#include "temp_file_manager.h"
 #include "dfx_exception.h"
+#include "temp_file_manager.h"
 
 namespace OHOS {
 namespace HiviewDFX {
