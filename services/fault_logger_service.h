@@ -125,6 +125,10 @@ private:
     };
 };
 
+/**
+ * @brief LiteProcDumperService
+ * @details LiteProcDumperService is used to dump low-permission process.
+ */
 class LiteProcDumperService : public FaultLoggerService<FaultLoggerdRequest> {
 public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
