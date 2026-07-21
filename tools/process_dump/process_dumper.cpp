@@ -566,7 +566,7 @@ DumpErrorCode ProcessDumper::ConcurrentSymbolize()
                 leftMap->ReleaseElf();
             }
             if (smoFlag) {
-                smoParseTime_ += GetTimeMillisec() - start;
+                __atomic_add_fetch(&smoParseTime_, GetTimeMillisec() - start, __ATOMIC_RELAXED);
             }
         });
     };
@@ -708,7 +708,7 @@ void ProcessDumper::ReportSigDumpStats()
     stat->processdumpStartTime = startTime_;
     stat->processdumpFinishTime = finishTime_ == 0 ? GetTimeMillisec() : finishTime_;
     stat->writeDumpInfoCost = finishParseSymbolTime_ > 0 ? stat->processdumpFinishTime - finishParseSymbolTime_ : 0;
-    stat->smoParseTime = smoParseTime_;
+    stat->smoParseTime = __atomic_load_n(&smoParseTime_, __ATOMIC_RELAXED);
     stat->keyThreadUnwindTimestamp = KeyThreadDumpInfo::GetUnwindTimestamp();
     if (IsBetaVersion()) {
         stat->pssMemory = GetPssMemory();

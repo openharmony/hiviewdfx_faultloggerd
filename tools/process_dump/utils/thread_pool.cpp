@@ -81,7 +81,9 @@ bool ThreadPool::StopWithTimeOut(uint64_t waitTimeOutMs)
     }
     condition_.notify_all();
     for (auto &worker : workers_) {
-        worker.detach();
+        if (worker.joinable()) {
+            worker.join();
+        }
     }
     return completeTask;
 }

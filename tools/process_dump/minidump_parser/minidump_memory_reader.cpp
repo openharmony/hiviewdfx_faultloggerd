@@ -50,18 +50,30 @@ bool MinidumpMemoryReader::ReadBytes(void* bytes, size_t count)
 
 bool MinidumpMemoryReader::SeekSet(off_t offset)
 {
-    if (!stream_ || !stream_->good()) {
+    if (!stream_) {
+        auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+        stats.IncrementError();
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "stream is null", __LINE__);
+        return false;
+    }
+
+    stream_->clear(stream_->rdstate() & ~std::ios::eofbit);
+    if (!stream_->good()) {
         auto& stats = MinidumpPerfMonitor::Instance().GetStats();
         stats.IncrementError();
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "stream is not good", __LINE__);
         return false;
     }
-
-    stream_->clear();
     stream_->seekg(offset, std::ios::beg);
+    if (!stream_->good()) {
+        auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+        stats.IncrementError();
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "seek failed", __LINE__);
+        return false;
+    }
     auto& stats = MinidumpPerfMonitor::Instance().GetStats();
     stats.IncrementSeek();
-    return stream_->good();
+    return true;
 }
 
 off_t MinidumpMemoryReader::Tell()

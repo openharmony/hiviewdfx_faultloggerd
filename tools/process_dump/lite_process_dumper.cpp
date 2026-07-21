@@ -98,6 +98,7 @@ void LiteProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
 #ifndef CLANG_COVERAGE
         _exit(0);
 #endif
+        return;
     }
     uint64_t diffTime = expectedDumpFinishTime_ - curTime;
 
@@ -197,8 +198,11 @@ bool LiteProcessDumper::LoopReadPipe(int pipeReadFd, void* buf, size_t length)
         ssize_t readSize = 0;
         size_t tryTimes = 0;
         do {
-            readSize = read(pipeReadFd, static_cast<char*>(buf) + readSuccessSize, len);
+            readSize = read(pipeReadFd, static_cast<char*>(buf) + totalReadSize, len);
             savedErrno = errno;
+            if (readSize == 0) {
+                return false;
+            }
             if (readSize == -1 && savedErrno != EINTR && savedErrno != EAGAIN) {
                 return false;
             }
@@ -210,7 +214,7 @@ bool LiteProcessDumper::LoopReadPipe(int pipeReadFd, void* buf, size_t length)
                 DFXLOGW("LoopReadPipe exceeding the maximum number of retries!");
                 return totalReadSize == length;
             }
-            if (readSize == -1 && savedErrno == EAGAIN) {
+            if (readSize == -1 && (savedErrno == EAGAIN || savedErrno == EINTR)) {
                 ++tryTimes;
                 usleep(1000); // 1000 : sleep 1ms try again
             }
@@ -225,6 +229,7 @@ MemoryBlockInfo LiteProcessDumper::ReadSingleRegMem(int pipeReadFd, uintptr_t na
     std::vector<uintptr_t> bk(count);
     if (!LoopReadPipe(pipeReadFd, bk.data(), bk.size() * sizeof(uintptr_t))) {
         DFXLOGI("failed to read reg near memory %{public}d", errno);
+        std::fill(bk.begin(), bk.end(), static_cast<uintptr_t>(-1));
     }
     MemoryBlockInfo info;
     info.nameAddr = nameAddr;
@@ -291,6 +296,7 @@ bool LiteProcessDumper::ReadContent(int pipeReadFd)
     ssize_t n = 1;
     size_t tryTimes = 0;
     constexpr size_t maxTryTimes = 200;
+    constexpr size_t maxRawDataSize = 20 * 1024 * 1024;
     while ((n = read(pipeReadFd, data.data(), MAX_PIPE_SIZE)) > 0 ||
         (n == -1 && (errno == EAGAIN || errno == EINTR))) {
         if (n == -1 && errno == EAGAIN) {
@@ -302,6 +308,10 @@ bool LiteProcessDumper::ReadContent(int pipeReadFd)
         }
         if (n > 0) {
             rawData_.append(data.data(), static_cast<size_t>(n));
+            if (rawData_.size() >= maxRawDataSize) {
+                DFXLOGW("raw data size exceeds limit, stop reading");
+                break;
+            }
         }
     }
     return true;
@@ -410,6 +420,7 @@ bool LiteProcessDumper::Dump(int pid)
     }
     if (!DfxBufferWriter::GetInstance().InitBufferWriter(request_)) {
         DFXLOGE("Failed to init buffer writer.");
+        return false;
     }
     CppCrashInfoCollector::Instance().SetNeedFormatFlag(request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH);
     regs_ = DfxRegs::CreateFromUcontext(request_.context);
@@ -467,8 +478,11 @@ void LiteProcessDumper::PrintHeader()
     headInfo += StringPrintf("Process name:%s\n", request_.processName);
     CppCrashInfoCollector::Instance().SetPname(request_.processName);
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
-        uint64_t lifeTimeSeconds;
-        GetProcessLifeCycle(stat_, lifeTimeSeconds);
+        uint64_t lifeTimeSeconds = 0;
+        int errCode = GetProcessLifeCycle(stat_, lifeTimeSeconds);
+        if (errCode != 0) {
+            DFXLOGE("Get process lifeCycle fail, errCode: %{public}d", errCode);
+        }
         process_->SetLifeTime(lifeTimeSeconds);
         tempStr = std::to_string(lifeTimeSeconds) + "s";
         headInfo += "Process life time:" + tempStr + "\n";

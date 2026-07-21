@@ -225,6 +225,13 @@ bool MinidumpMemoryList::Read(uint32_t expectedSize)
     if (!ReadRegionCountAndDescriptors(descriptors)) {
         return false;
     }
+    uint64_t actualSize = sizeof(regionCount_) +
+        static_cast<uint64_t>(sizeof(MDMemoryDescriptor)) * regionCount_;
+    if (actualSize > expectedSize) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            "Memory list stream size mismatch", __LINE__);
+        return false;
+    }
     if (!BuildMemoryRegions(descriptors)) {
         return false;
     }
