@@ -81,7 +81,7 @@ static _Atomic(int) g_threadCompletedCount = 0;
 static int g_threadSentCount = 0;
 static const int LOCALDUMP_TIMEOUT = 1000; // 1000 : 1 sec timeout
 
-static int g_totalMemorySize = 0;
+static unsigned int g_totalMemorySize = 0;
 static const int FILE_PATH_LEN = 256;
 static const char * const PID_STR_NAME = "Pid:";
 static const char * const THREAD_SELF_STATUS_PATH = "/proc/thread-self/status";
@@ -131,13 +131,16 @@ pid_t GetProcId(const char *statusPath, const char *item)
 
 bool MMapMemoryOnce(int mmapSize)
 {
+    if (mmapSize < 0) {
+        return false;
+    }
     DFXLOGI("lite dump start mmap memory");
     g_mmapSpace = mmap(NULL, mmapSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (g_mmapSpace == MAP_FAILED) {
         DFXLOGE("lite dump mmap failed %{public}d", errno);
         return false;
     }
-    g_totalMemorySize = mmapSize;
+    g_totalMemorySize = (unsigned)mmapSize;
     DFXLOGI("lite dump finish mmap memory");
     return true;
 }
@@ -167,7 +170,7 @@ bool CollectStack(const struct ProcessDumpRequest *request)
         return false;
     }
 #if defined(__aarch64__)
-    if (g_mmapPos + PRIV_COPY_STACK_BUFFER_SIZE > g_totalMemorySize) {
+    if (g_mmapPos + (unsigned)PRIV_COPY_STACK_BUFFER_SIZE > g_totalMemorySize) {
         DFXLOGE("collect statck mmap space is over flow");
         return false;
     }
@@ -176,7 +179,7 @@ bool CollectStack(const struct ProcessDumpRequest *request)
     CopyReadableBufSafe((uintptr_t)destPtr, PRIV_COPY_STACK_BUFFER_SIZE, srcPtr, PRIV_COPY_STACK_BUFFER_SIZE);
     DeInitPipe();
 #endif
-    g_mmapPos += PRIV_COPY_STACK_BUFFER_SIZE;
+    g_mmapPos += (unsigned)PRIV_COPY_STACK_BUFFER_SIZE;
     DFXLOGI("finish collect process stack");
     CollectOtherThreadStack(request);
     DeInitPipe();
@@ -318,7 +321,7 @@ bool CollectStat(const struct ProcessDumpRequest *request)
         DFXLOGE("mmap failed");
         return false;
     }
-    if (g_mmapPos + PROC_STAT_BUF_SIZE > g_totalMemorySize) {
+    if (g_mmapPos + (unsigned)PROC_STAT_BUF_SIZE > g_totalMemorySize) {
         DFXLOGE("collect stat memory size over flow");
         return false;
     }
@@ -327,20 +330,20 @@ bool CollectStat(const struct ProcessDumpRequest *request)
     int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/stat", request->pid);
     if (ret < 0) {
         DFXLOGE("CollectStat :: snprintf_s failed, ret(%{public}d)", ret);
-        g_mmapPos += PROC_STAT_BUF_SIZE;
+        g_mmapPos += (unsigned)PROC_STAT_BUF_SIZE;
         return false;
     }
     int fd = SysOpen(path, O_RDONLY);
     if (fd < 0) {
         DFXLOGI("failed open %{public}s errno %{public}d", path, errno);
-        g_mmapPos += PROC_STAT_BUF_SIZE;
+        g_mmapPos += (unsigned)PROC_STAT_BUF_SIZE;
         return false;
     }
 
     char* stat = (char*)g_mmapSpace + g_mmapPos;
     stat[PROC_STAT_BUF_SIZE - 1] = '\0';
     ssize_t n = syscall(SYS_read, fd, stat, PROC_STAT_BUF_SIZE - 1);
-    g_mmapPos += PROC_STAT_BUF_SIZE;
+    g_mmapPos += (unsigned)PROC_STAT_BUF_SIZE;
     if (n > 0) {
         stat[n] = '\0';
     }
@@ -355,7 +358,7 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
         DFXLOGE("mmap failed");
         return false;
     }
-    if (g_mmapPos + PROC_STATM_BUF_SIZE > g_totalMemorySize) {
+    if (g_mmapPos + (unsigned)PROC_STATM_BUF_SIZE > g_totalMemorySize) {
         DFXLOGE("collect statm mmap space is over flow");
         return false;
     }
@@ -363,13 +366,13 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
     int ret = snprintf_s(path, sizeof(path), sizeof(path) - 1, "/proc/%d/statm", request->pid);
     if (ret < 0) {
         DFXLOGE("CollectStatm :: snprintf_s failed, ret(%{public}d)", ret);
-        g_mmapPos += PROC_STATM_BUF_SIZE;
+        g_mmapPos += (unsigned)PROC_STATM_BUF_SIZE;
         return false;
     }
     int fd = SysOpen(path, O_RDONLY);
     if (fd < 0) {
         DFXLOGI("failed to open %{public}s errno %{public}d", path, errno);
-        g_mmapPos += PROC_STATM_BUF_SIZE;
+        g_mmapPos += (unsigned)PROC_STATM_BUF_SIZE;
         return false;
     }
 
@@ -377,7 +380,7 @@ bool CollectStatm(const struct ProcessDumpRequest *request)
     statm[PROC_STATM_BUF_SIZE - 1] = '\0';
 
     ssize_t n = syscall(SYS_read, fd, statm, PROC_STATM_BUF_SIZE - 1);
-    g_mmapPos += PROC_STATM_BUF_SIZE;
+    g_mmapPos += (unsigned)PROC_STATM_BUF_SIZE;
     if (n > 0) {
         statm[n] = '\0';
     }
@@ -848,5 +851,5 @@ void UpdateSanBoxProcess(struct ProcessDumpRequest *request)
 
 void ResetLiteDump(void)
 {
-    g_mmapPos = 0;
+    g_mmapPos = 0u;
 }

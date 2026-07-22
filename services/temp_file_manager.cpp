@@ -399,12 +399,12 @@ std::list<std::pair<int32_t, int64_t>> TempFileManager::crashFileRecords_{};
 void TempFileManager::ClearTimeOutRecords()
 {
 #ifdef FAULTLOGGERD_TEST
-    constexpr int validTime = 1;
+    constexpr int64_t validTime = 1;
 #else
-    constexpr int validTime = 8;
+    constexpr int64_t validTime = 8;
 #endif
     auto currentTime = time(nullptr);
-    crashFileRecords_.remove_if([currentTime](const std::pair<int32_t, int32_t>& pair) {
+    crashFileRecords_.remove_if([currentTime](const std::pair<int32_t, int64_t>& pair) {
         return pair.second + validTime <= currentTime;
     });
 }
@@ -472,7 +472,11 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
     constexpr uint32_t buffLen = eventLenSize * eventLen;
     constexpr uint32_t bound = buffLen - eventLen;
     char eventBuf[buffLen] = {0};
-    auto readLen = static_cast<size_t>(OHOS_TEMP_FAILURE_RETRY(read(GetFd(), eventBuf, sizeof(eventBuf))));
+    int ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), eventBuf, sizeof(eventBuf)));
+    if (ret < 0) {
+        return;
+    }
+    auto readLen = static_cast<size_t>(ret);
     size_t eventPos = 0;
     while (readLen >= eventLen && eventPos < bound) {
         auto *event = reinterpret_cast<inotify_event *>(eventBuf + eventPos);

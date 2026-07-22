@@ -43,6 +43,7 @@ void KernelSnapshotReporter::ReportEvents(std::vector<CrashMap>& outputs, const 
 bool KernelSnapshotReporter::ReportCrashNoLogEvent(CrashMap& output)
 {
 #ifndef HISYSEVENT_DISABLE
+    errno = 0;
     int32_t uid = static_cast<int32_t>(strtol(output[CrashSection::UID].c_str(), nullptr, DECIMAL_BASE));
     int32_t pid = static_cast<int32_t>(strtol(output[CrashSection::PID].c_str(), nullptr, DECIMAL_BASE));
     int64_t timeStamp = strtoll(output[CrashSection::TIME_STAMP].c_str(), nullptr, DECIMAL_BASE);

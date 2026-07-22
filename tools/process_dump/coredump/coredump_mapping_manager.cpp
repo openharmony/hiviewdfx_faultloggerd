@@ -57,7 +57,7 @@ void CoredumpMappingManager::Parse(pid_t pid)
         return;
     }
     std::string line;
-    DumpMemoryRegions region;
+    DumpMemoryRegions region{};
     while (getline(file, line)) {
         ObtainDumpRegion(line, region);
         maps_.push_back(region);

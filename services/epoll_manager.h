@@ -108,7 +108,7 @@ private:
         DelayTaskQueue& delayTaskQueue_;
     };
     DelayTaskQueue() = default;
-    ~DelayTaskQueue() = default;
+    ~DelayTaskQueue();
     bool InitExecutor(uint32_t delayTimeInS);
     /**
      * Used to check if there is already an executor and retrieve the fd bound to this executor.

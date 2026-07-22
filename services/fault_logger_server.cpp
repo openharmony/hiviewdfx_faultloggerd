@@ -15,6 +15,7 @@
 
 #include "fault_logger_server.h"
 
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -32,6 +33,20 @@ namespace HiviewDFX {
 
 namespace {
 constexpr const char* const FAULTLOGGERD_SERVER_TAG = "FAULT_LOGGER_SERVER";
+
+inline bool SetSocketTimeOut(int fd)
+{
+    struct timeval tv;
+    constexpr int32_t clientSocketTimeOut = 3;
+    tv.tv_sec  = clientSocketTimeOut;
+    tv.tv_usec = 0;
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv)) != 0) {
+        DFXLOGW("%{public}s :: failed set timeout for socket and errorcode %{public}s",
+            FAULTLOGGERD_SERVER_TAG, strerror(errno));
+        return false;
+    }
+    return true;
+}
 }
 
 bool SocketServer::Init()
@@ -110,7 +125,7 @@ IFaultLoggerService* SocketServer::ClientRequestListener::GetTargetService(int32
 void SocketServer::ClientRequestListener::OnEventPoll()
 {
     constexpr int32_t maxBuffSize = 2048;
-    std::vector<uint8_t> buf(maxBuffSize, 0);
+    std::vector<uint8_t> buf(maxBuffSize + 1, 0);
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), buf.data(), maxBuffSize));
     if (nread >= static_cast<ssize_t>(sizeof(RequestDataHead))) {
         auto dataHead = reinterpret_cast<RequestDataHead*>(buf.data());
@@ -156,10 +171,13 @@ void SocketServer::SocketServerListener::OnEventPoll()
         DFXLOGE("%{public}s :: reject new connection for uid %{public}d.", FAULTLOGGERD_SERVER_TAG, credentials.uid);
         return;
     }
+    SetSocketTimeOut(connectionFd.GetFd());
+    auto listener = new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid);
+    if (listener == nullptr) {
+        return;
+    }
     connectionNum++;
-    std::unique_ptr<EpollListener> clientRequestListener(
-        new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid));
-    EpollManager::GetInstance().AddListener(std::move(clientRequestListener));
+    EpollManager::GetInstance().AddListener(std::unique_ptr<EpollListener>(listener));
 }
 }
 }

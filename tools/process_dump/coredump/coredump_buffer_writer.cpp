@@ -115,7 +115,7 @@ uint64_t CoredumpBufferWriter::GetOffset() const
 
 bool CoredumpBufferWriter::SetCurrent(char* current)
 {
-    if (current < base_ || current > base_ + capacity_) {
+    if (base_ == nullptr || current < base_ || current > base_ + capacity_) {
         return false;
     }
     current_ = current;

@@ -381,6 +381,7 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
         faultLoggerPipe.GetPipeFd(PipeFdUsage::RESULT_FD, FaultLoggerPipeType::PIPE_FD_READ)
     };
     if (fds[PIPE_BUF_INDEX] < 0 || fds[PIPE_RES_INDEX] < 0) {
+        FaultLoggerPipePair::DelSdkDumpPipePair(requestData.pid);
         return ResponseCode::ABNORMAL_SERVICE;
     }
     SendMsgToSocket(connectionFd, &res, sizeof(res));
@@ -546,6 +547,9 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
 
 bool LiteProcDumperPipeService::CheckProcessName(int32_t pid, const std::string& procName)
 {
+    if (procName.empty()) {
+        return false;
+    }
     std::string cmdlinePath = "/proc/" + std::to_string(pid) + "/cmdline";
     std::string cmdLineCont;
     LoadStringFromFile(cmdlinePath, cmdLineCont);
@@ -676,7 +680,9 @@ static void LaunchProcessDump(int dumpPid)
         }
         _exit(0);
     }
-    waitpid(pid, nullptr, 0);
+    if (pid > 0) {
+        waitpid(pid, nullptr, 0);
+    }
 }
 
 int32_t LiteProcDumperService::OnRequest(const std::string& socketName, int32_t connectionFd,

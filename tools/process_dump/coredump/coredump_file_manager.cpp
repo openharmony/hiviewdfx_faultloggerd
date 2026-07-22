@@ -59,7 +59,8 @@ void CoredumpFileManager::WriteNativeCoredump()
         DFXLOGI("is write coredump lite is false");
         return;
     }
-    if (write(fd_, mappedMemory_, coreFileSize_) < 0) {
+    auto ret = write(fd_, mappedMemory_, coreFileSize_);
+    if (ret < 0 || static_cast<uint64_t>(ret) != coreFileSize_) {
         DFXLOGE("write coredump lite fail, errno:%{public}d", errno);
     } else {
         DFXLOGI("write coredump lite succ");
@@ -150,7 +151,7 @@ bool CoredumpFileManager::CreateFileForCoreDump()
             return false;
         }
         std::string filePath = GetCoredumpFilePath();
-        fd_ = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
+        fd_ = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDWR | O_CREAT | O_NOFOLLOW, S_IRUSR | S_IWUSR));
     }
     if (fd_ == INVALID_FD) {
         DFXLOGE("create coredump file fail, errno = %{public}d", errno);

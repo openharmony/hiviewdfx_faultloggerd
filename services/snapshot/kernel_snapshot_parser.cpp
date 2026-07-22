@@ -54,7 +54,7 @@ bool KernelSnapshotParser::PreProcessLine(std::string& line)
         return false;
     }
     // move timestamp to end
-    if (isdigit(line[1])) {
+    if (isdigit(static_cast<unsigned char>(line[1]))) {
         auto pos = line.find('[', 1);
         if (pos != std::string::npos) {
             std::string tmp = line.substr(0, pos);

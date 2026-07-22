@@ -309,25 +309,24 @@ bool LiteProcessDumper::ReadContent(int pipeReadFd)
 
 bool LiteProcessDumper::ReadPipeData(int pid)
 {
+#ifndef is_ohos_lite
     DFXLOGI("start read pipe data");
     int pipeReadFd = -1;
-#ifndef is_ohos_lite
     RequestLimitedPipeFd(PIPE_READ, &pipeReadFd, pid, nullptr);
-#endif
     if (pipeReadFd <= 0) {
         return false;
     }
+    SmartFd fdCloser(pipeReadFd);
     if (!ReadContent(pipeReadFd)) {
-#ifndef is_ohos_lite
         RequestLimitedDelPipeFd(pid);
-#endif
         return false;
     }
     DFXLOGI("finish read pipe data");
-#ifndef is_ohos_lite
     RequestLimitedDelPipeFd(pid);
-#endif
     return true;
+#else
+    return false;
+#endif
 }
 
 void LiteProcessDumper::Unwind()
