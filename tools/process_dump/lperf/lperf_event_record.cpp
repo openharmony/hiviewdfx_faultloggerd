@@ -54,7 +54,8 @@ bool LperfRecordSample::Init(uint8_t* data)
     InitHeader(data);
     CHECK_TRUE_AND_RET(data != nullptr, false, "LperfRecordSample Init error");
     data_ = {};
-    uint64_t dataSize = static_cast<uint64_t>(RECORD_SIZE_LIMIT);
+    uint64_t dataSize = static_cast<uint64_t>(header_.size);
+    CHECK_TRUE_AND_RET(dataSize <= RECORD_SIZE_LIMIT, false, "record size exceeds limit");
     CHECK_TRUE_AND_RET(SetPointerOffset(data, sizeof(header_), dataSize), false, "set header_ offset error");
 
     // parse record according SAMPLE_TYPE
@@ -65,6 +66,7 @@ bool LperfRecordSample::Init(uint8_t* data)
                        false, "Init PERF_SAMPLE_TIME error");
     CHECK_TRUE_AND_RET(PopFromBinary<uint64_t>(sampleType_ & PERF_SAMPLE_CALLCHAIN, data, data_.nr, dataSize),
                        false, "Init PERF_SAMPLE_CALLCHAIN error");
+    CHECK_TRUE_AND_RET(data_.nr <= dataSize / sizeof(uint64_t), false, "nr exceeds data boundary");
     if (data_.nr > 0) {
         // the pointer is from input(data), require caller keep input(data) with *this together
         // think it in next time

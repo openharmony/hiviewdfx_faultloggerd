@@ -277,7 +277,8 @@ bool MinidumpDumper::ParseMemoryListStream(MinidumpParser& minidumpParser)
     for (const auto& regData : regs->GetRegsData()) {
         MemoryBlockInfo info;
         info.nameAddr = regData;
-        info.startAddr = info.nameAddr - COMMON_REG_MEM_FORWARD_SIZE * sizeof(uintptr_t);
+        uintptr_t memOffset = COMMON_REG_MEM_FORWARD_SIZE * sizeof(uintptr_t);
+        info.startAddr = (info.nameAddr >= memOffset) ? (info.nameAddr - memOffset) : 0;
         for (auto addr = info.startAddr; addr < info.startAddr + COMMON_REG_MEM_SIZE * sizeof(uintptr_t);
             addr += sizeof(uintptr_t)) {
             uintptr_t value = 0;
@@ -374,8 +375,8 @@ void MinidumpDumper::PopulateOtherThreadFromMinidump(std::shared_ptr<DfxThread> 
         return;
     }
     auto stackBuf = memoryRegion->GetMemory();
-    if (stackBuf == nullptr) {
-        DFXLOGE("stackBuf is nullptr");
+    if (stackBuf == nullptr || stackBuf->size() < sizeof(uintptr_t)) {
+        DFXLOGE("stackBuf is nullptr or too small");
         return;
     }
     dfxThread->SetThreadStackBuffer(stackBuf);

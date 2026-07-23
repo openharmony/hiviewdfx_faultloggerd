@@ -516,7 +516,8 @@ DumpErrorCode ProcessDumper::WaitParseSymbols()
             dumpRes = DumpErrorCode::DUMP_ESYMBOL_PARSE_TIMEOUT;
         }
     } else {
-        DFXLOGW("do not parse symbol, remain %{public}" PRId64 "ms", expectedDumpFinishTime_ - curTime);
+        uint64_t remainTime = expectedDumpFinishTime_ > curTime ? expectedDumpFinishTime_ - curTime : 0;
+        DFXLOGW("do not parse symbol, remain %{public}" PRIu64 "ms", remainTime);
         dumpRes = DumpErrorCode::DUMP_ESYMBOL_NO_PARSE;
     }
 #else

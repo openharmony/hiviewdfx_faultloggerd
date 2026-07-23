@@ -38,7 +38,9 @@ HWTEST_F(LperfEventRecordTest, CreateLperfRecordTest001, TestSize.Level1)
 {
     GTEST_LOG_(INFO) << "CreateLperfRecordTest001: start.";
     TestRecordSample sample = {
-        {PERF_RECORD_SAMPLE, PERF_RECORD_MISC_KERNEL, sizeof(TestRecordSample)},
+        {PERF_RECORD_SAMPLE, PERF_RECORD_MISC_KERNEL,
+            sizeof(perf_event_header) + sizeof(uint32_t) + sizeof(uint32_t) +
+            sizeof(uint64_t) + sizeof(uint64_t) + 4 * sizeof(uint64_t)},
         {}};
     uint64_t ips[4] = {0, 1, 2, 3};
     sample.data_.ips = ips;

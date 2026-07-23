@@ -142,6 +142,8 @@ public:
 private:
     void CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxRegs> regs,
         std::shared_ptr<DfxMaps> maps, bool extendPcLrPrinting);
+    void PushRegisterBlock(pid_t tid, uintptr_t startAddr, uintptr_t count,
+        const std::string& name, int index);
     void CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo) const;
     void UpdateContentByLite(MemoryBlockInfo& blockInfo, unsigned int pos);
     std::vector<MemoryBlockInfo> registerBlocks_;

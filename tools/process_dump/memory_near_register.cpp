@@ -115,20 +115,30 @@ void MemoryNearRegister::CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxReg
             name.append("(" + mapName + ")");
         }
         data = data & ~(size - 1);
-        data -= (forwardSize * size);
-        MemoryBlockInfo blockInfo = {
-            .startAddr = data,
-            .nameAddr = 0,
-            .size = count,
-            .name = name,
-        };
-        if (isLite_) {
-            UpdateContentByLite(blockInfo, index -1);
-        } else {
-            CreateMemoryBlock(tid, blockInfo);
+        uintptr_t offset = forwardSize * size;
+        if (data < offset || data - offset < map->begin ||
+            data - offset + count * size > map->end) {
+            continue;
         }
-        registerBlocks_.push_back(blockInfo);
+        PushRegisterBlock(tid, data - offset, count, name, index);
     }
+}
+
+void MemoryNearRegister::PushRegisterBlock(pid_t tid, uintptr_t startAddr, uintptr_t count,
+    const std::string& name, int index)
+{
+    MemoryBlockInfo blockInfo = {
+        .startAddr = startAddr,
+        .nameAddr = 0,
+        .size = count,
+        .name = name,
+    };
+    if (isLite_) {
+        UpdateContentByLite(blockInfo, index - 1);
+    } else {
+        CreateMemoryBlock(tid, blockInfo);
+    }
+    registerBlocks_.push_back(blockInfo);
 }
 
 void MemoryNearRegister::CreateMemoryBlock(pid_t tid, MemoryBlockInfo& blockInfo) const
