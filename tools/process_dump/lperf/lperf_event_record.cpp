@@ -46,7 +46,9 @@ void LperfRecordSample::InitHeader(const uint8_t* data)
         header_.size = 0;
         return;
     }
-    header_ = *(reinterpret_cast<const perf_event_header *>(data));
+    if (memcpy_s(&header_, sizeof(header_), data, sizeof(header_)) != EOK) {
+        DFXLOGE("InitHeader memcpy_s failed");
+    }
 }
 
 bool LperfRecordSample::Init(uint8_t* data)
@@ -101,29 +103,34 @@ void LperfRecordFactory::ClearData()
 }
 
 template<typename T>
+inline bool PopOneFromBinary(uint8_t*& data, T& dest, uint64_t& size)
+{
+    CHECK_TRUE_AND_RET(memcpy_s(&dest, sizeof(dest), data, sizeof(T)) == EOK,
+        false, "PopFromBinary memcpy error");
+    data += sizeof(T);
+    size -= sizeof(T);
+    return true;
+}
+
+template<typename T>
 inline bool PopFromBinary(bool condition, uint8_t*& data, T& dest, uint64_t& size)
 {
     CHECK_TRUE_AND_RET(sizeof(T) <= size, false, "PopFromBinary error");
-    if (condition) {
-        dest = *(reinterpret_cast<const T *>(data));
-        data += sizeof(T);
-        size -= sizeof(T);
+    if (!condition) {
+        return true;
     }
-    return true;
+    return PopOneFromBinary(data, dest, size);
 }
 
 template<typename T1, typename T2>
 inline bool PopFromBinary2(bool condition, uint8_t*& data, T1& dest1, T2& dest2, uint64_t& size)
 {
     CHECK_TRUE_AND_RET(sizeof(T1) + sizeof(T2) <= size, false, "PopFromBinary2 error");
-    if (condition) {
-        dest1 = *(reinterpret_cast<const T1 *>(data));
-        data += sizeof(T1);
-        dest2 = *(reinterpret_cast<const T2 *>(data));
-        data += sizeof(T2);
-        size -= (sizeof(T1) + sizeof(T2));
+    if (!condition) {
+        return true;
     }
-    return true;
+    return PopOneFromBinary(data, dest1, size) &&
+        PopOneFromBinary(data, dest2, size);
 }
 
 inline bool SetPointerOffset(uint8_t*& data, uint64_t offset, uint64_t& size)
