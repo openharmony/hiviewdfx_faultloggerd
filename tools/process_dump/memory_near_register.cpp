@@ -38,7 +38,12 @@ REGISTER_DUMP_INFO_CLASS(MemoryNearRegister);
 
 void MemoryNearRegister::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
-    pid_t tid = process.GetKeyThread()->GetThreadInfo().nsTid;
+    auto keyThread = process.GetKeyThread();
+    if (keyThread == nullptr) {
+        DFXLOGE("%{public}s : keyThread is null.", __func__);
+        return;
+    }
+    pid_t tid = keyThread->GetThreadInfo().nsTid;
     bool extendPcLrPrinting = process.GetCrashLogConfig().extendPcLrPrinting ||
         ProcessDumpConfig::GetInstance().GetConfig().extendPcLrPrinting;
     CollectRegistersBlock(tid, process.GetFaultThreadRegisters(), unwinder.GetMaps(), extendPcLrPrinting);

@@ -150,6 +150,9 @@ std::shared_ptr<std::string> MinidumpMemoryReader::ReadString(off_t offset)
 
 bool MinidumpMemoryReader::ReadUTF8String(off_t offset, std::string* utf8Str)
 {
+    if (utf8Str == nullptr) {
+        return false;
+    }
     auto str = ReadString(offset);
     if (str == nullptr) {
         return false;

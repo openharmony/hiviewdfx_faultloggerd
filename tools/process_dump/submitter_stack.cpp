@@ -34,6 +34,10 @@ REGISTER_DUMP_INFO_CLASS(SubmitterStack);
 void SubmitterStack::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
     auto thread = process.GetKeyThread();
+    if (thread == nullptr) {
+        DFXLOGE("keyThread is nullptr");
+        return;
+    }
     std::vector<DfxFrame> submitterFrames;
     GetSubmitterStack(thread->GetThreadInfo().nsTid, request.stackId, unwinder, submitterFrames);
     if (submitterFrames.empty()) {

@@ -166,6 +166,9 @@ std::string OpenFiles::DumpOpenFiles(OpenFilesList files)
         const std::string path = filePath.second.path;
         uint64_t tag = filePath.second.fdsanOwner;
         const char* type = fdsan_get_tag_type(tag);
+        if (type == nullptr) {
+            type = "unspecified";
+        }
         uint64_t val = fdsan_get_tag_value(tag);
         if (!path.empty()) {
             openFilesStr += std::to_string(filePath.first) + "->" + path + " " + type + " " +
