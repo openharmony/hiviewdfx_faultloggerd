@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -99,6 +100,10 @@ static bool ParseParameters(int argc, char *argv[])
         }
         long pid = 0;
         if (!SafeStrtol(argv[2], &pid, DECIMAL_BASE)) { // 2 : the index of pid
+            return false;
+        }
+        if (pid < 0 || pid > INT_MAX) {
+            DFXLOGE("invalid pid: %{public}ld", pid);
             return false;
         }
         DFXLOGI("start lite processdump");
