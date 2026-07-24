@@ -164,6 +164,9 @@ bool LperfEvents::GetHeaderFromMmap(MmapFd& mmap)
     }
 
     GetRecordFieldFromMmap(mmap, &(mmap.header), sizeof(mmap.header), mmap.mmapPage->data_tail, sizeof(mmap.header));
+    if (mmap.header.size == 0 || mmap.header.size > mmap.dataSize) {
+        return false;
+    }
     if (mmap.header.type != PERF_RECORD_SAMPLE) {
         mmap.mmapPage->data_tail += mmap.header.size;
         return false;
@@ -179,6 +182,7 @@ void LperfEvents::GetRecordFieldFromMmap(MmapFd& mmap, void* dest, size_t destSi
     pos = pos % mmap.bufSize;
     size_t tailSize = mmap.bufSize - pos;
     size_t copySize = std::min(size, tailSize);
+    copySize = std::min(copySize, destSize);
     if (memcpy_s(dest, destSize, mmap.buf + pos, copySize) != 0) {
         DFXLOGE("memcpy_s failed. size %{public}zd", copySize);
     }
