@@ -107,6 +107,7 @@ private:
     std::shared_ptr<std::istream> stream_;
     std::shared_ptr<MinidumpMemoryReader> memoryReader_;
     bool isValid_;
+    bool observersSetup_ = false;
     std::shared_ptr<MinidumpSubject> minidumpSubject_;
     MinidumpErrorInfo lastError_;
 };

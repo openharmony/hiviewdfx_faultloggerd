@@ -84,7 +84,9 @@ std::shared_ptr<MinidumpContext> MinidumpThread::GetContext() const
             context_.reset();
             return nullptr;
         }
-        memoryReader_->SeekSet(position);
+        if (!memoryReader_->SeekSet(position)) {
+            DFXLOGW("MinidumpThread failed to restore stream position");
+        }
     }
     lastError_.Clear();
     return context_;

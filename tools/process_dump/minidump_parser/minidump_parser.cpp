@@ -129,6 +129,10 @@ void MinidumpParser::RecordParseTime(uint64_t startTimeMs)
 }
 void MinidumpParser::SetupObservers()
 {
+    if (observersSetup_) {
+        return;
+    }
+    observersSetup_ = true;
     auto progressObserver = std::make_shared<ProgressObserver>(
         [](uint32_t current, uint32_t total, const std::string& name) {
             if (!name.empty()) {
@@ -242,10 +246,12 @@ bool MinidumpParser::Parse()
 
     isValid_ = false;
     if (!ReadMinidumpHeader()) {
+        minidumpSubject_->NotifyParseComplete(false);
         return false;
     }
 
     if (!ReadStreamDirectory()) {
+        minidumpSubject_->NotifyParseComplete(false);
         return false;
     }
 

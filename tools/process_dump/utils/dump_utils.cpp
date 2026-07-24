@@ -169,8 +169,9 @@ bool DumpUtils::ReadTargetMemory(pid_t tid, uintptr_t addr, uintptr_t &value)
     uintptr_t targetAddr = addr;
     auto retAddr = reinterpret_cast<long*>(&value);
     for (size_t i = 0; i < sizeof(uintptr_t) / sizeof(long); i++) {
+        errno = 0;
         *retAddr = ptrace(PTRACE_PEEKTEXT, tid, reinterpret_cast<void*>(targetAddr), nullptr);
-        if (*retAddr == -1) {
+        if (*retAddr == -1 && errno != 0) {
             return false;
         }
         targetAddr += sizeof(long);
@@ -275,9 +276,18 @@ void DumpUtils::WaitForFork(pid_t pid, pid_t& childPid)
     }
     DFXLOGI("wait for fork status %{public}d", waitStatus);
     if (static_cast<unsigned int>(waitStatus) >> 8 == (SIGTRAP | (PTRACE_EVENT_FORK << 8))) { // 8 : get fork event
-        ptrace(PTRACE_GETEVENTMSG, pid, NULL, &childPid);
+        if (ptrace(PTRACE_GETEVENTMSG, pid, NULL, &childPid) != 0) {
+            DFXLOGE("PTRACE_GETEVENTMSG failed: %{public}s", strerror(errno));
+            return;
+        }
+        if (childPid <= 0) {
+            DFXLOGE("invalid child pid: %{public}d", childPid);
+            return;
+        }
         DFXLOGI("next child pid %{public}d", childPid);
-        waitpid(childPid, &waitStatus, 0); // wait child stop event
+        if (waitpid(childPid, &waitStatus, 0) != childPid) {
+            DFXLOGE("waitpid for child failed: %{public}s", strerror(errno));
+        }
     }
 }
 
@@ -287,10 +297,10 @@ void DumpUtils::NotifyOperateResult(ProcessDumpRequest& request, int result)
         close(request.childPipeFd[0]);
         request.childPipeFd[0] = -1;
     }
-    if (OHOS_TEMP_FAILURE_RETRY(write(request.childPipeFd[1], &result, sizeof(result))) < 0) {
-        DFXLOGE("write to child process fail %{public}d", errno);
-    }
     if (request.childPipeFd[1] != -1) {
+        if (OHOS_TEMP_FAILURE_RETRY(write(request.childPipeFd[1], &result, sizeof(result))) < 0) {
+            DFXLOGE("write to child process fail %{public}d", errno);
+        }
         close(request.childPipeFd[1]);
         request.childPipeFd[1] = -1;
     }
@@ -320,7 +330,8 @@ bool DumpUtils::IsSelinuxPermissive()
 std::string DumpUtils::GetBuildInfo()
 {
 #ifndef is_ohos_lite
-    return GetDisplayVersion() != nullptr ? GetDisplayVersion() : "Unknown";
+    const char* version = GetDisplayVersion();
+    return version != nullptr ? version : "Unknown";
 #endif
     return "Unknown";
 }

@@ -135,7 +135,7 @@ std::string CppCrashReporter::GetSummary(DfxProcess& process)
     std::string threadInfo = process.GetKeyThread()->ToString(needPrintTid);
     auto iterator = threadInfo.begin();
     while (iterator != threadInfo.end() && *iterator != '\n') {
-        if (isdigit(*iterator)) {
+        if (isdigit(static_cast<unsigned char>(*iterator))) {
             iterator = threadInfo.erase(iterator);
         } else {
             iterator++;
