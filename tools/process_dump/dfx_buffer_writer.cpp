@@ -228,7 +228,7 @@ int32_t DfxBufferWriter::CreateFileForCrash(int32_t pid, uint64_t time) const
 {
     const std::string dirPath = "/log/crash";
     const std::string logFileType = "cppcrash";
-    const int32_t logcrashFileProp = 0644; // 0640:-rw-r--r--
+    const int32_t logcrashFileProp = 0640; // 0640:-rw-r-----
     if (access(dirPath.c_str(), F_OK) != 0) {
         DFXLOGE("%{public}s is not exist.", dirPath.c_str());
         return INVALID_FD;
