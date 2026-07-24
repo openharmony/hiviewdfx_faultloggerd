@@ -190,7 +190,7 @@ bool MinidumpThreadList::ReadThreadData(uint32_t threadCount)
             lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_ALREADY_EXISTS, "Duplicate thread ID", __LINE__);
             return false;
         }
-        idToThreadMap_[threadId] = std::shared_ptr<MinidumpThread>(threads_, &(*threads)[i]);
+        idToThreadMap_[threadId] = std::shared_ptr<MinidumpThread>(threads, &(*threads)[i]);
     }
     threads_ = std::move(threads);
     return true;

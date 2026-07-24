@@ -251,8 +251,9 @@ IntervalNode<AddressType, EntryType>* IntervalTree<AddressType, EntryType>::Inse
     AddressType low, AddressType high, EntryType value)
 {
     if (node == nullptr) {
+        auto* newNode = new IntervalNode<AddressType, EntryType>(low, high, value);
         size_++;
-        return new IntervalNode<AddressType, EntryType>(low, high, value);
+        return newNode;
     }
     if (low < node->low) {
         node->left = InsertNode(node->left, low, high, value);

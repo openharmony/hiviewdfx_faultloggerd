@@ -94,8 +94,12 @@ void MinidumpObservable::RemoveObserver(std::shared_ptr<IMinidumpObserver> obser
 
 void MinidumpObservable::NotifyObservers(const MinidumpEvent& event)
 {
-    std::lock_guard<std::mutex> lock(mutex_);
-    for (auto& observer : observers_) {
+    std::vector<std::shared_ptr<IMinidumpObserver>> observersCopy;
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        observersCopy = observers_;
+    }
+    for (auto& observer : observersCopy) {
         if (observer && observer->ShouldHandle(event.type)) {
             observer->OnEvent(event);
         }
