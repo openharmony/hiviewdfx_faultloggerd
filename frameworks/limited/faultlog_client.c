@@ -270,6 +270,7 @@ int32_t RequestSetMiniDump(bool able)
     request.head.clientType = MINIDUMP_CLIENT;
     request.head.clientPid = getpid();
     request.pid = getpid();
+    request.uid = getuid();
     request.enableMinidump = (int8_t)able;
     request.enableMinidumpToCrashLog = -1;
     return RequestServer(&request, sizeof(request), NULL);
@@ -285,6 +286,7 @@ int32_t RequestSetMinidumpToCrashLog(bool enable, pid_t pid)
     request.head.clientType = MINIDUMP_CLIENT;
     request.head.clientPid = getpid();
     request.pid = pid;
+    request.uid = getuid();
     request.enableMinidump = -1;
     request.enableMinidumpToCrashLog = (int8_t)enable;
     return RequestServer(&request, sizeof(request), NULL);
