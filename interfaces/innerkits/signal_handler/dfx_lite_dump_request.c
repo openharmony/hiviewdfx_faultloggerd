@@ -257,7 +257,7 @@ void SignalRequestThread(const struct ProcessDumpRequest *request)
 int WaitTimeout(int timeoutMs)
 {
     while (timeoutMs > 0) {
-        if (g_threadCompletedCount >= g_threadSentCount || timeoutMs == 0) {
+        if (g_threadCompletedCount >= g_threadSentCount) {
             break;
         }
         SafeDelayOneMillSec();
@@ -274,6 +274,10 @@ void DfxBacktraceLocalSignalHandler(int sig, siginfo_t *si, void *context)
 
 #if defined(__aarch64__)
     int pos = atomic_fetch_add(&g_threadStartCount, 1);
+    if (pos < 0 || pos >= MAX_DUMP_THREAD_NUM) {
+        DFXLOGE("thread pos %{public}d is invalid", pos);
+        return;
+    }
     char* destPtr = (char*)g_mmapSpace + g_mmapPos + sizeof(int) +
         pos * (sizeof(ThreadDumpRequest) + THREAD_STACK_BUFFER_SIZE);
     ThreadDumpRequest request;

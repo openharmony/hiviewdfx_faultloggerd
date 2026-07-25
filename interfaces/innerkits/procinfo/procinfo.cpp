@@ -155,7 +155,11 @@ bool GetTidsByPidWithFunc(const int pid, std::vector<int>& tids, std::function<b
     if (ReadDirFiles(path, files)) {
         MoveMainThreadToHead(pid, files);
         for (const auto& file : files) {
-            pid_t tid = atoi(file.c_str());
+            long tmpTid = 0;
+            if (!SafeStrtolCpp(file, tmpTid, DECIMAL_BASE)) {
+                continue;
+            }
+            int tid = static_cast<int>(tmpTid);
             if (tid == 0) {
                 continue;
             }
