@@ -223,12 +223,15 @@ static std::pair<bool, std::string> ExecuteTaskByFork(ChildFuncType func)
         CleanPipe(pipefd);
         return result;
     } else if (pid == 0) {
-        DFXLOGI("start in child process.");
         alarm(ALARM_TIME_S);
+        DFXLOGI("start in child process.");
         prctl(PR_SET_NAME, "processdump_parser");
         CleanFd(&pipefd[0]);
         std::string result = func();
-        write(pipefd[1], result.c_str(), result.size());
+        ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(pipefd[1], result.c_str(), result.size()));
+        if (nwrite != static_cast<ssize_t>(result.size())) {
+            DFXLOGE("write offline data fail, err:%{public}d", errno);
+        }
         CleanFd(&pipefd[1]);
         _exit(0);
     }
@@ -483,7 +486,7 @@ static size_t FindMainThreadIndex(const std::vector<DfxThreadStack>& processStac
  * @brief Parse thread info from stack content.
  * Format: "Tid:12926, Name:main\nstate=S, utime=15, stime=17, priority=-14, nice=-10, clk=100"
  */
-static bool ParseThreadInfoFromStack(const std::string& stackContent, int32_t pid,
+static bool ParseThreadInfoFromStack(const std::string& stackContent, int32_t tid,
     std::string& threadName, std::string& threadStat)
 {
     std::istringstream iss(stackContent);
@@ -492,7 +495,7 @@ static bool ParseThreadInfoFromStack(const std::string& stackContent, int32_t pi
         if (line.find("Tid:") == std::string::npos) {
             continue;
         }
-        std::string tidMarker = "Tid:" + std::to_string(pid);
+        std::string tidMarker = "Tid:" + std::to_string(tid) + ",";
         if (line.find(tidMarker) == std::string::npos) {
             return false;
         }

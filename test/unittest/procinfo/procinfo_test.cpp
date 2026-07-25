@@ -55,7 +55,10 @@ HWTEST_F(ProcinfoTest, ProcinfoTest002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "ProcinfoTest002: start.";
     std::vector<int> tids;
-    ASSERT_TRUE(GetTidsByPidWithFunc(getpid(), tids, nullptr));
+    int cnt = 0;
+    ASSERT_TRUE(GetTidsByPidWithFunc(getpid(), tids, [&cnt](int tid) -> bool { cnt++; return true; }));
+    ASSERT_FALSE(tids.empty());
+    ASSERT_EQ(cnt, static_cast<int>(tids.size()));
     GTEST_LOG_(INFO) << "ProcinfoTest002: end.";
 }
 

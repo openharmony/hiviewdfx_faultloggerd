@@ -172,6 +172,7 @@ HWTEST_F(MapsTest, GetRelPcTest, TestSize.Level2)
 #endif
     shared_ptr<DfxMap> map = DfxMap::Create(INVALID_MAP_ITEM);
     EXPECT_EQ(true, ((map->GetElf() == nullptr) && (map->GetRelPc(pc) == invalidOffset)));
+    EXPECT_EQ(map->FileOffsetFromAddr(0), static_cast<uint64_t>(0));
     map->ReleaseElf();
     GTEST_LOG_(INFO) << "GetRelPcTest: end.";
 }
@@ -529,25 +530,25 @@ HWTEST_F(MapsTest, MapParseTest001, TestSize.Level2)
 HWTEST_F(MapsTest, BuildStaticArkLLVMRangesTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "BuildStaticArkLLVMRangesTest001: start.";
-    
+
     auto emptyNameMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "");
     emptyNameMap->prevMap = nullptr;
     auto rangesEmptyName = emptyNameMap->BuildStaticArkLLVMRanges();
     EXPECT_TRUE(rangesEmptyName.empty());
-    
+
     auto nullPrevMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "libarkruntime.so");
     nullPrevMap->elf = std::make_shared<DfxElf>();
     nullPrevMap->prevMap = nullptr;
     auto rangesNullPrev = nullPrevMap->BuildStaticArkLLVMRanges();
     EXPECT_TRUE(rangesNullPrev.empty());
-    
+
     auto prevMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_READ, "/system/lib64/libarkruntime.so");
     auto emptySymMap = std::make_shared<DfxMap>(0x1000, 0x2000, 0, PROT_EXEC, "/system/lib64/libarkruntime.so");
     emptySymMap->prevMap = prevMap;
     emptySymMap->elf = std::make_shared<DfxElf>();
     auto rangesEmptySym = emptySymMap->BuildStaticArkLLVMRanges();
     EXPECT_TRUE(rangesEmptySym.empty());
-    
+
     GTEST_LOG_(INFO) << "BuildStaticArkLLVMRangesTest001: end.";
 }
 
@@ -559,19 +560,19 @@ HWTEST_F(MapsTest, BuildStaticArkLLVMRangesTest001, TestSize.Level2)
 HWTEST_F(MapsTest, IsStaticArkExecutableTest001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "IsStaticArkExecutableTest001: start.";
-    
+
     auto emptyNameMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "");
     EXPECT_FALSE(emptyNameMap->IsStaticArkExecutable(0x100));
-    
+
     auto nonArkMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "/system/lib64/libtest.so");
     EXPECT_FALSE(nonArkMap->IsStaticArkExecutable(0x100));
-    
+
     auto nonExecMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_READ, "libarkruntime.so");
     EXPECT_FALSE(nonExecMap->IsStaticArkExecutable(0x100));
-    
+
     auto arkMap = std::make_shared<DfxMap>(0x1000, 0x2000, 0, PROT_EXEC, "/system/lib64/libarkruntime.so");
     EXPECT_FALSE(arkMap->IsStaticArkExecutable(0x1000));
-    
+
     GTEST_LOG_(INFO) << "IsStaticArkExecutableTest001: end.";
 }
 }

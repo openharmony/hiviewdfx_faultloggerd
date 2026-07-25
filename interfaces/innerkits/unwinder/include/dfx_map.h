@@ -115,6 +115,9 @@ public:
     {
         // real vaddr - real map begin = addr offset in section
         // section offset + page off set = file offset
+        if (vaddr < begin) {
+            return 0;
+        }
         return vaddr - begin + offset;
     }
 };
