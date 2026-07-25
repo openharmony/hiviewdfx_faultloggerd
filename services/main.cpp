@@ -51,7 +51,6 @@ int main(int argc, char *argv[])
     auto& main = OHOS::HiviewDFX::EpollManager::GetInstance();
     main.Init(maxEpollEvent);
     OHOS::HiviewDFX::FaultLoggerDaemon::GetInstance().InitMainServer();
-    constexpr auto epollTimeoutInMilliseconds = 20 * 1000;
-    main.StartEpoll(maxConnection, epollTimeoutInMilliseconds);
+    main.StartEpoll(maxConnection);
     return 0;
 }

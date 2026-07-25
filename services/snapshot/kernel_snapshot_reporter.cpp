@@ -80,6 +80,7 @@ int32_t KernelSnapshotReporter::GetSnapshotPid(const std::string& content)
     }
     pos += pidKey.size();
     std::string pidStr = content.substr(pos, end - pos);
+    errno = 0;
     auto pid = static_cast<int32_t>(strtol(pidStr.c_str(), nullptr, 10));
     if (errno == ERANGE) {
         return 0;

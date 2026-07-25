@@ -29,15 +29,14 @@ namespace HiviewDFX {
 
 class PDumpListener : public EpollListener {
 public:
-    explicit PDumpListener(SmartFd fd, bool persist) : EpollListener(std::move(fd), persist) {}
-    void OnEventPoll() override;
+    explicit PDumpListener(SmartFd fd) : EpollListener(std::move(fd)) {}
+    EventResult OnEventPoll() override;
 };
 
 class PidFdListener : public EpollListener {
 public:
-    explicit PidFdListener(SmartFd fd) : EpollListener(std::move(fd), true) {}
-    void OnEventPoll() override;
-    void SetPid(pid_t pid) { pid_ = pid; }
+    explicit PidFdListener(SmartFd fd, pid_t pid) : EpollListener(std::move(fd), -1), pid_(pid) {}
+    EventResult OnEventPoll() override;
 private:
     pid_t pid_ = 0;
 };

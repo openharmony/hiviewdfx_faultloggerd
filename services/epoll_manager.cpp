@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <limits>
 #include <thread>
 #include <vector>
 
@@ -102,11 +103,18 @@ uint64_t GetMicroSecondsSinceBoot()
     return static_cast<uint64_t>(times.tv_sec * US_PER_S + times.tv_nsec / NS_PER_US);
 }
 
-EpollListener::EpollListener(SmartFd fd, bool persist) : fd_(std::move(fd)), persist_(persist) {}
-
-bool EpollListener::IsPersist() const
+EpollListener::EpollListener(SmartFd fd, int64_t timeoutInMs) : fd_(std::move(fd))
 {
-    return persist_;
+    if (timeoutInMs >= 0) {
+        timeoutTime_ = static_cast<int64_t>(GetMicroSecondsSinceBoot()) + timeoutInMs * static_cast<int64_t>(US_PER_MS);
+    } else {
+        timeoutTime_ = std::numeric_limits<int64_t>::max();
+    }
+}
+
+int64_t EpollListener::GetTimeOutTime() const
+{
+    return timeoutTime_;
 }
 
 int32_t EpollListener::GetFd() const
@@ -161,8 +169,12 @@ bool EpollManager::AddListener(std::unique_ptr<EpollListener> epollListener)
     if (!epollListener || epollListener->GetFd() < 0 || !AddEpollEvent(*epollListener)) {
         return false;
     }
-    epollListener->IsPersist() ? listeners_.push_back(std::move(epollListener)) :
-        listeners_.push_front(std::move(epollListener));
+    auto timeoutTime = epollListener->GetTimeOutTime();
+    auto iter = std::find_if(listeners_.begin(), listeners_.end(),
+        [timeoutTime](const std::unique_ptr<EpollListener>& listener) {
+            return listener->GetTimeOutTime() > timeoutTime;
+        });
+    listeners_.insert(iter, std::move(epollListener));
     return true;
 }
 
@@ -186,6 +198,31 @@ EpollListener* EpollManager::GetTargetListener(int32_t fd) const
     return iter == listeners_.end() ? nullptr : iter->get();
 }
 
+int32_t EpollManager::GetNextWaitTime() const
+{
+    if (listeners_.empty() || listeners_.front()->GetTimeOutTime() == std::numeric_limits<int64_t>::max()) {
+        return -1;
+    }
+    auto nextWaitTime = listeners_.front()->GetTimeOutTime() - static_cast<int64_t>(GetMicroSecondsSinceBoot());
+    if (nextWaitTime < 0) {
+        return 0;
+    }
+    constexpr auto minCheckTime = 30 * 1000;
+    return std::min(static_cast<int32_t>(nextWaitTime / US_PER_MS), minCheckTime);
+}
+
+void EpollManager::HandleTimeOut()
+{
+    if (listeners_.empty()) {
+        return;
+    }
+    auto listener = listeners_.front().get();
+    if (static_cast<uint64_t>(listener->GetTimeOutTime()) <= GetMicroSecondsSinceBoot()) {
+        listener->OnTimeOut();
+        RemoveListener(listener->GetFd());
+    }
+}
+
 bool EpollManager::Init(int maxPollEvent)
 {
     eventFd_ = SmartFd{epoll_create(maxPollEvent)};
@@ -196,20 +233,17 @@ bool EpollManager::Init(int maxPollEvent)
     return true;
 }
 
-void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
+void EpollManager::StartEpoll(int maxConnection)
 {
     std::vector<epoll_event> events(maxConnection);
     while (eventFd_) {
-        int32_t timeOut = (!listeners_.empty() && !listeners_.front()->IsPersist()) ? epollTimeoutInMilliseconds : -1;
+        int32_t timeOut = GetNextWaitTime();
         int epollNum = OHOS_TEMP_FAILURE_RETRY(epoll_wait(eventFd_.GetFd(), events.data(), maxConnection, timeOut));
         if (epollNum < 0 || !eventFd_) {
             continue;
         }
         if (epollNum == 0) {
-            DFXLOGE("%{public}s :: epoll_wait timeout, clean up all temporary event listeners.", EPOLL_MANAGER);
-            listeners_.remove_if([](const std::unique_ptr<EpollListener>& epollLister) {
-                return !epollLister->IsPersist();
-            });
+            HandleTimeOut();
             continue;
         }
         for (int i = 0; i < epollNum; i++) {
@@ -223,10 +257,8 @@ void EpollManager::StartEpoll(int maxConnection, int epollTimeoutInMilliseconds)
                 DelEpollEvent(events[i].data.fd);
                 continue;
             }
-            // The listener lifecycle is only guaranteed to be valid before the OnEventPoll call.
-            bool isPersist = listener->IsPersist();
-            listener->OnEventPoll();
-            if (!isPersist) {
+            EventResult result = listener->OnEventPoll();
+            if (result == EventResult::REMOVE) {
                 RemoveListener(events[i].data.fd);
             }
         }
@@ -243,7 +275,7 @@ void EpollManager::StopEpoll()
     }
 }
 
-TimerTask::TimerTask(bool persist) : EpollListener(CreateTimeFd(), persist) {}
+TimerTask::TimerTask() : EpollListener(CreateTimeFd()) {}
 
 bool TimerTask::SetTimeOption(int32_t delayTimeInS, int32_t intervalTimeInS)
 {
@@ -254,15 +286,15 @@ bool TimerTask::SetTimeOption(int32_t delayTimeInS, int32_t intervalTimeInS)
         static_cast<uint64_t>(intervalTimeInS) * NS_PER_S);
 }
 
-void TimerTask::OnEventPoll()
+EventResult TimerTask::OnEventPoll()
 {
     uint64_t exp = 0;
     auto ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), &exp, sizeof(exp)));
     if (ret < 0 || static_cast<uint64_t>(ret) != sizeof(exp)) {
         DFXLOGE("%{public}s :: failed read time fd %{public}" PRId32, EPOLL_MANAGER, GetFd());
-    } else {
-        OnTimer();
+        return EventResult::REMOVE;
     }
+    return OnTimer() ? EventResult::KEEP : EventResult::REMOVE;
 }
 
 std::unique_ptr<TimerTask> TimerTaskAdapter::CreateInstance(std::function<void()> workFunc,
@@ -271,20 +303,20 @@ std::unique_ptr<TimerTask> TimerTaskAdapter::CreateInstance(std::function<void()
     if (!workFunc) {
         return nullptr;
     }
-    auto task = std::unique_ptr<TimerTaskAdapter>(new (std::nothrow)TimerTaskAdapter(workFunc,
-        intervalTimeInS > 0));
+    auto task = std::unique_ptr<TimerTaskAdapter>(new (std::nothrow)TimerTaskAdapter(workFunc, intervalTimeInS > 0));
     if (task == nullptr || !task->SetTimeOption(delayTimeInS, intervalTimeInS)) {
         return nullptr;
     }
     return task;
 }
 
-TimerTaskAdapter::TimerTaskAdapter(std::function<void()>& workFunc, bool persist) : TimerTask(persist),
-    work_(std::move(workFunc)) {}
+TimerTaskAdapter::TimerTaskAdapter(std::function<void()>& workFunc, bool isIntervalTask)
+    : work_(std::move(workFunc)), isIntervalTask_(isIntervalTask) {}
 
-void TimerTaskAdapter::OnTimer()
+bool TimerTaskAdapter::OnTimer()
 {
     work_();
+    return isIntervalTask_;
 }
 
 DelayTaskQueue::~DelayTaskQueue()
@@ -366,7 +398,7 @@ DelayTaskQueue::Executor::~Executor()
     delayTaskQueue_.executor_ = nullptr;
 }
 
-void DelayTaskQueue::Executor::OnTimer()
+bool DelayTaskQueue::Executor::OnTimer()
 {
     while (!delayTaskQueue_.delayTasks_.empty()) {
         auto currentTimeInMicroSecond = GetMicroSecondsSinceBoot();
@@ -375,12 +407,12 @@ void DelayTaskQueue::Executor::OnTimer()
         if (firstTaskExecuteTime > currentTimeInMicroSecond) {
             auto nextTaskDelayTime = firstTaskExecuteTime - currentTimeInMicroSecond;
             SetTimeOptionForTimeFd(GetFd(), nextTaskDelayTime * NS_PER_US, NS_PER_S);
-            return;
+            return true;
         }
         delayTaskQueue_.delayTasks_.front().second();
         delayTaskQueue_.RemoveDelayTask(delayTaskId);
     }
-    EpollManager::GetInstance().RemoveListener(GetFd());
+    return false;
 }
 }
 }

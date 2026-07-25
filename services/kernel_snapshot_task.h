@@ -22,7 +22,7 @@ class ReadKernelSnapshotTask : public TimerTask {
 public:
     ReadKernelSnapshotTask();
 protected:
-    void OnTimer() override;
+    bool OnTimer() override;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

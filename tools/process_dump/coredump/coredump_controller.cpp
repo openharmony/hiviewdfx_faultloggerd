@@ -23,15 +23,8 @@
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-    constexpr const char* const COREDUMP_HAP_LIST = "const.dfx.coredump.hap_list";
     constexpr const char* const HWASAN_COREDUMP_ENABLE = "faultloggerd.priv.hwasan_coredump.enabled";
     constexpr const char* const MDM_COREDUMP_DISABLED = "persist.edm.coredump_disable";
-}
-
-std::string CoredumpController::GetCoredumpHapList()
-{
-    static std::string uidList = OHOS::system::GetParameter(COREDUMP_HAP_LIST, "");
-    return uidList;
 }
 
 bool CoredumpController::IsHwasanCoredumpEnabled()
@@ -51,22 +44,9 @@ bool CoredumpController::IsCoredumpSignal(const ProcessDumpRequest& request)
     return request.siginfo.si_signo == SIGLEAK_STACK && abs(request.siginfo.si_code) == SIGLEAK_STACK_COREDUMP;
 }
 
-bool CoredumpController::VerifyTrustList(const std::string& bundleName)
-{
-    if (bundleName.empty()) {
-        return false;
-    }
-    std::string hapList = GetCoredumpHapList();
-    if (hapList.find(bundleName) != std::string::npos) {
-        return true;
-    }
-    DFXLOGE("The bundleName %{public}s is not allowed to coredump", bundleName.c_str());
-    return false;
-}
-
 bool CoredumpController::VerifyProcess()
 {
-    if (DumpUtils::HasCoredumpPermission() || VerifyTrustList(DumpUtils::GetSelfBundleName()) ||
+    if (DumpUtils::HasCoredumpPermission() ||
         (IsHwasanCoredumpEnabled() && CoredumpMappingManager::GetInstance().IsHwAsanProcess())) {
         return true;
     }

@@ -42,7 +42,7 @@ private:
     public:
         static std::unique_ptr<TempFileWatcher> CreateInstance(TempFileManager& tempFileManager);
         bool AddWatchEvent(const char* watchPath, uint32_t watchEvent);
-        void OnEventPoll() override;
+        EventResult OnEventPoll() override;
     private:
         TempFileWatcher(TempFileManager& tempFileManager, SmartFd fd);
         void HandleEvent(uint32_t eventMask, const std::string& filePath, const SingleFileConfig& fileConfig);

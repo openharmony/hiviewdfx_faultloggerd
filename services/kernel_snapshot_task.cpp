@@ -57,7 +57,7 @@ std::string ReadKernelSnapshot()
 }
 }
 
-ReadKernelSnapshotTask::ReadKernelSnapshotTask() : TimerTask(true)
+ReadKernelSnapshotTask::ReadKernelSnapshotTask()
 {
     constexpr int minInterval = 3;
     constexpr auto kernelSnapshotInterval = "kernel_snapshot_check_interval";
@@ -71,29 +71,30 @@ ReadKernelSnapshotTask::ReadKernelSnapshotTask() : TimerTask(true)
 #endif
 }
 
-void ReadKernelSnapshotTask::OnTimer()
+bool ReadKernelSnapshotTask::OnTimer()
 {
     const std::string snapshotCont = ReadKernelSnapshot();
     if (snapshotCont.empty()) {
         DFXLOGD("the snapshot file does not exist or is empty.");
-        return;
+        return true;
     }
     DFXLOGI("read snapshot begin with %{public}s", snapshotCont.substr(0, 25).c_str()); // 25 : only need 25
     constexpr auto kernelSnapshotLibraryName = "libkernel_snapshot.z.so";
     void* handle = dlopen(kernelSnapshotLibraryName, RTLD_LAZY);
     if (handle == nullptr) {
         DFXLOGE("failed dlopen library %{public}s for error %{public}d", kernelSnapshotLibraryName, errno);
-        return;
+        return true;
     }
     constexpr auto methodName = "ProcessKernelSnapShot";
     auto processKernelSnapShot = reinterpret_cast<void (*)(const std::string&)>(dlsym(handle, methodName));
     if (processKernelSnapShot == nullptr) {
         DFXLOGE("can't find method %{public}s in %{public}s, just exit", methodName, kernelSnapshotLibraryName);
         dlclose(handle);
-        return;
+        return true;
     }
     processKernelSnapShot(snapshotCont);
     dlclose(handle);
+    return true;
 }
 }
 }
