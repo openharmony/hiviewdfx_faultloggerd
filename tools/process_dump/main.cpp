@@ -67,8 +67,8 @@ static bool StartMinidump(int argc, char *argv[])
     int idx = 0;
     char *token = strtok(argv[2], " ");
     while (token != nullptr && idx < 4) { // 4 : four params
-        if (!SafeStrtol(token, &values[idx], DECIMAL_BASE) ||
-            values[idx] < INT_MIN || values[idx] > INT_MAX) {
+        if (!SafeStrtol(token, &values[idx], DECIMAL_BASE)
+            || values[idx] < INT_MIN || values[idx] > INT_MAX) {
             return false;
         }
         token = strtok(nullptr, " ");

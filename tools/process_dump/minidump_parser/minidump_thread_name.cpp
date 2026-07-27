@@ -156,8 +156,8 @@ bool MinidumpThreadNameList::Read(uint32_t expectedSize)
         return false;
     }
 
-    uint64_t actualSize = sizeof(threadNameCount) +
-        static_cast<uint64_t>(sizeof(MDRawThreadName)) * threadNameCount;
+    uint64_t actualSize = sizeof(threadNameCount)
+        + static_cast<uint64_t>(sizeof(MDRawThreadName)) * threadNameCount;
     if (actualSize > expectedSize) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
             std::string("Thread name list stream size mismatch"), __LINE__);
