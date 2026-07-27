@@ -203,6 +203,7 @@ bool MinidumpModuleList::Read(uint32_t expectedSize)
 {
     moduleCount_ = 0;
     isValid_ = false;
+    modules_.clear();
 
     uint32_t moduleCount = 0;
     if (!memoryReader_->ReadBytes(&moduleCount, sizeof(moduleCount))) {
