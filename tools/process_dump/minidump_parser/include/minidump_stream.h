@@ -345,6 +345,8 @@ public:
     static const uint32_t streamType = MD_STREAM_THREAD_NAME_LIST;
 
 private:
+    bool ReadThreadNameRawData(uint32_t threadNameCount);
+    bool ReadThreadNameAuxiliaryData(uint32_t threadNameCount);
     std::map<uint32_t, std::string> threadIdToNameMap_;
     std::vector<std::shared_ptr<MinidumpThreadName>> threadNames_;
     uint32_t threadNameCount_;
