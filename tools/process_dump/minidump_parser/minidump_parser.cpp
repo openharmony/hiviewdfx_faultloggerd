@@ -64,7 +64,6 @@ MinidumpParser::~MinidumpParser()
         DFXLOGI("MinidumpParser closing memoryReader");
     }
     stream_.reset();
-    PerformanceOptimizer::Instance().Reset();
 }
 
 bool MinidumpParser::Open()
