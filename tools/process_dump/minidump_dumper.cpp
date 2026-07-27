@@ -60,6 +60,7 @@ bool MinidumpDumper::Dump(int pid, int pipeFd, bool enableMinidump, bool enableM
     if (enableMinidumpToCrashLog) {
         if (!DfxBufferWriter::GetInstance().InitBufferWriter(request_)) {
             DFXLOGE("Failed to init buffer writer.");
+            return true;
         }
         if (!ParseMinidump()) {
             int ret = HiSysEventWrite(HiSysEvent::Domain::RELIABILITY, "CPP_CRASH_NO_LOG",
@@ -88,8 +89,7 @@ void MinidumpDumper::CollectDumpHeaderInfo(int pid)
     request_.uid = 0;
     long uid = 0;
     uint64_t sigBlk = 0;
-    GetUidAndSigBlk(pid, uid, sigBlk);
-    if (uid > 0) {
+    if (GetUidAndSigBlk(pid, uid, sigBlk) && uid > 0) {
         request_.uid = static_cast<uint32_t>(uid);
     }
     std::string processName;
@@ -98,7 +98,9 @@ void MinidumpDumper::CollectDumpHeaderInfo(int pid)
         DFXLOGE("strcpy process name failed errno %{public}d", errno);
     }
     uint64_t lifeTimeSeconds = 0;
-    GetProcessLifeCycle(pid, lifeTimeSeconds);
+    if (GetProcessLifeCycle(pid, lifeTimeSeconds) != 0) {
+        DFXLOGE("GetProcessLifeCycle failed");
+    }
     uint64_t rss = GetProcRssMemInfo(pid);
     process_.InitProcessInfo(request_.pid, request_.nsPid, request_.uid, request_.processName);
     process_.SetLogSource("pdump");
@@ -331,13 +333,17 @@ bool MinidumpDumper::ParseMapListStream(MinidumpParser& minidumpParser)
         DFXLOGI("bundleName of uid:%{public}u is %{public}s", request_.uid, bundleName.c_str());
     }
     dfxMaps_ = DfxMaps::CreateByBuffer(bundleName, mapBuffer);
+    if (dfxMaps_ == nullptr) {
+        DFXLOGE("Failed to create DfxMaps from buffer");
+        return false;
+    }
     return true;
 }
 
 bool MinidumpDumper::SetupKeyThreadStack(MinidumpThreadList* threadList, std::shared_ptr<DfxThread> keyThread)
 {
-    if (threadList == nullptr) {
-        DFXLOGE("threadList is nullptr");
+    if (threadList == nullptr || keyThread == nullptr) {
+        DFXLOGE("threadList or keyThread is nullptr");
         return false;
     }
     auto minidumpKeyThread = threadList->GetThreadByID(keyThread->GetThreadInfo().tid);
@@ -436,8 +442,8 @@ bool MinidumpDumper::TransferData(int srcFd, int dstFd)
         while (bytesWritten < bytesRead) {
             ssize_t ret = OHOS_TEMP_FAILURE_RETRY(
                 write(dstFd, buffer.data() + bytesWritten, bytesRead - bytesWritten));
-            if (ret < 0) {
-                DFXLOGE("write failed, errno=%{public}d", errno);
+            if (ret <= 0) {
+                DFXLOGE("write failed, ret=%{public}zd, errno=%{public}d", ret, errno);
                 return false;
             }
             bytesWritten += ret;
@@ -539,8 +545,8 @@ void MinidumpDumper::UnwindOtherThread()
             continue;
         }
         auto stackBuf = dfxThread->GetThreadStackBuffer();
-        if (stackBuf == nullptr) {
-            DFXLOGE("stackBuf is nullptr");
+        if (stackBuf == nullptr || stackBuf->size() < sizeof(uintptr_t)) {
+            DFXLOGE("stackBuf is nullptr or too small");
             continue;
         }
         instance.SetStackBuf(*stackBuf);
