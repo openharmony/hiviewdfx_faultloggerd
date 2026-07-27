@@ -62,9 +62,15 @@ void DfxBufferWriter::WriteToBuffer(const std::string& msg)
     if (writeFunc_ == nullptr) {
         writeFunc_ = WriteBuf;
     }
-    int cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
+    ssize_t cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
     if (static_cast<size_t>(cnt) == msg.size()) {
-        currentDataLen_ += static_cast<uint32_t>(cnt);
+        uint32_t addLen = static_cast<uint32_t>(cnt);
+        if (addLen > std::numeric_limits<uint32_t>::max() - currentDataLen_) {
+            currentDataLen_ = std::numeric_limits<uint32_t>::max();
+            DFXLOGW("currentDataLen_ overflow, capping at max.");
+        } else {
+            currentDataLen_ += addLen;
+        }
     } else {
         DFXLOGW("Write message failed.");
     }
@@ -167,8 +173,12 @@ void DfxBufferWriter::SetWriteFunc(BufferWriteFunc func)
 int DfxBufferWriter::GetFaultloggerdRequestType()
 {
     switch (request_.siginfo.si_signo) {
-        case SIGLEAK_STACK:
-            switch (abs(request_.siginfo.si_code)) {
+        case SIGLEAK_STACK: {
+            int code = request_.siginfo.si_code;
+            if (code == std::numeric_limits<int>::min()) {
+                return FaultLoggerType::LEAK_STACKTRACE;
+            }
+            switch (abs(code)) {
                 case SIGLEAK_STACK_FDSAN:
                     FALLTHROUGH_INTENDED;
                 case SIGLEAK_STACK_ARKTS_ENVSAN:
@@ -180,6 +190,7 @@ int DfxBufferWriter::GetFaultloggerdRequestType()
                 default:
                     return FaultLoggerType::LEAK_STACKTRACE;
             }
+        }
         case SIGDUMP:
             return FaultLoggerType::CPP_STACKTRACE;
         default:
