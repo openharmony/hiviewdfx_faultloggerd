@@ -385,7 +385,7 @@ public:
     uint32_t ThreadCount() const { return isValid_ ? threadCount_ : 0; }
     std::shared_ptr<MinidumpThread> GetThreadAtIndex(uint32_t index) const;
     std::shared_ptr<MinidumpThread> GetThreadByID(uint32_t threadId);
-    std::shared_ptr<std::vector<MinidumpThread>> GetThreads() { return threads_; }
+    std::shared_ptr<std::vector<MinidumpThread>> GetThreads() { return isValid_ ? threads_ : nullptr; }
 
     void Print();
     bool Read(uint32_t expectedSize);
