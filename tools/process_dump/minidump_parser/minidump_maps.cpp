@@ -38,6 +38,10 @@ bool MinidumpMapList::Read(uint32_t expectedSize)
         return false;
     }
 
+    if (memoryReader_ == nullptr) {
+        DFXLOGE("MinidumpMapList memoryReader is nullptr");
+        return false;
+    }
     // Read the entire content of the maps
     contents_.resize(expectedSize);
     if (!memoryReader_->ReadBytes(&contents_[0], expectedSize)) {
