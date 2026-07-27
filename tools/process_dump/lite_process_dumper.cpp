@@ -67,6 +67,8 @@ bool LiteProcessDumper::ReadRequest(int pipeReadFd)
         DFXLOGI("failed to read request %{public}d", errno);
         return false;
     }
+    request_.processName[NAME_BUF_LEN - 1] = '\0';
+    request_.threadName[NAME_BUF_LEN - 1] = '\0';
     isJsonDump_ =  request_.type == ProcessDumpType::DUMP_TYPE_DUMP_CATCH &&
         request_.siginfo.si_code == DUMP_TYPE_REMOTE_JSON;
     DFXLOGI("read remote request procname: %{public}s", request_.processName);
@@ -175,6 +177,7 @@ bool LiteProcessDumper::ReadOtherThreadStack(int pipeReadFd)
             DFXLOGE("read thread request fail %{public}d", errno);
             return false;
         }
+        otherThreadRequest_[i].threadName[NAME_BUF_LEN - 1] = '\0';
 
         otherThreadStackBuf_[i].resize(THREAD_STACK_BUFFER_SIZE);
         if (!LoopReadPipe(pipeReadFd, otherThreadStackBuf_[i].data(), THREAD_STACK_BUFFER_SIZE)) {
@@ -244,7 +247,12 @@ bool LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpReques
     constexpr int bufSize = 50;
     char data[bufSize];
     char startTag[bufSize] = "start trans register";
-    if (!LoopReadPipe(pipeReadFd, data, bufSize) || std::strcmp(data, startTag) != 0) {
+    if (!LoopReadPipe(pipeReadFd, data, bufSize)) {
+        DFXLOGE("failed to start memory tag %{public}d", errno);
+        return false;
+    }
+    data[bufSize - 1] = '\0';
+    if (std::strcmp(data, startTag) != 0) {
         DFXLOGE("failed to start memory tag %{public}d", errno);
         return false;
     }
@@ -265,7 +273,12 @@ bool LiteProcessDumper::ReadMemoryNearRegister(int pipeReadFd, ProcessDumpReques
         SPECIAL_REG_MEM_SIZE, SPECIAL_REG_MEM_FORWARD_SIZE));
 #endif
     char endTag[bufSize] = "end trans register";
-    if (!LoopReadPipe(pipeReadFd, data, bufSize) || std::strcmp(data, endTag) != 0) {
+    if (!LoopReadPipe(pipeReadFd, data, bufSize)) {
+        DFXLOGE("failed to end memory tag %{public}d", errno);
+        return false;
+    }
+    data[bufSize - 1] = '\0';
+    if (std::strcmp(data, endTag) != 0) {
         DFXLOGE("failed to end memory tag %{public}d", errno);
         return false;
     }
@@ -512,6 +525,9 @@ void LiteProcessDumper::PrintThreadInfo()
     std::string faultThreadInfo;
     if (request_.type == ProcessDumpType::DUMP_TYPE_CPP_CRASH) {
         faultThreadInfo += "Fault thread info:\n";
+    }
+    if (process_ == nullptr) {
+        return;
     }
     auto keyThread = process_->GetKeyThread();
     if (keyThread == nullptr) {
