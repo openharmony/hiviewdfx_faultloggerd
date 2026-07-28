@@ -20,6 +20,7 @@
 
 #include "dfx_log.h"
 #include "securec.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -36,6 +37,11 @@ bool HasValidPermissions(const DumpMemoryRegions& region)
 bool IsLargeAnonymousReservation(const DumpMemoryRegions &region)
 {
     return region.pathName[0] == '\0' && region.memorySizeHex >= LARGE_ANON_THRESHOLD;
+}
+
+bool IsDevFile(const DumpMemoryRegions &region)
+{
+    return std::string(region.pathName) == "[io]" || StartsWith(std::string(region.pathName), "/dev/");
 }
 }
 CoredumpMappingManager& CoredumpMappingManager::GetInstance()
@@ -72,6 +78,10 @@ bool CoredumpMappingManager::ShouldIncludeRegion(const DumpMemoryRegions& region
     }
 
     if (IsLargeAnonymousReservation(region)) {
+        return false;
+    }
+
+    if (IsDevFile(region)) {
         return false;
     }
     return true;
