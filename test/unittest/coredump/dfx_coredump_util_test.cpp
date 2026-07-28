@@ -396,6 +396,28 @@ HWTEST_F(DfxCoredumpUtilTest, ShouldIncludeRegion002, TestSize.Level2)
 }
 
 /**
+ * @tc.name: ShouldIncludeRegion003
+ * @tc.desc: test ShouldIncludeRegion excludes io and dev mapped regions
+ * @tc.type: FUNC
+ */
+HWTEST_F(DfxCoredumpUtilTest, ShouldIncludeRegion003, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "ShouldIncludeRegion003: start.";
+    DumpMemoryRegions region {};
+    region.memorySizeHex = 0x1000;
+    (void)strncpy_s(region.priority, sizeof(region.priority), "r-xp", sizeof(region.priority) - 1);
+    (void)strncpy_s(region.pathName, sizeof(region.pathName), "[io]", sizeof(region.pathName) - 1);
+    EXPECT_EQ(CoredumpMappingManager::ShouldIncludeRegion(region), false);
+
+    (void)strncpy_s(region.pathName, sizeof(region.pathName), "/dev/fake_dev", sizeof(region.pathName) - 1);
+    EXPECT_EQ(CoredumpMappingManager::ShouldIncludeRegion(region), false);
+
+    (void)strncpy_s(region.pathName, sizeof(region.pathName), "/system/lib/test.z.so", sizeof(region.pathName) - 1);
+    EXPECT_EQ(CoredumpMappingManager::ShouldIncludeRegion(region), true);
+    GTEST_LOG_(INFO) << "ShouldIncludeRegion003: end.";
+}
+
+/**
  * @tc.name: CoredumpJsonUtil001
  * @tc.desc: test coredump ObtainDumpRegion function
  * @tc.type: FUNC
