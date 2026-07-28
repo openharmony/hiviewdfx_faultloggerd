@@ -479,7 +479,9 @@ bool MinidumpDumper::GenerateMinidump(int pid, pid_t pipeFd, bool enableMinidump
         DFXLOGE("failed to transfer minidump data for pid=%{public}d", pid);
         return false;
     }
-
+    CrashLogConfig crashLogConfig;
+    crashLogConfig.minidumpLog = enableMinidump;
+    process_.SetCrashLogConfig(crashLogConfig);
     DFXLOGI("successfully transferred minidump data for pid=%{public}d", pid);
     return true;
 }

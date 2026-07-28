@@ -290,6 +290,37 @@ bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk)
     return true;
 }
 
+bool IsParentAppspawn(pid_t pid)
+{
+    ProcessInfo info;
+    if (!ParseProcInfo(pid, info) || info.ppid <= 0) {
+        return false; // read stat fail: fail-closed, dump will be cancelled by caller
+    }
+    // read parent process name from /proc/<ppid>/cmdline (null-separated, take first arg basename)
+    std::string cmdlinePath = "/proc/" + std::to_string(info.ppid) + "/cmdline";
+    FILE *fp = fopen(cmdlinePath.c_str(), "r");
+    if (fp == nullptr) {
+        return false;
+    }
+    char buf[256] = {0}; // 256 : cmdline buffer
+    size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
+    (void)fclose(fp);
+    if (n == 0) {
+        return false;
+    }
+    std::string name(buf); // cmdline args are null-separated, first arg is the executable path
+    size_t pos = name.find_last_of('/');
+    if (pos != std::string::npos) {
+        name = name.substr(pos + 1);
+    }
+    long uid = -1;
+    uint64_t sigBlk = 0;
+    if (!GetUidAndSigBlk(info.ppid, uid, sigBlk) || uid != 0) {
+        return false;
+    }
+    return name == "appspawn";
+}
+
 bool IsSigDumpMask(uint64_t sigBlk)
 {
     constexpr uint64_t sigDumpMask = UINT64_C(1) << 34; // 34 : SIGDUMP signal is the 35th bit (0-indexed)
