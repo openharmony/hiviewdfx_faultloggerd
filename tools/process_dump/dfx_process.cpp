@@ -68,9 +68,8 @@ bool DfxProcess::InitKeyThread(const ProcessDumpRequest& request, bool isAttach)
         DFXLOGE("dumpCatchTargetTid(%{public}d).", dumpCatchTargetTid);
         if (dumpCatchTargetTid != tid) {
             if (!IsThreadInPid(processInfo_.pid, dumpCatchTargetTid)) {
-                DFXLOGE("dumpCatchTargetTid(%{public}d) is not in pid(%{public}d).",
+                DFXLOGW("dumpCatchTargetTid(%{public}d) may not be in pid(%{public}d).",
                     dumpCatchTargetTid, processInfo_.pid);
-                return false;
             }
             otherThreads_.emplace_back(keyThread_);
             keyThread_ = DfxThread::Create(processInfo_.pid, dumpCatchTargetTid, dumpCatchTargetTid, true);
