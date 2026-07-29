@@ -1653,9 +1653,6 @@ HWTEST_F(MinidumpThreadNameTest, ThreadNameReadAuxiliaryDataFailureTest001, Test
     EXPECT_FALSE(tn.ReadAuxiliaryData());
 }
 
-} // namespace HiviewDFX
-} // namespace OHOS
-
 /**
  * @tc.name: ThreadNameListReadSizeMismatchTest001
  * @tc.desc: test MinidumpThreadNameList Read fails when actualSize > expectedSize
@@ -1699,3 +1696,6 @@ HWTEST_F(MinidumpMapListTest, MapListReadNullReaderTest001, TestSize.Level2)
     MinidumpMapList list(nullptr);
     EXPECT_FALSE(list.Read(100));
 }
+
+} // namespace HiviewDFX
+} // namespace OHOS
