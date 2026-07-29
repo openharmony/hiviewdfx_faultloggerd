@@ -50,7 +50,7 @@ bool ReadFdToString(int fd, std::string& content);
 uintptr_t StripPac(uintptr_t inAddr, uintptr_t pacMask);
 bool SafeStrtolCpp(const std::string& numStr, long& out, int base);
 int WriteBuf(int fd, const char* buf, size_t len);
-ssize_t WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc = WriteBuf);
+size_t WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc = WriteBuf);
 #if is_ohos && !is_mingw
 size_t ReadProcMemByPid(const pid_t pid, const uint64_t addr, void* data, size_t size);
 #endif

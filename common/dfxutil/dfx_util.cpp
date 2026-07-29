@@ -307,7 +307,7 @@ int WriteBuf(int fd, const char* buf, size_t len)
     return totalWritten;
 }
 
-ssize_t WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc)
+size_t WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc)
 {
     constexpr size_t step = 1024 * 1024;
     size_t totalWritten = 0;
@@ -326,7 +326,7 @@ ssize_t WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc wri
         }
         totalWritten += static_cast<size_t>(cnt);
     }
-    return static_cast<ssize_t>(totalWritten);
+    return totalWritten;
 }
 
 #if is_ohos && !is_mingw

@@ -66,7 +66,7 @@ private:
     SmartFd resFd_;
     std::string briefDumpInfo_;
     ProcessDumpRequest request_;
-    uint32_t currentDataLen_ = 0;
+    size_t currentDataLen_ = 0;
 };
 } // namespace HiviewDFX
 } // namespace OHOS

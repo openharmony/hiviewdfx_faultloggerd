@@ -62,14 +62,9 @@ void DfxBufferWriter::WriteToBuffer(const std::string& msg)
     if (writeFunc_ == nullptr) {
         writeFunc_ = WriteBuf;
     }
-    ssize_t cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
-    if (static_cast<size_t>(cnt) == msg.size()) {
-        if (cnt > static_cast<ssize_t>(std::numeric_limits<uint32_t>::max() - currentDataLen_)) {
-            currentDataLen_ = std::numeric_limits<uint32_t>::max();
-            DFXLOGW("currentDataLen_ overflow, capping at max.");
-        } else {
-            currentDataLen_ += static_cast<uint32_t>(cnt);
-        }
+    size_t cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
+    if (cnt == msg.size()) {
+        currentDataLen_ += cnt;
     } else {
         DFXLOGW("Write message failed.");
     }
@@ -77,7 +72,7 @@ void DfxBufferWriter::WriteToBuffer(const std::string& msg)
 
 bool DfxBufferWriter::WriteDumpRes(int32_t dumpRes)
 {
-    return WriteDumpResWithLen(dumpRes, currentDataLen_);
+    return WriteDumpResWithLen(dumpRes, static_cast<uint32_t>(currentDataLen_));
 }
 
 bool DfxBufferWriter::WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen)
@@ -100,7 +95,8 @@ bool DfxBufferWriter::WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen)
 
 bool DfxBufferWriter::WriteMainThreadDone()
 {
-    bool ret = WriteDumpResWithLen(DumpErrorCode::DUMP_EMAIN_THREAD_DONE, currentDataLen_);
+    bool ret = WriteDumpResWithLen(DumpErrorCode::DUMP_EMAIN_THREAD_DONE,
+        static_cast<uint32_t>(currentDataLen_));
     currentDataLen_ = 0;
     return ret;
 }
