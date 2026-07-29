@@ -40,6 +40,22 @@ public:
     }
 };
 
+class MinidumpMapListTest : public testing::Test {
+public:
+    void SetUp() override
+    {
+        auto& mgr = MinidumpConfigManager::Instance();
+        mgr.SetConfig(MinidumpConfig());
+        PerformanceOptimizer::Instance().Reset();
+    }
+    void TearDown() override
+    {
+        auto& mgr = MinidumpConfigManager::Instance();
+        mgr.SetConfig(MinidumpConfig());
+        PerformanceOptimizer::Instance().Reset();
+    }
+};
+
 std::string BuildUTF16LEString(const std::string& asciiStr)
 {
     uint32_t byteLength = static_cast<uint32_t>(asciiStr.size() * 2);
@@ -1659,4 +1675,27 @@ HWTEST_F(MinidumpThreadNameTest, ThreadNameListReadSizeMismatchTest001, TestSize
     // expectedSize = 8 < 16, should fail
     EXPECT_FALSE(list.Read(8));
     EXPECT_TRUE(list.GetLastError().IsError());
+}
+
+/**
+ * @tc.name: ModuleListReadNullReaderTest001
+ * @tc.desc: test MinidumpModuleList Read fails when memoryReader is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpModuleListTest, ModuleListReadNullReaderTest001, TestSize.Level2)
+{
+    MinidumpModuleList list(nullptr);
+    EXPECT_FALSE(list.Read(sizeof(uint32_t)));
+    EXPECT_TRUE(list.GetLastError().IsError());
+}
+
+/**
+ * @tc.name: MapListReadNullReaderTest001
+ * @tc.desc: test MinidumpMapList Read fails when memoryReader is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMapListTest, MapListReadNullReaderTest001, TestSize.Level2)
+{
+    MinidumpMapList list(nullptr);
+    EXPECT_FALSE(list.Read(100));
 }
