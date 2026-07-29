@@ -72,31 +72,30 @@ void DfxBufferWriter::WriteToBuffer(const std::string& msg)
 
 bool DfxBufferWriter::WriteDumpRes(int32_t dumpRes)
 {
-    return WriteDumpResWithLen(dumpRes, static_cast<uint32_t>(currentDataLen_));
+    return WriteDumpResWithLen(dumpRes, currentDataLen_);
 }
 
-bool DfxBufferWriter::WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen)
+bool DfxBufferWriter::WriteDumpResWithLen(int32_t dumpRes, size_t dataLen)
 {
     if (!resFd_) {
         return false;
     }
     DumpResMessage resMsg = {
         .code = dumpRes,
-        .dataLen = dataLen
+        .dataLen = static_cast<uint32_t>(dataLen)
     };
     ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_.GetFd(), &resMsg, sizeof(resMsg)));
     if (nwrite != static_cast<ssize_t>(sizeof(resMsg))) {
         DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
         return false;
     }
-    DFXLOGI("WriteDumpRes: code=%{public}d, dataLen=%{public}u", dumpRes, dataLen);
+    DFXLOGI("WriteDumpRes: code=%{public}d, dataLen=%{public}zu", dumpRes, dataLen);
     return true;
 }
 
 bool DfxBufferWriter::WriteMainThreadDone()
 {
-    bool ret = WriteDumpResWithLen(DumpErrorCode::DUMP_EMAIN_THREAD_DONE,
-        static_cast<uint32_t>(currentDataLen_));
+    bool ret = WriteDumpResWithLen(DumpErrorCode::DUMP_EMAIN_THREAD_DONE, currentDataLen_);
     currentDataLen_ = 0;
     return ret;
 }

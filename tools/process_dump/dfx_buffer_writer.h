@@ -55,7 +55,7 @@ public:
     void RemoveFileIfNeed(const std::string& dirPath) const;
     int GetBufFd() const;
 private:
-    bool WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen);
+    bool WriteDumpResWithLen(int32_t dumpRes, size_t dataLen);
     void WriteToBuffer(const std::string& msg);
 
     DfxBufferWriter() = default;
