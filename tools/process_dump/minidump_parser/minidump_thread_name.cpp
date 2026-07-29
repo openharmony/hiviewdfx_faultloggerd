@@ -121,7 +121,7 @@ bool MinidumpThreadNameList::ReadThreadNameAuxiliaryData(uint32_t threadNameCoun
 {
     for (uint32_t i = 0; i < threadNameCount; ++i) {
         auto threadName = threadNames_[i];
-        if (!threadName->ReadAuxiliaryData() && !threadName->Valid()) {
+        if (!threadName->ReadAuxiliaryData()) {
             lastError_ = threadName->GetLastError();
             DFXLOGE("MinidumpThreadNameList cannot read thread name %{public}u", i);
             return false;
