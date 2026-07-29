@@ -64,12 +64,11 @@ void DfxBufferWriter::WriteToBuffer(const std::string& msg)
     }
     ssize_t cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
     if (static_cast<size_t>(cnt) == msg.size()) {
-        uint32_t addLen = static_cast<uint32_t>(cnt);
-        if (addLen > std::numeric_limits<uint32_t>::max() - currentDataLen_) {
+        if (cnt > static_cast<ssize_t>(std::numeric_limits<uint32_t>::max() - currentDataLen_)) {
             currentDataLen_ = std::numeric_limits<uint32_t>::max();
             DFXLOGW("currentDataLen_ overflow, capping at max.");
         } else {
-            currentDataLen_ += addLen;
+            currentDataLen_ += static_cast<uint32_t>(cnt);
         }
     } else {
         DFXLOGW("Write message failed.");

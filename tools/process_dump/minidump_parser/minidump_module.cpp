@@ -205,6 +205,10 @@ bool MinidumpModuleList::Read(uint32_t expectedSize)
     isValid_ = false;
     modules_.clear();
 
+    if (memoryReader_ == nullptr) {
+        DFXLOGE("MinidumpModuleList memoryReader is nullptr");
+        return false;
+    }
     uint32_t moduleCount = 0;
     if (!memoryReader_->ReadBytes(&moduleCount, sizeof(moduleCount))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_MODULE_READ,
