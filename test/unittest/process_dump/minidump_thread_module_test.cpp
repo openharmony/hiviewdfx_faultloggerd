@@ -1639,3 +1639,24 @@ HWTEST_F(MinidumpThreadNameTest, ThreadNameReadAuxiliaryDataFailureTest001, Test
 
 } // namespace HiviewDFX
 } // namespace OHOS
+
+/**
+ * @tc.name: ThreadNameListReadSizeMismatchTest001
+ * @tc.desc: test MinidumpThreadNameList Read fails when actualSize > expectedSize
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpThreadNameTest, ThreadNameListReadSizeMismatchTest001, TestSize.Level2)
+{
+    uint32_t threadNameCount = 1;
+    std::string data(reinterpret_cast<const char*>(&threadNameCount), sizeof(threadNameCount));
+    MDRawThreadName rawTN = {};
+    rawTN.threadId = 42;
+    rawTN.rvaOfThreadName = 0;
+    data += std::string(reinterpret_cast<const char*>(&rawTN), sizeof(rawTN));
+    auto reader = MakeReader(data);
+    MinidumpThreadNameList list(reader);
+    // actualSize = sizeof(uint32_t) + sizeof(MDRawThreadName) = 16
+    // expectedSize = 8 < 16, should fail
+    EXPECT_FALSE(list.Read(8));
+    EXPECT_TRUE(list.GetLastError().IsError());
+}

@@ -60,7 +60,6 @@ bool MinidumpDumper::Dump(int pid, int pipeFd, bool enableMinidump, bool enableM
     if (enableMinidumpToCrashLog) {
         if (!DfxBufferWriter::GetInstance().InitBufferWriter(request_)) {
             DFXLOGE("Failed to init buffer writer.");
-            return true;
         }
         if (!ParseMinidump()) {
             int ret = HiSysEventWrite(HiSysEvent::Domain::RELIABILITY, "CPP_CRASH_NO_LOG",
@@ -98,9 +97,7 @@ void MinidumpDumper::CollectDumpHeaderInfo(int pid)
         DFXLOGE("strcpy process name failed errno %{public}d", errno);
     }
     uint64_t lifeTimeSeconds = 0;
-    if (GetProcessLifeCycle(pid, lifeTimeSeconds) != 0) {
-        DFXLOGE("GetProcessLifeCycle failed");
-    }
+    (void)GetProcessLifeCycle(pid, lifeTimeSeconds);
     uint64_t rss = GetProcRssMemInfo(pid);
     process_.InitProcessInfo(request_.pid, request_.nsPid, request_.uid, request_.processName);
     process_.SetLogSource("pdump");
