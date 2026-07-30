@@ -109,7 +109,9 @@ bool PrintBacktrace(int32_t fd, bool fast, size_t maxFrameNums)
     for (auto const& frame : frames) {
         auto line = DfxFrameFormatter::GetFrameStr(frame);
         if (fd >= 0) {
-            dprintf(fd, "    %s", line.c_str());
+            if (dprintf(fd, "    %s", line.c_str()) < 0) {
+                DFXLOGE("dprintf failed, errno = %{public}d", errno);
+            }
         }
         DFXLOGI(" %{public}s", line.c_str());
     }

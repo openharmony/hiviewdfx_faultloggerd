@@ -229,6 +229,10 @@ int SysOpen(const char *pathname, int flags)
         errno = EINVAL;
         return -1;
     }
+    if (flags & O_CREAT) {
+        errno = EPERM;
+        return -1;
+    }
     return (int)syscall(SYS_openat, AT_FDCWD, pathname, flags);
 }
 

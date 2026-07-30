@@ -53,20 +53,6 @@ bool DfxSignal::IsAddrAvailable() const
     }
 }
 
-bool DfxSignal::IsPidAvailable() const
-{
-    switch (signal_) {
-        case SI_USER:
-        case SI_QUEUE:
-        case SI_TIMER:
-        case SI_ASYNCIO:
-        case SI_MESGQ:
-            return true;
-        default:
-            return false;
-    }
-}
-
 std::string DfxSignal::PrintSignal(const siginfo_t &info)
 {
     std::string sigString = StringPrintf("Signal:%s(%s)", FormatSignalName(info.si_signo).c_str(),\

@@ -48,7 +48,7 @@ bool Schedstat::ParseSchedstat(const std::string& schedstatPath)
         return false;
     }
 
-    SmartFd fd(open(realPath, O_RDONLY));
+    SmartFd fd(open(realPath, O_RDONLY | O_NOFOLLOW));
     if (!fd) {
         DFXLOGE("open %{public}s failed. %{public}d", schedstatPath.c_str(), errno);
         return false;
@@ -194,7 +194,7 @@ bool ParseStat(const std::string& statPath, ProcessInfo& info)
         return false;
     }
 
-    SmartFd fd(open(realPath, O_RDONLY));
+    SmartFd fd(open(realPath, O_RDONLY | O_NOFOLLOW));
     if (!fd) {
         DFXLOGE("open %{public}s failed. %{public}d", statPath.c_str(), errno);
         return false;

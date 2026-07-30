@@ -89,16 +89,20 @@ bool TrimAndDupStr(const std::string &source, std::string &str)
 
 uint64_t GetTimeMilliSeconds(void)
 {
-    struct timespec ts;
-    (void)clock_gettime(CLOCK_REALTIME, &ts);
+    struct timespec ts = {0};
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
+        return 0;
+    }
     return ((uint64_t)ts.tv_sec * NUMBER_ONE_THOUSAND) + // 1000 : second to millisecond convert ratio
         (((uint64_t)ts.tv_nsec) / NUMBER_ONE_MILLION); // 1000000 : nanosecond to millisecond convert ratio
 }
 
 uint64_t GetAbsTimeMilliSeconds(void)
 {
-    struct timespec ts;
-    (void)clock_gettime(CLOCK_MONOTONIC, &ts);
+    struct timespec ts = {0};
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+        return 0;
+    }
     return (static_cast<uint64_t>(ts.tv_sec) * NUMBER_ONE_THOUSAND) +
         (static_cast<uint64_t>(ts.tv_nsec) / NUMBER_ONE_MILLION);
 }
@@ -112,16 +116,18 @@ std::string GetCurrentTimeStr(uint64_t current)
         millsecond = current % ratio;
         now = static_cast<time_t>(current / ratio);
     }
-
-    auto tm = std::localtime(&now);
+    struct tm tmBuf = {0};
+    if (localtime_r(&now, &tmBuf) == nullptr) {
+        return "invalid timestamp\n";
+    }
     char seconds[128] = {0}; // 128 : time buffer size
-    if (tm == nullptr || strftime(seconds, sizeof(seconds) - 1, "%Y-%m-%d %H:%M:%S", tm) == 0) {
+    if (strftime(seconds, sizeof(seconds) - 1, "%Y-%m-%d %H:%M:%S", &tmBuf) == 0) {
         return "invalid timestamp\n";
     }
 
     char millBuf[256] = {0}; // 256 : milliseconds buffer size
     int ret = snprintf_s(millBuf, sizeof(millBuf), sizeof(millBuf) - 1,
-        "%s.%03u\n", seconds, millsecond);
+        "%s.%03lu\n", seconds, static_cast<unsigned long>(millsecond));
     if (ret <= 0) {
         return "invalid timestamp\n";
     }
@@ -196,8 +202,12 @@ bool IsOversea()
 std::string GetArkWebCorePathPrefix()
 {
 #if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC) && !defined(is_host)
-    static const std::string prefix = "/data/app/el1/bundle/public/" +
-        OHOS::system::GetParameter("persist.arkwebcore.package_name", "Unknown") + "/";
+    static const std::string packageName = OHOS::system::GetParameter("persist.arkwebcore.package_name", "Unknown");
+    if (packageName.find("..") != std::string::npos || packageName.find("/") != std::string::npos) {
+        DFXLOGE("Invalid package name containing traversal: %{public}s", packageName.c_str());
+        return "";
+    }
+    static const std::string prefix = "/data/app/el1/bundle/public/" + packageName + "/";
     return prefix;
 #else
     return "";
@@ -418,6 +428,7 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd, size_t offset
     if (mapAddr == nullptr) {
         DFXLOGE("MapViewOfFile %{public}zu Failed with %{public}ld:%{public}s",
             length, GetLastError(), GetLastErrorString().c_str());
+        ::CloseHandle(FileMappingHandle);
         return MMAP_FAILED;
     }
 
@@ -439,6 +450,6 @@ int munmap(void *addr, size_t)
         If the function fails, the return value is zero. To get extended error information, call
     GetLastError.
     */
-    return !UnmapViewOfFile(addr);
+    return (UnmapViewOfFile(addr) != 0) ? 0 : -1;
 }
 #endif

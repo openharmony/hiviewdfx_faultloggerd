@@ -46,6 +46,7 @@ public:
             return "";
         }
         if (memset_s(p, view.size() + 1, '\0', view.size() + 1) != 0) {
+            delete[] p;
             pthread_spin_unlock(&spin_lock_);
             return "";
         }

@@ -149,36 +149,6 @@ HWTEST_F(DfxSignalTest, DfxSignalTest005, TestSize.Level2)
 }
 
 /**
- * @tc.name: DfxSignalTest006
- * @tc.desc: test if pid is available
- * @tc.type: FUNC
- */
-HWTEST_F(DfxSignalTest, DfxSignalTest006, TestSize.Level2)
-{
-    int32_t input = 100; // 100 is an unexpected signal
-    GTEST_LOG_(INFO) << "DfxSignalTest006: start.";
-    std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
-    bool ret = signal->IsPidAvailable();
-    EXPECT_EQ(true, ret != true) << "DfxSignalTest006 Failed";
-    GTEST_LOG_(INFO) << "DfxSignalTest006: end.";
-}
-
-/**
- * @tc.name: DfxSignalTest007
- * @tc.desc: test if pid is available in normal status
- * @tc.type: FUNC
- */
-HWTEST_F(DfxSignalTest, DfxSignalTest007, TestSize.Level2)
-{
-    int32_t input = SI_USER;
-    GTEST_LOG_(INFO) << "DfxSignalTest007: start.";
-    std::shared_ptr<DfxSignal> signal = std::make_shared<DfxSignal>(input);
-    bool ret = signal->IsPidAvailable();
-    EXPECT_EQ(true, ret) << "DfxSignalTest007 Failed";
-    GTEST_LOG_(INFO) << "DfxSignalTest007: end.";
-}
-
-/**
  * @tc.name: DfxSignalTest008
  * @tc.desc: test if GetSignal
  * @tc.type: FUNC

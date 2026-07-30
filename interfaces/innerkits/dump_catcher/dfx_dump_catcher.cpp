@@ -126,8 +126,8 @@ private:
         int timeout = DUMPCATCHER_REMOTE_TIMEOUT);
     int DoDumpRemotePid(int pid, std::string& msg, DumpCatcherPipeData& pipeData,
         bool isJson = false, int32_t timeout = DUMPCATCHER_REMOTE_TIMEOUT);
-    bool HandlePollError(int pid, const uint64_t endTime, int& remainTime, int& pollRet, std::string& resMsg);
-    bool HandlePollTimeout(int pid, const int timeout, int& remainTime, int& pollRet, std::string& resMsg);
+    bool HandlePollError(const uint64_t endTime, int& remainTime, int& pollRet, std::string& resMsg);
+    bool HandlePollTimeout(const uint64_t endTime, int& remainTime, int& pollRet, std::string& resMsg);
     bool HandlePollEvents(int pid, const struct pollfd (&readFds)[2],
         bool& bPipeConnect, int& pollRet, DumpCatcherPipeData& pipeData);
     int DumpRemotePoll(int pid, const int timeout, DumpCatcherPipeData& pipeData);
@@ -335,8 +335,17 @@ static bool IsBitOn(const std::string& content, const std::string& filed, int si
     if (content.find(filed) == std::string::npos) {
         return false;
     }
+    if (signal <= 0 || signal > 64) { // 64 : max signal
+        DFXLOGW("IsBitOn invalid signal %{public}d", signal);
+        return false;
+    }
     //SigBlk:   0000000000000000
-    std::string num = content.substr(content.find(filed) + filed.size() + 2, 16);
+    size_t pos = content.find(filed) + filed.size() + 2;
+    if (pos > content.size() || pos + 16 > content.size()) { // 16 : len of number
+        DFXLOGW("IsBitOn content too short");
+        return false;
+    }
+    std::string num = content.substr(pos, 16);
     uint64_t hexValue = strtoul(num.c_str(), nullptr, 16);
     uint64_t mask = 1ULL << (signal - 1);
 
@@ -504,7 +513,7 @@ void DfxDumpCatcher::Impl::DealWithSdkDumpRet(int sdkdumpRet, int pid, int32_t& 
 {
     uint32_t uid = getuid();
     if (sdkdumpRet == ResponseCode::SDK_DUMP_REPEAT) {
-        stack_ = stackKit_.GetProcessStackWithTimeout(pid, WAIT_GET_KERNEL_STACK_TIMEOUT);
+        GetKernelStack(uid, pid);
         msg.append("Result: pid(" + std::to_string(pid) + ") process is dumping.\n");
         ret = DUMPCATCH_IS_DUMPING;
     } else if (sdkdumpRet == ResponseCode::REQUEST_REJECT) {
@@ -623,9 +632,9 @@ bool DfxDumpCatcher::Impl::DumpCatch(int pid, int tid, std::string& msg, size_t 
             return ret;
         }
     }
-    DfxEnableTraceDlsym(true);
     ElapsedTime counter;
     std::unique_lock<std::mutex> lck(mutex_);
+    DfxEnableTraceDlsym(true);
     stack_ = {};
     notifyCollect_ = false;
     int currentPid = getpid();
@@ -664,7 +673,8 @@ bool DfxDumpCatcher::Impl::DumpCatchFd(int pid, int tid, std::string& msg, int f
     bool ret = false;
     ret = DumpCatch(pid, tid, msg, maxFrameNums, false);
     if (fd > 0) {
-        ret = OHOS_TEMP_FAILURE_RETRY(write(fd, msg.c_str(), msg.length()));
+        ssize_t writeRet = OHOS_TEMP_FAILURE_RETRY(write(fd, msg.c_str(), msg.length()));
+        ret = writeRet > 0;
     }
     return ret;
 }
@@ -745,7 +755,7 @@ int32_t DfxDumpCatcher::Impl::KernelRet2DumpcatchRet(int32_t ret)
     }
 }
 
-bool DfxDumpCatcher::Impl::HandlePollError(int pid, const uint64_t endTime, int& remainTime,
+bool DfxDumpCatcher::Impl::HandlePollError(const uint64_t endTime, int& remainTime,
                                            int& pollRet, std::string& resMsg)
 {
     if (errno == EINTR) {
@@ -755,9 +765,6 @@ bool DfxDumpCatcher::Impl::HandlePollError(int pid, const uint64_t endTime, int&
             resMsg.append("Result: poll timeout.\n");
             return false;
         }
-        if (!notifyCollect_ && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-            notifyCollect_ = stackKit_.NotifyStartCollect(pid);
-        }
         remainTime = static_cast<int>(endTime - now);
         return true;
     }
@@ -766,12 +773,12 @@ bool DfxDumpCatcher::Impl::HandlePollError(int pid, const uint64_t endTime, int&
     return false;
 }
 
-bool DfxDumpCatcher::Impl::HandlePollTimeout(int pid, const int timeout, int& remainTime,
+bool DfxDumpCatcher::Impl::HandlePollTimeout(const uint64_t endTime, int& remainTime,
                                              int& pollRet, std::string& resMsg)
 {
-    if (!notifyCollect_ && (remainTime == DUMPCATCHER_REMOTE_P90_TIMEOUT)) {
-        notifyCollect_ = stackKit_.NotifyStartCollect(pid);
-        remainTime = timeout - DUMPCATCHER_REMOTE_P90_TIMEOUT;
+    uint64_t now = GetAbsTimeMilliSeconds();
+    if (now < endTime) {
+        remainTime = static_cast<int>(endTime - now);
         return true;
     }
     pollRet = DUMP_POLL_TIMEOUT;
@@ -785,19 +792,19 @@ bool DfxDumpCatcher::Impl::HandlePollEvents(int pid, const struct pollfd (&readF
     bool bufRet = true;
     bool resRet = false;
     bool eventRet = true;
+    bool hasHup = false;
     for (auto& readFd : readFds) {
         if (!bPipeConnect && (static_cast<uint32_t>(readFd.revents) & POLLIN)) {
             bPipeConnect = true;
         }
 
-        if (bPipeConnect &&
-            ((static_cast<uint32_t>(readFd.revents) & POLLERR) || (static_cast<uint32_t>(readFd.revents) & POLLHUP))) {
-            eventRet = false;
-            pipeData.resMsg.append("Result: poll events error.\n");
-            break;
-        }
-
         if ((static_cast<uint32_t>(readFd.revents) & POLLIN) != POLLIN) {
+            if (bPipeConnect && ((static_cast<uint32_t>(readFd.revents) & POLLERR) ||
+                (static_cast<uint32_t>(readFd.revents) & POLLHUP))) {
+                eventRet = false;
+                pipeData.resMsg.append("Result: poll events error.\n");
+                break;
+            }
             continue;
         }
 
@@ -806,10 +813,16 @@ bool DfxDumpCatcher::Impl::HandlePollEvents(int pid, const struct pollfd (&readF
         } else if (readFd.fd == pipeData.resFd.GetFd()) {
             resRet = DoReadRes(pollRet, pipeData);
         }
+
+        // After reading data, check if hangup also occurred
+        if (static_cast<uint32_t>(readFd.revents) & POLLHUP) {
+            hasHup = true;
+        }
     }
 
-    if ((eventRet == false) || (bufRet == false) || (resRet == true)) {
-        DFXLOGI("eventRet:%{public}d bufRet:%{public}d resRet:%{public}d", eventRet, bufRet, resRet);
+    if ((eventRet == false) || (bufRet == false) || (resRet == true) || hasHup) {
+        DFXLOGI("eventRet:%{public}d bufRet:%{public}d resRet:%{public}d hasHup:%{public}d",
+            eventRet, bufRet, resRet, hasHup);
         return false;
     }
     return true;
@@ -830,13 +843,18 @@ int DfxDumpCatcher::Impl::DumpRemotePoll(int pid, const int timeout, DumpCatcher
     uint64_t startTime = GetAbsTimeMilliSeconds();
     uint64_t endTime = startTime + static_cast<uint64_t>(timeout);
     bool isContinue = true;
+    bool hasCollectStack = false;
     do {
         int pRet = poll(readFds, fdsSize, remainTime);
+        if (pRet <= 0 && !hasCollectStack) {
+            notifyCollect_ = stackKit_.NotifyStartCollect(pid);
+            hasCollectStack = true;
+        }
         if (pRet < 0) {
-            isContinue = HandlePollError(pid, endTime, remainTime, pollRet, pipeData.resMsg);
+            isContinue = HandlePollError(endTime, remainTime, pollRet, pipeData.resMsg);
             continue;
         } else if (pRet == 0) {
-            isContinue = HandlePollTimeout(pid, timeout, remainTime, pollRet, pipeData.resMsg);
+            isContinue = HandlePollTimeout(endTime, remainTime, pollRet, pipeData.resMsg);
             continue;
         }
         if (!HandlePollEvents(pid, readFds, bPipeConnect, pollRet, pipeData)) {
@@ -972,20 +990,22 @@ bool DfxDumpCatcher::Impl::DumpCatchMultiPid(const std::vector<int>& pids, std::
     for (int i = 0; i < pidSize; i++) {
         int pid = pids[i];
         std::string pidStr;
-        bool ret = DoDumpRemoteLocked(pid, 0, pidStr) == DUMPCATCH_ESUCCESS;
-        if (ret) {
+        bool dumpRet = DoDumpRemoteLocked(pid, 0, pidStr) == DUMPCATCH_ESUCCESS;
+        if (dumpRet) {
             msg.append(pidStr + "\n");
         } else {
             msg.append("Failed to dump process:" + std::to_string(pid));
         }
 
         time_t currentTime = time(nullptr);
-        if (currentTime > 0) {
-            DFXLOGD("%{public}s :: startTime(%{public}" PRId64 "), currentTime(%{public}" PRId64 ").",
-                __func__, startTime, currentTime);
-            if (currentTime > startTime + DUMP_CATCHE_WORK_TIME_S) {
-                break;
-            }
+        if (currentTime <= 0) {
+            DFXLOGE("%{public}s :: time() failed, breaking loop", __func__);
+            break;
+        }
+        DFXLOGD("%{public}s :: startTime(%{public}" PRId64 "), currentTime(%{public}" PRId64 ").",
+            __func__, startTime, currentTime);
+        if (currentTime > startTime + DUMP_CATCHE_WORK_TIME_S) {
+            break;
         }
     }
 

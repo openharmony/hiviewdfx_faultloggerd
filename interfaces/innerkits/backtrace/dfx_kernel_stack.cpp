@@ -61,10 +61,11 @@ int32_t DfxGetKernelStack(int32_t pid, std::string& kernelStack, bool needArkts)
     int ret = ioctl(fd.GetFd(), ctlCode, kstackBuf.get());
     int32_t res = KERNELSTACK_ESUCCESS;
     if (ret != 0) {
-        DFXLOGW("Failed to get pid(%{public}d) kernel stack, errno:%{public}d", pid, errno);
+        DFXLOGW("Failed to get pid(%{public}d) kernel stack, errno:%{public}d, ret:%{public}d", pid, errno, ret);
         res = KERNELSTACK_EIOCTL;
     } else {
-        kernelStack = std::string(kstackBuf->hstackLogBuff);
+        size_t len = strnlen(kstackBuf->hstackLogBuff, BUFF_STACK_SIZE);
+        kernelStack = std::string(kstackBuf->hstackLogBuff, len);
     }
     return res;
 }

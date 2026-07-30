@@ -69,14 +69,6 @@ inline std::string StringPrintf(const char *fmt, ...)
     va_end(ap);
     return dst;
 }
-
-inline void StringAppendF(std::string& dst, const char* fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    StringAppendV(dst, fmt, ap);
-    va_end(ap);
-}
 } // namespace HiviewDFX
 } // namespace OHOS
 #endif

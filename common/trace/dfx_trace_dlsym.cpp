@@ -12,8 +12,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#if DFX_ENABLE_TRACE && is_ohos && !is_mingw
+#if defined(DFX_ENABLE_TRACE) && is_ohos && !is_mingw
 #include "dfx_trace_dlsym.h"
+#include <atomic>
 #include <cstdarg>
 #include <dlfcn.h>
 #include <securec.h>
@@ -22,12 +23,7 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-static bool g_enableTrace = false;
-void DfxEnableTraceDlsym(bool enableTrace)
-{
-    g_enableTrace = enableTrace;
-}
-#if DFX_ENABLE_TRACE && is_ohos && !is_mingw
+#if defined(DFX_ENABLE_TRACE) && is_ohos && !is_mingw
 namespace {
 #ifndef TAG_APP
 #define TAG_APP (1ULL << 62)
@@ -36,10 +32,11 @@ typedef void (*StartTraceFunc)(uint64_t tag, const char* name);
 typedef void (*FinishTraceFunc)(uint64_t tag);
 [[maybe_unused]]static StartTraceFunc g_startTrace = nullptr;
 [[maybe_unused]]static FinishTraceFunc g_finishTrace = nullptr;
+std::atomic<bool> g_enableTrace {false};
 }
 void DfxStartTraceDlsym(const char* name)
 {
-    if (!g_enableTrace) {
+    if (!g_enableTrace.load() || name == nullptr) {
         return;
     }
     static std::once_flag onceFlag;
@@ -53,7 +50,7 @@ void DfxStartTraceDlsym(const char* name)
 }
 void DfxStartTraceDlsymFormat(const char *fmt, ...)
 {
-    if (!g_enableTrace) {
+    if (!g_enableTrace.load() || fmt == nullptr) {
         return;
     }
     static std::once_flag onceFlag;
@@ -77,7 +74,7 @@ void DfxStartTraceDlsymFormat(const char *fmt, ...)
 
 void DfxFinishTraceDlsym(void)
 {
-    if (!g_enableTrace) {
+    if (!g_enableTrace.load()) {
         return;
     }
     static std::once_flag onceFlag;
@@ -92,7 +89,7 @@ void DfxFinishTraceDlsym(void)
 
 void FormatTraceName(char *name, size_t size, const char *fmt, ...)
 {
-    if (!g_enableTrace || size < 1 || name == nullptr) {
+    if (!g_enableTrace.load() || size < 1 || name == nullptr) {
         return;
     }
     va_list args;
@@ -108,5 +105,11 @@ void FormatTraceName(char *name, size_t size, const char *fmt, ...)
     }
 }
 #endif
+void DfxEnableTraceDlsym(bool enableTrace)
+{
+#if defined(DFX_ENABLE_TRACE) && is_ohos && !is_mingw
+    g_enableTrace.store(enableTrace);
+#endif
+}
 } // namespace HiviewDFX
 } // namespace OHOS
