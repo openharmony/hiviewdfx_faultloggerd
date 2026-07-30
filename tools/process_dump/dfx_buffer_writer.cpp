@@ -62,9 +62,9 @@ void DfxBufferWriter::WriteToBuffer(const std::string& msg)
     if (writeFunc_ == nullptr) {
         writeFunc_ = WriteBuf;
     }
-    int cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
-    if (static_cast<size_t>(cnt) == msg.size()) {
-        currentDataLen_ += static_cast<uint32_t>(cnt);
+    size_t cnt = WriteStringMsg(bufFd_.GetFd(), msg, writeFunc_);
+    if (cnt == msg.size()) {
+        currentDataLen_ += cnt;
     } else {
         DFXLOGW("Write message failed.");
     }
@@ -75,21 +75,21 @@ bool DfxBufferWriter::WriteDumpRes(int32_t dumpRes)
     return WriteDumpResWithLen(dumpRes, currentDataLen_);
 }
 
-bool DfxBufferWriter::WriteDumpResWithLen(int32_t dumpRes, uint32_t dataLen)
+bool DfxBufferWriter::WriteDumpResWithLen(int32_t dumpRes, size_t dataLen)
 {
     if (!resFd_) {
         return false;
     }
     DumpResMessage resMsg = {
         .code = dumpRes,
-        .dataLen = dataLen
+        .dataLen = static_cast<uint32_t>(dataLen)
     };
     ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(resFd_.GetFd(), &resMsg, sizeof(resMsg)));
     if (nwrite != static_cast<ssize_t>(sizeof(resMsg))) {
         DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
         return false;
     }
-    DFXLOGI("WriteDumpRes: code=%{public}d, dataLen=%{public}u", dumpRes, dataLen);
+    DFXLOGI("WriteDumpRes: code=%{public}d, dataLen=%{public}zu", dumpRes, dataLen);
     return true;
 }
 
@@ -167,19 +167,21 @@ void DfxBufferWriter::SetWriteFunc(BufferWriteFunc func)
 int DfxBufferWriter::GetFaultloggerdRequestType()
 {
     switch (request_.siginfo.si_signo) {
-        case SIGLEAK_STACK:
-            switch (abs(request_.siginfo.si_code)) {
+        case SIGLEAK_STACK: {
+            int code = request_.siginfo.si_code;
+            if (code == std::numeric_limits<int>::min()) {
+                return FaultLoggerType::LEAK_STACKTRACE;
+            }
+            switch (abs(code)) {
                 case SIGLEAK_STACK_FDSAN:
-                    FALLTHROUGH_INTENDED;
                 case SIGLEAK_STACK_ARKTS_ENVSAN:
-                    FALLTHROUGH_INTENDED;
                 case SIGLEAK_STACK_JEMALLOC:
-                    FALLTHROUGH_INTENDED;
                 case SIGLEAK_STACK_BADFD:
                     return FaultLoggerType::CPP_STACKTRACE;
                 default:
                     return FaultLoggerType::LEAK_STACKTRACE;
             }
+        }
         case SIGDUMP:
             return FaultLoggerType::CPP_STACKTRACE;
         default:

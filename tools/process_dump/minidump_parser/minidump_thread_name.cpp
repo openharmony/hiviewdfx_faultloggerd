@@ -103,10 +103,43 @@ MinidumpThreadNameList::MinidumpThreadNameList(std::shared_ptr<MinidumpMemoryRea
 {
 }
 
+bool MinidumpThreadNameList::ReadThreadNameRawData(uint32_t threadNameCount)
+{
+    for (uint32_t i = 0; i < threadNameCount; ++i) {
+        auto threadName = std::make_shared<MinidumpThreadName>(memoryReader_);
+        if (!threadName->Read()) {
+            lastError_ = threadName->GetLastError();
+            DFXLOGE("MinidumpThreadNameList cannot initialize thread name %{public}u", i);
+            return false;
+        }
+        threadNames_.emplace_back(threadName);
+    }
+    return true;
+}
+
+bool MinidumpThreadNameList::ReadThreadNameAuxiliaryData(uint32_t threadNameCount)
+{
+    for (uint32_t i = 0; i < threadNameCount; ++i) {
+        auto threadName = threadNames_[i];
+        if (!threadName->ReadAuxiliaryData()) {
+            lastError_ = threadName->GetLastError();
+            DFXLOGE("MinidumpThreadNameList cannot read thread name %{public}u", i);
+            return false;
+        }
+        uint32_t threadId = 0;
+        if (threadName->GetThreadID(threadId)) {
+            threadIdToNameMap_.insert(std::make_pair(threadId, threadName->GetThreadName()));
+        }
+    }
+    return true;
+}
+
 bool MinidumpThreadNameList::Read(uint32_t expectedSize)
 {
     threadNameCount_ = 0;
     isValid_ = false;
+    threadNames_.clear();
+    threadIdToNameMap_.clear();
 
     uint32_t threadNameCount = 0;
     if (!memoryReader_->ReadBytes(&threadNameCount, sizeof(threadNameCount))) {
@@ -123,29 +156,20 @@ bool MinidumpThreadNameList::Read(uint32_t expectedSize)
         return false;
     }
 
-    for (uint32_t i = 0; i < threadNameCount; ++i) {
-        auto threadName = std::make_shared<MinidumpThreadName>(memoryReader_);
-
-        if (!threadName->Read()) {
-            lastError_ = threadName->GetLastError();
-            DFXLOGE("MinidumpThreadNameList cannot initialize thread name %{public}u", i);
-            return false;
-        }
-        threadNames_.emplace_back(threadName);
+    uint64_t actualSize = sizeof(threadNameCount)
+        + static_cast<uint64_t>(sizeof(MDRawThreadName)) * threadNameCount;
+    if (actualSize > expectedSize) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            std::string("Thread name list stream size mismatch"), __LINE__);
+        DFXLOGE("MinidumpThreadNameList stream size mismatch");
+        return false;
     }
 
-    for (uint32_t i = 0; i < threadNameCount; ++i) {
-        auto threadName = threadNames_[i];
-        if (!threadName->ReadAuxiliaryData() && !threadName->Valid()) {
-            lastError_ = threadName->GetLastError();
-            DFXLOGE("MinidumpThreadNameList cannot read thread name %{public}u", i);
-            return false;
-        }
-
-        uint32_t threadId = 0;
-        if (threadName->GetThreadID(threadId)) {
-            threadIdToNameMap_.insert(std::make_pair(threadId, threadName->GetThreadName()));
-        }
+    if (!ReadThreadNameRawData(threadNameCount)) {
+        return false;
+    }
+    if (!ReadThreadNameAuxiliaryData(threadNameCount)) {
+        return false;
     }
     threadNameCount_ = threadNameCount;
     isValid_ = true;

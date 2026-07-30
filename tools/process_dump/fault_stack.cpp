@@ -36,7 +36,12 @@ REGISTER_DUMP_INFO_CLASS(FaultStack);
 void FaultStack::Collect(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder)
 {
     std::string prefix = "FaultStack:\n";
-    CollectStackInfo(process.GetKeyThread()->GetThreadInfo().nsTid, process.GetKeyThread()->GetFrames());
+    auto keyThread = process.GetKeyThread();
+    if (keyThread == nullptr) {
+        DFXLOGE("keyThread is nullptr");
+        return;
+    }
+    CollectStackInfo(keyThread->GetThreadInfo().nsTid, keyThread->GetFrames());
     if (blocks_.empty()) {
         return;
     }

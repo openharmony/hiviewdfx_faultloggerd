@@ -615,6 +615,7 @@ bool ProcessDumper::InitUnwinder(DumpErrorCode &dumpRes)
     DFX_TRACE_SCOPED("InitUnwinder");
     if (process_ == nullptr) {
         DFXLOGE("Failed to read real pid!");
+        dumpRes = DumpErrorCode::DUMP_EREADPID;
         return false;
     }
 #if defined(PROCESSDUMP_MINIDEBUGINFO)

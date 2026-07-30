@@ -2414,3 +2414,52 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest100, TestSize.Level2)
 }
 
 }
+/**
+ * @tc.name: MinidumpDumperTest101
+ * @tc.desc: test SetupKeyThreadStack returns false when keyThread is nullptr
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest101, TestSize.Level2)
+{
+    MinidumpDumper dumper;
+    std::string minidumpData = BuildMinidumpWithThreadList();
+    int tmpFd = open("/data/test/minidump_null_key_101", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, minidumpData.c_str(), minidumpData.size());
+    lseek(tmpFd, 0, SEEK_SET);
+    auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
+    MinidumpParser parser(input);
+    dumper.ConfigurePerformance(parser);
+    bool parsed = parser.Parse();
+    if (parsed) {
+        MinidumpThreadList* threadList = parser.GetThreadList();
+        if (threadList != nullptr) {
+            std::shared_ptr<DfxThread> nullKeyThread = nullptr;
+            bool ret = dumper.SetupKeyThreadStack(threadList, nullKeyThread);
+            EXPECT_FALSE(ret);
+        }
+    }
+    close(tmpFd);
+    unlink("/data/test/minidump_null_key_101");
+}
+
+/**
+ * @tc.name: MinidumpDumperTest102
+ * @tc.desc: test UnwindOtherThread skips thread with stackBuf size < sizeof(uintptr_t)
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest102, TestSize.Level2)
+{
+    MinidumpDumper dumper;
+    dumper.unwinder_ = std::make_shared<Unwinder>();
+    dumper.process_.InitProcessInfo(getpid(), getpid(), getuid(), "test_proc");
+    auto thread1 = DfxThread::Create(getpid(), 100, 100, false);
+    thread1->SetThreadName("small_stack_thread");
+    auto smallStack = std::make_shared<std::vector<uint8_t>>(4, 0);
+    thread1->SetThreadStackBuffer(smallStack);
+    thread1->SetStartOfStackMemory(0x1000);
+    dumper.process_.GetOtherThreads().push_back(thread1);
+    EXPECT_EQ(dumper.process_.GetOtherThreads().size(), 1u);
+    dumper.UnwindOtherThread();
+    EXPECT_EQ(dumper.process_.GetOtherThreads().size(), 1u);
+}

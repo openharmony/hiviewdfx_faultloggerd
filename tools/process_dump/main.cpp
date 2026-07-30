@@ -63,14 +63,24 @@ static bool StartMinidump(int argc, char *argv[])
     if (argc < 3) { // 3 : contain param
         return false;
     }
-    int pid = 0;
-    int pipeFd = -1;
-    int enableMinidump = 0;
-    int enableMinidumpToCrashLog = 0;
-    int ret = sscanf_s(argv[2], "%d %d %d %d", &pid, &pipeFd, &enableMinidump, &enableMinidumpToCrashLog);
-    if (ret != 4) { // 4 : four params
+    long values[4] = {0}; // 4 : four params
+    int idx = 0;
+    char *token = strtok(argv[2], " ");
+    while (token != nullptr && idx < 4) { // 4 : four params
+        if (!SafeStrtol(token, &values[idx], DECIMAL_BASE)
+            || values[idx] < INT_MIN || values[idx] > INT_MAX) {
+            return false;
+        }
+        token = strtok(nullptr, " ");
+        ++idx;
+    }
+    if (idx != 4) { // 4 : four params
         return false;
     }
+    int pid = static_cast<int>(values[0]);
+    int pipeFd = static_cast<int>(values[1]);
+    int enableMinidump = static_cast<int>(values[2]);
+    int enableMinidumpToCrashLog = static_cast<int>(values[3]);
 #ifndef is_ohos_lite
     OHOS::HiviewDFX::MinidumpDumper minidumpDumper;
     return minidumpDumper.Dump(pid, pipeFd, static_cast<bool>(enableMinidump),

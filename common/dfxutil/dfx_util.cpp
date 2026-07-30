@@ -307,7 +307,7 @@ int WriteBuf(int fd, const char* buf, size_t len)
     return totalWritten;
 }
 
-int WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc)
+size_t WriteStringMsg(const int fd, const std::string& msg, BufferWriteFunc writeFunc)
 {
     constexpr size_t step = 1024 * 1024;
     size_t totalWritten = 0;
