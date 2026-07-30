@@ -117,6 +117,26 @@ void DumpInfoHeader::Print(DfxProcess& process, const ProcessDumpRequest& reques
     DecorativeDumpInfo::Print(process, request, unwinder);
 }
 
+#ifndef is_ohos_lite
+bool DumpInfoHeader::IsFfrtStackOverflow(const ProcessDumpRequest& request,
+    DfxProcess& process, uint64_t addr)
+{
+    auto regs = process.GetKeyThread()->GetThreadRegs();
+    uintptr_t sp = (regs != nullptr) ? regs->GetSp() : 0;
+    // No valid ffrt coroutine stack: not a coroutine stack-buffer-overflow.
+    if (request.ffrtStackBegin == 0 || request.ffrtStackSize == 0) {
+        return false;
+    }
+    // sp register unavailable (0): cannot confirm a coroutine stack overflow.
+    if (sp == 0) {
+        DFXLOGW("sp register unavailable, skip ffrt coroutine stack overflow check");
+        return false;
+    }
+    // Both the faulting addr and sp below the coroutine stack low boundary confirm an overflow.
+    return addr < request.ffrtStackBegin && sp < request.ffrtStackBegin;
+}
+#endif
+
 std::string DumpInfoHeader::GetReasonInfo(const ProcessDumpRequest& request, DfxProcess& process, DfxMaps& maps)
 {
     std::string reasonInfo = DfxSignal::PrintSignal(request.siginfo);
@@ -133,10 +153,8 @@ std::string DumpInfoHeader::GetReasonInfo(const ProcessDumpRequest& request, Dfx
                 break;
             }
 #ifndef is_ohos_lite
-            // FFRT coroutine stack: fields are non-zero only when crash thread is in coroutine,
-            // non-ffrt threads have ffrtStackBegin=0 && ffrtStackSize=0, won't enter this branch
-            if (request.ffrtStackBegin != 0 && request.ffrtStackSize != 0 &&
-                addr < request.ffrtStackBegin) {
+            // FFRT coroutine stack overflow: ffrt fields are non-zero only for coroutine threads.
+            if (IsFfrtStackOverflow(request, process, addr)) {
                 reasonInfo += StringPrintf(
                     " current thread stack low address = %" PRIX64_ADDR
                     ", probably caused by coroutine stack-buffer-overflow",

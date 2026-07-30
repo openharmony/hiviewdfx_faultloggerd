@@ -187,6 +187,10 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest003_FfrtCoroutineStackOverflow, T
     DfxProcess process;
     process.InitProcessInfo(pid, pid, getuid(), "test_process");
     process.keyThread_ = DfxThread::Create(pid, pid, pid, false);
+    auto regs = DfxRegs::Create();
+    ASSERT_NE(regs, nullptr);
+    regs->SetSp(stackBegin - 0x200); // sp fell below the coroutine stack low boundary
+    process.GetKeyThread()->SetThreadRegs(regs);
 
     Unwinder unwinder(pid, pid, false);
     DumpInfoHeader dumpInfoHeader;
@@ -263,6 +267,91 @@ HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest005_FfrtAddrAboveStackBegin, Test
     ASSERT_TRUE(CheckContent(result, "coroutine stack-buffer-overflow", false));
     process.Detach();
     GTEST_LOG_(INFO) << "DumpInfoHeaderTest005_FfrtAddrAboveStackBegin: end.";
+}
+
+/**
+ * @tc.name: DumpInfoHeaderTest006_FfrtSpValidNoFalsePositive
+ * @tc.desc: ffrt thread with fault addr below stack begin but sp still in range should not be misjudged as overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest006_FfrtSpValidNoFalsePositive, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest006_FfrtSpValidNoFalsePositive: start.";
+    pid_t pid = getpid();
+    uintptr_t stackBegin = 0x100000;
+    size_t stackSize = 0x8000;
+    uintptr_t faultAddr = stackBegin - 0x100; // fault addr below coroutine stack begin
+
+    ProcessDumpRequest request = {};
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    request.tid = pid;
+    request.pid = pid;
+    request.nsPid = pid;
+    request.timeStamp = GetTimeMilliSeconds();
+    request.ffrtStackBegin = stackBegin;
+    request.ffrtStackSize = stackSize;
+    siginfo_t siginfo = {};
+    siginfo.si_signo = SIGSEGV;
+    siginfo.si_code = SEGV_MAPERR;
+    siginfo.si_addr = reinterpret_cast<void*>(faultAddr);
+    request.siginfo = siginfo;
+
+    DfxProcess process;
+    process.InitProcessInfo(pid, pid, getuid(), "test_process");
+    process.keyThread_ = DfxThread::Create(pid, pid, pid, false);
+    auto regs = DfxRegs::Create();
+    ASSERT_NE(regs, nullptr);
+    regs->SetSp(stackBegin + 0x100); // sp still within coroutine stack range, not overflowed
+    process.GetKeyThread()->SetThreadRegs(regs);
+
+    Unwinder unwinder(pid, pid, false);
+    DumpInfoHeader dumpInfoHeader;
+    dumpInfoHeader.Collect(process, request, unwinder);
+    dumpInfoHeader.Print(process, request, unwinder);
+    ASSERT_TRUE(CheckContent(result, "coroutine stack-buffer-overflow", false));
+    process.Detach();
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest006_FfrtSpValidNoFalsePositive: end.";
+}
+
+/**
+ * @tc.name: DumpInfoHeaderTest007_FfrtUnknownSpNoFalsePositive
+ * @tc.desc: ffrt thread with fault addr below stack begin but sp unknown (0) should not be misjudged as overflow
+ * @tc.type: FUNC
+ */
+HWTEST_F(DumpInfoHeaderTest, DumpInfoHeaderTest007_FfrtUnknownSpNoFalsePositive, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest007_FfrtUnknownSpNoFalsePositive: start.";
+    pid_t pid = getpid();
+    uintptr_t stackBegin = 0x100000;
+    size_t stackSize = 0x8000;
+    uintptr_t faultAddr = stackBegin - 0x100; // fault addr below coroutine stack begin
+
+    ProcessDumpRequest request = {};
+    request.type = ProcessDumpType::DUMP_TYPE_CPP_CRASH;
+    request.tid = pid;
+    request.pid = pid;
+    request.nsPid = pid;
+    request.timeStamp = GetTimeMilliSeconds();
+    request.ffrtStackBegin = stackBegin;
+    request.ffrtStackSize = stackSize;
+    siginfo_t siginfo = {};
+    siginfo.si_signo = SIGSEGV;
+    siginfo.si_code = SEGV_MAPERR;
+    siginfo.si_addr = reinterpret_cast<void*>(faultAddr);
+    request.siginfo = siginfo;
+
+    DfxProcess process;
+    process.InitProcessInfo(pid, pid, getuid(), "test_process");
+    // keyThread regs not set: GetThreadRegs() returns nullptr, sp falls back to 0 (unknown)
+    process.keyThread_ = DfxThread::Create(pid, pid, pid, false);
+
+    Unwinder unwinder(pid, pid, false);
+    DumpInfoHeader dumpInfoHeader;
+    dumpInfoHeader.Collect(process, request, unwinder);
+    dumpInfoHeader.Print(process, request, unwinder);
+    ASSERT_TRUE(CheckContent(result, "coroutine stack-buffer-overflow", false));
+    process.Detach();
+    GTEST_LOG_(INFO) << "DumpInfoHeaderTest007_FfrtUnknownSpNoFalsePositive: end.";
 }
 #endif
 }
