@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2025 Huawei Device Co., Ltd.
+ * Copyright (c) 2025-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +17,6 @@
 #define DFX_JSVM_H
 
 #include <cstdint>
-#include <mutex>
 #include <securec.h>
 #include <string>
 #include <vector>
@@ -106,7 +105,6 @@ private:
     using ParseJsvmFrameInfoFn = int (*)(uintptr_t, uintptr_t, JsvmFunction*);
     using JsvmCreateJsSymbolExtractorFn = int (*)(uintptr_t*, uint32_t);
     using JsvmDestroyJsSymbolExtractorFn = int (*)(uintptr_t);
-    std::mutex mutex_;
     pthread_rwlock_t rwLock_ = PTHREAD_RWLOCK_INITIALIZER;
 
     StepJsvmFn stepJsvmFn_ = nullptr;

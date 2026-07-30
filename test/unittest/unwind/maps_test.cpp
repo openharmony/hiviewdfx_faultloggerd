@@ -15,9 +15,12 @@
 
 #include "dfx_elf.h"
 #include "dfx_maps.h"
+#include <atomic>
 #include <gtest/gtest.h>
 #include <memory>
 #include <sys/types.h>
+#include <thread>
+#include <vector>
 
 #include "file_util.h"
 
@@ -550,6 +553,42 @@ HWTEST_F(MapsTest, BuildStaticArkLLVMRangesTest001, TestSize.Level2)
     EXPECT_TRUE(rangesEmptySym.empty());
 
     GTEST_LOG_(INFO) << "BuildStaticArkLLVMRangesTest001: end.";
+}
+
+/**
+ * @tc.name: IsStaticArkExecutableConcurrentTest001
+ * @tc.desc: test IsStaticArkExecutable under multi-threaded concurrent invocation
+ * @tc.type: FUNC
+ */
+HWTEST_F(MapsTest, IsStaticArkExecutableConcurrentTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "IsStaticArkExecutableConcurrentTest001: start.";
+
+    constexpr int threadNum = 8;
+    constexpr int iterPerThread = 100;
+    std::vector<std::thread> threads;
+    std::atomic<int> falseCount{0};
+    std::atomic<int> trueCount{0};
+
+    for (int i = 0; i < threadNum; ++i) {
+        threads.emplace_back([&]() {
+            auto arkMap = std::make_shared<DfxMap>(0x1000, 0x2000, 0, PROT_EXEC,
+                "/system/lib64/libarkruntime.so");
+            for (int j = 0; j < iterPerThread; ++j) {
+                bool r = arkMap->IsStaticArkExecutable(0x1000 + j);
+                r ? trueCount.fetch_add(1, std::memory_order_relaxed)
+                  : falseCount.fetch_add(1, std::memory_order_relaxed);
+            }
+        });
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
+    // No real ELF symbols available, GetStaticArkRange must fail, all calls return false.
+    EXPECT_EQ(trueCount.load(), 0);
+    EXPECT_EQ(falseCount.load(), threadNum * iterPerThread);
+
+    GTEST_LOG_(INFO) << "IsStaticArkExecutableConcurrentTest001: end.";
 }
 
 /**

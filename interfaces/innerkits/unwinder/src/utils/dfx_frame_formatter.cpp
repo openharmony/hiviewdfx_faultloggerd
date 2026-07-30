@@ -68,7 +68,7 @@ std::string DfxFrameFormatter::GetFrameStr(const DfxFrame& frame)
         if (!frame.funcName.empty() &&
             frame.funcName.length() <= MAX_FUNC_NAME_LEN) {
             data += "(" + frame.funcName;
-            data += StringPrintf("+%" PRId64, frame.funcOffset);
+            data += StringPrintf("+%" PRIu64, frame.funcOffset);
             data += ")";
         }
         if (!frame.buildId.empty()) {

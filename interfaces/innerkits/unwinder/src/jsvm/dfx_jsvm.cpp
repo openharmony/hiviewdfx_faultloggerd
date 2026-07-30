@@ -65,9 +65,10 @@ DfxJsvm& DfxJsvm::Instance()
 
 void DfxJsvm::Clear()
 {
+    void* handleToClose = nullptr;
     pthread_rwlock_wrlock(&rwLock_);
     if (jsvmHandle_ != nullptr) {
-        dlclose(jsvmHandle_);
+        handleToClose = jsvmHandle_;
         jsvmHandle_ = nullptr;
     }
     jsvmCreateJsSymbolExtractorFn_ = nullptr;
@@ -75,6 +76,9 @@ void DfxJsvm::Clear()
     parseJsvmFrameInfoFn_ = nullptr;
     stepJsvmFn_ = nullptr;
     pthread_rwlock_unlock(&rwLock_);
+    if (handleToClose != nullptr) {
+        dlclose(handleToClose);
+    }
 }
 
 bool DfxJsvm::DlsymJsvmFunc(const char* const libName, const char* const funcName, void* dlsymFuncPointer)
@@ -93,8 +97,7 @@ bool DfxJsvm::DlsymJsvmFunc(const char* const libName, const char* const funcNam
 
 bool DfxJsvm::InitJsvmFunction(const char* const functionName)
 {
-    std::unique_lock<std::mutex> lock(mutex_);
-    std::vector<JsvmFunctionTable> functionTable = {
+    static JsvmFunctionTable functionTable[] = {
         {JSVM_LIB_NAME, CREATE_JSVM_FUNC_NAME, reinterpret_cast<void*>(&jsvmCreateJsSymbolExtractorFn_)},
         {JSVM_LIB_NAME, DESTROY_JSVM_FUNC_NAME, reinterpret_cast<void*>(&jsvmDestroyJsSymbolExtractorFn_)},
         {JSVM_LIB_NAME, PARSE_JSVM_FUNC_NAME, reinterpret_cast<void*>(&parseJsvmFrameInfoFn_)},
@@ -111,7 +114,7 @@ bool DfxJsvm::InitJsvmFunction(const char* const functionName)
 int DfxJsvm::JsvmCreateJsSymbolExtractor(uintptr_t* extractorPtr, uint32_t pid)
 {
     int ret = -1;
-    pthread_rwlock_rdlock(&rwLock_);
+    pthread_rwlock_wrlock(&rwLock_);
     if (jsvmCreateJsSymbolExtractorFn_ != nullptr || InitJsvmFunction(CREATE_JSVM_FUNC_NAME)) {
         ret = jsvmCreateJsSymbolExtractorFn_(extractorPtr, pid);
     }
@@ -122,7 +125,7 @@ int DfxJsvm::JsvmCreateJsSymbolExtractor(uintptr_t* extractorPtr, uint32_t pid)
 int DfxJsvm::JsvmDestroyJsSymbolExtractor(uintptr_t extractorPtr)
 {
     int ret = -1;
-    pthread_rwlock_rdlock(&rwLock_);
+    pthread_rwlock_wrlock(&rwLock_);
     if (jsvmDestroyJsSymbolExtractorFn_ != nullptr || InitJsvmFunction(DESTROY_JSVM_FUNC_NAME)) {
         ret = jsvmDestroyJsSymbolExtractorFn_(extractorPtr);
     }
@@ -133,7 +136,7 @@ int DfxJsvm::JsvmDestroyJsSymbolExtractor(uintptr_t extractorPtr)
 int DfxJsvm::ParseJsvmFrameInfo(uintptr_t pc, uintptr_t extractorPtr, JsvmFunction *jsvmFunction)
 {
     int ret = -1;
-    pthread_rwlock_rdlock(&rwLock_);
+    pthread_rwlock_wrlock(&rwLock_);
     if ((parseJsvmFrameInfoFn_ != nullptr || InitJsvmFunction(PARSE_JSVM_FUNC_NAME)) &&
         jsvmFunction != nullptr) {
         ret = parseJsvmFrameInfoFn_(pc, extractorPtr, jsvmFunction);
@@ -148,7 +151,7 @@ int DfxJsvm::StepJsvmFrame(void *obj, ReadMemFunc readMemFn, JsvmStepParam* jsvm
         DFXLOGE("param is nullptr.");
         return -1;
     }
-    pthread_rwlock_rdlock(&rwLock_);
+    pthread_rwlock_wrlock(&rwLock_);
     int ret = -1;
     if (stepJsvmFn_ != nullptr || InitJsvmFunction(STEP_JSVM_FUNC_NAME)) {
         ret = stepJsvmFn_(obj, readMemFn, jsvmParam);
