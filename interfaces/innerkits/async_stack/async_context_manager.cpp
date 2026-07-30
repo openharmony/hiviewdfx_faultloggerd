@@ -234,7 +234,7 @@ DfxAsyncContext* DfxAsyncContextManager::GetCurrentContext()
     }
     if (threadCtx->curAsyncContextsCnt <= 0 || threadCtx->curAsyncContextsCnt > MAX_THREAD_ASYNC_CTX_DEPTH ||
         !threadCtx->valid) {
-        DFXLOGW("GetCurrentContext thread context count is invalid");
+        DFXLOGD("GetCurrentContext thread context count is invalid");
         return nullptr;
     }
     int index = threadCtx->curAsyncContextsCnt - 1;
