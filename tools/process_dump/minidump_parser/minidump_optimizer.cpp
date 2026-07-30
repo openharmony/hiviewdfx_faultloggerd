@@ -20,6 +20,7 @@
 #include <cmath>
 #include <functional>
 #include <future>
+#include <cinttypes>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -334,14 +335,15 @@ BitmapIndex::BitmapIndex(uint64_t addressRange, uint32_t granularity)
     : granularity_(granularity)
 {
     if (granularity != 0) {
-        size_t bitmapSize = static_cast<size_t>(addressRange / granularity) + 1;
-        constexpr size_t maxBitMapSize = (1 << 20) + 1;
-        if (bitmapSize > maxBitMapSize) {
-            DFXLOGE("BitmapIndex size too large: %{public}zu, disabling bitmap", bitmapSize);
+        uint64_t bitmapSize64 = (addressRange / granularity) + 1;
+        constexpr uint64_t maxBitMapSize = (1ULL << 20) + 1;
+        if (bitmapSize64 > maxBitMapSize) {
+            DFXLOGE("BitmapIndex size too large: %{public}" PRIu64 ", disabling bitmap",
+                    bitmapSize64);
             granularity_ = 0;
             return;
         }
-        std::vector<bool> bitmap(bitmapSize, false);
+        std::vector<bool> bitmap(static_cast<size_t>(bitmapSize64), false);
         bitmap_ = std::move(bitmap);
     }
 }

@@ -712,7 +712,7 @@ static void ReadUnwindFinishMsg(int signo)
     if (g_unwindResult == CRASH_UNWIND_SUCCESS_FLAG) {
         SetKernelSnapshot(false);
 #ifndef is_ohos_lite
-        RequestSetMinidumpToCrashLog(false);
+        RequestSetMinidumpToCrashLog(false, getpid());
 #endif
     }
     if (g_blockExit == CRASH_BLOCK_EXIT_FLAG) {
@@ -821,6 +821,7 @@ bool DumpPrviProcess(int signo, struct ProcessDumpRequest *request)
     int ret = WaitProcessExitTimeout(pid, WAITPID_TIMEOUT, true);
     UnmapMemoryOnce(mmapSize);
     DFXLOGI("lite process exit code %{public}d", ret);
+    RequestSetMinidumpToCrashLog(false, request->pid);
 #endif
     return true;
 }

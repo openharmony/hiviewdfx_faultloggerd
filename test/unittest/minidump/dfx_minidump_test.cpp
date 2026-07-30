@@ -63,7 +63,7 @@ HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig001, TestSize.Level2)
         abort();
     } else {
         auto file = WaitCreateCrashFile("minidump", pid);
-        EXPECT_FALSE(file.empty()) << "minidump file should be created when enabled";
+        EXPECT_TRUE(file.empty()) << "only child of appspawn can create minidump file";
 
         int status = 0;
         waitpid(pid, &status, 0);

@@ -35,6 +35,7 @@
 #include "dfx_util.h"
 #include "dump_utils.h"
 #include "faultloggerd_client.h"
+#include "hisysevent.h"
 #include "lite_process_dumper.h"
 #include "minidump_dumper.h"
 #include "procinfo.h"
@@ -49,6 +50,9 @@ constexpr size_t BUFFER_SIZE = 4096;
 bool MinidumpDumper::Dump(int pid, int pipeFd, bool enableMinidump, bool enableMinidumpToCrashLog)
 {
     CollectDumpHeaderInfo(pid);
+    if (enableMinidumpToCrashLog) {
+        ReportToAbilityManagerService(process_, request_);
+    }
     if (!GenerateMinidump(pid, pipeFd, enableMinidump)) {
         DFXLOGE("Failed to generate minidump file!");
         return false;
@@ -58,8 +62,14 @@ bool MinidumpDumper::Dump(int pid, int pipeFd, bool enableMinidump, bool enableM
             DFXLOGE("Failed to init buffer writer.");
         }
         if (!ParseMinidump()) {
-            DFXLOGE("Failed to parse minidump!");
-            return false;
+            int ret = HiSysEventWrite(HiSysEvent::Domain::RELIABILITY, "CPP_CRASH_NO_LOG",
+                HiSysEvent::EventType::FAULT,
+                "UID", request_.uid,
+                "PID", request_.pid,
+                "PROCESS_NAME", request_.processName,
+                "HAPPEN_TIME", request_.timeStamp,
+                "SUMMARY", "Failed to parse minidump file!");
+            DFXLOGI("Report pid %{public}d parse minidump failed event ret %{public}d", request_.pid, ret);
         }
         UnwindProcess();
         PrintDumpInfo();
@@ -75,10 +85,13 @@ void MinidumpDumper::CollectDumpHeaderInfo(int pid)
     request_.timeStamp = GetTimeMilliSeconds();
     request_.pid = pid;
     request_.nsPid = pid;
+    request_.uid = 0;
     long uid = 0;
     uint64_t sigBlk = 0;
     GetUidAndSigBlk(pid, uid, sigBlk);
-    request_.uid = uid;
+    if (uid > 0) {
+        request_.uid = static_cast<uint32_t>(uid);
+    }
     std::string processName;
     ReadProcessName(pid, processName);
     if (strcpy_s(request_.processName, sizeof(request_.processName), processName.c_str()) != EOK) {
@@ -126,18 +139,23 @@ bool MinidumpDumper::ParseMinidump()
     
     if (!ParseExceptionStream(minidumpParser)) {
         DFXLOGE("Failed to parse exception stream");
+        return false;
     }
     if (!ParseThreadNameStream(minidumpParser)) {
         DFXLOGE("Failed to parse thread name stream");
+        return false;
     }
     if (!ParseThreadListStream(minidumpParser)) {
         DFXLOGE("Failed to parse thread list stream");
+        return false;
     }
     if (!ParseMemoryListStream(minidumpParser)) {
         DFXLOGE("Failed to parse memory list stream");
+        return false;
     }
     if (!ParseMapListStream(minidumpParser)) {
         DFXLOGE("Failed to parse map list stream");
+        return false;
     }
     auto endTime = std::chrono::steady_clock::now();
     auto parseTime = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -411,11 +429,12 @@ bool MinidumpDumper::TransferData(int srcFd, int dstFd)
     ssize_t totoBytesRead = 0;
     ssize_t bytesRead;
 
-    while ((bytesRead = read(srcFd, buffer.data(), buffer.size())) > 0) {
+    while ((bytesRead = OHOS_TEMP_FAILURE_RETRY(read(srcFd, buffer.data(), buffer.size()))) > 0) {
         totoBytesRead += bytesRead;
         ssize_t bytesWritten = 0;
         while (bytesWritten < bytesRead) {
-            ssize_t ret = write(dstFd, buffer.data() + bytesWritten, bytesRead - bytesWritten);
+            ssize_t ret = OHOS_TEMP_FAILURE_RETRY(
+                write(dstFd, buffer.data() + bytesWritten, bytesRead - bytesWritten));
             if (ret < 0) {
                 DFXLOGE("write failed, errno=%{public}d", errno);
                 return false;
@@ -459,7 +478,9 @@ bool MinidumpDumper::GenerateMinidump(int pid, pid_t pipeFd, bool enableMinidump
         DFXLOGE("failed to transfer minidump data for pid=%{public}d", pid);
         return false;
     }
-
+    CrashLogConfig crashLogConfig;
+    crashLogConfig.minidumpLog = enableMinidump;
+    process_.SetCrashLogConfig(crashLogConfig);
     DFXLOGI("successfully transferred minidump data for pid=%{public}d", pid);
     return true;
 }

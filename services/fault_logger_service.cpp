@@ -703,8 +703,19 @@ bool MiniDumpService::Filter(const std::string &socketName, int32_t connectionFd
         return false;
     }
 
-    DFXLOGW("minidump success to check request credential request:%{public}d, cred:%{public}d, fd:%{public}d",
-        requestData.uid, creds.uid, connectionFd);
+    if (requestData.pid != creds.pid) {
+        DFXLOGE("pid mismatch: request %{public}d vs cred %{public}d",
+            requestData.pid, creds.pid);
+        return false;
+    }
+    if (requestData.uid != creds.uid) {
+        DFXLOGE("uid mismatch: request %{public}u vs cred %{public}u",
+            requestData.uid, creds.uid);
+        return false;
+    }
+
+    DFXLOGW("minidump request credential check passed, pid:%{public}d, uid:%{public}u",
+        requestData.pid, requestData.uid);
     return true;
 }
 
