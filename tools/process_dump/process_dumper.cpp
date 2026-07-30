@@ -660,6 +660,7 @@ DumpErrorCode ProcessDumper::InitDfxProcess()
     DFXLOGI("Init key thread successfully.");
 #if defined(__aarch64__) && !defined(is_ohos_lite)
     if (CoredumpController::IsCoredumpAllowed(request_)) {
+        alarm(COREDUMP_TIMEOUT); // reset processdump alarm for coredump timeout
         coredumpManager_ = std::make_unique<CoredumpManager>();
         coredumpManager_->ProcessRequest(request_);
     }
