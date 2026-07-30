@@ -26,6 +26,7 @@
 
 #include "dfx_log.h"
 #include "dfx_util.h"
+#include "proc_util.h"
 #include "smart_fd.h"
 
 #undef LOG_TAG
@@ -191,7 +192,7 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         disableMinidumpToCrashLogConfigs.erase(data.data.work_data.pid);
     }
     SmartFd pipeGuard(data.data.work_data.pipefd);
-    if (!enableMinidump && !enableMinidumpToCrashLog) {
+    if ((!enableMinidump && !enableMinidumpToCrashLog) || !IsParentAppspawn(data.data.work_data.pid)) {
         struct __pdump_work_cancel_arg_s arg = {0};
         arg.workid = data.header.workid;
         int ret = -1;

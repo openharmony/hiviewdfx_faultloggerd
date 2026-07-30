@@ -54,10 +54,11 @@ int32_t RequestSetMiniDump(bool able);
 
 /**
  * @brief SetMinidumpToCrashLog
- * @param able true to enable minidump, false to disable minidump
+ * @param enable true to enable minidump, false to disable minidump
+ * @param pid process ID
  * @return if success return 0, otherwise return the error code
  */
-int32_t RequestSetMinidumpToCrashLog(bool enable);
+int32_t RequestSetMinidumpToCrashLog(bool enable, pid_t pid);
 
 #ifdef __cplusplus
 }
