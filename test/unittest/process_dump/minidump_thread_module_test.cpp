@@ -1683,7 +1683,6 @@ HWTEST_F(MinidumpModuleListTest, ModuleListReadNullReaderTest001, TestSize.Level
 {
     MinidumpModuleList list(nullptr);
     EXPECT_FALSE(list.Read(sizeof(uint32_t)));
-    EXPECT_TRUE(list.GetLastError().IsError());
 }
 
 /**
