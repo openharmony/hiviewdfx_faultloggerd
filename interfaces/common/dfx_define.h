@@ -30,6 +30,7 @@
 #define SIGLEAK_STACK_BADFD 0xbadfd // When sig = 42, use si_code = 0xbadfd mark the event as badfd
 #define PROCESSDUMP_TIMEOUT 15
 #define DUMPCATCHER_TIMEOUT 15
+#define COREDUMP_TIMEOUT 30
 
 #ifndef NAME_MAX
 #define NAME_MAX         255
