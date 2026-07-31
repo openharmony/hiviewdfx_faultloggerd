@@ -269,7 +269,7 @@ extern "C" void ReleaseAsyncContext(uint64_t stackId)
 
 static inline uint64_t CollectStackByFp(void** pcArray, uint32_t depth)
 {
-    size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, depth);
+    size_t size = g_fpBacktrace->BacktraceFromFp(__builtin_frame_address(0), pcArray, depth, true);
     uint64_t stackId = 0;
     auto stackIdPtr = reinterpret_cast<StackId*>(&stackId);
     uintptr_t* pcs = reinterpret_cast<uintptr_t*>(pcArray);
