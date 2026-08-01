@@ -342,39 +342,15 @@ bool TempFileManager::Init()
 int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time,
     std::string& filePath)
 {
-    const std::set<int32_t> needTidFaultTypes = {
-        FaultLoggerType::JS_HEAP_SNAPSHOT, FaultLoggerType::JS_RAW_SNAPSHOT,
-        FaultLoggerType::JSVM_HEAP_SNAPSHOT, FaultLoggerType::ARKWEB_JS_HEAP_SNAPSHOT,
-        FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT, FaultLoggerType::HYBRID_JS_HEAP_SNAPSHOT,
-        FaultLoggerType::STATIC_JS_HEAP_SNAPSHOT, FaultLoggerType::STATIC_JS_RAW_SNAPSHOT
-    };
-
-    const std::set<int32_t> needRawheapExtFaultTypes = {
-        FaultLoggerType::JS_RAW_SNAPSHOT, FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT,
-        FaultLoggerType::STATIC_JS_RAW_SNAPSHOT
-    };
-
+    if (type < 0) {
+        return -1;
+    }
     const auto fileConfig = GetTargetFileConfig(type);
     if (fileConfig == nullptr) {
         DFXLOGW("failed to create fd, unknown file type for %{public}d", type);
         return -1;
     }
-    filePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/" +
-        fileConfig->fileNamePrefix + "-" + std::to_string(pid);
-    if (needTidFaultTypes.find(type) != needTidFaultTypes.end() && tid != -1) {
-        filePath += "-" + std::to_string(tid);
-    }
-    filePath += "-" + std::to_string(time == 0 ? std::chrono::duration_cast<std::chrono::milliseconds>\
-(std::chrono::system_clock::now().time_since_epoch()).count() : time);
-    if (needRawheapExtFaultTypes.find(type) != needRawheapExtFaultTypes.end()) {
-        filePath += ".rawheap";
-    } else if (type == FaultLoggerType::CPP_CRASH) {
-#ifndef is_ohos_lite
-        filePath += ".json";
-#endif
-    } else if (type == FaultLoggerType::MINIDUMP) {
-        filePath += ".dmp";
-    }
+    filePath = GenerateFileName(*fileConfig, pid, tid, time);
     DFXLOGI("create file for filePath(%{public}s).", filePath.c_str());
     int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(),
         O_RDWR | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP));
@@ -391,6 +367,37 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
         }
     }
     return fd;
+}
+
+std::string TempFileManager::GenerateFileName(const SingleFileConfig& config, int32_t pid, int32_t tid, uint64_t time)
+{
+    const std::set<int32_t> needTidFaultTypes = {
+        FaultLoggerType::JS_HEAP_SNAPSHOT, FaultLoggerType::JS_RAW_SNAPSHOT, FaultLoggerType::JSVM_HEAP_SNAPSHOT,
+        FaultLoggerType::ARKWEB_JS_HEAP_SNAPSHOT, FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT,
+        FaultLoggerType::HYBRID_JS_HEAP_SNAPSHOT, FaultLoggerType::STATIC_JS_HEAP_SNAPSHOT,
+        FaultLoggerType::STATIC_JS_RAW_SNAPSHOT
+    };
+    const std::set<int32_t> needRawheapExtFaultTypes = {
+        FaultLoggerType::JS_RAW_SNAPSHOT, FaultLoggerType::ARKWEB_JS_RAW_SNAPSHOT,
+        FaultLoggerType::STATIC_JS_RAW_SNAPSHOT
+    };
+    std::string filePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/" +
+        config.fileNamePrefix + "-" + std::to_string(pid);
+    if (needTidFaultTypes.find(config.type) != needTidFaultTypes.end() && tid != -1) {
+        filePath += "-" + std::to_string(tid);
+    }
+    filePath += "-" + std::to_string(time == 0 ? std::chrono::duration_cast<std::chrono::milliseconds>\
+(std::chrono::system_clock::now().time_since_epoch()).count() : time);
+    if (needRawheapExtFaultTypes.find(config.type) != needRawheapExtFaultTypes.end()) {
+        filePath += ".rawheap";
+    } else if (config.type == FaultLoggerType::CPP_CRASH) {
+#ifndef is_ohos_lite
+        filePath += ".json";
+#endif
+    } else if (config.type == FaultLoggerType::MINIDUMP) {
+        filePath += ".dmp";
+    }
+    return filePath;
 }
 
 #ifndef is_ohos_lite

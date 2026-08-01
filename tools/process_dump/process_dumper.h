@@ -83,6 +83,7 @@ private:
 
 private:
     void SetProcessdumpTimeout(siginfo_t &si);
+    void ReadBinderProcInfo();
     std::shared_ptr<DfxProcess> process_ = nullptr;
     std::shared_ptr<Unwinder> unwinder_ = nullptr;
     ThreadPool threadPool_;

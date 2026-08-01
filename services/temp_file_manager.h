@@ -32,6 +32,7 @@ public:
     bool Init();
 
     static int32_t CreateFileDescriptor(int32_t type, int32_t pid, int32_t tid, uint64_t time, std::string& filePath);
+    static std::string GenerateFileName(const SingleFileConfig& config, int32_t pid, int32_t tid, uint64_t time);
 #ifndef is_ohos_lite
     static bool CheckCrashFileRecord(int32_t pid);
     static void RecordFileCreation(int32_t type, int32_t pid);

@@ -16,10 +16,17 @@
 #include "fault_logger_service.h"
 
 #include <algorithm>
+#include <cctype>
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
 #include <fstream>
+#include <csignal>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
+#include <sys/inotify.h>
+#include <unistd.h>
 #include "dfx_define.h"
 #include "dfx_log.h"
 #include "dfx_lperf.h"
@@ -40,6 +47,10 @@
 #ifndef HISYSEVENT_DISABLE
 #include "hisysevent.h"
 #endif
+#if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
+#include "parameters.h"
+#endif
+#include <set>
 
 #include "file_util.h"
 #include "fault_logger_config.h"
@@ -789,6 +800,178 @@ bool MiniDumpService::RestoreDumpable(pid_t pid)
     constexpr int delaySec = 30;
     DelayTaskQueue::GetInstance().AddDelayTask(task, delaySec);
     return true;
+}
+
+int32_t BinderPidsDumpService::OnRequest(const std::string& socketName, int32_t connectionFd,
+    const BinderPidsDumpRequestData& requestData)
+{
+    if (socketName != SERVER_CRASH_SOCKET_NAME) {
+        return ResponseCode::REQUEST_REJECT;
+    }
+    auto nsPids = SendSignalToBinderPid(requestData);
+    if (nsPids.empty()) {
+        DFXLOGW("%{public}s :: all signals sent failed", FAULTLOGGERD_SERVICE_TAG);
+        return ResponseCode::INVALID_REQUEST_DATA;
+    }
+    constexpr auto extraTempFilePathParam = "persist.hiviewdfx.faultloggerd.extraTempFilePath";
+    auto extraTempFilePath = OHOS::system::GetParameter(extraTempFilePathParam, "");
+    if (extraTempFilePath.empty()) {
+        return ResponseCode::UN_SUPPORTED_FEATURE;
+    }
+    auto listener = TempFileListener::CreateInstance(extraTempFilePath, requestData.pid, std::move(nsPids));
+    if (!listener) {
+        DFXLOGE("%{public}s :: failed to create temp file listener", FAULTLOGGERD_SERVICE_TAG);
+        return ResponseCode::ABNORMAL_SERVICE;
+    }
+    EpollManager::GetInstance().AddListener(std::move(listener));
+    std::string timeStr = std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+    std::string binderInfoPath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath +
+        "/peer_binder_stack-" + std::to_string(requestData.pid) + "-" + timeStr;
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(
+        open(binderInfoPath.c_str(), O_RDWR | O_TRUNC | O_CREAT | O_NOFOLLOW, S_IRUSR | S_IWUSR | S_IRGRP));
+    if (fd < 0) {
+        DFXLOGE("%{public}s :: failed to open file %{public}s, errno: %{public}d",
+            FAULTLOGGERD_SERVICE_TAG, binderInfoPath.c_str(), errno);
+        return ResponseCode::ABNORMAL_SERVICE;
+    }
+    int32_t responseData = ResponseCode::REQUEST_SUCCESS;
+    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+    SendFileDescriptorToSocket(connectionFd, &fd, 1);
+    close(fd);
+    return ResponseCode::REQUEST_SUCCESS;
+}
+
+std::set<pid_t> BinderPidsDumpService::SendSignalToBinderPid(const BinderPidsDumpRequestData& requestData)
+{
+    siginfo_t si{0};
+    constexpr auto sigDump = 3;
+    si.si_signo = sigDump;
+    si.si_code = SI_USER;
+    std::set<pid_t> nsPids;
+    for (size_t i = 0; i < MAX_BINDER_PIDS_COUNT; i++) {
+        if (requestData.binderPids[i] <= 0 || requestData.nsBinderPids[i] <= 0) {
+            continue;
+        }
+        int32_t res = FaultCommonUtil::SendSignalToProcess(requestData.binderPids[i], si);
+        if (res != ResponseCode::REQUEST_SUCCESS) {
+            DFXLOGE("%{public}s :: send signal to pid %{public}d failed", FAULTLOGGERD_SERVICE_TAG,
+                requestData.binderPids[i]);
+            continue;
+        }
+        nsPids.insert(requestData.nsBinderPids[i]);
+    }
+    return nsPids;
+}
+
+std::unique_ptr<BinderPidsDumpService::TempFileListener> BinderPidsDumpService::TempFileListener::CreateInstance(
+    const std::string& watchPath, const pid_t pid, std::set<pid_t> nsPids)
+{
+    SmartFd watchFd{inotify_init()};
+    if (!watchFd) {
+        DFXLOGE("%{public}s :: failed to init inotify fd.", FAULTLOGGERD_SERVICE_TAG);
+        return nullptr;
+    }
+    if (inotify_add_watch(watchFd.GetFd(), watchPath.c_str(), IN_CLOSE) < 0) {
+        DFXLOGE("%{public}s :: failed to add watch for path: %{public}s", FAULTLOGGERD_SERVICE_TAG, watchPath.c_str());
+        return nullptr;
+    }
+    return std::unique_ptr<TempFileListener>(
+        new (std::nothrow) TempFileListener(std::move(watchFd), watchPath, pid, std::move(nsPids)));
+}
+
+BinderPidsDumpService::TempFileListener::TempFileListener(SmartFd fd, const std::string& watchPath, const pid_t pid,
+    std::set<pid_t> nsPids) : EpollListener(std::move(fd), tempFileWaitOutOfTime),  pid_(pid), watchPath_(watchPath),
+    nsPids_(std::move(nsPids)) {}
+
+EventResult BinderPidsDumpService::TempFileListener::OnEventPoll()
+{
+    constexpr uint32_t eventLen = static_cast<uint32_t>(sizeof(inotify_event));
+    constexpr uint32_t buffLen = 32 * eventLen;
+    char eventBuf[buffLen] = {0};
+    int ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), eventBuf, sizeof(eventBuf)));
+    if (ret < 0) {
+        DFXLOGE("%{public}s :: failed to read inotify event.", FAULTLOGGERD_SERVICE_TAG);
+        return EventResult::REMOVE;
+    }
+    size_t readLen = static_cast<size_t>(ret);
+    size_t eventPos = 0;
+    while (readLen >= eventLen && eventPos < buffLen - eventLen) {
+        auto* event = reinterpret_cast<inotify_event*>(eventBuf + eventPos);
+        if (event->len > 0) {
+            std::string fileName(event->name);
+            HandlerTempFile(watchPath_ + "/" + event->name);
+            DFXLOGI("%{public}s :: file %{public}s created in %{public}s",
+                FAULTLOGGERD_SERVICE_TAG, fileName.c_str(), watchPath_.c_str());
+        }
+        size_t eventSize = eventLen + event->len;
+        readLen -= eventSize;
+        eventPos += eventSize;
+    }
+    return nsPids_.empty() ? EventResult::REMOVE : EventResult::KEEP;
+}
+
+void BinderPidsDumpService::TempFileListener::HandlerTempFile(const std::string& filePath)
+{
+    int32_t nsPid = ExtractPidFromFile(filePath);
+    if (nsPid <= 0) {
+        DFXLOGW("%{public}s :: failed to extract pid from file: %{public}s",
+            FAULTLOGGERD_SERVICE_TAG, filePath.c_str());
+        return;
+    }
+    auto it = nsPids_.find(nsPid);
+    if (it == nsPids_.end()) {
+        DFXLOGD("%{public}s :: pid %{public}d not in nsPids list", FAULTLOGGERD_SERVICE_TAG, nsPid);
+        return;
+    }
+    CreateSymlinkForPid(nsPid, filePath);
+    nsPids_.erase(it);
+}
+
+void BinderPidsDumpService::TempFileListener::CreateSymlinkForPid(int32_t nsPid, const std::string& targetPath)
+{
+    std::string timeStr = std::to_string(std::chrono::system_clock::now().time_since_epoch().count());
+    std::string linkPath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath + "/trace-" +
+         std::to_string(nsPid) + "-to_pid-" + std::to_string(pid_) + "-" + timeStr;
+    if (link(targetPath.c_str(), linkPath.c_str()) != 0) {
+        DFXLOGE("%{public}s :: failed to create hard link from %{public}s to %{public}s, errno: %{public}d",
+            FAULTLOGGERD_SERVICE_TAG, targetPath.c_str(), linkPath.c_str(), errno);
+        return;
+    }
+    DFXLOGI("%{public}s :: created hard link %{public}s -> %{public}s for nspid %{public}d",
+        FAULTLOGGERD_SERVICE_TAG, linkPath.c_str(), targetPath.c_str(), nsPid);
+}
+
+int32_t BinderPidsDumpService::TempFileListener::ExtractPidFromFile(const std::string& filePath)
+{
+    int pid = -1;
+    FILE* file = fopen(filePath.c_str(), "r");
+    if (!file) {
+        return pid;
+    }
+    char line[512];
+    while (fgets(line, sizeof(line), file) != nullptr) {
+        if (sscanf_s(line, "----- pid %d at", &pid) == 1) {
+            break;
+        }
+    }
+    if (fclose(file) != 0) {
+        DFXLOGW("%{public}s :: fclose failed for file: %{public}s, errno: %{public}d",
+            FAULTLOGGERD_SERVICE_TAG, filePath.c_str(), errno);
+    }
+    return pid;
+}
+
+void BinderPidsDumpService::TempFileListener::OnTimeOut()
+{
+    std::string pidsStr;
+    for (auto it = nsPids_.begin(); it != nsPids_.end(); ++it) {
+        if (!pidsStr.empty()) {
+            pidsStr += ", ";
+        }
+        pidsStr += std::to_string(*it);
+    }
+    DFXLOGW("%{public}s :: inotify wait timeout for path: %{public}s, remaining nsPids: [%{public}s]",
+        FAULTLOGGERD_SERVICE_TAG, watchPath_.c_str(), pidsStr.c_str());
 }
 #endif
 }

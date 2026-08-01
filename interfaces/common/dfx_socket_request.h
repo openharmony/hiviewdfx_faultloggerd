@@ -117,6 +117,8 @@ typedef enum FaultLoggerClientType : int8_t {
     PIPE_FD_LIMITED_CLIENT,
     /** for set minidump able */
     MINIDUMP_CLIENT,
+    /** for request to dump binder processes */
+    BINDER_PIDS_DUMP_CLIENT,
 } FaultLoggerClientType;
 
 typedef struct RequestDataHead {
@@ -263,9 +265,21 @@ typedef struct MiniDumpRequestData {
     int8_t enableMinidumpToCrashLog;
 } __attribute__((packed)) MiniDumpRequestData;
 
+#define MAX_BINDER_PIDS_COUNT 10
+
+typedef struct BinderPidsDumpRequestData {
+    /** request data head **/
+    RequestDataHead head;
+    int32_t pid;
+    /** target process ids */
+    int32_t binderPids[MAX_BINDER_PIDS_COUNT];
+    /** namespace process ids */
+    int32_t nsBinderPids[MAX_BINDER_PIDS_COUNT];
+} __attribute__((packed)) BinderPidsDumpRequestData;
+
 /**
  * @brief  request information
-*/
+ */
 typedef struct FaultLoggerdRequest {
     /** request data head **/
     RequestDataHead head;
@@ -371,6 +385,8 @@ typedef enum ResponseCode : int32_t {
     CORE_DUMP_GENERATE_FAIL,
     /** resource limit */
     RESOURCE_LIMIT,
+    /** unsupported feature */
+    UN_SUPPORTED_FEATURE,
 } ResponseCode;
 
 #ifdef __cplusplus
