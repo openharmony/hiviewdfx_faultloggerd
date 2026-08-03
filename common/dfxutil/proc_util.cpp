@@ -294,7 +294,7 @@ bool IsParentAppspawn(pid_t pid)
 {
     ProcessInfo info;
     if (!ParseProcInfo(pid, info) || info.ppid <= 0) {
-        return false; // read stat fail: fail-closed, dump will be cancelled by caller
+        return false; // read stat fail, fail-closed, dump will be cancelled by caller
     }
     // read parent process name from /proc/<ppid>/cmdline (null-separated, take first arg basename)
     std::string cmdlinePath = "/proc/" + std::to_string(info.ppid) + "/cmdline";

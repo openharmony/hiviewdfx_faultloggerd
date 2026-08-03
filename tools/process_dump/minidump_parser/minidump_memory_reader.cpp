@@ -76,7 +76,7 @@ std::string MinidumpMemoryReader::ConvertUTF16ToUTF8(const std::vector<uint16_t>
         return "";
     }
     std::string out;
-    out.reserve(in.size() * 3); // 3 : max UTF-8 bytes per UTF-16 code unit
+    out.reserve(in.size() * 3);  // 3 : max UTF-8 bytes per UTF-16 code unit
 
     for (size_t i = 0; i < in.size() && in[i]; ++i) {
         uint32_t cp = in[i];

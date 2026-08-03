@@ -17,7 +17,7 @@ if (defined(ohos_lite)) {
   import("//build/lite/config/component/lite_component.gni")
   import("//build/lite/config/test.gni")
 
-  config("unittest_private_config") {
+   config("unittest_private_config") {
     cflags_cc = [ "-Dprivate=public" ]
   }
 
@@ -54,7 +54,6 @@ if (defined(ohos_lite)) {
         "$faultloggerd_path/tools/process_dump:process_info_src",
         "$faultloggerd_path/common/cutil:dfx_cutil",
       ]
-
       configs = [ ":unittest_private_config" ]
       external_deps = [ "hilog_lite:hilog_shared" ]
     }

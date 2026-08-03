@@ -714,7 +714,7 @@ bool MiniDumpService::Filter(const std::string &socketName, int32_t connectionFd
         return false;
     }
 
-    DFXLOGW("minidump request credential check passed, pid:%{public}d, uid:%{public}u",
+    DFXLOGI("minidump request credential check passed, pid:%{public}d, uid:%{public}u",
         requestData.pid, requestData.uid);
     return true;
 }
