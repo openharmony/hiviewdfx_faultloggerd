@@ -195,11 +195,10 @@ bool MinidumpDumper::BuildSignalInfoFromException(MinidumpException* exception)
         DFXLOGE("exceptionRecord is nullptr");
         return false;
     }
-    siginfo_t sigInfo {
-        .si_signo = exceptionRecord->exceptionCode,
-        .si_code = exceptionRecord->exceptionFlags,
-        .si_addr = reinterpret_cast<void*>(exceptionRecord->exceptionAddress),
-    };
+    siginfo_t sigInfo{};
+    sigInfo.si_signo = exceptionRecord->exceptionCode,
+    sigInfo.si_code = exceptionRecord->exceptionFlags,
+    sigInfo.si_addr = reinterpret_cast<void*>(exceptionRecord->exceptionAddress),
     process_.SetReason(DfxSignal::PrintSignal(sigInfo));
     return true;
 }

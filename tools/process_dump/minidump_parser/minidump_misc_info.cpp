@@ -24,7 +24,8 @@
 namespace OHOS {
 namespace HiviewDFX {
 MinidumpMiscInfo::MinidumpMiscInfo(std::shared_ptr<MinidumpMemoryReader> memoryReader)
-    : MinidumpStream(memoryReader)
+    : MinidumpStream(memoryReader),
+      miscInfo_({})
 {
 }
 

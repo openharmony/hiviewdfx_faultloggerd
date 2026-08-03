@@ -25,6 +25,7 @@ namespace OHOS {
 namespace HiviewDFX {
 MinidumpThread::MinidumpThread(std::shared_ptr<MinidumpMemoryReader> memoryReader)
     : memoryReader_(memoryReader),
+      thread_({}),
       memory_(nullptr),
       context_(nullptr),
       isValid_(false)
