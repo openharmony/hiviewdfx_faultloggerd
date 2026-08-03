@@ -341,10 +341,12 @@ static void DumpRequest(int signo)
     DfxDumpRequest(signo, &g_request);
 }
 
+#if !defined(is_ohos_lite) && defined(__aarch64__)
 static void DumpPrviRequest(int signo)
 {
     DumpPrviProcess(signo, &g_request);
 }
+#endif
 
 static bool PreSigdumpCheck(int signo, siginfo_t *si)
 {
@@ -401,13 +403,13 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
 
     DFXLOGI("DFX_SignalHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
         "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
-#ifndef is_ohos_lite
+#if !defined(is_ohos_lite) && defined(__aarch64__)
     if (signo != SIGLEAK_STACK && IsNoNewPriv(PROC_SELF_STATUS_PATH)) {
         DumpPrviRequest(signo);
     } else {
 #endif
         DumpRequest(signo);
-#ifndef is_ohos_lite
+#if !defined(is_ohos_lite) && defined(__aarch64__)
     }
 #endif
     handlingTid = 0;
