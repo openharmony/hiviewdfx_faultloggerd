@@ -285,15 +285,7 @@ bool DfxAsyncContextPool::IsValidAsyncContextAddressLocked(DfxAsyncContext* ctx)
     if (!initialized_.load() || pool_ == nullptr || poolSize_ == 0) {
         return false;
     }
-    if (ctx < &pool_[0] || ctx > &pool_[poolSize_ - 1]) {
-        return false;
-    }
-    // Check alignment: ctx must be aligned to DfxAsyncContext bundary
-    size_t offset = reinterpret_cast<char*>(ctx) - reinterpret_cast<char*>(&pool_[0]);
-    if (offset % sizeof(DfxAsyncContext) != 0) {
-        return false;
-    }
-    return true;
+    return (ctx >= &pool_[0] && ctx <= &pool_[poolSize_ - 1]);
 }
 
 bool DfxAsyncContextManager::IsValidAsyncContext(DfxAsyncContext* ctx)
