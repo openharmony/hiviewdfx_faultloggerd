@@ -44,6 +44,7 @@ if (defined(ohos_lite)) {
 
   ohos_shared_library("crash_exception") {
     sources = crash_exception_sources
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":crash_exception_config" ]
     version_script = "libcrash_exception.map"
     external_deps = [ "hisysevent:libhisysevent" ]

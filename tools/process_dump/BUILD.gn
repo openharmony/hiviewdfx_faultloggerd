@@ -168,6 +168,7 @@ if (defined(ohos_lite)) {
 
   ohos_source_set("process_info_src") {
     sources = processdump_sources
+    branch_protector_ret = "pac_ret"
     if (target_cpu == "arm64") {
       sources += coredump_sources
     }
@@ -213,6 +214,7 @@ if (defined(ohos_lite)) {
 
   ohos_executable("processdump") {
     install_enable = true
+    branch_protector_ret = "pac_ret"
     configs = [
       ":processdump_config",
       "$faultloggerd_path/common/build:coverage_flags",

@@ -30,6 +30,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libasync_stack") {
+    branch_protector_ret = "pac_ret"
     sanitize = {
         cfi = true
         cfi_cross_dso = true

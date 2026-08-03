@@ -42,7 +42,7 @@ if (!defined(ohos_lite)) {
       "minidump_maps.cpp",
       "minidump_observer.cpp"
     ]
-
+    branch_protector_ret = "pac_ret"
     public_configs = [ ":minidump_config" ]
     deps = [ "$faultloggerd_common_path/dfxlog:dfx_hilog" ]
     external_deps = [
@@ -54,6 +54,7 @@ if (!defined(ohos_lite)) {
   }
 
   ohos_source_set("minidump_parser_cfi") {
+    branch_protector_ret = "pac_ret"
     sanitize = {
       cfi = true
       cfi_cross_dso = true

@@ -24,6 +24,7 @@ if (defined(ohos_lite)) {
   }
 
   ohos_shared_library("libjson_stack_formatter") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":json_stack_formatter_config",
       "$faultloggerd_common_path/build:coverage_flags",

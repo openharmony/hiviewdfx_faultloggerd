@@ -32,6 +32,7 @@ if (!defined(ohos_lite)) {
     ]
   }
   ohos_source_set("dfx_local_handler_src") {
+    branch_protector_ret = "pac_ret"
     public_configs = [
       ":dfx_local_handler_config",
       "$faultloggerd_frameworks_path/allocator:dfx_allocator_config",
@@ -60,6 +61,7 @@ if (!defined(ohos_lite)) {
   }
 
   ohos_source_set("dfx_local_handler_src_cfi") {
+    branch_protector_ret = "pac_ret"
     sanitize = {
         cfi = true
         cfi_cross_dso = true
