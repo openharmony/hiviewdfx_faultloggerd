@@ -39,7 +39,8 @@
 namespace OHOS {
 namespace HiviewDFX {
 MinidumpParser::MinidumpParser(const std::string& path)
-    : directory_(nullptr),
+    : header_({}),
+      directory_(nullptr),
       streamMap_(std::make_shared<MinidumpStreamMap>()),
       path_(path),
       stream_(nullptr),
@@ -49,8 +50,8 @@ MinidumpParser::MinidumpParser(const std::string& path)
 }
 
 MinidumpParser::MinidumpParser(std::shared_ptr<std::istream> input)
-
-    : directory_(nullptr),
+    : header_({}),
+      directory_(nullptr),
       streamMap_(std::make_shared<MinidumpStreamMap>()),
       stream_(input),
       isValid_(false),

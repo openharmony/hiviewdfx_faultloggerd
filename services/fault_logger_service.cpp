@@ -42,6 +42,7 @@
 #endif
 
 #include "file_util.h"
+#include "fault_logger_config.h"
 #include "string_printf.h"
 #include "string_util.h"
 #include "temp_file_manager.h"
@@ -263,8 +264,11 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
         MiniDumpService::RestoreDumpable(requestData.pid);
     }
     if (requestData.minidump == false && requestData.type == FaultLoggerType::MINIDUMP) {
-        if (unlink(filePath.c_str()) == -1) {
-            DFXLOGE("unlink errno %{public}d", errno);
+        const std::string& tempFilePath = FaultLoggerConfig::GetInstance().GetTempFileConfig().tempFilePath;
+        if (filePath.find(tempFilePath) == 0 && filePath.find(".dmp") != std::string::npos) {
+            if (unlink(filePath.c_str()) == -1) {
+                DFXLOGE("unlink file path %{public}s errno %{public}d", filePath.c_str(), errno);
+            }
         }
     }
     TempFileManager::RecordFileCreation(requestData.type, requestData.pid);

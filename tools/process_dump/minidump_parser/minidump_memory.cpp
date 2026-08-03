@@ -156,7 +156,8 @@ void MinidumpMemoryRegion::Print() const
 }
 
 MinidumpMemoryList::MinidumpMemoryList(std::shared_ptr<MinidumpMemoryReader> memoryReader)
-    : MinidumpStream(memoryReader)
+    : MinidumpStream(memoryReader),
+      regionCount_(0)
 {
 }
 

@@ -209,7 +209,8 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         do {
             ret = ioctl(pFd_, __PDUMP_IOCTL_CANCEL, &arg);
             usleep(1000); // 1000 : 1ms
-        } while (ret < 0 && ++retryTimes < retryMaxTimes);
+            ++retryTimes;
+        } while (ret < 0 && retryTimes < retryMaxTimes);
         if (ret < 0) {
             DFXLOGE("failed to ioctl cancel pdump, errno=%{public}d", errno);
         }
