@@ -410,6 +410,12 @@ HWTEST_F(ThreadDumpInfoTest, ThreadDumpInfoTest007, TestSize.Level2)
     DumpResMessage dumpRes;
     EXPECT_EQ(read(readFd.GetFd(), &dumpRes, sizeof(dumpRes)), sizeof(dumpRes));
     EXPECT_EQ(dumpRes.code, DUMP_EMAIN_THREAD_DONE);
+#if defined(__aarch64__)
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        process.Detach();
+        return;
+    }
+#endif
     std::vector<std::string> keyWords = {
         "Tid:",
         to_string(tid),

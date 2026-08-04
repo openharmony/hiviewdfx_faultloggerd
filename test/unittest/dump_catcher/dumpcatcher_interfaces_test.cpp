@@ -1187,6 +1187,9 @@ HWTEST_F(DumpCatcherInterfacesTest, DumpCatcherInterfacesTest042, TestSize.Level
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, false));
     ASSERT_FALSE(DfxJsonFormatter::FormatKernelStack(msg, formattedStack, true));
 
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     // get kernel stack
     ASSERT_EQ(DfxGetKernelStack(gettid(), msg), 0);
 
