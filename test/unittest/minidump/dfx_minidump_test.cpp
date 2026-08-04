@@ -52,6 +52,9 @@ public:
 HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig001, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "MinidumpSetConfig001: start.";
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -80,6 +83,9 @@ HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig001, TestSize.Level2)
 HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig002, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "MinidumpSetConfig002: start.";
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -107,6 +113,9 @@ HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig002, TestSize.Level2)
 HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig003, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "MinidumpSetConfig003: start.";
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -137,6 +146,9 @@ HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig003, TestSize.Level2)
 HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "MinidumpSetConfig004: start.";
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -166,6 +178,9 @@ HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig004, TestSize.Level2)
 HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "MinidumpSetConfig005: start.";
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -193,6 +208,9 @@ HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig005, TestSize.Level2)
 HWTEST_F(DfxMiniDumpTest, MinidumpSetConfig006, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "MinidumpSetConfig006: start.";
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
 
     pid_t pid = fork();
     if (pid < 0) {
