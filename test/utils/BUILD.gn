@@ -94,7 +94,7 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/common",
       "$faultloggerd_path/common/dfxutil",
     ]
-
+    branch_protector_ret = "pac_ret"
     dfx_test_util_sources += [ "cppcrash_test_json.cpp" ]
 
     sources = dfx_test_util_sources
@@ -140,6 +140,7 @@ if (defined(ohos_lite)) {
     ]
   }
   ohos_static_library("faultloggerd_test_src") {
+    branch_protector_ret = "pac_ret"
     configs = [ ":faultloggerd_config" ]
 
     defines = [ "FAULTLOGGERD_TEST" ]
