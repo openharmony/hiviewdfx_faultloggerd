@@ -98,7 +98,8 @@ std::vector<std::pair<uintptr_t, uintptr_t>> GetAddrFromMaps(std::string& result
             char nameBuf[256];
             (void)sscanf_s(preLineMap.c_str(), "%*s %*s %*s %255s", nameBuf, sizeof(nameBuf));
             std::string curInode = nameBuf;
-            if (!mapsAddr.empty() && preInode == curInode && curInode.find("[anon:") == std::string::npos) {
+            if (!mapsAddr.empty() && leftAddr == mapsAddr.top() && preInode == curInode &&
+                !curInode.empty() && curInode.find("[anon:") == std::string::npos) {
                 mapsAddr.pop();
                 mapsAddr.push(rightAddr);
             } else {
