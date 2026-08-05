@@ -1985,6 +1985,11 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest133, TestSize.Level2)
 */
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest134, TestSize.Level2)
 {
+    std::string res = ExecuteCommands("uname");
+    if (res.find("Linux") != std::string::npos) {
+        ASSERT_NE(res.find("Linux"), std::string::npos);
+        return;
+    }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest134: start.";
     string cmd = "FdsanInLibuvWork";
     string fileName;

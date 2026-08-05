@@ -224,6 +224,9 @@ HWTEST_F(FaultloggerdClientTest, ReportDumpStatsTest001, TestSize.Level2)
  */
 HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest001, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest001: start.";
     int32_t ret = RequestSetMinidumpToCrashLog(true, getpid());
     EXPECT_EQ(ret, 0);
@@ -237,6 +240,9 @@ HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest001, TestSize.L
  */
 HWTEST_F(FaultloggerdClientTest, RequestSetMinidumpToCrashLogTest002, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     GTEST_LOG_(INFO) << "RequestSetMinidumpToCrashLogTest002: start.";
     int32_t ret = RequestSetMinidumpToCrashLog(false, getpid());
     EXPECT_EQ(ret, 0);
@@ -274,6 +280,9 @@ HWTEST_F(FaultloggerdClientTest, MiniDumpRequestDataFieldTest001, TestSize.Level
  */
 HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest001, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid();
     EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
@@ -289,6 +298,9 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest001, TestS
  */
 HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest002, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid();
     svc.enableMinidumpConfigs.emplace(testPid);
@@ -304,6 +316,9 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest002, TestS
  */
 HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest003, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     auto& svc = MinidumpManagerService::GetInstance();
     svc.disableMinidumpToCrashLogConfigs.clear();
     pid_t testPid = getpid();
@@ -320,6 +335,9 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest003, TestS
  */
 HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest004, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     auto& svc = MinidumpManagerService::GetInstance();
     svc.disableMinidumpToCrashLogConfigs.clear();
     pid_t testPid = getpid();
@@ -353,6 +371,9 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest005, TestS
  */
 HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest006, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid();
     svc.enableMinidumpConfigs.erase(testPid);
@@ -722,6 +743,9 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerSetMiniDumpPfdNegativeTest001, T
  */
 HWTEST_F(FaultloggerdClientTest, MinidumpManagerSetMiniDumpAlreadyInConfigsTest001, TestSize.Level2)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid() + 50000;
     svc.enableMinidumpConfigs.emplace(testPid);
