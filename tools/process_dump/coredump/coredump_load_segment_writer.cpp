@@ -32,7 +32,7 @@ auto LoadSegmentWriter::MergeLoadSeg(size_t idxBegin, size_t idxEnd)
     for (size_t i = idxBegin; i < idxEnd;) {
         Elf64_Phdr merged = segs_[i];
         size_t j = i + 1;
-        while (j < segs_.size() &&
+        while (j < idxEnd &&
                (merged.p_vaddr + merged.p_memsz == segs_[j].p_vaddr) &&
                (merged.p_flags == segs_[j].p_flags)) {
             merged.p_memsz += segs_[j].p_memsz;
