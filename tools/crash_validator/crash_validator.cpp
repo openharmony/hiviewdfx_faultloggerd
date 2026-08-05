@@ -129,14 +129,13 @@ void CrashValidator::PrintEvents(int fd, const std::vector<CrashEvent>& events, 
 void CrashValidator::Dump(int fd)
 {
     dprintf(fd, "Summary:\n");
+    std::lock_guard<std::mutex> lock(lock_);
     dprintf(fd, "Total Signaled Process:%d\n", totalEventCount_);
     dprintf(fd, "Total CppCrash Count:%d\n", normalEventCount_);
     if (totalEventCount_ > 0) {
         dprintf(fd, "CppCrash detect rate:%d%%\n",
             (normalEventCount_ * 100) / totalEventCount_); // 100 : percent ratio
     }
-
-    std::lock_guard<std::mutex> lock(lock_);
     if (!noLogEvents_.empty()) {
         dprintf(fd, "No CppCrash Log Events(%zu):\n", noLogEvents_.size());
         PrintEvents(fd, noLogEvents_, false);

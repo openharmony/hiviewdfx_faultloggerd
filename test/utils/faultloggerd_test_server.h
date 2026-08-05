@@ -37,7 +37,7 @@ private:
     public:
         ~Executor() override;
         explicit Executor(TaskQueue& taskQueue);
-        void OnEventPoll() override;
+        OHOS::HiviewDFX::EventResult OnEventPoll() override;
     private:
         TaskQueue& taskQueue_;
     };

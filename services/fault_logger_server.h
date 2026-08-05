@@ -31,7 +31,7 @@ private:
     class SocketServerListener : public EpollListener {
     public:
         SocketServerListener(SocketServer& socketServer, SmartFd fd, std::string socketName);
-        void OnEventPoll() override;
+        EventResult OnEventPoll() override;
         SocketServer& socketServer_;
         const std::string socketName_;
     };
@@ -40,7 +40,8 @@ private:
     public:
         ClientRequestListener(SocketServerListener& socketServerListener, SmartFd fd, uid_t clientUid);
         ~ClientRequestListener() override;
-        void OnEventPoll() override;
+        EventResult OnEventPoll() override;
+        void OnTimeOut() override;
     private:
         SocketServerListener& socketServerListener_;
         uid_t clientUid_;

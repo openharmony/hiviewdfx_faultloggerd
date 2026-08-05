@@ -26,16 +26,43 @@
 namespace OHOS {
 namespace HiviewDFX {
 
+enum class EventResult {
+    KEEP,    // Keep the listener after event handling
+    REMOVE   // Remove the listener after event handling
+};
+
 class EpollListener {
 public:
-    explicit EpollListener(SmartFd fd, bool persist = false);
+    /**
+     * Construct an EpollListener with timeout.
+     *
+     * @param fd The file descriptor to monitor.
+     * @param timeoutInMs Timeout in milliseconds. Special values:
+     *        -1: No timeout (permanent listener)
+     *         0: Reserved (not recommended)
+     *        >0: Timeout in milliseconds
+     *
+     * @note Kernel limitation: Although epoll_wait API accepts up to INT_MAX ms (~24 days),
+     *       the kernel's schedule_timeout() implementation has practical limits:
+     *       - 32-bit systems: jiffies overflow risk after ~49.7 days
+     *       - Timer precision: Depends on CONFIG_HZ (typically 1-10ms granularity)
+     *       - System suspend: May interfere with long timeouts
+     *
+     * @warning RECOMMENDATION: Do NOT exceed 600000ms (10 min) to ensure:
+     *          - Reliable timeout handling across kernel versions
+     *          - Better maintainability and debugging
+     *          - Avoid potential jiffies overflow issues
+     *          - For longer delays, use timerfd instead
+     */
+    explicit EpollListener(SmartFd fd, int64_t timeoutInMs = -1);
     virtual ~EpollListener() = default;
-    virtual void OnEventPoll() = 0;
-    virtual bool IsPersist() const final;
+    virtual EventResult OnEventPoll() = 0;
+    virtual void OnTimeOut() {}
+    int64_t GetTimeOutTime() const;
     int32_t GetFd() const;
 private:
     const SmartFd fd_;
-    bool persist_{false};
+    int64_t timeoutTime_{0};
 };
 
 class EpollManager {
@@ -46,7 +73,7 @@ public:
     EpollManager(EpollManager&&) noexcept = delete;
     EpollManager& operator=(EpollManager&&) noexcept = delete;
     bool Init(int maxPollEvent);
-    void StartEpoll(int maxConnection, int epollTimeoutInMilliseconds = -1);
+    void StartEpoll(int maxConnection);
     void StopEpoll();
     bool AddListener(std::unique_ptr<EpollListener> epollListener);
     bool RemoveListener(int32_t fd);
@@ -56,6 +83,8 @@ private:
     bool AddEpollEvent(EpollListener& epollListener) const;
     bool DelEpollEvent(int32_t fd) const;
     EpollListener* GetTargetListener(int32_t fd) const;
+    int32_t GetNextWaitTime() const;
+    void HandleTimeOut();
     std::list<std::unique_ptr<EpollListener>> listeners_;
     SmartFd eventFd_;
 };
@@ -68,11 +97,11 @@ uint64_t GetMicroSecondsSinceBoot();
 
 class TimerTask : public EpollListener {
 public:
-    explicit TimerTask(bool persist);
+    TimerTask();
     ~TimerTask() override = default;
-    void OnEventPoll() final;
+    EventResult OnEventPoll() final;
 protected:
-    virtual void OnTimer() = 0;
+    virtual bool OnTimer() = 0;  // Returns true to keep timer, false to remove
     bool SetTimeOption(int32_t delayTimeInS, int32_t intervalTimeInS);
 };
 
@@ -83,10 +112,11 @@ public:
     TimerTaskAdapter(const TimerTaskAdapter&) = delete;
     TimerTaskAdapter& operator=(const TimerTaskAdapter&) = delete;
     ~TimerTaskAdapter() override = default;
-    void OnTimer() override;
+    bool OnTimer() override;
 private:
-    TimerTaskAdapter(std::function<void()>& workFunc, bool persist);
+    TimerTaskAdapter(std::function<void()>& workFunc, bool isIntervalTask);
     std::function<void()> work_;
+    bool isIntervalTask_ = false;
 };
 
 class DelayTaskQueue {
@@ -101,10 +131,10 @@ public:
 private:
     class Executor final : public TimerTask {
     public:
-        explicit Executor(DelayTaskQueue& queue) : TimerTask(true), delayTaskQueue_(queue) {};
+        explicit Executor(DelayTaskQueue& queue) : delayTaskQueue_(queue) {};
         ~Executor() override;
     protected:
-        void OnTimer() final;
+        bool OnTimer() final;
         DelayTaskQueue& delayTaskQueue_;
     };
     DelayTaskQueue() = default;

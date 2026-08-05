@@ -451,7 +451,7 @@ std::unique_ptr<TempFileManager::TempFileWatcher> TempFileManager::TempFileWatch
 }
 
 TempFileManager::TempFileWatcher::TempFileWatcher(TempFileManager& tempFileManager, SmartFd fd)
-    : EpollListener(std::move(fd), true), tempFileManager_(tempFileManager) {}
+    : EpollListener(std::move(fd)), tempFileManager_(tempFileManager) {}
 
 bool TempFileManager::TempFileWatcher::AddWatchEvent(const char* watchPath, uint32_t watchEvent)
 {
@@ -465,7 +465,7 @@ bool TempFileManager::TempFileWatcher::AddWatchEvent(const char* watchPath, uint
     return true;
 }
 
-void TempFileManager::TempFileWatcher::OnEventPoll()
+EventResult TempFileManager::TempFileWatcher::OnEventPoll()
 {
     constexpr uint32_t eventLen = static_cast<uint32_t>(sizeof(inotify_event));
     constexpr uint32_t eventLenSize = 32;
@@ -474,7 +474,7 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
     char eventBuf[buffLen] = {0};
     int ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), eventBuf, sizeof(eventBuf)));
     if (ret < 0) {
-        return;
+        return EventResult::KEEP;
     }
     auto readLen = static_cast<size_t>(ret);
     size_t eventPos = 0;
@@ -482,12 +482,12 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
         auto *event = reinterpret_cast<inotify_event *>(eventBuf + eventPos);
 #ifdef FAULTLOGGERD_TEST
         if (event->mask & tempFileManager_.eventMask_) {
-            return;
+            return EventResult::KEEP;
         }
 #endif
         if (event->mask & IN_DELETE_SELF) {
             HandleDirRemoved();
-            return;
+            return EventResult::KEEP;
         }
         if (event->len > 0) {
             std::string fileName(event->name);
@@ -503,6 +503,7 @@ void TempFileManager::TempFileWatcher::OnEventPoll()
         readLen -= eventSize;
         eventPos += eventSize;
     }
+    return EventResult::KEEP;
 }
 
 void TempFileManager::TempFileWatcher::HandleEvent(uint32_t eventMask, const std::string& filePath,

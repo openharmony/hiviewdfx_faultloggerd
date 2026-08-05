@@ -50,6 +50,11 @@ private:
 template<typename T>
 bool GetRegset(pid_t tid, int regsetType, T &regset)
 {
+    if (memset_s(&regset, sizeof(T), 0, sizeof(T)) != EOK) {
+        DFXLOGE("memset_s failed before PTRACE_GETREGSET");
+        return false;
+    }
+    
     struct iovec iov;
     iov.iov_base = &regset;
     iov.iov_len = sizeof(T);
@@ -64,7 +69,11 @@ bool GetRegset(pid_t tid, int regsetType, T &regset)
 template<typename T>
 bool GetSiginfoCommon(T &targetInfo, pid_t tid)
 {
-    if (ptrace(PTRACE_GETSIGINFO, tid, nullptr, &targetInfo) == -1) {
+    if (memset_s(&targetInfo, sizeof(T), 0, sizeof(T)) != EOK) {
+        DFXLOGE("memset_s failed before PTRACE_GETSIGINFO");
+        return false;
+    }
+    if (ptrace(PTRACE_GETSIGINFO, tid, nullptr, &targetInfo) != 0) {
         DFXLOGE("ptrace failed PTRACE_GETSIGINFO, tid:%{public}d, errno:%{public}d", tid, errno);
         return false;
     }

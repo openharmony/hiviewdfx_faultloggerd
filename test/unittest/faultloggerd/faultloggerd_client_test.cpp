@@ -555,7 +555,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollIncompleteDataTest001, 
     write(pipeFds[1], partialData, sizeof(partialData));
     close(pipeFds[1]);
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]});
     listener->OnEventPoll();
 }
 
@@ -581,7 +581,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollCompleteDataTest001, Te
     write(pipeFds[1], &data, sizeof(data));
     close(pipeFds[1]);
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]});
     listener->OnEventPoll();
 }
 
@@ -612,7 +612,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartCancelTest001,
     write(pipeFds[1], &data, sizeof(data));
     close(pipeFds[1]);
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]});
     listener->OnEventPoll();
 
     EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
@@ -646,7 +646,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartEnableTest001,
     write(pipeFds[1], &data, sizeof(data));
     close(pipeFds[1]);
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]});
     listener->OnEventPoll();
 
     EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
@@ -659,7 +659,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartEnableTest001,
  */
 HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollReadErrorTest001, TestSize.Level2)
 {
-    auto listener = std::make_unique<PDumpListener>(SmartFd{-1}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{-1});
     listener->OnEventPoll();
 }
 
@@ -675,7 +675,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollEagainTest001, TestSize
     int flags = fcntl(pipeFds[0], F_GETFL, 0);
     fcntl(pipeFds[0], F_SETFL, flags | O_NONBLOCK);
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]});
     listener->OnEventPoll();
     close(pipeFds[1]);
 }
@@ -695,8 +695,7 @@ HWTEST_F(FaultloggerdClientTest, PidFdListenerOnEventPollTest001, TestSize.Level
     int fd = open("/dev/null", O_RDONLY);
     ASSERT_GE(fd, 0);
 
-    auto listener = std::make_unique<PidFdListener>(SmartFd{fd});
-    listener->SetPid(testPid);
+    auto listener = std::make_unique<PidFdListener>(SmartFd{fd}, testPid);
     listener->OnEventPoll();
 
     EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);

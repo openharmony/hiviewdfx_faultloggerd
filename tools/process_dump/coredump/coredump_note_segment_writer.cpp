@@ -367,21 +367,22 @@ bool PrpsinfoWriter::ReadProcessStat(prpsinfo_t &ntPrpsinfo)
         DFXLOGE("open %{public}s fail, errno:%{public}d", filePath.c_str(), errno);
         return false;
     }
-
-    std::istringstream iss(line);
-
-    int pid;
-    std::string comm;
+    size_t closeParen = line.rfind(')');
+    if (closeParen == std::string::npos) {
+        DFXLOGE("Invalid stat format, cannot find closing parenthesis");
+        return false;
+    }
     char state;
     unsigned long prFlag;
-    int dummyInt;
-
-    iss >> pid >> comm >> state;
-    for (int i = 0; i < 5; ++i) { // 5 : jump unused stat filed
+    constexpr size_t skipIndex = 2;
+    std::istringstream iss(line.c_str() + closeParen + skipIndex);
+    iss >> state;
+    constexpr int skipParamsNum = 5;
+    for (int i = 0; i < skipParamsNum; ++i) { // 5 : jump unused stat filed
+        int dummyInt;
         iss >> dummyInt;
     }
     iss >> prFlag;
-
     ntPrpsinfo.pr_state = state;
     ntPrpsinfo.pr_sname = state;
     ntPrpsinfo.pr_zomb = (state == 'Z') ? 1 : 0;

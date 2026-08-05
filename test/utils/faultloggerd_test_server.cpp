@@ -35,7 +35,7 @@ SmartFd CreateEventFd()
     return ret;
 }
 
-TaskQueue::Executor::Executor(TaskQueue& taskQueue) : EpollListener(CreateEventFd(), true), taskQueue_(taskQueue) {}
+TaskQueue::Executor::Executor(TaskQueue& taskQueue) : EpollListener(CreateEventFd(), -1), taskQueue_(taskQueue) {}
 
 TaskQueue::Executor::~Executor()
 {
@@ -66,7 +66,7 @@ bool TaskQueue::InitExecutor()
     return EpollManager::GetInstance().AddListener(std::move(executor));
 }
 
-void TaskQueue::Executor::OnEventPoll()
+EventResult TaskQueue::Executor::OnEventPoll()
 {
     uint64_t buf;
     if (read(GetFd(), &buf, sizeof(uint64_t)) != sizeof(uint64_t)) {
@@ -77,6 +77,7 @@ void TaskQueue::Executor::OnEventPoll()
         std::lock_guard<std::mutex> lock(taskQueue_.mutex_);
         taskQueue_.tasks_.pop_front();
     }
+    return EventResult::KEEP;
 }
 
 TaskQueue &TaskQueue::GetInstance(ExecutorThreadType type)
@@ -115,8 +116,7 @@ FaultLoggerdTestServer::FaultLoggerdTestServer()
         main.Init(maxEpollEvent);
         TaskQueue::GetInstance(ExecutorThreadType::MAIN).InitExecutor();
         FaultLoggerDaemon::GetInstance().InitMainServer();
-        constexpr auto epollTimeoutInMilliseconds = 3 * 1000;
-        main.StartEpoll(maxConnection, epollTimeoutInMilliseconds);
+        main.StartEpoll(maxConnection);
     });
     constexpr int32_t faultLoggerdInitTime = 2;
     // Pause for two seconds to wait for the server to initialize.

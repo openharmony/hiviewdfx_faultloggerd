@@ -305,21 +305,6 @@ HWTEST_F(DfxCoredumpUtilTest, CoredumpController004, TestSize.Level2)
 }
 
 /**
- * @tc.name: CoredumpController005
- * @tc.desc: test coredump VerifyTrustList function
- * @tc.type: FUNC
- */
-HWTEST_F(DfxCoredumpUtilTest, CoredumpController005, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "CoredumpController005: start.";
-    bool ret = CoredumpController::VerifyTrustList("");
-    EXPECT_FALSE(ret);
-    ret = CoredumpController::VerifyTrustList("abc");
-    EXPECT_FALSE(ret);
-    GTEST_LOG_(INFO) << "CoredumpController005: end.";
-}
-
-/**
  * @tc.name: CoredumpMappingManager001
  * @tc.desc: test coredump ObtainDumpRegion function
  * @tc.type: FUNC

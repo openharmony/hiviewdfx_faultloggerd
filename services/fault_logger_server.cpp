@@ -34,6 +34,12 @@ namespace HiviewDFX {
 namespace {
 constexpr const char* const FAULTLOGGERD_SERVER_TAG = "FAULT_LOGGER_SERVER";
 
+#ifdef FAULTLOGGERD_TEST
+constexpr auto EPOLL_TIMEOUT_IN_MILLISECONDS = 3 * 1000;
+#else
+constexpr auto EPOLL_TIMEOUT_IN_MILLISECONDS = 20 * 1000;
+#endif
+
 inline bool SetSocketTimeOut(int fd)
 {
     struct timeval tv;
@@ -51,12 +57,12 @@ inline bool SetSocketTimeOut(int fd)
 
 bool SocketServer::Init()
 {
-    std::unique_ptr<IFaultLoggerService> logFileDesService(new (std::nothrow) FileDesService());
+    std::unique_ptr<IFaultLoggerService> logFileDesService(new FileDesService());
     AddService(LOG_FILE_DES_CLIENT, std::move(logFileDesService));
 #ifndef HISYSEVENT_DISABLE
-    std::unique_ptr<IFaultLoggerService> reportExceptionService(new (std::nothrow) ExceptionReportService());
+    std::unique_ptr<IFaultLoggerService> reportExceptionService(new ExceptionReportService());
     AddService(REPORT_EXCEPTION_CLIENT, std::move(reportExceptionService));
-    std::unique_ptr<IFaultLoggerService> statsClientService(new (std::nothrow) StatsService());
+    std::unique_ptr<IFaultLoggerService> statsClientService(new StatsService());
     AddService(DUMP_STATS_CLIENT, std::move(statsClientService));
 #endif
     if (!AddServerListener(SERVER_SOCKET_NAME) || !AddServerListener(SERVER_CRASH_SOCKET_NAME)) {
@@ -98,11 +104,12 @@ bool SocketServer::AddServerListener(const char* socketName)
 }
 
 SocketServer::SocketServerListener::SocketServerListener(SocketServer& socketServer, SmartFd fd, std::string socketName)
-    : EpollListener(std::move(fd), true), socketServer_(socketServer), socketName_(std::move(socketName)) {}
+    : EpollListener(std::move(fd), -1), socketServer_(socketServer), socketName_(std::move(socketName)) {}
 
 SocketServer::ClientRequestListener::ClientRequestListener(
     SocketServerListener& socketServerListener, SmartFd fd, uid_t clientUid)
-    : EpollListener(std::move(fd)), socketServerListener_(socketServerListener), clientUid_(clientUid) {}
+    : EpollListener(std::move(fd), EPOLL_TIMEOUT_IN_MILLISECONDS),
+    socketServerListener_(socketServerListener), clientUid_(clientUid) {}
 
 SocketServer::ClientRequestListener::~ClientRequestListener()
 {
@@ -122,7 +129,7 @@ IFaultLoggerService* SocketServer::ClientRequestListener::GetTargetService(int32
     return nullptr;
 }
 
-void SocketServer::ClientRequestListener::OnEventPoll()
+EventResult SocketServer::ClientRequestListener::OnEventPoll()
 {
     constexpr int32_t maxBuffSize = 2048;
     std::vector<uint8_t> buf(maxBuffSize + 1, 0);
@@ -142,9 +149,16 @@ void SocketServer::ClientRequestListener::OnEventPoll()
             "and retCode %{public}d", FAULTLOGGERD_SERVER_TAG, socketServerListener_.socketName_.c_str(),
             dataHead->clientPid, dataHead->clientType, retCode);
     }
+    return EventResult::REMOVE;
 }
 
-void SocketServer::SocketServerListener::OnEventPoll()
+void SocketServer::ClientRequestListener::OnTimeOut()
+{
+    DFXLOGW("%{public}s :: client connection timeout, uid=%{public}d, closing connection",
+        FAULTLOGGERD_SERVER_TAG, clientUid_);
+}
+
+EventResult SocketServer::SocketServerListener::OnEventPoll()
 {
     struct sockaddr_un clientAddr{};
     auto clientAddrSize = static_cast<socklen_t>(sizeof(clientAddr));
@@ -153,13 +167,13 @@ void SocketServer::SocketServerListener::OnEventPoll()
     if (!connectionFd) {
         DFXLOGW("%{public}s :: Failed to accept connection from %{public}s",
             FAULTLOGGERD_SERVER_TAG, socketName_.c_str());
-        return;
+        return EventResult::KEEP;
     }
     struct ucred credentials{};
     socklen_t len = sizeof(credentials);
     if (getsockopt(connectionFd.GetFd(), SOL_SOCKET, SO_PEERCRED, &credentials, &len) == -1) {
         DFXLOGE("%{public}s :: Failed to GetCredential, errno: %{public}d", FAULTLOGGERD_SERVER_TAG, errno);
-        return;
+        return EventResult::KEEP;
     }
     auto& connectionNum = socketServer_.connectionNums_[credentials.uid];
 #ifdef FAULTLOGGERD_TEST
@@ -169,15 +183,16 @@ void SocketServer::SocketServerListener::OnEventPoll()
 #endif
     if (connectionNum >= connectionLimit) {
         DFXLOGE("%{public}s :: reject new connection for uid %{public}d.", FAULTLOGGERD_SERVER_TAG, credentials.uid);
-        return;
+        return EventResult::KEEP;
     }
     SetSocketTimeOut(connectionFd.GetFd());
     auto listener = new (std::nothrow) ClientRequestListener(*this, std::move(connectionFd), credentials.uid);
     if (listener == nullptr) {
-        return;
+        return EventResult::KEEP;
     }
     connectionNum++;
     EpollManager::GetInstance().AddListener(std::unique_ptr<EpollListener>(listener));
+    return EventResult::KEEP;
 }
 }
 }

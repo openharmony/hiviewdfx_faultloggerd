@@ -58,7 +58,7 @@ const char* DataTypeToString(int dataType)
 }
 }
 
-void PDumpListener::OnEventPoll()
+EventResult PDumpListener::OnEventPoll()
 {
     DFXLOGI("recv dev pdump event");
 
@@ -83,13 +83,14 @@ void PDumpListener::OnEventPoll()
     }
 
     DFXLOGI("finish deal pdump event");
+    return EventResult::KEEP;
 }
 
-void PidFdListener::OnEventPoll()
+EventResult PidFdListener::OnEventPoll()
 {
     DFXLOGI("recv pid(%{public}d) exit event", pid_);
     MinidumpManagerService::GetInstance().ProcessEnableMinidumpConfigs(pid_);
-    EpollManager::GetInstance().RemoveListener(GetFd());
+    return EventResult::REMOVE;
 }
 
 MinidumpManagerService& MinidumpManagerService::GetInstance()
@@ -131,7 +132,7 @@ bool MinidumpManagerService::Init()
     }
     DFXLOGI("pdump init successfully");
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{dup(pFd_)}, true);
+    auto listener = std::make_unique<PDumpListener>(SmartFd{dup(pFd_)});
     EpollManager::GetInstance().AddListener(std::move(listener));
     return true;
 }
@@ -151,8 +152,7 @@ int MinidumpManagerService::SetMiniDump(pid_t pid, int8_t enableMinidump, int8_t
         }
         DFXLOGI("open pidfd of pid(%{public}d) success", pid);
         enableMinidumpConfigs.emplace(pid);
-        auto listener = std::make_unique<PidFdListener>(SmartFd{pfd});
-        listener->SetPid(pid);
+        auto listener = std::make_unique<PidFdListener>(SmartFd{pfd}, pid);
         EpollManager::GetInstance().AddListener(std::move(listener));
     } else if (enableMinidump == 0) {
         enableMinidumpConfigs.erase(pid);
@@ -187,9 +187,8 @@ bool MinidumpManagerService::ParsePDumpData(const struct __pdump_data_s& data)
 
 void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
 {
-    DFXLOGI("dump started: workid=%{public}u, type=%{public}s pid=%{public}d, pipeFd=%{public}d",
-        data.header.workid, DumpTypeToString(data.data.work_data.dump_type),
-        data.data.work_data.pid, data.data.work_data.pipefd);
+    DFXLOGI("dump started: workid=%{public}u, type=%{public}s pid=%{public}d, pipeFd=%{public}d", data.header.workid,
+        DumpTypeToString(data.data.work_data.dump_type), data.data.work_data.pid, data.data.work_data.pipefd);
     bool enableMinidump = false;
     bool enableMinidumpToCrashLog = false;
     {
@@ -223,9 +222,8 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
             DFXLOGI("start launch processdump to handle minidump %{public}d, %{public}d",
                 enableMinidump, enableMinidumpToCrashLog);
             char argStr[32]; // 32 : pid buf len
-            int ret = snprintf_s(argStr, sizeof(argStr), sizeof(argStr) - 1, "%d %d %d %d",
-                data.data.work_data.pid, pipeGuard.GetFd(),
-                static_cast<int8_t>(enableMinidump), static_cast<int8_t>(enableMinidumpToCrashLog));
+            int ret = snprintf_s(argStr, sizeof(argStr), sizeof(argStr) - 1, "%d %d %d %d", data.data.work_data.pid,
+                pipeGuard.GetFd(), static_cast<int8_t>(enableMinidump), static_cast<int8_t>(enableMinidumpToCrashLog));
             if (ret < 0) {
                 DFXLOGE("fill dumpPid fail, not launch processdump %{public}d", ret);
                 _exit(0);
@@ -234,7 +232,9 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         }
         _exit(0);
     }
-    waitpid(pid, nullptr, 0);
+    if (pid > 0) {
+        waitpid(pid, nullptr, 0);
+    }
 }
 
 void MinidumpManagerService::ProcessWorkEnd(const struct __pdump_data_s& data)
