@@ -49,11 +49,12 @@ extern "C" bool ffrt_get_current_coroutine_stack(void** stackAddr, size_t* size)
 class FpBacktraceImpl : public FpBacktrace {
 public:
     bool Init();
-    uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size) override;
+    uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size, bool adjustPc = false) override;
     DfxFrame* SymbolicAddress(void* pc) override;
 private:
     void BacktraceArkFrame(ArkStepParam &arkParam, MemoryReader& memoryReader, uint64_t& staticArkFrameIndex) const;
-    uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size, MemoryReader& memoryReader) const;
+    uint32_t BacktraceFromFp(void* startFp, void** pcArray, uint32_t size,
+        MemoryReader& memoryReader, bool adjustPc) const;
     bool GetCurrentThreadRange(uintptr_t startFp, uintptr_t& threadBegin, uintptr_t& threadEnd);
     std::shared_ptr<DfxMaps> maps_ = nullptr;
     Unwinder unwinder_{false};
@@ -86,7 +87,7 @@ bool FpBacktraceImpl::Init()
     return true;
 }
 
-uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_t size)
+uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_t size, bool adjustPc)
 {
     if (!maps_ || startFp == nullptr || pcArray == nullptr || size == 0) {
         return 0;
@@ -95,10 +96,10 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
     uintptr_t stackEnd = 0;
     if (GetCurrentThreadRange(reinterpret_cast<uintptr_t>(startFp), stackBegin, stackEnd)) {
         ThreadMemoryReader memoryReader(stackBegin, stackEnd);
-        return BacktraceFromFp(startFp, pcArray, size, memoryReader);
+        return BacktraceFromFp(startFp, pcArray, size, memoryReader, adjustPc);
     }
     ProcessMemoryReader memoryReader;
-    return BacktraceFromFp(startFp, pcArray, size, memoryReader);
+    return BacktraceFromFp(startFp, pcArray, size, memoryReader, adjustPc);
 }
 void FpBacktraceImpl::BacktraceArkFrame(ArkStepParam &arkParam, MemoryReader& memoryReader,
     uint64_t &staticArkFrameIndex) const
@@ -117,7 +118,7 @@ void FpBacktraceImpl::BacktraceArkFrame(ArkStepParam &arkParam, MemoryReader& me
 }
 
 uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_t size,
-    MemoryReader& memoryReader) const
+    MemoryReader& memoryReader, bool adjustPc) const
 {
     uint32_t index = 0;
     bool isJsFrame = false;
@@ -157,7 +158,14 @@ uint32_t FpBacktraceImpl::BacktraceFromFp(void* startFp, void** pcArray, uint32_
                                   staticArkFrameIndex);
             BacktraceArkFrame(arkParam, memoryReader, staticArkFrameIndex);
         }
-        auto realPc = reinterpret_cast<void *>(StripPac(registerState[pcIndex], 0));
+        uintptr_t curPc = registerState[pcIndex];
+#if defined(__aarch64__)
+        if (adjustPc && !isJsFrame && frameType == FrameType::NATIVE_FRAME && curPc > 0x4) {
+            curPc -= 0x4;
+        }
+#endif
+        uintptr_t pc = StripPac(curPc, 0);
+        auto realPc = reinterpret_cast<void *>(pc);
         if (realPc != nullptr) {
             pcArray[index++] = realPc;
         }
