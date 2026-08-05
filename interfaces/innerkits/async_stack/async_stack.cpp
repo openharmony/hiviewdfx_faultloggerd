@@ -39,7 +39,6 @@ static std::atomic<HiDebugSetSwitchCallbackFunc> g_hiDebugCallback{nullptr};
 static std::atomic<uint32_t> g_maxAsyncChainLayers{DEFAULT_MAX_ASYNC_CHAIN_LAYERS};
 static std::atomic<uint32_t> g_maxStackDepth{DEFAULT_MAX_STACK_DEPTH};
 static std::atomic<uint32_t> g_chainPoolSize{CHAIN_POOL_SIZE};
-static std::mutex g_asyncStackMutex;
 
 uint32_t GetMaxAsyncChainLayers()
 {
@@ -80,11 +79,6 @@ static void* PreloadArkWebEngineLib(const std::string arkwebEngineSandboxLibPath
     std::string bundleName = OHOS::system::GetParameter("persist.arkwebcore.package_name", "");
     if (bundleName.empty()) {
         DFXLOGE("Fail to get persist.arkwebcore.package_name");
-        return nullptr;
-    }
-    // check for path traversal characters
-    if (bundleName.find("..") != std::string::npos || bundleName.find("/") != std::string::npos) {
-        DFXLOGE("Invalid bundleName contains path traversal characters");
         return nullptr;
     }
     const std::string arkWebEngineLibPath = "/data/app/el1/bundle/public/" + bundleName + "/libs/arm64";
@@ -185,12 +179,7 @@ void UpdateAsyncStackCallbacks(uint64_t lastType, uint64_t currentType)
 extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
 {
     if (mode == g_mode.load()) {
-        return mode;
-    }
-    std::lock_guard<std::mutex> lock(g_asyncStackMutex);
-    DfxAsyncMode prev = g_mode.load();
-    if (mode == prev) {
-        return prev;
+        return g_mode.load();
     }
 
     if (mode == MODE_CHAINED_STACKTRACE) {
@@ -233,6 +222,7 @@ extern "C" DfxAsyncMode SetAsyncStackMode(DfxAsyncMode mode)
     } else {
         DfxAsyncContextManager::Instance()->DeInit();
     }
+    DfxAsyncMode prev = g_mode.load();
     g_mode.store(mode);
     DFXLOGI("SetAsyncStackMode %{public}d", static_cast<int>(g_mode.load()));
     return prev;
@@ -249,7 +239,6 @@ extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
         DFXLOGW("GetCurrentChainedAsyncContext sz is 0");
         return 0;
     }
-    auto readLock = DfxAsyncContextPool::Instance()->AcquireReadLock();
     DfxAsyncContext* ctx = DfxAsyncContextManager::Instance()->GetCurrentContext();
     if (ctx == nullptr) {
         DFXLOGD("GetCurrentContext failed, ctx is nullptr");
@@ -336,7 +325,6 @@ extern "C" uint64_t DfxCollectStackWithDepth(uint64_t type, size_t depth)
 
 extern "C" uint64_t DfxSetAsyncStackType(uint64_t asyncType)
 {
-    std::lock_guard<std::mutex> lock(g_asyncStackMutex);
     uint64_t lastType = g_enabledAsyncType.exchange(asyncType);
     UpdateAsyncStackCallbacks(lastType, asyncType);
     return lastType;
@@ -398,13 +386,6 @@ void DfxSetAsyncStackCallback(void)
 bool DfxInitAsyncStack()
 {
 #if defined(__aarch64__)
-    if (g_init.load()) {
-        return true;
-    }
-    std::lock_guard<std::mutex> lock(g_asyncStackMutex);
-    if (g_init.load()) {
-        return true;
-    }
     // init unique stack table
     if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->Init()) {
         DFXLOGE("failed to init unique stack table?.");
@@ -449,8 +430,9 @@ static void DfxInvokeHiDebugCallback()
 extern "C" bool DfxInitProfilerAsyncStack(void* buffer, size_t size)
 {
 #if defined(__aarch64__)
-    std::lock_guard<std::mutex> guard(g_asyncStackMutex);
     // init unique stack table
+    static std::mutex profilerInitMutex;
+    std::lock_guard<std::mutex> guard(profilerInitMutex);
     if (!OHOS::HiviewDFX::UniqueStackTable::Instance()->SwitchExternalBuffer(buffer, size)) {
         DFXLOGE("failed to init unique stack table?.");
         return false;
