@@ -532,6 +532,16 @@ std::string ElfParser::GetBuildId()
     ShdrInfo shdr;
     std::string buildId = "";
     if ((GetSectionInfo(shdr, NOTE_GNU_BUILD_ID) || GetSectionInfo(shdr, NOTES)) && mmap_->Get() != nullptr) {
+        // Validate that [shdr.offset, shdr.offset + shdr.size) falls within the mmap region
+        // to prevent out-of-bounds read in ParseHexBuildId via raw pointer arithmetic.
+        uint64_t mmapSize = MmapSize();
+        uint64_t endOffset = 0;
+        if (shdr.offset >= mmapSize || __builtin_add_overflow(shdr.offset, shdr.size, &endOffset) ||
+            endOffset > mmapSize) {
+            DFXLOGE("Invalid build id section, offset: 0x%{public}" PRIx64 ", size: 0x%{public}" PRIx64
+                ", mmapSize: %{public}" PRIu64, shdr.offset, shdr.size, mmapSize);
+            return "";
+        }
         std::string buildIdHex = ParseHexBuildId((uint64_t)((char *)mmap_->Get() + shdr.offset), shdr.size);
         if (!buildIdHex.empty()) {
             buildId = ToReadableBuildId(buildIdHex);
