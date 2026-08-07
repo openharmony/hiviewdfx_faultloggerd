@@ -27,6 +27,7 @@ namespace OHOS {
 namespace HiviewDFX {
 MinidumpMemoryRegion::MinidumpMemoryRegion(std::shared_ptr<MinidumpMemoryReader> memoryReader)
     : memoryReader_(memoryReader),
+      descriptor_({}),
       memory_(nullptr),
       isValid_(false)
 {
