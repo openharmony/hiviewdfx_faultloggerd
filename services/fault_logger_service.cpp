@@ -568,7 +568,9 @@ bool LiteProcDumperPipeService::Filter(const std::string &socketName, int32_t co
     if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
         return false;
     }
-
+    if  (creds.pid != requestData.pid && !CheckCallerUID(creds.uid)) {
+        return false;
+    }
     int uid = GetRealUid(creds.uid);
     auto& liteDumpCount = launchLiteDumpPipeMap_[uid];
     if (liteDumpCount++ >= LITE_DUMP_LIMIT_ONE_DAY * 3) { // 3 : write read delete
@@ -646,6 +648,9 @@ bool LiteProcDumperService::Filter(const std::string& socketName, int32_t connec
 {
     struct ucred creds{};
     if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return false;
+    }
+    if (creds.pid != requestData.pid && !CheckCallerUID(creds.uid)) {
         return false;
     }
     auto uid = GetRealUid(creds.uid);
