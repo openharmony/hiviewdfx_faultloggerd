@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "stack_printer.h"
+#include "unique_stack_table.h"
 
 using namespace testing::ext;
 
@@ -714,6 +715,111 @@ HWTEST_F(StackPrinterTest, StackPrinterTest_005, TestSize.Level2)
     ASSERT_NE(stack, "");
     GTEST_LOG_(INFO) << "stack:\n" << stack.c_str() << "\n";
     GTEST_LOG_(INFO) << "StackPrinterTest_005: end.";
+}
+
+/**
+ * @tc.name: HeaviestStackSummary_MostFrequent
+ * @tc.desc: verify the structured summary selects the most frequent complete stack
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, HeaviestStackSummary_MostFrequent, TestSize.Level2)
+{
+    StackPrinter stackPrinter;
+    ASSERT_TRUE(stackPrinter.InitUniqueTable(getpid(), 128 * 1024));
+
+    const std::vector<uintptr_t> busiestPcs = {0x1001, 0x1002, 0x1003};
+    const std::vector<uintptr_t> otherPcs = {0x2001, 0x2002};
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(busiestPcs, gettid(), 100));
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(otherPcs, gettid(), 200));
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(busiestPcs, gettid(), 300));
+
+    HeaviestStackSummary summary;
+    ASSERT_TRUE(stackPrinter.GetHeaviestStackSummary(gettid(), summary));
+    ASSERT_EQ(summary.status, "success");
+    ASSERT_EQ(summary.totalSamples, 3U);
+    ASSERT_EQ(summary.busiestCount, 2U);
+    ASSERT_EQ(summary.ratioPermille, 666U);
+    ASSERT_EQ(summary.firstSnapshotTime, 100U);
+    ASSERT_EQ(summary.pcs, busiestPcs);
+    ASSERT_NE(summary.stackId, 0U);
+}
+
+/**
+ * @tc.name: HeaviestStackSummary_TieByFirstSnapshot
+ * @tc.desc: verify an equal-count stack with the earlier first snapshot wins
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, HeaviestStackSummary_TieByFirstSnapshot, TestSize.Level2)
+{
+    StackPrinter stackPrinter;
+    ASSERT_TRUE(stackPrinter.InitUniqueTable(getpid(), 128 * 1024));
+
+    const std::vector<uintptr_t> firstPcs = {0x3001, 0x3002};
+    const std::vector<uintptr_t> earlierPcs = {0x4001, 0x4002};
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(firstPcs, gettid(), 200));
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(earlierPcs, gettid(), 100));
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(firstPcs, gettid(), 300));
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(earlierPcs, gettid(), 400));
+
+    HeaviestStackSummary summary;
+    ASSERT_TRUE(stackPrinter.GetHeaviestStackSummary(gettid(), summary));
+    ASSERT_EQ(summary.totalSamples, 4U);
+    ASSERT_EQ(summary.busiestCount, 2U);
+    ASSERT_EQ(summary.ratioPermille, 500U);
+    ASSERT_EQ(summary.firstSnapshotTime, 100U);
+    ASSERT_EQ(summary.pcs, earlierPcs);
+}
+
+/**
+ * @tc.name: HeaviestStackSummary_TieByStackId
+ * @tc.desc: verify an equal-count and equal-time tie is resolved by stack ID
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, HeaviestStackSummary_TieByStackId, TestSize.Level2)
+{
+    const std::vector<uintptr_t> firstPcs = {0x5001, 0x5002};
+    const std::vector<uintptr_t> secondPcs = {0x6001, 0x6002};
+    UniqueStackTable expectedTable(getpid(), 128 * 1024);
+    ASSERT_TRUE(expectedTable.Init());
+    StackId firstId {0};
+    StackId secondId {0};
+    expectedTable.PutPcsInTable(&firstId, firstPcs.data(), firstPcs.size());
+    expectedTable.PutPcsInTable(&secondId, secondPcs.data(), secondPcs.size());
+
+    StackPrinter stackPrinter;
+    ASSERT_TRUE(stackPrinter.InitUniqueTable(getpid(), 128 * 1024));
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(firstPcs, gettid(), 100));
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(secondPcs, gettid(), 100));
+
+    HeaviestStackSummary summary;
+    ASSERT_TRUE(stackPrinter.GetHeaviestStackSummary(gettid(), summary));
+    if (firstId.value < secondId.value) {
+        ASSERT_EQ(summary.stackId, firstId.value);
+        ASSERT_EQ(summary.pcs, firstPcs);
+    } else {
+        ASSERT_EQ(summary.stackId, secondId.value);
+        ASSERT_EQ(summary.pcs, secondPcs);
+    }
+}
+
+/**
+ * @tc.name: HeaviestStackSummary_EmptyAndTimeRange
+ * @tc.desc: verify empty and filtered-out samples return no_sample
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackPrinterTest, HeaviestStackSummary_EmptyAndTimeRange, TestSize.Level2)
+{
+    StackPrinter stackPrinter;
+    ASSERT_TRUE(stackPrinter.InitUniqueTable(getpid(), 128 * 1024));
+
+    HeaviestStackSummary summary;
+    ASSERT_FALSE(stackPrinter.GetHeaviestStackSummary(gettid(), summary));
+    ASSERT_EQ(summary.status, "no_sample");
+
+    const std::vector<uintptr_t> pcs = {0x7001};
+    ASSERT_TRUE(stackPrinter.PutPcsInTable(pcs, gettid(), 100));
+    ASSERT_FALSE(stackPrinter.GetHeaviestStackSummary(gettid(), summary, 200, 300));
+    ASSERT_EQ(summary.status, "no_sample");
 }
 
 /**

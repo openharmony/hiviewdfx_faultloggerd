@@ -16,6 +16,12 @@
 #ifndef RELIABILITY_STACK_PRINTER_H
 #define RELIABILITY_STACK_PRINTER_H
 
+#include <cstdint>
+#include <istream>
+#include <map>
+#include <memory>
+#include <ostream>
+#include <string>
 #include <vector>
 
 #include "unwinder.h"
@@ -37,6 +43,16 @@ struct SampledFrame {
 
     friend std::ostream& operator<<(std::ostream& os, const SampledFrame& frame);
     friend std::istream& operator>>(std::istream& is, SampledFrame& frame);
+};
+
+struct HeaviestStackSummary {
+    std::string status {"no_sample"};
+    uint32_t totalSamples {0};
+    uint32_t busiestCount {0};
+    uint32_t ratioPermille {0};
+    uint64_t firstSnapshotTime {0};
+    uint64_t stackId {0};
+    std::vector<uintptr_t> pcs;
 };
 
 class StackPrinter final {
@@ -111,6 +127,22 @@ public:
      * @return the string of the heaviest sampled stack.
      */
     std::string GetHeaviestStack(int tid, uint64_t beginTime = 0, uint64_t endTime = 0);
+
+    /**
+     * @brief Get the structured summary of the heaviest sampled stack.
+     *
+     * The selected stack is ordered by sample count descending, first snapshot
+     * time ascending, and stack ID ascending. The returned PCs belong to the
+     * selected complete stack and are not symbolized.
+     *
+     * @param tid the tid of the sampled thread.
+     * @param summary the structured result to fill.
+     * @param beginTime the begin time of the time interval to filter the sampled stack, default 0.
+     * @param endTime the end time of the time interval to filter sampled stack, default 0.
+     * @return true if a valid heaviest stack summary is returned, otherwise false.
+     */
+    bool GetHeaviestStackSummary(int tid, HeaviestStackSummary& summary, uint64_t beginTime = 0,
+                                 uint64_t endTime = 0);
 
     /**
      * @brief Print the sampled stack to tree format string from the vector of struct SampledFrame.

@@ -15,6 +15,8 @@
 
 #include "stack_printer.h"
 
+#include <algorithm>
+#include <limits>
 #include <iostream>
 #include <mutex>
 #include <sstream>
@@ -120,6 +122,27 @@ static std::vector<StackRecord> TimeFilter(const std::vector<StackRecord>& stack
     return vec;
 }
 
+static uint64_t GetFirstSnapshotTime(const StackRecord& stackRecord)
+{
+    if (stackRecord.snapshotTimes.empty()) {
+        return std::numeric_limits<uint64_t>::max();
+    }
+    return *std::min_element(stackRecord.snapshotTimes.begin(), stackRecord.snapshotTimes.end());
+}
+
+static bool IsHeavierStack(const StackRecord& lhs, const StackRecord& rhs)
+{
+    if (lhs.snapshotTimes.size() != rhs.snapshotTimes.size()) {
+        return lhs.snapshotTimes.size() > rhs.snapshotTimes.size();
+    }
+    const uint64_t lhsFirstSnapshotTime = GetFirstSnapshotTime(lhs);
+    const uint64_t rhsFirstSnapshotTime = GetFirstSnapshotTime(rhs);
+    if (lhsFirstSnapshotTime != rhsFirstSnapshotTime) {
+        return lhsFirstSnapshotTime < rhsFirstSnapshotTime;
+    }
+    return lhs.stackId < rhs.stackId;
+}
+
 class StackPrinter::Impl {
 public:
     Impl() : root_(nullptr)
@@ -137,6 +160,8 @@ public:
     std::map<int, std::vector<SampledFrame>> GetThreadSampledFrames(uint64_t beginTime = 0, uint64_t endTime = 0);
     std::string GetTreeStack(int tid, bool printTimes = false, uint64_t beginTime = 0, uint64_t endTime = 0);
     std::string GetHeaviestStack(int tid, uint64_t beginTime = 0, uint64_t endTime = 0);
+    bool GetHeaviestStackSummary(int tid, HeaviestStackSummary& summary, uint64_t beginTime = 0,
+                                 uint64_t endTime = 0);
 
     static std::string PrintTreeStackBySampledStack(const std::vector<SampledFrame>& sampledFrameVec, bool printTimes,
                                                     const std::shared_ptr<Unwinder>& unwinder,
@@ -193,6 +218,12 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::GetThreadSampledFrames(ui
 std::string StackPrinter::GetHeaviestStack(int tid, uint64_t beginTime, uint64_t endTime)
 {
     return impl_->GetHeaviestStack(tid, beginTime, endTime);
+}
+
+bool StackPrinter::GetHeaviestStackSummary(int tid, HeaviestStackSummary& summary, uint64_t beginTime,
+                                            uint64_t endTime)
+{
+    return impl_->GetHeaviestStackSummary(tid, summary, beginTime, endTime);
 }
 
 bool StackPrinter::InitUniqueTable(pid_t pid, uint32_t size, std::string name)
@@ -393,6 +424,59 @@ std::string StackPrinter::Impl::GetHeaviestStack(int tid, uint64_t beginTime, ui
     heaviestStack << "heaviest stack: \nstack counts: " << std::to_string(it->snapshotTimes.size()) << "\n";
     heaviestStack << PrintStackByPcs(pcs, unwinder_, maps_);
     return heaviestStack.str();
+}
+
+bool StackPrinter::Impl::GetHeaviestStackSummary(int tid, HeaviestStackSummary& summary, uint64_t beginTime,
+                                                 uint64_t endTime)
+{
+    summary = HeaviestStackSummary();
+
+    std::lock_guard<std::mutex> lock(mutex_);
+    auto tidIt = tidStackRecordMap_.find(tid);
+    if (tidIt == tidStackRecordMap_.end()) {
+        return false;
+    }
+
+    std::vector<StackRecord> vec = TimeFilter(tidIt->second, beginTime, endTime);
+    if (vec.empty()) {
+        return false;
+    }
+    if (uniqueStackTable_ == nullptr) {
+        summary.status = "failed";
+        return false;
+    }
+
+    uint64_t totalSamples = 0;
+    for (const auto& stackRecord : vec) {
+        totalSamples += stackRecord.snapshotTimes.size();
+    }
+    if (totalSamples == 0 || totalSamples > std::numeric_limits<uint32_t>::max()) {
+        summary.status = "failed";
+        return false;
+    }
+
+    std::sort(vec.begin(), vec.end(), IsHeavierStack);
+    const auto& heaviest = vec.front();
+    if (heaviest.snapshotTimes.empty() || heaviest.snapshotTimes.size() > std::numeric_limits<uint32_t>::max()) {
+        summary.status = "failed";
+        return false;
+    }
+
+    StackId stackId;
+    stackId.value = heaviest.stackId;
+    if (!uniqueStackTable_->GetPcsByStackId(stackId, summary.pcs)) {
+        summary.pcs.clear();
+        summary.status = "failed";
+        return false;
+    }
+
+    summary.status = "success";
+    summary.totalSamples = static_cast<uint32_t>(totalSamples);
+    summary.busiestCount = static_cast<uint32_t>(heaviest.snapshotTimes.size());
+    summary.ratioPermille = static_cast<uint32_t>((summary.busiestCount * 1000ULL) / summary.totalSamples);
+    summary.firstSnapshotTime = GetFirstSnapshotTime(heaviest);
+    summary.stackId = heaviest.stackId;
+    return true;
 }
 
 bool StackPrinter::Impl::InitUniqueTable(pid_t pid, uint32_t size, std::string name)

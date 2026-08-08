@@ -9,6 +9,7 @@
             OHOS::HiviewDFX::StackPrinter::GetThreadSampledFrames*;
             OHOS::HiviewDFX::StackPrinter::GetTreeStack*;
             OHOS::HiviewDFX::StackPrinter::GetHeaviestStack*;
+            OHOS::HiviewDFX::StackPrinter::GetHeaviestStackSummary*;
             OHOS::HiviewDFX::StackPrinter::PrintTreeStackBySampledStack*;
             OHOS::HiviewDFX::StackPrinter::SerializeSampledFrameMap*;
             OHOS::HiviewDFX::StackPrinter::DeserializeSampledFrameMap*;
