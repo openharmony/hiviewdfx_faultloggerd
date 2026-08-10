@@ -290,6 +290,17 @@ private:
             uctx->stackCheck = check;
         }
     }
+    inline void SetBytecodePcAndInterruptPc()
+    {
+        interruptPc_ = regs_->GetPc();
+    #if defined(__arm__)
+        bytecodePc_ = *regs_->GetReg(REG_ARM_R4);
+    #elif defined(__aarch64__)
+        bytecodePc_ = *regs_->GetReg(REG_AARCH64_X20);
+    #elif defined(__x86_64__)
+        bytecodePc_ = *regs_->GetReg(REG_X86_64_R10);
+    #endif
+    }
 
 #if defined(__aarch64__)
     MAYBE_UNUSED const uintptr_t pacMaskDefault_ = static_cast<uintptr_t>(0xFFFFFF8000000000);
@@ -323,6 +334,8 @@ private:
     std::shared_ptr<UnwindEntryParser> unwindEntryParser_ = nullptr;
     uintptr_t firstFrameSp_ {0};
     UnwindContext context_;
+    uintptr_t interruptPc_ {0};
+    uintptr_t bytecodePc_ {0};
 };
 
 // for local
@@ -665,6 +678,7 @@ bool Unwinder::Impl::UnwindLocal(bool withRegs, bool fpUnwind, size_t maxFrameNu
             GetLocalRegs(regsData);
         }
     }
+    SetBytecodePcAndInterruptPc();
     context_.pid = UNWIND_TYPE_LOCAL;
     context_.regs = regs_;
     context_.maps = maps_;
@@ -698,7 +712,7 @@ bool Unwinder::Impl::UnwindRemote(pid_t tid, bool withRegs, size_t maxFrameNum, 
         DFXLOGE("regs is nullptr");
         return false;
     }
-
+    SetBytecodePcAndInterruptPc();
     firstFrameSp_ = regs_->GetSp();
     context_.pid = tid;
     context_.regs = regs_;
@@ -738,8 +752,22 @@ bool Unwinder::Impl::StepArkJsFrame(StepFrame& frame, uint64_t frameIndex)
             &methodId, &frame.isJsFrame, &frame.frameType, frameIndex, jitCache_);
         ret = DfxArk::Instance().StepArkFrameWithJit(&arkParam);
     } else {
-        ArkStepParam arkParam(&frame.fp, &frame.sp, &frame.pc, &frame.isJsFrame, &frame.frameType, frameIndex);
+        // Appfreeze in interpreter requires interruptPc_ and bytecodePc_ for StepArkFrame.
+        // Since frame.sp and frame.pc only receive return values in the original logic,
+        // they are reused to pass these values. (This can be changed once ArkStepParam
+        // can be unified to have dedicated fields for interruptPc_ and bytecodePc_.)
+        // When frame.pc == interruptPc_, an appfreeze in the interpreter is handled. In
+        // that case, use UINTPTR_MAX as a sentinel sp to notify StepArkByNativeFrame;
+        // otherwise use the real sp.
+        uintptr_t stepSp = interruptPc_ != frame.pc ? frame.sp : UINTPTR_MAX;
+        uintptr_t prevSp = stepSp;
+        frame.pc = bytecodePc_;
+        ArkStepParam arkParam(&frame.fp, &stepSp, &frame.pc, &frame.isJsFrame, &frame.frameType, frameIndex);
         ret = DfxArk::Instance().StepArkFrame(memory_.get(), &(Unwinder::AccessMem), &arkParam);
+        // StepArkFrame does not rewrite sp on every invocation. Check whether sp was
+        // updated via prevSp/stepSp. If updated, use new sp; otherwise keep original
+        // to avoid UINTPTR_MAX polluting frame.sp.
+        frame.sp = stepSp == prevSp ? frame.sp : stepSp;
     }
     if (ret < 0) {
         DFXLOGE("Failed to step ark frame");
@@ -1677,6 +1705,7 @@ bool Unwinder::Impl::UnwindLocalByOtherTid(const pid_t tid, bool fast, size_t ma
     instance.SetRegister(regs);
     SetRegs(regs);
     EnableFillFrames(true);
+    SetBytecodePcAndInterruptPc();
 
     bool ret = false;
     if (fast) {

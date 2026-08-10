@@ -320,6 +320,7 @@ void LocalThreadContextMix::ReleaseCollectThreadContext()
     sp_ = 0;
     fp_ = 0;
     lr_ = 0;
+    bytecodePc_ = 0;
     stackBottom_ = 0;
     stackTop_ = 0;
     stackBuf_ = {};
@@ -344,16 +345,19 @@ NO_SANITIZE void LocalThreadContextMix::CopyRegister(void *context)
 {
     std::unique_lock<std::mutex> lock(mtx_);
 #if defined(__arm__)
+    bytecodePc_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_r4;
     fp_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_fp;
     lr_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_lr;
     sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_sp;
     pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.arm_pc;
 #elif defined(__aarch64__)
+    bytecodePc_ = static_cast<ucontext_t*>(context)->uc_mcontext.regs[RegsEnumArm64::REG_AARCH64_X20];
     fp_ = static_cast<ucontext_t*>(context)->uc_mcontext.regs[RegsEnumArm64::REG_FP];
     lr_ = static_cast<ucontext_t*>(context)->uc_mcontext.regs[RegsEnumArm64::REG_LR];
     sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.sp;
     pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.pc;
 #elif defined(__x86_64__)
+    bytecodePc_ = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_R10];
     fp_ = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RBP];
     sp_ = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RSP];
     pc_ = static_cast<ucontext_t*>(context)->uc_mcontext.gregs[REG_RIP];
@@ -386,6 +390,13 @@ void LocalThreadContextMix::SetRegister(std::shared_ptr<DfxRegs> regs)
     regs->SetFp(fp_);
 #ifndef __x86_64__
     regs->SetReg(REG_LR, &(lr_));
+#endif
+#if defined(__arm__)
+    regs->SetReg(REG_ARM_R4, &(bytecodePc_));
+#elif defined(__aarch64__)
+    regs->SetReg(REG_AARCH64_X20, &(bytecodePc_));
+#elif defined(__x86_64__)
+    regs->SetReg(REG_X86_64_R10, &(bytecodePc_));
 #endif
 }
 
