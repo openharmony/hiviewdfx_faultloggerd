@@ -119,6 +119,7 @@ private:
     uintptr_t sp_ {0};
     uintptr_t fp_ {0};
     uintptr_t lr_ {0};
+    uintptr_t bytecodePc_ {0};
     uintptr_t stackBottom_ {0};
     uintptr_t stackTop_ {0};
     std::vector<uint8_t> stackBuf_;
