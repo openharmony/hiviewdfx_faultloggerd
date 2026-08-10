@@ -46,43 +46,7 @@ if (!defined(ohos_lite)) {
     public_configs = [ ":minidump_config" ]
     deps = [ "$faultloggerd_common_path/dfxlog:dfx_hilog" ]
     external_deps = [
-      "c_utils:utils",
-      "hilog:libhilog",
-    ]
-    subsystem_name = "hiviewdfx"
-    part_name = "faultloggerd"
-  }
-
-  ohos_source_set("minidump_parser_cfi") {
-    branch_protector_ret = "pac_ret"
-    sanitize = {
-      cfi = true
-      cfi_cross_dso = true
-      cfi_vcall_icall_only = true
-      debug = false
-    }
-    sources = [
-      "minidump_context.cpp",
-      "minidump_memory.cpp",
-      "minidump_thread.cpp",
-      "minidump_thread_name.cpp",
-      "minidump_module.cpp",
-      "minidump_memory_reader.cpp",
-      "minidump_exception.cpp",
-      "minidump_system_info.cpp",
-      "minidump_misc_info.cpp",
-      "minidump_parser.cpp",
-      "minidump_factory.cpp",
-      "minidump_optimizer.cpp",
-      "minidump_config.cpp",
-      "minidump_esr_info.cpp",
-      "minidump_maps.cpp",
-      "minidump_observer.cpp"
-    ]
-
-    public_configs = [ ":minidump_config" ]
-    deps = [ "$faultloggerd_common_path/dfxlog:dfx_hilog" ]
-    external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "hilog:libhilog",
     ]
