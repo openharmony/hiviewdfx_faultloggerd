@@ -22,7 +22,9 @@
 
 namespace OHOS {
 namespace HiviewDFX {
-MinidumpException::MinidumpException(std::shared_ptr<MinidumpMemoryReader> memoryReader) : MinidumpStream(memoryReader)
+MinidumpException::MinidumpException(std::shared_ptr<MinidumpMemoryReader> memoryReader)
+    : MinidumpStream(memoryReader),
+      exception_({})
 {
 }
 

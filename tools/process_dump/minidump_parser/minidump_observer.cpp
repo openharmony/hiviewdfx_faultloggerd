@@ -22,7 +22,7 @@ namespace OHOS {
 namespace HiviewDFX {
 
 MinidumpEvent::MinidumpEvent(MinidumpEventType t)
-    : type(t), progress(0), total(0),
+    : type(t), progress(0), total(0), error(MinidumpError::SUCCESS),
       message(""), address(0), size(0), timestamp(0), streamName("")
 {}
 
