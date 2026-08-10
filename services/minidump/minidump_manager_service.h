@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include "pdump.h"
 
@@ -47,9 +48,11 @@ public:
     bool Init();
     bool ParsePDumpData(const struct __pdump_data_s& data);
     int SetMiniDump(pid_t pid, int8_t enableMinidump, int8_t enableMinidumpToCrashLog);
-    void ProcessEnableMinidumpConfigs(pid_t pid);
-
+    bool SetEnableMinidump(pid_t pid, bool enableMinidump, bool clearListener = true);
+    bool SetDisableMinidumpToCrashLog(pid_t pid, bool disableMiniDumpToCrashLog);
 private:
+    bool IsEnableMinidump(pid_t pid);
+    bool IsDisableMinidumpToCrashLog(pid_t pid);
     MinidumpManagerService() = default;
     ~MinidumpManagerService();
     MinidumpManagerService(const MinidumpManagerService&) = delete;
@@ -58,7 +61,7 @@ private:
     void ProcessWorkEnd(const struct __pdump_data_s& data);
     int pFd_ {-1};
     std::mutex configsMutex_;
-    std::unordered_set<pid_t> enableMinidumpConfigs;
+    std::unordered_map<pid_t, int> enableMinidumpConfigs;
     std::unordered_set<pid_t> disableMinidumpToCrashLogConfigs;
 };
 }

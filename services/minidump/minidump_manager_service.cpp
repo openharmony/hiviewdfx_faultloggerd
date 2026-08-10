@@ -89,7 +89,8 @@ EventResult PDumpListener::OnEventPoll()
 EventResult PidFdListener::OnEventPoll()
 {
     DFXLOGI("recv pid(%{public}d) exit event", pid_);
-    MinidumpManagerService::GetInstance().ProcessEnableMinidumpConfigs(pid_);
+    MinidumpManagerService::GetInstance().SetEnableMinidump(pid_, false, false);
+    MinidumpManagerService::GetInstance().SetDisableMinidumpToCrashLog(pid_, false);
     return EventResult::REMOVE;
 }
 
@@ -143,26 +144,19 @@ int MinidumpManagerService::SetMiniDump(pid_t pid, int8_t enableMinidump, int8_t
         DFXLOGE("pdump device not initialized");
         return -1;
     }
-    std::lock_guard<std::mutex> lock(configsMutex_);
-    if (enableMinidump == 1 && enableMinidumpConfigs.find(pid) == enableMinidumpConfigs.end()) {
-        int pfd = syscall(__NR_pidfd_open, pid, 0);
-        if (pfd == -1) {
-            DFXLOGE("pidfd open failed!");
+    if (enableMinidump == 1 && !IsEnableMinidump(pid)) {
+        if (!SetEnableMinidump(pid, true)) {
             return -1;
         }
-        DFXLOGI("open pidfd of pid(%{public}d) success", pid);
-        enableMinidumpConfigs.emplace(pid);
-        auto listener = std::make_unique<PidFdListener>(SmartFd{pfd}, pid);
-        EpollManager::GetInstance().AddListener(std::move(listener));
     } else if (enableMinidump == 0) {
-        enableMinidumpConfigs.erase(pid);
+        SetEnableMinidump(pid, false);
     }
     if (enableMinidumpToCrashLog == 0) {
-        disableMinidumpToCrashLogConfigs.emplace(pid);
+        SetDisableMinidumpToCrashLog(pid, true);
     } else if (enableMinidumpToCrashLog == 1) {
-        disableMinidumpToCrashLogConfigs.erase(pid);
+        SetDisableMinidumpToCrashLog(pid, false);
     }
-    DFXLOGE("success to call set %{public}d %{public}d pdumpable", enableMinidump, enableMinidumpToCrashLog);
+    DFXLOGI("success to call set %{public}d %{public}d pdumpable", enableMinidump, enableMinidumpToCrashLog);
     return 0;
 }
 
@@ -185,33 +179,77 @@ bool MinidumpManagerService::ParsePDumpData(const struct __pdump_data_s& data)
     return true;
 }
 
+bool MinidumpManagerService::IsEnableMinidump(pid_t pid)
+{
+    std::lock_guard<std::mutex> lock(configsMutex_);
+    return enableMinidumpConfigs.count(pid) == 1;
+}
+
+bool MinidumpManagerService::IsDisableMinidumpToCrashLog(pid_t pid)
+{
+    std::lock_guard<std::mutex> lock(configsMutex_);
+    return disableMinidumpToCrashLogConfigs.count(pid) == 1;
+}
+
+bool MinidumpManagerService::SetEnableMinidump(pid_t pid, bool enableMinidump, bool clearListener)
+{
+    std::lock_guard<std::mutex> lock(configsMutex_);
+    if (enableMinidump) {
+        int pfd = syscall(__NR_pidfd_open, pid, 0);
+        if (pfd == -1) {
+            DFXLOGE("pidfd open failed!");
+            return false;
+        }
+        DFXLOGI("open pidfd of pid(%{public}d) success", pid);
+        auto listener = std::make_unique<PidFdListener>(SmartFd{pfd}, pid);
+        if (!EpollManager::GetInstance().AddListener(std::move(listener))) {
+            DFXLOGE("epoll add listener failed for pid(%{public}d)!", pid);
+            return false;
+        }
+        enableMinidumpConfigs.emplace(pid, pfd);
+        return true;
+    }
+    auto iter = enableMinidumpConfigs.find(pid);
+    if (iter != enableMinidumpConfigs.end()) {
+        if (clearListener) {
+            EpollManager::GetInstance().RemoveListener(iter->second);
+        }
+        enableMinidumpConfigs.erase(iter);
+    }
+    return true;
+}
+
+bool MinidumpManagerService::SetDisableMinidumpToCrashLog(pid_t pid, bool disableMiniDumpToCrashLog)
+{
+    std::lock_guard<std::mutex> lock(configsMutex_);
+    if (disableMiniDumpToCrashLog) {
+        disableMinidumpToCrashLogConfigs.emplace(pid);
+    } else {
+        disableMinidumpToCrashLogConfigs.erase(pid);
+    }
+    return true;
+}
+
 void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
 {
-    DFXLOGI("dump started: workid=%{public}u, type=%{public}s pid=%{public}d, pipeFd=%{public}d", data.header.workid,
-        DumpTypeToString(data.data.work_data.dump_type), data.data.work_data.pid, data.data.work_data.pipefd);
-    bool enableMinidump = false;
-    bool enableMinidumpToCrashLog = false;
-    {
-        std::lock_guard<std::mutex> lock(configsMutex_);
-        enableMinidump = enableMinidumpConfigs.count(data.data.work_data.pid) == 1;
-        enableMinidumpToCrashLog = disableMinidumpToCrashLogConfigs.count(data.data.work_data.pid) == 0;
-        enableMinidumpConfigs.erase(data.data.work_data.pid);
-        disableMinidumpToCrashLogConfigs.erase(data.data.work_data.pid);
-    }
+    DFXLOGI("dump started: workid=%{public}u, type=%{public}s pid=%{public}d, pipeFd=%{public}d",
+        data.header.workid, DumpTypeToString(data.data.work_data.dump_type),
+        data.data.work_data.pid, data.data.work_data.pipefd);
+    bool enableMinidump = IsEnableMinidump(data.data.work_data.pid);
+    bool enableMinidumpToCrashLog = !IsDisableMinidumpToCrashLog(data.data.work_data.pid);
+    SetDisableMinidumpToCrashLog(data.data.work_data.pid, false);
     SmartFd pipeGuard(data.data.work_data.pipefd);
     if ((!enableMinidump && !enableMinidumpToCrashLog) || !IsParentAppspawn(data.data.work_data.pid)) {
         struct __pdump_work_cancel_arg_s arg = {0};
         arg.workid = data.header.workid;
-        int ret = -1;
         int retryTimes = 0;
-        int retryMaxTimes = 3;
-        do {
-            ret = ioctl(pFd_, __PDUMP_IOCTL_CANCEL, &arg);
+        while (ioctl(pFd_, __PDUMP_IOCTL_CANCEL, &arg) < 0) {
+            constexpr int retryMaxTimes = 3;
+            if (++retryTimes >= retryMaxTimes) {
+                DFXLOGE("failed to ioctl cancel pdump, errno=%{public}d", errno);
+                return;
+            }
             usleep(1000); // 1000 : 1ms
-            ++retryTimes;
-        } while (ret < 0 && retryTimes < retryMaxTimes);
-        if (ret < 0) {
-            DFXLOGE("failed to ioctl cancel pdump, errno=%{public}d", errno);
         }
         return;
     }
@@ -244,12 +282,6 @@ void MinidumpManagerService::ProcessWorkEnd(const struct __pdump_data_s& data)
         DumpTypeToString(data.data.result_data.dump_type),
         data.data.result_data.errcode,
         data.data.result_data.output_bytes);
-}
-
-void MinidumpManagerService::ProcessEnableMinidumpConfigs(pid_t pid)
-{
-    std::lock_guard<std::mutex> lock(configsMutex_);
-    enableMinidumpConfigs.erase(pid);
 }
 }
 }

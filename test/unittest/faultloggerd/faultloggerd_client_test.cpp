@@ -15,6 +15,7 @@
 
 #include <fcntl.h>
 #include <filesystem>
+#include <future>
 #include <gtest/gtest.h>
 
 #if defined(HAS_LIB_SELINUX)
@@ -285,28 +286,19 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest001, TestS
     }
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid();
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
-    int ret = svc.SetMiniDump(testPid, ENABLE_FLAG, UNCHANGED_FLAG);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
-    svc.enableMinidumpConfigs.erase(testPid);
-}
-
-/**
- * @tc.name: MinidumpManagerServiceSetMiniDumpTest002
- * @tc.desc: test SetMiniDump with enableMinidump=0 removes from configs
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest002, TestSize.Level2)
-{
-    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
-        return;
-    }
-    auto& svc = MinidumpManagerService::GetInstance();
-    pid_t testPid = getpid();
-    svc.enableMinidumpConfigs.emplace(testPid);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
-    int ret = svc.SetMiniDump(testPid, DISABLE_FLAG, UNCHANGED_FLAG);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+    EXPECT_FALSE(svc.IsEnableMinidump(testPid));
+    std::promise<int> setMiniDumpEnableTask;
+    TaskQueue::GetInstance(ExecutorThreadType::MAIN).AddTask([&setMiniDumpEnableTask, testPid, &svc]() {
+        setMiniDumpEnableTask.set_value(svc.SetMiniDump(testPid, ENABLE_FLAG, UNCHANGED_FLAG));
+    });
+    EXPECT_EQ(setMiniDumpEnableTask.get_future().get(), 0);
+    EXPECT_TRUE(svc.IsEnableMinidump(testPid));
+    std::promise<int> setMiniDumpDisableTask;
+    TaskQueue::GetInstance(ExecutorThreadType::MAIN).AddTask([&setMiniDumpDisableTask, testPid, &svc]() {
+        setMiniDumpDisableTask.set_value(svc.SetMiniDump(testPid, DISABLE_FLAG, UNCHANGED_FLAG));
+    });
+    EXPECT_EQ(setMiniDumpDisableTask.get_future().get(), 0);
+    EXPECT_FALSE(svc.IsEnableMinidump(testPid));
 }
 
 /**
@@ -320,31 +312,21 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest003, TestS
         return;
     }
     auto& svc = MinidumpManagerService::GetInstance();
-    svc.disableMinidumpToCrashLogConfigs.clear();
     pid_t testPid = getpid();
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
-    int ret = svc.SetMiniDump(testPid, UNCHANGED_FLAG, DISABLE_FLAG);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
-    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
-}
-
-/**
- * @tc.name: MinidumpManagerServiceSetMiniDumpTest004
- * @tc.desc: test SetMiniDump with enableMinidumpToCrashLog=1 removes from disable set
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest004, TestSize.Level2)
-{
-    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
-        return;
-    }
-    auto& svc = MinidumpManagerService::GetInstance();
     svc.disableMinidumpToCrashLogConfigs.clear();
-    pid_t testPid = getpid();
-    svc.disableMinidumpToCrashLogConfigs.emplace(testPid);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
-    int ret = svc.SetMiniDump(testPid, UNCHANGED_FLAG, ENABLE_FLAG);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    EXPECT_FALSE(svc.IsDisableMinidumpToCrashLog(testPid));
+    std::promise<int> setMiniDumpDisableToCrashLogTask;
+    TaskQueue::GetInstance(ExecutorThreadType::MAIN).AddTask([&setMiniDumpDisableToCrashLogTask, testPid, &svc]() {
+        setMiniDumpDisableToCrashLogTask.set_value(svc.SetMiniDump(testPid, UNCHANGED_FLAG, DISABLE_FLAG));
+    });
+    EXPECT_EQ(setMiniDumpDisableToCrashLogTask.get_future().get(), 0);
+    EXPECT_TRUE(svc.IsDisableMinidumpToCrashLog(testPid));
+    std::promise<int> setMiniDumpEnableToCrashLogTask;
+    TaskQueue::GetInstance(ExecutorThreadType::MAIN).AddTask([&setMiniDumpEnableToCrashLogTask, testPid, &svc]() {
+        setMiniDumpEnableToCrashLogTask.set_value(svc.SetMiniDump(testPid, UNCHANGED_FLAG, ENABLE_FLAG));
+    });
+    EXPECT_EQ(setMiniDumpEnableToCrashLogTask.get_future().get(), 0);
+    EXPECT_FALSE(svc.IsDisableMinidumpToCrashLog(testPid));
 }
 
 /**
@@ -362,6 +344,7 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest005, TestS
     EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
     int ret = svc.SetMiniDump(testPid, UNCHANGED_FLAG, UNCHANGED_FLAG);
     EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 1);
+    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
 }
 
 /**
@@ -376,14 +359,15 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerServiceSetMiniDumpTest006, TestS
     }
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid();
-    svc.enableMinidumpConfigs.erase(testPid);
-    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
-    int ret = svc.SetMiniDump(testPid, ENABLE_FLAG, ENABLE_FLAG);
-    EXPECT_EQ(ret, 0);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    svc.enableMinidumpConfigs.clear();
+    svc.disableMinidumpToCrashLogConfigs.clear();
+    std::promise<int> setMiniDumpTask;
+    TaskQueue::GetInstance(ExecutorThreadType::MAIN).AddTask([&setMiniDumpTask, testPid, &svc]() {
+        setMiniDumpTask.set_value(svc.SetMiniDump(testPid, ENABLE_FLAG, ENABLE_FLAG));
+    });
+    EXPECT_EQ(setMiniDumpTask.get_future().get(), 0);
+    EXPECT_TRUE(svc.IsEnableMinidump(testPid));
+    EXPECT_FALSE(svc.IsDisableMinidumpToCrashLog(testPid));
 }
 
 /**
@@ -395,20 +379,15 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerParsePDumpDataWorkStartTest001, 
 {
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid() + TEST_PID_OFFSET;
-    svc.enableMinidumpConfigs.erase(testPid);
     svc.disableMinidumpToCrashLogConfigs.emplace(testPid);
-
     struct __pdump_data_s data = {};
     data.header.data_type = __DATA_TYPE_WORK_START;
     data.header.workid = 100;
     data.data.work_data.pid = testPid;
     data.data.work_data.dump_type = __PDUMP_TYPE_MINIDUMP;
     data.data.work_data.pipefd = -1;
-
-    bool result = svc.ParsePDumpData(data);
-    EXPECT_TRUE(result);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
+    svc.disableMinidumpToCrashLogConfigs.clear();
 }
 
 /**
@@ -464,10 +443,8 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerProcessWorkStartCancelTest001, T
     data.data.work_data.pid = testPid;
     data.data.work_data.dump_type = __PDUMP_TYPE_MINIDUMP;
     data.data.work_data.pipefd = -1;
-
-    svc.ProcessWorkStart(data);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
+    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
 }
 
 /**
@@ -479,19 +456,15 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerProcessWorkStartEnableTest001, T
 {
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid() + TEST_PID_OFFSET + 2;
-    svc.enableMinidumpConfigs.emplace(testPid);
-    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
-
+    svc.enableMinidumpConfigs.emplace(testPid, -1);
     struct __pdump_data_s data = {};
     data.header.data_type = __DATA_TYPE_WORK_START;
     data.header.workid = 201;
     data.data.work_data.pid = testPid;
     data.data.work_data.dump_type = __PDUMP_TYPE_CALLSTACK;
     data.data.work_data.pipefd = -1;
-
-    svc.ProcessWorkStart(data);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
+    svc.enableMinidumpConfigs.clear();
 }
 
 /**
@@ -505,17 +478,13 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerProcessWorkStartCrashLogOnlyTest
     pid_t testPid = getpid() + TEST_PID_OFFSET + 3;
     svc.enableMinidumpConfigs.erase(testPid);
     svc.disableMinidumpToCrashLogConfigs.erase(testPid);
-
     struct __pdump_data_s data = {};
     data.header.data_type = __DATA_TYPE_WORK_START;
     data.header.workid = 202;
     data.data.work_data.pid = testPid;
     data.data.work_data.dump_type = __PDUMP_TYPE_COREDUMP;
     data.data.work_data.pipefd = -1;
-
-    svc.ProcessWorkStart(data);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
 }
 
 /**
@@ -528,36 +497,20 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerProcessWorkEndDumpTypeTest001, T
     auto& svc = MinidumpManagerService::GetInstance();
     struct __pdump_data_s data = {};
     data.header.workid = 300;
-
+    data.header.data_type = __DATA_TYPE_WORK_END;
     data.data.result_data.dump_type = __PDUMP_TYPE_CALLSTACK;
     data.data.result_data.errcode = 0;
     data.data.result_data.output_bytes = 50;
-    svc.ProcessWorkEnd(data);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
 
     data.data.result_data.dump_type = __PDUMP_TYPE_MINIDUMP;
-    svc.ProcessWorkEnd(data);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
 
     data.data.result_data.dump_type = __PDUMP_TYPE_COREDUMP;
-    svc.ProcessWorkEnd(data);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
 
     data.data.result_data.dump_type = __PDUMP_TYPE_INVALID;
-    svc.ProcessWorkEnd(data);
-}
-
-/**
- * @tc.name: MinidumpManagerProcessEnableMinidumpConfigsTest001
- * @tc.desc: test ProcessEnableMinidumpConfigs erases pid from configs
- * @tc.type: FUNC
- */
-HWTEST_F(FaultloggerdClientTest, MinidumpManagerProcessEnableMinidumpConfigsTest001, TestSize.Level2)
-{
-    auto& svc = MinidumpManagerService::GetInstance();
-    pid_t testPid = getpid() + TEST_PID_OFFSET + 4;
-    svc.enableMinidumpConfigs.emplace(testPid);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
-
-    svc.ProcessEnableMinidumpConfigs(testPid);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+    EXPECT_TRUE(svc.ParsePDumpData(data));
 }
 
 /**
@@ -615,7 +568,6 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartCancelTest001,
 {
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid() + 20000;
-    svc.enableMinidumpConfigs.erase(testPid);
     svc.disableMinidumpToCrashLogConfigs.emplace(testPid);
 
     int pipeFds[2];
@@ -634,10 +586,8 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartCancelTest001,
     close(pipeFds[1]);
 
     auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]});
-    listener->OnEventPoll();
-
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
-    EXPECT_EQ(svc.disableMinidumpToCrashLogConfigs.count(testPid), 0);
+    EXPECT_EQ(listener->OnEventPoll(), EventResult::KEEP);
+    svc.disableMinidumpToCrashLogConfigs.clear();
 }
 
 /**
@@ -649,8 +599,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartEnableTest001,
 {
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid() + 20001;
-    svc.enableMinidumpConfigs.emplace(testPid);
-    svc.disableMinidumpToCrashLogConfigs.erase(testPid);
+    svc.enableMinidumpConfigs.emplace(testPid, -1);
 
     int pipeFds[2];
     ASSERT_EQ(pipe(pipeFds), 0);
@@ -668,9 +617,8 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartEnableTest001,
     close(pipeFds[1]);
 
     auto listener = std::make_unique<PDumpListener>(SmartFd{pipeFds[0]});
-    listener->OnEventPoll();
-
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+    EXPECT_EQ(listener->OnEventPoll(), EventResult::KEEP);
+    svc.enableMinidumpConfigs.clear();
 }
 
 /**
@@ -681,7 +629,7 @@ HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollWorkStartEnableTest001,
 HWTEST_F(FaultloggerdClientTest, PDumpListenerOnEventPollReadErrorTest001, TestSize.Level2)
 {
     auto listener = std::make_unique<PDumpListener>(SmartFd{-1});
-    listener->OnEventPoll();
+    EXPECT_EQ(listener->OnEventPoll(), EventResult::KEEP);
 }
 
 /**
@@ -710,16 +658,15 @@ HWTEST_F(FaultloggerdClientTest, PidFdListenerOnEventPollTest001, TestSize.Level
 {
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid() + 30000;
-    svc.enableMinidumpConfigs.emplace(testPid);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
+    svc.enableMinidumpConfigs.emplace(testPid, -1);
+    EXPECT_TRUE(svc.IsEnableMinidump(testPid));
 
     int fd = open("/dev/null", O_RDONLY);
     ASSERT_GE(fd, 0);
 
     auto listener = std::make_unique<PidFdListener>(SmartFd{fd}, testPid);
     listener->OnEventPoll();
-
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 0);
+    EXPECT_FALSE(svc.IsEnableMinidump(testPid));
 }
 
 /**
@@ -747,14 +694,13 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerSetMiniDumpAlreadyInConfigsTest0
     }
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t testPid = getpid() + 50000;
-    svc.enableMinidumpConfigs.emplace(testPid);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
+    svc.enableMinidumpConfigs.emplace(testPid, -1);
+    EXPECT_TRUE(svc.IsEnableMinidump(testPid));
 
     int ret = svc.SetMiniDump(testPid, ENABLE_FLAG, UNCHANGED_FLAG);
     EXPECT_EQ(ret, 0);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(testPid), 1);
-
-    svc.enableMinidumpConfigs.erase(testPid);
+    EXPECT_TRUE(svc.IsEnableMinidump(testPid));
+    svc.enableMinidumpConfigs.clear();
 }
 
 /**
@@ -766,11 +712,9 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerSetMiniDumpPidfdOpenFailTest001,
 {
     auto& svc = MinidumpManagerService::GetInstance();
     pid_t nonExistPid = NONEXISTENT_TEST_PID;
-    svc.enableMinidumpConfigs.erase(nonExistPid);
-
     int ret = svc.SetMiniDump(nonExistPid, ENABLE_FLAG, UNCHANGED_FLAG);
     EXPECT_EQ(ret, -1);
-    EXPECT_EQ(svc.enableMinidumpConfigs.count(nonExistPid), 0);
+    EXPECT_FALSE(svc.IsEnableMinidump(nonExistPid));
 }
 
 /**

@@ -240,7 +240,7 @@ int32_t DfxBufferWriter::CreateFileForCrash(int32_t pid, uint64_t time) const
 #ifndef is_ohos_lite
     logPath += ".json";
 #endif
-    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT, logcrashFileProp));
+    int32_t fd = OHOS_TEMP_FAILURE_RETRY(open(logPath.c_str(), O_RDWR | O_CREAT | O_NOFOLLOW, logcrashFileProp));
     if (fd == INVALID_FD) {
         DFXLOGE("create %{public}s failed, errno=%{public}d", logPath.c_str(), errno);
     } else {
