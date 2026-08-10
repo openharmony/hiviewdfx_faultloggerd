@@ -265,6 +265,9 @@ HWTEST_F(DfxJsonFormatterTest, FormatKernelStackJsonWithJsStack, TestSize.Level1
  */
 HWTEST_F(DfxJsonFormatterTest, FormatKernelStackMainThreadWithAdltFile, TestSize.Level1)
 {
+    if (ExecuteCommands("uname").find("Linux") != std::string::npos) {
+        return;
+    }
     std::string getPidCMD = "pidof perfgenius_host";
     std::string pid = ExecuteCommands(getPidCMD);
     EXPECT_TRUE(!pid.empty());
