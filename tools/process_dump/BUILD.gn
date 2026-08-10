@@ -85,7 +85,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
-    external_deps = [ "hilog_lite:hilog_shared" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "hilog_lite:hilog_shared",
+    ]
   }
 
   executable("processdump") {
@@ -109,7 +112,10 @@ if (defined(ohos_lite)) {
       "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
     ]
 
-    external_deps = [ "hilog_lite:hilog_shared" ]
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "hilog_lite:hilog_shared",
+    ]
     if (build_selinux) {
       external_deps += [ "selinux:libselinux" ]
       cflags_cc += [ "-DHAS_LIB_SELINUX" ]
