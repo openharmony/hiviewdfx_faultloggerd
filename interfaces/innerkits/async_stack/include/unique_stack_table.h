@@ -127,6 +127,16 @@ public:
     uint64_t PutPcsInTable(StackId *stackId, const uintptr_t *pcs, size_t nr);
     bool GetPcsByStackId(const StackId stackId, std::vector<uintptr_t>& pcs);
     bool GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& pcs, bool isProfiler);
+    /**
+     * @brief Get stack PCs into a caller-owned fixed buffer.
+     *
+     * @param stackId stack identifier to decode
+     * @param buffer output array of void pointers
+     * @param bufferSize output buffer size in bytes
+     * @return true if the stack PCs fit in the buffer and are copied successfully
+     * @note The caller must not invoke this interface during buffer switching or destruction.
+     */
+    bool GetPcsByStackId(StackId stackId, void** buffer, size_t bufferSize);
     bool ImportNode(uint32_t index, const Node& node);
     size_t GetWriteSize();
 

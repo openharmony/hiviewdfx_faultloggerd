@@ -319,6 +319,40 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
     return true;
 }
 
+bool UniqueStackTable::GetPcsByStackId(StackId stackId, void** buffer, size_t bufferSize)
+{
+    if (buffer == nullptr || stackId.section.nr > bufferSize / sizeof(void*)) {
+        return false;
+    }
+
+    std::shared_lock<std::shared_mutex> readlock(structureMutex_);
+    if (profilerInit_ || !IsTableValid()) {
+        return false;
+    }
+
+    Node* tableHead = GetHeadNode();
+    uint64_t nr = stackId.section.nr;
+    uint64_t nodeIndex = stackId.section.id;
+    if (nodeIndex >= stackTable_.totalNodes) {
+        return false;
+    }
+
+    Node* node = &tableHead[nodeIndex];
+    size_t bufferIndex = 0;
+    while (nr-- && node != nullptr) {
+        buffer[bufferIndex++] = reinterpret_cast<void*>(node->section.pc);
+        if (node->section.prevIdx == HEAD_NODE_INDEX) {
+            break;
+        }
+        nodeIndex = node->section.prevIdx;
+        if (nodeIndex >= stackTable_.totalNodes) {
+            return false;
+        }
+        node = &tableHead[nodeIndex];
+    }
+    return true;
+}
+
 bool UniqueStackTable::ImportNode(uint32_t index, const Node& node)
 {
     std::unique_lock<std::shared_mutex> writelock(structureMutex_);

@@ -196,6 +196,60 @@ HWTEST_F(StackTableTest, StackTableTest010, TestSize.Level2)
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "StackTableTest010: end.";
 }
+
+/**
+ * @tc.name: StackTableSignalSafeTest001
+ * @tc.desc: test fixed-buffer GetPcsByStackId overload
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackTableTest, StackTableSignalSafeTest001, TestSize.Level2)
+{
+    char buf[BUF_LEN] = {};
+    UniqueStackTable stackTable(buf, sizeof(buf));
+    Node headNode = {};
+    headNode.section.pc = 0x1000;
+    headNode.section.prevIdx = HEAD_NODE_INDEX;
+    Node tailNode = {};
+    tailNode.section.pc = 0x2000;
+    tailNode.section.prevIdx = 1;
+    ASSERT_TRUE(stackTable.ImportNode(1, headNode));
+    ASSERT_TRUE(stackTable.ImportNode(2, tailNode));
+
+    StackId stackId = {};
+    stackId.section.id = 2;
+    stackId.section.nr = 2;
+    void* pcs[2] = {};
+
+    ASSERT_TRUE(stackTable.GetPcsByStackId(stackId, pcs, sizeof(pcs)));
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(pcs[0]), 0x2000U);
+    ASSERT_EQ(reinterpret_cast<uintptr_t>(pcs[1]), 0x1000U);
+}
+
+/**
+ * @tc.name: StackTableSignalSafeTest002
+ * @tc.desc: test fixed-buffer GetPcsByStackId rejects insufficient capacity
+ * @tc.type: FUNC
+ */
+HWTEST_F(StackTableTest, StackTableSignalSafeTest002, TestSize.Level2)
+{
+    char buf[BUF_LEN] = {};
+    UniqueStackTable stackTable(buf, sizeof(buf));
+    Node headNode = {};
+    headNode.section.pc = 0x1000;
+    headNode.section.prevIdx = HEAD_NODE_INDEX;
+    Node tailNode = {};
+    tailNode.section.pc = 0x2000;
+    tailNode.section.prevIdx = 1;
+    ASSERT_TRUE(stackTable.ImportNode(1, headNode));
+    ASSERT_TRUE(stackTable.ImportNode(2, tailNode));
+
+    StackId stackId = {};
+    stackId.section.id = 2;
+    stackId.section.nr = 2;
+    void* pcs[1] = {};
+
+    ASSERT_FALSE(stackTable.GetPcsByStackId(stackId, pcs, sizeof(pcs)));
+}
 }
 } // namespace HiviewDFX
 } // namespace OHOS
