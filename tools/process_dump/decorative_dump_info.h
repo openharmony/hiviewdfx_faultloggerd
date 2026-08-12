@@ -78,6 +78,10 @@ public:
 private:
     void CollectProcessInfo(DfxProcess& process, const ProcessDumpRequest& request, Unwinder& unwinder);
     std::string GetReasonInfo(const ProcessDumpRequest& request, DfxProcess& process, DfxMaps& maps);
+#ifndef is_ohos_lite
+    bool IsFfrtStackOverflow(const ProcessDumpRequest& request, DfxProcess& process,
+        uint64_t addr);
+#endif
     std::string GetCrashLogConfigInfo(const ProcessDumpRequest& request, DfxProcess& process);
     static std::string GetLastFatalMsg(const DfxProcess& process, const ProcessDumpRequest& request);
     static std::string UpdateFatalMessageWhenDebugSignal(const DfxProcess& process, const ProcessDumpRequest& request);
