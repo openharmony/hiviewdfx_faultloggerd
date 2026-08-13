@@ -239,6 +239,7 @@ extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
         DFXLOGW("GetCurrentChainedAsyncContext sz is 0");
         return 0;
     }
+    auto readLock = DfxAsyncContextPool::Instance()->AcquireReadLock();
     DfxAsyncContext* ctx = DfxAsyncContextManager::Instance()->GetCurrentContext();
     if (ctx == nullptr) {
         DFXLOGD("GetCurrentContext failed, ctx is nullptr");

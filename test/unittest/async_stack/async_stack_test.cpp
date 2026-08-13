@@ -677,5 +677,53 @@ HWTEST_F(AsyncStackTest, AsyncStackTest015, TestSize.Level2)
 #endif
     GTEST_LOG_(INFO) << "AsyncStackTest015: end.";
 }
+
+/**
+ * @tc.name: AsyncStackTest016
+ * @tc.desc: test concurrent GetCurrentChainedAsyncContext with SetAsyncStackMode DeInit/munmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest016, TestSize.Level2)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "AsyncStackTest016: start.";
+    ASSERT_TRUE(DfxInitAsyncStack());
+    constexpr int ROUND_COUNT = 30;
+    for (int round = 0; round < ROUND_COUNT; round++) {
+        SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+        DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+        std::atomic<bool> stopFlag{false};
+        std::atomic<bool> started{false};
+        auto reader = [&stopFlag, &started]() {
+            uint64_t sid = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+            DfxSetSubmitterStackId(sid);
+            started.store(true, std::memory_order_release);
+            DfxAsyncCtx buffer[5];
+            while (!stopFlag.load(std::memory_order_relaxed)) {
+                (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+                GetCurrentChainedAsyncContext(buffer, 5);
+            }
+            DfxSetSubmitterStackId(0);
+        };
+        auto toggler = [&stopFlag, &started]() {
+            while (!started.load(std::memory_order_acquire)) {
+                std::this_thread::yield();
+            }
+            std::this_thread::yield();
+            SetAsyncStackMode(MODE_LAST_STACKTRACE);
+            SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+            stopFlag.store(true, std::memory_order_relaxed);
+        };
+        std::thread t0(reader);
+        std::thread t1(toggler);
+        t0.join();
+        t1.join();
+        SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    }
+    GTEST_LOG_(INFO) << "AsyncStackTest016: survived " << ROUND_COUNT << " rounds.";
+    SUCCEED();
+    GTEST_LOG_(INFO) << "AsyncStackTest016: end.";
+#endif
+}
 } // namespace HiviewDFX
 } // namespace OHOS
