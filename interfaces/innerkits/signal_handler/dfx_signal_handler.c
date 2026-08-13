@@ -89,6 +89,9 @@ void __attribute__((constructor)) InitHandler(void)
 static struct ProcessDumpRequest g_request;
 static char g_callbackMsg[MAX_CALLBACK_MSG_SIZE];
 static pthread_mutex_t g_signalHandlerMutex = PTHREAD_MUTEX_INITIALIZER;
+// Aligned with the process dump alarm so that a normal dump (holder releases the mutex within this duration)
+// is never interrupted; only a genuinely stuck holder makes the wait give up.
+static const int SIGNAL_HANDLER_MUTEX_TIMEOUT_SEC = PROCESSDUMP_TIMEOUT;
 static pthread_key_t g_crashObjKey;
 static uint64_t g_crashLogConfig = 0;
 static bool g_crashObjInit = false;
@@ -365,6 +368,40 @@ static bool PreSigdumpCheck(int signo, siginfo_t *si)
     return true;
 }
 
+static bool TryLockSignalHandlerMutex(void)
+{
+    struct timespec mutexTimeout;
+    if (clock_gettime(CLOCK_REALTIME, &mutexTimeout) != 0) {
+        DFXLOGE("clock_gettime for signal handler mutex failed.");
+        return false;
+    }
+    mutexTimeout.tv_sec += SIGNAL_HANDLER_MUTEX_TIMEOUT_SEC;
+    if (pthread_mutex_timedlock(&g_signalHandlerMutex, &mutexTimeout) != 0) {
+        const uint8_t *bytes = (const uint8_t *)&g_signalHandlerMutex;
+        DFXLOGE("lock signal handler mutex timeout.");
+        for (size_t i = 0; i < sizeof(g_signalHandlerMutex); i++) {
+            DFXLOGE("mutex byte[%{public}zu]=%{public}d", i, bytes[i]);
+        }
+        return false;
+    }
+    return true;
+}
+
+static void DispatchDumpRequest(int signo)
+{
+    DFXLOGI("DFX_SignalHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
+        "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
+#if !defined(is_ohos_lite) && defined(__aarch64__)
+    if (signo != SIGLEAK_STACK && IsNoNewPriv(PROC_SELF_STATUS_PATH)) {
+        DumpPrviRequest(signo);
+    } else {
+#endif
+        DumpRequest(signo);
+#if !defined(is_ohos_lite) && defined(__aarch64__)
+    }
+#endif
+}
+
 static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSigAction)
 {
     int pid = syscall(SYS_getpid);
@@ -383,7 +420,12 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
         return IsDumpSignal(signo);
     }
     // crash signal should never be skipped
-    pthread_mutex_lock(&g_signalHandlerMutex);
+    if (!TryLockSignalHandlerMutex()) {
+        int curHandlingTid = handlingTid;
+        DFXLOGE("DFX_SignalHandler :: lock mutex failed, handlingTid(%{public}d), tid(%{public}d).",
+                curHandlingTid, tid);
+        return IsDumpSignal(signo);
+    }
     handlingTid = tid;
     if (!IsDumpSignal(g_prevHandledSignal) && !IsPrintLogSignal(g_prevHandledSignal)) {
         handlingTid = 0;
@@ -401,17 +443,7 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
         return IsDumpSignal(signo);
     }
 
-    DFXLOGI("DFX_SignalHandler :: signo(%{public}d), pid(%{public}d), processName(%{public}s), " \
-        "threadName(%{public}s).", signo, g_request.pid, g_request.processName, g_request.threadName);
-#if !defined(is_ohos_lite) && defined(__aarch64__)
-    if (signo != SIGLEAK_STACK && IsNoNewPriv(PROC_SELF_STATUS_PATH)) {
-        DumpPrviRequest(signo);
-    } else {
-#endif
-        DumpRequest(signo);
-#if !defined(is_ohos_lite) && defined(__aarch64__)
-    }
-#endif
+    DispatchDumpRequest(signo);
     handlingTid = 0;
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);
@@ -443,11 +475,25 @@ static void InstallSigActionHandler(int signo)
     }
 }
 
+static void InitSignalHandlerMutex(void)
+{
+    // ERRORCHECK detects self-deadlock (e.g. the holding thread is interrupted by a
+    // crash signal and re-enters DFX_SignalHandler) by returning EDEADLK instead of
+    // deadlocking, and reports non-owner unlock as EPERM.
+    pthread_mutexattr_t mutexAttr;
+    pthread_mutexattr_init(&mutexAttr);
+    pthread_mutexattr_settype(&mutexAttr, PTHREAD_MUTEX_ERRORCHECK);
+    pthread_mutex_init(&g_signalHandlerMutex, &mutexAttr);
+    pthread_mutexattr_destroy(&mutexAttr);
+}
+
 static void DFX_InstallSignalHandler(void)
 {
     if (g_hasInit) {
         return;
     }
+
+    InitSignalHandlerMutex();
 
     SetKernelSnapshot(true);
     InitCallbackItems();
