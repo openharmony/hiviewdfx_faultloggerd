@@ -564,20 +564,43 @@ int DfxElf::FindUnwindTableInfo(uintptr_t pc, std::shared_ptr<DfxMap> map, struc
     if (!hasTableInfo_) {
         struct DwarfEhFrameHdr* hdr = nullptr;
         struct DwarfEhFrameHdr synthHdr;
+        // shdr.offset comes from the ELF section header and is attacker-controlled. Validate
+        // it against the mmap region before deriving a pointer; otherwise a crafted
+        // .eh_frame_hdr/.eh_frame with an out-of-range sh_offset causes an out-of-bounds
+        // dereference (hdr->version etc.) and crashes process_dump.
+        uint64_t mmapSize = GetMmapSize();
+        uint64_t endOffset = 0;
         if (GetSectionInfo(shdr, EH_FRAME_HDR) && GetMmapPtr() != nullptr) {
-            INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
-            hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *)GetMmapPtr());
+            if (shdr.offset >= mmapSize ||
+                __builtin_add_overflow(shdr.offset, shdr.size, &endOffset) ||
+                endOffset > mmapSize ||
+                shdr.size < sizeof(struct DwarfEhFrameHdr)) {
+                DFXLOGE("[%{public}d]: Invalid .eh_frame_hdr section, offset: 0x%{public}" PRIx64
+                    ", size: 0x%{public}" PRIx64 ", mmapSize: %{public}" PRIu64, __LINE__,
+                    shdr.offset, shdr.size, mmapSize);
+            } else {
+                INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
+                hdr = (struct DwarfEhFrameHdr *) (shdr.offset + (char *)GetMmapPtr());
+            }
         } else if (GetSectionInfo(shdr, EH_FRAME) && GetMmapPtr() != nullptr) {
-            DFXLOGW("[%{public}d]: Elf(%{public}s) no found .eh_frame_hdr section, " \
-                "using synthetic .eh_frame section", __LINE__, map->name.c_str());
-            INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
-            synthHdr.version = DW_EH_VERSION;
-            synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
-                ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
-            synthHdr.fdeCountEnc = DW_EH_PE_omit;
-            synthHdr.tableEnc = DW_EH_PE_omit;
-            synthHdr.ehFrame = (ElfW(Addr))(shdr.offset + (char*)GetMmapPtr());
-            hdr = &synthHdr;
+            if (shdr.offset >= mmapSize ||
+                __builtin_add_overflow(shdr.offset, shdr.size, &endOffset) ||
+                endOffset > mmapSize) {
+                DFXLOGE("[%{public}d]: Invalid .eh_frame section, offset: 0x%{public}" PRIx64
+                    ", size: 0x%{public}" PRIx64 ", mmapSize: %{public}" PRIu64, __LINE__,
+                    shdr.offset, shdr.size, mmapSize);
+            } else {
+                DFXLOGW("[%{public}d]: Elf(%{public}s) no found .eh_frame_hdr section, " \
+                    "using synthetic .eh_frame section", __LINE__, map->name.c_str());
+                INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
+                synthHdr.version = DW_EH_VERSION;
+                synthHdr.ehFramePtrEnc = DW_EH_PE_absptr |
+                    ((sizeof(ElfW(Addr)) == 4) ? DW_EH_PE_udata4 : DW_EH_PE_udata8); // 4 : four bytes
+                synthHdr.fdeCountEnc = DW_EH_PE_omit;
+                synthHdr.tableEnc = DW_EH_PE_omit;
+                synthHdr.ehFrame = (ElfW(Addr))(shdr.offset + (char*)GetMmapPtr());
+                hdr = &synthHdr;
+            }
         }
         uintptr_t shdrBase = static_cast<uintptr_t>(loadBase + shdr.addr);
         hasTableInfo_ = FillUnwindTableByEhhdr(hdr, shdrBase, &uti);
