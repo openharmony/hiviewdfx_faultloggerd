@@ -29,7 +29,7 @@ namespace {
 #undef LOG_TAG
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxBacktraceLocal"
-constexpr int MAX_WAIT_MUTEX_SEC = 10;
+constexpr int MAX_WAIT_MUTEX_SEC = 3;
 }
 
 std::string GetThreadHead(int32_t tid)
