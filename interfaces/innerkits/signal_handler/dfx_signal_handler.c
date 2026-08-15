@@ -135,7 +135,16 @@ void SetThreadInfoCallback(ThreadInfoCallBack func)
     int32_t currentTid = syscall(SYS_gettid);
     int32_t firstEmptySlot = -1;
     int32_t currentThreadSlot = -1;
-    pthread_mutex_lock(&g_signalHandlerMutex);
+    struct timespec mutexTimeout;
+    if (clock_gettime(CLOCK_REALTIME, &mutexTimeout) != 0) {
+        DFXLOGE("clock_gettime for signal handler mutex failed.");
+        return;
+    }
+    mutexTimeout.tv_sec += SIGNAL_HANDLER_MUTEX_TIMEOUT_SEC;
+    if (pthread_mutex_timedlock(&g_signalHandlerMutex, &mutexTimeout) != 0) {
+        DFXLOGE("SetThreadInfoCallback :: lock signal handler mutex timeout.");
+        return;
+    }
     for (int i = 0; i < CALLBACK_ITEM_COUNT; i++) {
         if (firstEmptySlot == -1 && g_callbackItems[i].tid == -1) {
             firstEmptySlot = i;

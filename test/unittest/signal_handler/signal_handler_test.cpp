@@ -14,6 +14,7 @@
  */
 
 #include <gtest/gtest.h>
+#include <atomic>
 #include <csignal>
 #include <map>
 #include <malloc.h>
@@ -1350,6 +1351,105 @@ HWTEST_F(SignalHandlerTest, GenerateRandomUint64Test001, TestSize.Level0)
 
     EXPECT_NE(randomId1, randomId2);
     GTEST_LOG_(INFO) << "GenerateRandomUint64Test001: end.";
+}
+
+static std::atomic<bool> g_stopStress(false);
+
+static void ConcurrentCallbackThread(int threadId, int iterations, bool crasher, int sig)
+{
+    std::string name = "ConcurrentCb" + std::to_string(threadId);
+    prctl(PR_SET_NAME, name.c_str());
+    if (crasher) {
+        usleep(50000); // 50000 : let registrars spin up before crash
+        raise(sig);
+        return;
+    }
+    for (int i = 0; i < iterations; i++) {
+        SetThreadInfoCallback(ThreadInfo);
+        SetThreadInfoCallback(nullptr);
+    }
+}
+
+static void StackCaptureLoopThread(int count)
+{
+    for (int i = 0; i < count; i++) {
+        SaveDebugMessage(-SIGLEAK_STACK_BADFD, 0, nullptr);
+        usleep(100000); // 100000 : 100ms pacing between captures
+    }
+    g_stopStress.store(true);
+}
+
+static void CallbackLoopThread()
+{
+    while (!g_stopStress.load()) {
+        SetThreadInfoCallback(ThreadInfo);
+        SetThreadInfoCallback(nullptr);
+    }
+}
+
+/**
+ * @tc.name: SignalHandlerTest025
+ * @tc.desc: concurrent SetThreadInfoCallback timed-lock acquire/wait while a crash
+ *           is being dumped (handler holds g_signalHandlerMutex); process must not
+ *           hang and a cppcrash file must be produced.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest025, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest025: start.";
+    pid_t pid = fork();
+    if (pid < 0) {
+        GTEST_LOG_(ERROR) << "Failed to fork new test process.";
+    } else if (pid == 0) {
+        std::vector<std::thread> threads;
+        const int threadCount = 16;         // 16: registrars + 1 crasher
+        const int iterations = 1000000;     // 1000000: keep registrars looping until crash
+        for (int i = 0; i < threadCount; i++) {
+            bool crasher = (i == threadCount - 1);
+            threads.push_back(std::thread(ConcurrentCallbackThread, i, iterations, crasher, SIGSEGV));
+        }
+        for (auto& thread : threads) {
+            thread.join();
+        }
+        _exit(0);
+    } else {
+        auto file = WaitCreateCrashFile("cppcrash", pid);
+        ASSERT_FALSE(file.empty());
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest025: end.";
+}
+
+/**
+ * @tc.name: SignalHandlerTest026
+ * @tc.desc: sustained stack captures (handler holds g_signalHandlerMutex) with
+ *           concurrent SetThreadInfoCallback callers exercising the timed-lock
+ *           wait path; must not deadlock and a stacktrace file must be produced.
+ * @tc.type: FUNC
+ */
+HWTEST_F(SignalHandlerTest, SignalHandlerTest026, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "SignalHandlerTest026: start.";
+    std::string res = ExecuteCommands("uname");
+    bool linuxKernel = res.find("Linux") != std::string::npos;
+    if (linuxKernel) {
+        ASSERT_TRUE(linuxKernel);
+    } else {
+        const int captureCount = 10;        // 10: stack captures
+        const int callbackThreads = 8;       // 8: concurrent registrars
+        g_stopStress = false;
+        std::vector<std::thread> cbs;
+        for (int i = 0; i < callbackThreads; i++) {
+            cbs.emplace_back(CallbackLoopThread);
+        }
+        std::thread cap(StackCaptureLoopThread, captureCount);
+        cap.join();
+        for (auto& thread : cbs) {
+            thread.join();
+        }
+        auto file = WaitCreateCrashFile("stacktrace", getpid());
+        EXPECT_FALSE(file.empty());
+    }
+    GTEST_LOG_(INFO) << "SignalHandlerTest026: end.";
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

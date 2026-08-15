@@ -79,8 +79,6 @@ static long g_blockExit = 0;
 static long g_unwindResult = 0;
 static atomic_int g_dumpCount = 0;
 static int g_dumpState = 0;
-static pthread_mutex_t g_dumpMutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutexattr_t g_dumpAttr;
 
 enum PIPE_FD_TYPE {
     WRITE_TO_DUMP,
@@ -153,19 +151,6 @@ static bool GetFfrtCoroutineStack(void** stackAddr, size_t* stackSize)
     return ffrt_get_current_coroutine_stack(stackAddr, stackSize);
 }
 #endif
-
-void __attribute__((constructor)) InitMutex(void)
-{
-    pthread_mutexattr_init(&g_dumpAttr);
-    pthread_mutexattr_settype(&g_dumpAttr, PTHREAD_MUTEX_RECURSIVE);
-    pthread_mutex_init(&g_dumpMutex, &g_dumpAttr);
-}
-
-void __attribute__((destructor)) DeinitMutex(void)
-{
-    pthread_mutexattr_destroy(&g_dumpAttr);
-    pthread_mutex_destroy(&g_dumpMutex);
-}
 
 static void ResetFlags(void)
 {
@@ -339,33 +324,28 @@ static pid_t ForkBySyscall(void)
 
 bool DFX_SetDumpableState(void)
 {
-    pthread_mutex_lock(&g_dumpMutex);
     int expected = 0;
     if (atomic_compare_exchange_strong(&g_dumpCount, &expected, 1)) {
         g_dumpState = prctl(PR_GET_DUMPABLE);
         if (prctl(PR_SET_DUMPABLE, 1) != 0) {
             DFXLOGE("Failed to set dumpable, errno(%{public}d).", errno);
             atomic_fetch_sub(&g_dumpCount, 1);
-            pthread_mutex_unlock(&g_dumpMutex);
             return false;
         }
     } else {
         atomic_fetch_add(&g_dumpCount, 1);
     }
-    pthread_mutex_unlock(&g_dumpMutex);
     return true;
 }
 
 void DFX_RestoreDumpableState(void)
 {
-    pthread_mutex_lock(&g_dumpMutex);
     if (atomic_load(&g_dumpCount) > 0) {
         atomic_fetch_sub(&g_dumpCount, 1);
         if (atomic_load(&g_dumpCount) == 0) {
             prctl(PR_SET_DUMPABLE, g_dumpState);
         }
     }
-    pthread_mutex_unlock(&g_dumpMutex);
 }
 
 static bool SetDumpState(void)

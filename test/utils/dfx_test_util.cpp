@@ -461,9 +461,9 @@ std::string WaitCreateCrashFile(const std::string& prefix, pid_t pid, int retryC
     std::string fileNamePrefix = prefix + "-" + std::to_string(pid);
     while (retryCnt > 0) {
         int ret = select(fd + 1, &rfds, nullptr, nullptr, &timeoutVal);
-        retryCnt--;
         if (ret <= 0 || !FD_ISSET(fd, &rfds)) {
             FD_SET(fd, &rfds);
+            retryCnt--;
             continue;
         }
         char buffer[EVENT_BUF_LEN] = {0};
