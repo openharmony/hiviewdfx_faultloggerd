@@ -90,6 +90,9 @@ protected:
     static bool FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct UnwindTableInfo* uti);
 #endif
     bool FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti);
+    static bool IsValidSectionOffset(const ShdrInfo& shdr, uint64_t mmapSize, uint64_t minSize);
+    bool FillUnwindTableByEhFrame(ShdrInfo& shdr, uintptr_t loadBase, const std::string& mapName,
+        struct UnwindTableInfo& uti);
     static bool FillUnwindTableByExidx(ShdrInfo shdr, uintptr_t loadBase, struct UnwindTableInfo* uti);
     bool FindFuncSymbol(uint64_t addr, const std::set<ElfSymbol>& symbols, ElfSymbol& elfSymbol);
     bool IsValidElf(const void* ptr, size_t size);
