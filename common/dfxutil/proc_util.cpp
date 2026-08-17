@@ -290,22 +290,26 @@ bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk)
     return true;
 }
 
-bool IsParentAppspawn(pid_t pid)
+bool IsProcessMinidumpAllowed(pid_t pid)
 {
     ProcessInfo info;
     if (!ParseProcInfo(pid, info) || info.ppid <= 0) {
+        DFXLOGE("ParseProcInfo pid(%{public}d) failed.", pid);
         return false; // read stat fail: fail-closed, dump will be cancelled by caller
     }
     // read parent process name from /proc/<ppid>/cmdline (null-separated, take first arg basename)
     std::string cmdlinePath = "/proc/" + std::to_string(info.ppid) + "/cmdline";
+    errno = 0;
     FILE *fp = fopen(cmdlinePath.c_str(), "r");
     if (fp == nullptr) {
+        DFXLOGE("open %{public}s failed. %{public}d", cmdlinePath.c_str(), errno);
         return false;
     }
     char buf[256] = {0}; // 256 : cmdline buffer
     size_t n = fread(buf, 1, sizeof(buf) - 1, fp);
     (void)fclose(fp);
     if (n == 0) {
+        DFXLOGE("fread %{public}s failed. %{public}d", cmdlinePath.c_str(), errno);
         return false;
     }
     std::string name(buf); // cmdline args are null-separated, first arg is the executable path
@@ -315,10 +319,16 @@ bool IsParentAppspawn(pid_t pid)
     }
     long uid = -1;
     uint64_t sigBlk = 0;
-    if (!GetUidAndSigBlk(info.ppid, uid, sigBlk) || uid != 0) {
+    if (!GetUidAndSigBlk(info.ppid, uid, sigBlk)) {
+        DFXLOGE("get uid failed", errno);
         return false;
     }
-    return name == "appspawn";
+    if (uid != 0 && uid != 3044 && // 3044 : hdf_devmgr uid
+        uid != 5555) { // 5555: samgr uid
+        DFXLOGE("uid(%{public}ld) not allowed", uid);
+        return false;
+    }
+    return name == "appspawn" || name == "init" || name == "hdf_devmgr" || name == "samgr";
 }
 
 bool IsSigDumpMask(uint64_t sigBlk)
