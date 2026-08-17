@@ -239,7 +239,7 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
     bool enableMinidumpToCrashLog = !IsDisableMinidumpToCrashLog(data.data.work_data.pid);
     SetDisableMinidumpToCrashLog(data.data.work_data.pid, false);
     SmartFd pipeGuard(data.data.work_data.pipefd);
-    if ((!enableMinidump && !enableMinidumpToCrashLog) || !IsParentAppspawn(data.data.work_data.pid)) {
+    if ((!enableMinidump && !enableMinidumpToCrashLog) || !IsProcessMinidumpAllowed(data.data.work_data.pid)) {
         struct __pdump_work_cancel_arg_s arg = {0};
         arg.workid = data.header.workid;
         int retryTimes = 0;

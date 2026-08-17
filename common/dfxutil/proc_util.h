@@ -78,7 +78,7 @@ bool ParseProcInfo(pid_t pid, pid_t tid, ProcessInfo& info);
 std::string FomatProcessInfoToString(const ProcessInfo& info);
 std::string GetFirstNumberSeq(const std::string& cont);
 bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk);
-bool IsParentAppspawn(pid_t pid);
+bool IsProcessMinidumpAllowed(pid_t pid);
 bool IsSigDumpMask(uint64_t sigBlk);
 uint64_t GetClkTck();
 uint32_t GetPssMemory();
