@@ -40,6 +40,7 @@ if (defined(ohos_lite)) {
     ]
     sources = dfx_test_util_sources
     deps = [ "$hilog_lite_deps_path" ]
+    external_deps = [ "bounds_checking_function:libsec_shared" ]
     defines = [ "is_ohos_lite" ]
   }
 
@@ -102,6 +103,7 @@ if (defined(ohos_lite)) {
     deps = [ "$faultloggerd_path/common/dfxutil:dfx_util" ]
 
     external_deps = [
+      "bounds_checking_function:libsec_shared",
       "c_utils:utils",
       "cJSON:cjson",
       "hilog:libhilog",
