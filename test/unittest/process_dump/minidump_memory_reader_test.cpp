@@ -52,7 +52,7 @@ HWTEST_F(MinidumpMemoryReaderTest, MemReaderTest001, TestSize.Level2)
  */
 HWTEST_F(MinidumpMemoryReaderTest, MemReaderTest002, TestSize.Level2)
 {
-    MinidumpMemoryReader reader(nullptr);
+    MinidumpMemoryReader reader("");
     char buf[4] = {};
     EXPECT_FALSE(reader.ReadBytes(buf, 4));
 }
@@ -92,7 +92,7 @@ HWTEST_F(MinidumpMemoryReaderTest, MemReaderTest004, TestSize.Level2)
  */
 HWTEST_F(MinidumpMemoryReaderTest, MemReaderTest005, TestSize.Level2)
 {
-    MinidumpMemoryReader reader(nullptr);
+    MinidumpMemoryReader reader("");
     EXPECT_FALSE(reader.SeekSet(0));
 }
 
@@ -131,7 +131,7 @@ HWTEST_F(MinidumpMemoryReaderTest, MemReaderTest007, TestSize.Level2)
  */
 HWTEST_F(MinidumpMemoryReaderTest, MemReaderTest008, TestSize.Level2)
 {
-    MinidumpMemoryReader reader(nullptr);
+    MinidumpMemoryReader reader("");
     EXPECT_EQ(reader.Tell(), -1);
 }
 
@@ -337,7 +337,7 @@ HWTEST_F(MinidumpMemoryReaderTest, MemReaderTest021, TestSize.Level2)
  */
 HWTEST_F(MinidumpMemoryReaderTest, MemReaderLastErrorTest001, TestSize.Level2)
 {
-    MinidumpMemoryReader reader(nullptr);
+    MinidumpMemoryReader reader("");
     EXPECT_EQ(reader.GetLastError().GetError(), MinidumpError::SUCCESS);
     reader.SeekSet(0);
     EXPECT_NE(reader.GetLastError().GetError(), MinidumpError::SUCCESS);
@@ -583,6 +583,207 @@ HWTEST_F(MinidumpMemoryReaderTest, MemReaderTellBadStreamTest001, TestSize.Level
     ss->setstate(std::ios::badbit);
     off_t badPos = reader.Tell();
     EXPECT_EQ(badPos, -1);
+}
+
+/**
+ * @tc.name: MemReaderReadBytesZeroCountTest001
+ * @tc.desc: test MinidumpMemoryReader ReadBytes with zero count returns true without reading
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderReadBytesZeroCountTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    char buf[4] = {};
+    EXPECT_TRUE(reader->ReadBytes(buf, 0));
+}
+
+/**
+ * @tc.name: MemReaderReadBytesNullBufferZeroCountTest001
+ * @tc.desc: test MinidumpMemoryReader ReadBytes with null buffer and zero count returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderReadBytesNullBufferZeroCountTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    EXPECT_TRUE(reader->ReadBytes(nullptr, 0));
+}
+
+/**
+ * @tc.name: MemReaderReadBytesNullBufferNonZeroCountTest001
+ * @tc.desc: test MinidumpMemoryReader ReadBytes with null buffer and non-zero count returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderReadBytesNullBufferNonZeroCountTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    EXPECT_FALSE(reader->ReadBytes(nullptr, 4));
+}
+
+/**
+ * @tc.name: MemReaderSeekSetNegativeOffsetTest001
+ * @tc.desc: test MinidumpMemoryReader SeekSet with negative offset returns false and sets ERROR_FILE_SEEK
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderSeekSetNegativeOffsetTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    EXPECT_FALSE(reader->SeekSet(-1));
+    EXPECT_EQ(reader->GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+}
+
+/**
+ * @tc.name: MemReaderMmapPathBasedTest001
+ * @tc.desc: test MinidumpMemoryReader path-based constructor with valid file enables mmap backend
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapPathBasedTest001, TestSize.Level2)
+{
+    std::string data = "ABCDEF";
+    int tmpFd = open("/data/test/mem_reader_mmap_test", O_RDWR | O_CREAT | O_TRUNC, 0644);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpMemoryReader reader("/data/test/mem_reader_mmap_test");
+    EXPECT_TRUE(reader.IsMmapEnabled());
+    EXPECT_EQ(reader.GetFileSize(), data.size());
+
+    char buf[4] = {};
+    EXPECT_TRUE(reader.ReadBytes(buf, 4));
+    EXPECT_EQ(buf[0], 'A');
+    EXPECT_EQ(buf[3], 'D');
+    EXPECT_EQ(reader.Tell(), 4);
+
+    EXPECT_TRUE(reader.SeekSet(2));
+    EXPECT_EQ(reader.Tell(), 2);
+    EXPECT_TRUE(reader.ReadBytes(buf, 2));
+    EXPECT_EQ(buf[0], 'C');
+    EXPECT_EQ(buf[1], 'D');
+
+    unlink("/data/test/mem_reader_mmap_test");
+}
+
+/**
+ * @tc.name: MemReaderMmapNonexistentPathTest001
+ * @tc.desc: test MinidumpMemoryReader path-based constructor with nonexistent path falls back to istream
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapNonexistentPathTest001, TestSize.Level2)
+{
+    MinidumpMemoryReader reader("/nonexistent/path/to/file");
+    EXPECT_FALSE(reader.IsMmapEnabled());
+    char buf[4] = {};
+    EXPECT_FALSE(reader.ReadBytes(buf, 4));
+}
+
+/**
+ * @tc.name: MemReaderMmapSeekOutOfRangeTest001
+ * @tc.desc: test MinidumpMemoryReader mmap SeekSet with out-of-range offset returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapSeekOutOfRangeTest001, TestSize.Level2)
+{
+    std::string data = "ABCDEF";
+    int tmpFd = open("/data/test/mem_reader_mmap_seek", O_RDWR | O_CREAT | O_TRUNC, 0644);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpMemoryReader reader("/data/test/mem_reader_mmap_seek");
+    EXPECT_TRUE(reader.IsMmapEnabled());
+    EXPECT_FALSE(reader.SeekSet(1000));
+    EXPECT_EQ(reader.GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+
+    unlink("/data/test/mem_reader_mmap_seek");
+}
+
+/**
+ * @tc.name: MemReaderMmapReadOutOfRangeTest001
+ * @tc.desc: test MinidumpMemoryReader mmap ReadBytes with out-of-range count returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapReadOutOfRangeTest001, TestSize.Level2)
+{
+    std::string data = "ABC";
+    int tmpFd = open("/data/test/mem_reader_mmap_read_oob", O_RDWR | O_CREAT | O_TRUNC, 0644);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpMemoryReader reader("/data/test/mem_reader_mmap_read_oob");
+    EXPECT_TRUE(reader.IsMmapEnabled());
+    char buf[10] = {};
+    EXPECT_FALSE(reader.ReadBytes(buf, 10));
+    EXPECT_EQ(reader.GetLastError().GetError(), MinidumpError::ERROR_FILE_READ);
+
+    unlink("/data/test/mem_reader_mmap_read_oob");
+}
+
+/**
+ * @tc.name: MemReaderMmapEmptyFileTest001
+ * @tc.desc: test MinidumpMemoryReader path-based constructor with empty file falls back to istream
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapEmptyFileTest001, TestSize.Level2)
+{
+    int tmpFd = open("/data/test/mem_reader_mmap_empty", O_RDWR | O_CREAT | O_TRUNC, 0644);
+    ASSERT_TRUE(tmpFd > 0);
+    close(tmpFd);
+
+    MinidumpMemoryReader reader("/data/test/mem_reader_mmap_empty");
+    EXPECT_FALSE(reader.IsMmapEnabled());
+    EXPECT_TRUE(reader.SeekSet(0));
+    char buf[4] = {};
+    EXPECT_FALSE(reader.ReadBytes(buf, 4));
+
+    unlink("/data/test/mem_reader_mmap_empty");
+}
+
+/**
+ * @tc.name: MemReaderMmapSeekAndTellTest001
+ * @tc.desc: test MinidumpMemoryReader mmap SeekSet and Tell return correct positions
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapSeekAndTellTest001, TestSize.Level2)
+{
+    std::string data = "ABCDEFGH";
+    int tmpFd = open("/data/test/mem_reader_mmap_seek_tell", O_RDWR | O_CREAT | O_TRUNC, 0644);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpMemoryReader reader("/data/test/mem_reader_mmap_seek_tell");
+    EXPECT_TRUE(reader.IsMmapEnabled());
+    EXPECT_EQ(reader.Tell(), 0);
+    EXPECT_TRUE(reader.SeekSet(4));
+    EXPECT_EQ(reader.Tell(), 4);
+    char buf[4] = {};
+    EXPECT_TRUE(reader.ReadBytes(buf, 4));
+    EXPECT_EQ(buf[0], 'E');
+    EXPECT_EQ(buf[3], 'H');
+
+    unlink("/data/test/mem_reader_mmap_seek_tell");
+}
+
+/**
+ * @tc.name: MemReaderMmapZeroCountReadTest001
+ * @tc.desc: test MinidumpMemoryReader mmap ReadBytes with zero count returns true without error
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapZeroCountReadTest001, TestSize.Level2)
+{
+    std::string data = "ABCDEF";
+    int tmpFd = open("/data/test/mem_reader_mmap_zero_count", O_RDWR | O_CREAT | O_TRUNC, 0644);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpMemoryReader reader("/data/test/mem_reader_mmap_zero_count");
+    EXPECT_TRUE(reader.IsMmapEnabled());
+    EXPECT_TRUE(reader.ReadBytes(nullptr, 0));
+    EXPECT_TRUE(reader.ReadBytes(nullptr, 0));
+
+    unlink("/data/test/mem_reader_mmap_zero_count");
 }
 
 } // namespace HiviewDFX

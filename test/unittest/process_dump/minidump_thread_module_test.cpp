@@ -15,6 +15,8 @@
 
 #include "minidump_test_common.h"
 
+#include "minidump_index.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 using namespace testing::ext;
@@ -890,12 +892,12 @@ HWTEST_F(MinidumpModuleListTest, ModuleListSubjectNotificationTest001, TestSize.
  */
 HWTEST_F(MinidumpModuleListTest, ModuleListAddressLookupDisabledTest001, TestSize.Level2)
 {
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = false;
     config.enableBitmapIndex = false;
     config.bitmapGranularity = 0;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t moduleCount = 1;
     MDRawModule rawModule = {};
@@ -915,12 +917,12 @@ HWTEST_F(MinidumpModuleListTest, ModuleListAddressLookupDisabledTest001, TestSiz
     EXPECT_EQ(list.GetModuleForAddress(0x5000), nullptr);
 
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = 134217728;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -1294,12 +1296,12 @@ HWTEST_F(MinidumpModuleListTest, ModuleListGetModulesTest001, TestSize.Level2)
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = 134217728;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 
     uint32_t moduleCount = 1;
     MDRawModule rawModule = {};
@@ -1347,12 +1349,12 @@ HWTEST_F(MinidumpModuleListTest, ModuleListReadWithoutSubjectTest001, TestSize.L
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = 134217728;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 
     uint32_t moduleCount = 1;
     MDRawModule rawModule = {};
@@ -1384,12 +1386,12 @@ HWTEST_F(MinidumpModuleListTest, ModuleListGetModuleForAddressBitmapNotInRangeTe
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = true;
     config.bitmapGranularity = 0x100;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t moduleCount = 1;
     MDRawModule rawModule = {};
@@ -1411,12 +1413,12 @@ HWTEST_F(MinidumpModuleListTest, ModuleListGetModuleForAddressBitmapNotInRangeTe
 
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = 134217728;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -1429,11 +1431,11 @@ HWTEST_F(MinidumpModuleListTest, ModuleListGetModuleForAddressTreeNotFoundTest00
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = false;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t moduleCount = 1;
     MDRawModule rawModule = {};
@@ -1455,12 +1457,12 @@ HWTEST_F(MinidumpModuleListTest, ModuleListGetModuleForAddressTreeNotFoundTest00
 
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = 134217728;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -1694,6 +1696,160 @@ HWTEST_F(MinidumpMapListTest, MapListReadNullReaderTest001, TestSize.Level2)
 {
     MinidumpMapList list(nullptr);
     EXPECT_FALSE(list.Read(100));
+}
+
+/**
+ * @tc.name: ModuleListAddressIndexTest001
+ * @tc.desc: test MinidumpModuleList with addressIndex_ set uses adaptive index for lookup
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpModuleListTest, ModuleListAddressIndexTest001, TestSize.Level2)
+{
+    uint32_t moduleCount = 1;
+    MDRawModule rawModule = {};
+    rawModule.baseOfImage = 0x5000;
+    rawModule.sizeOfImage = 0x1000;
+    rawModule.moduleNameRva = sizeof(uint32_t) + sizeof(MDRawModule);
+
+    std::string data(reinterpret_cast<const char*>(&moduleCount), sizeof(moduleCount));
+    data += std::string(reinterpret_cast<const char*>(&rawModule), sizeof(rawModule));
+    data += BuildUTF16LEString("mod");
+
+    auto reader = MakeReader(data);
+    MinidumpModuleList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    uint32_t expectedSize = sizeof(uint32_t) + sizeof(MDRawModule) +
+        static_cast<uint32_t>(BuildUTF16LEString("mod").size());
+    EXPECT_TRUE(list.Read(expectedSize));
+
+    auto foundModule = list.GetModuleForAddress(0x5000);
+    EXPECT_NE(foundModule, nullptr);
+    EXPECT_EQ(foundModule->BaseAddress(), 0x5000u);
+}
+
+/**
+ * @tc.name: ModuleListAddressIndexesTest001
+ * @tc.desc: test MinidumpModuleList SetAddressIndexes sets module address index
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpModuleListTest, ModuleListAddressIndexesTest001, TestSize.Level2)
+{
+    uint32_t moduleCount = 1;
+    MDRawModule rawModule = {};
+    rawModule.baseOfImage = 0x5000;
+    rawModule.sizeOfImage = 0x1000;
+    rawModule.moduleNameRva = sizeof(uint32_t) + sizeof(MDRawModule);
+
+    std::string data(reinterpret_cast<const char*>(&moduleCount), sizeof(moduleCount));
+    data += std::string(reinterpret_cast<const char*>(&rawModule), sizeof(rawModule));
+    data += BuildUTF16LEString("mod");
+
+    auto reader = MakeReader(data);
+    MinidumpModuleList list(reader);
+
+    AdaptiveAddressIndex memIndex;
+    AdaptiveAddressIndex modIndex;
+    list.SetAddressIndexes(&memIndex, &modIndex);
+    uint32_t expectedSize = sizeof(uint32_t) + sizeof(MDRawModule) +
+        static_cast<uint32_t>(BuildUTF16LEString("mod").size());
+    EXPECT_TRUE(list.Read(expectedSize));
+
+    auto foundModule = list.GetModuleForAddress(0x5500);
+    EXPECT_NE(foundModule, nullptr);
+}
+
+/**
+ * @tc.name: ModuleListAddressIndexNotFoundTest001
+ * @tc.desc: test MinidumpModuleList with addressIndex_ returns null for address not in range
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpModuleListTest, ModuleListAddressIndexNotFoundTest001, TestSize.Level2)
+{
+    uint32_t moduleCount = 1;
+    MDRawModule rawModule = {};
+    rawModule.baseOfImage = 0x5000;
+    rawModule.sizeOfImage = 0x1000;
+    rawModule.moduleNameRva = sizeof(uint32_t) + sizeof(MDRawModule);
+
+    std::string data(reinterpret_cast<const char*>(&moduleCount), sizeof(moduleCount));
+    data += std::string(reinterpret_cast<const char*>(&rawModule), sizeof(rawModule));
+    data += BuildUTF16LEString("mod");
+
+    auto reader = MakeReader(data);
+    MinidumpModuleList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    uint32_t expectedSize = sizeof(uint32_t) + sizeof(MDRawModule) +
+        static_cast<uint32_t>(BuildUTF16LEString("mod").size());
+    EXPECT_TRUE(list.Read(expectedSize));
+
+    EXPECT_EQ(list.GetModuleForAddress(0x100), nullptr);
+    EXPECT_EQ(list.GetModuleForAddress(0xFFFF), nullptr);
+}
+
+/**
+ * @tc.name: ModuleListAddressIndexOverlapTest001
+ * @tc.desc: test MinidumpModuleList with addressIndex_ and overlapping ranges does not crash
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpModuleListTest, ModuleListAddressIndexOverlapTest001, TestSize.Level2)
+{
+    uint32_t moduleCount = 2;
+    MDRawModule rawModule1 = {};
+    rawModule1.baseOfImage = 0x5000;
+    rawModule1.sizeOfImage = 0x1000;
+    rawModule1.moduleNameRva = sizeof(uint32_t) + sizeof(MDRawModule) * 2;
+    MDRawModule rawModule2 = {};
+    rawModule2.baseOfImage = 0x5500;
+    rawModule2.sizeOfImage = 0x1000;
+    rawModule2.moduleNameRva = sizeof(uint32_t) + sizeof(MDRawModule) * 2 +
+        static_cast<uint32_t>(BuildUTF16LEString("mod1").size());
+
+    std::string data(reinterpret_cast<const char*>(&moduleCount), sizeof(moduleCount));
+    data += std::string(reinterpret_cast<const char*>(&rawModule1), sizeof(rawModule1));
+    data += std::string(reinterpret_cast<const char*>(&rawModule2), sizeof(rawModule2));
+    data += BuildUTF16LEString("mod1");
+    data += BuildUTF16LEString("mod2");
+
+    auto reader = MakeReader(data);
+    MinidumpModuleList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    uint32_t expectedSize = sizeof(uint32_t) + sizeof(MDRawModule) * 2 +
+        static_cast<uint32_t>(BuildUTF16LEString("mod1").size()) +
+        static_cast<uint32_t>(BuildUTF16LEString("mod2").size());
+    EXPECT_TRUE(list.Read(expectedSize));
+}
+
+/**
+ * @tc.name: ModuleListRegisterModuleRangeOverflowTest001
+ * @tc.desc: test MinidumpModuleList with module range overflow sets ERROR_CORRUPTED_DATA
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpModuleListTest, ModuleListRegisterModuleRangeOverflowTest001, TestSize.Level2)
+{
+    uint32_t moduleCount = 1;
+    MDRawModule rawModule = {};
+    rawModule.baseOfImage = std::numeric_limits<uint64_t>::max() - 10;
+    rawModule.sizeOfImage = 0x1000;
+    rawModule.moduleNameRva = sizeof(uint32_t) + sizeof(MDRawModule);
+
+    std::string data(reinterpret_cast<const char*>(&moduleCount), sizeof(moduleCount));
+    data += std::string(reinterpret_cast<const char*>(&rawModule), sizeof(rawModule));
+    data += BuildUTF16LEString("mod");
+
+    auto reader = MakeReader(data);
+    MinidumpModuleList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    uint32_t expectedSize = sizeof(uint32_t) + sizeof(MDRawModule) +
+        static_cast<uint32_t>(BuildUTF16LEString("mod").size());
+    EXPECT_TRUE(list.Read(expectedSize));
 }
 
 } // namespace HiviewDFX

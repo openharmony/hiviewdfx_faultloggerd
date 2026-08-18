@@ -1067,5 +1067,217 @@ HWTEST_F(MinidumpParserTest, ParserGetEsrInfoValidTest001, TestSize.Level2)
     EXPECT_EQ(esrResult->EsrRegsInfo().esrRegs, 0x9600021ull);
 }
 
+/**
+ * @tc.name: ParserInjectStreamTest001
+ * @tc.desc: test MinidumpParser InjectStream with valid stream type injects stream into map
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserInjectStreamTest001, TestSize.Level2)
+{
+    MDRawHeader header = {};
+    header.signature = MINIDUMP_HEADER_SIGNATURE;
+    header.version = (MINIDUMP_HEADER_VERSION & 0xffff) | MINIDUMP_VERSION_TIMESTAMP;
+    header.numberOfStreams = 1;
+    header.streamDirectoryRva = sizeof(MDRawHeader);
+    MDRawDirectory dir = {};
+    dir.streamType = MD_STREAM_SYSTEM_INFO;
+    dir.location.dataSize = sizeof(MDRawSystemInfo);
+    dir.location.rva = sizeof(MDRawHeader) + sizeof(MDRawDirectory);
+
+    std::string data(reinterpret_cast<const char*>(&header), sizeof(header));
+    data += std::string(reinterpret_cast<const char*>(&dir), sizeof(dir));
+    MDRawSystemInfo sysInfo = {};
+    sysInfo.platformId = MINIDUMP_OS_LINUX;
+    sysInfo.processorArchitecture = MD_CPU_ARCH_ARM64;
+    data += std::string(reinterpret_cast<const char*>(&sysInfo), sizeof(sysInfo));
+
+    auto stream = MakeStream(data);
+    MinidumpParser parser(stream);
+    EXPECT_TRUE(parser.Parse());
+
+    auto reader = std::make_shared<MinidumpMemoryReader>(stream);
+    auto injectedStream = MinidumpStreamFactory::Instance().CreateStream(MD_STREAM_SYSTEM_INFO, reader);
+    EXPECT_NE(injectedStream, nullptr);
+    if (injectedStream) {
+        injectedStream->SetMinidumpSubject(parser.GetSubject());
+        parser.InjectStream(MD_STREAM_SYSTEM_INFO, injectedStream);
+    }
+
+    auto sysInfo1 = parser.GetSystemInfo();
+    EXPECT_NE(sysInfo1, nullptr);
+}
+
+/**
+ * @tc.name: ParserInjectStreamInvalidParserTest001
+ * @tc.desc: test MinidumpParser InjectStream with invalid parser does not inject
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserInjectStreamInvalidParserTest001, TestSize.Level2)
+{
+    MinidumpParser parser(MakeStream(""));
+    EXPECT_FALSE(parser.Valid());
+    auto reader = std::make_shared<MinidumpMemoryReader>(MakeStream(""));
+    auto stream = MinidumpStreamFactory::Instance().CreateStream(MD_STREAM_SYSTEM_INFO, reader);
+    parser.InjectStream(MD_STREAM_SYSTEM_INFO, stream);
+    EXPECT_EQ(parser.GetSystemInfo(), nullptr);
+}
+
+/**
+ * @tc.name: ParserInjectStreamNullStreamTest001
+ * @tc.desc: test MinidumpParser InjectStream with null stream does not inject
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserInjectStreamNullStreamTest001, TestSize.Level2)
+{
+    std::string data = BuildValidMinidumpHeader(1);
+    auto ss = MakeStream(data);
+    MinidumpParser parser(ss);
+    EXPECT_TRUE(parser.Parse());
+    parser.InjectStream(MD_STREAM_UNUSED, nullptr);
+}
+
+/**
+ * @tc.name: ParserInjectStreamUnknownTypeTest001
+ * @tc.desc: test MinidumpParser InjectStream with unknown stream type does not crash
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserInjectStreamUnknownTypeTest001, TestSize.Level2)
+{
+    std::string data = BuildValidMinidumpHeader(1);
+    auto ss = MakeStream(data);
+    MinidumpParser parser(ss);
+    EXPECT_TRUE(parser.Parse());
+    auto reader = std::make_shared<MinidumpMemoryReader>(ss);
+    auto stream = MinidumpStreamFactory::Instance().CreateStream(0xFFFF, reader);
+    parser.InjectStream(0xFFFE, stream);
+}
+
+/**
+ * @tc.name: ParserInjectStreamExistingStreamTest001
+ * @tc.desc: test MinidumpParser InjectStream with existing stream does not overwrite
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserInjectStreamExistingStreamTest001, TestSize.Level2)
+{
+    MDRawHeader header = {};
+    header.signature = MINIDUMP_HEADER_SIGNATURE;
+    header.version = (MINIDUMP_HEADER_VERSION & 0xffff) | MINIDUMP_VERSION_TIMESTAMP;
+    header.numberOfStreams = 1;
+    header.streamDirectoryRva = sizeof(MDRawHeader);
+    MDRawDirectory dir = {};
+    dir.streamType = MD_STREAM_SYSTEM_INFO;
+    dir.location.dataSize = sizeof(MDRawSystemInfo);
+    dir.location.rva = sizeof(MDRawHeader) + sizeof(MDRawDirectory);
+
+    std::string data(reinterpret_cast<const char*>(&header), sizeof(header));
+    data += std::string(reinterpret_cast<const char*>(&dir), sizeof(dir));
+    MDRawSystemInfo sysInfo = {};
+    sysInfo.platformId = MINIDUMP_OS_LINUX;
+    sysInfo.processorArchitecture = MD_CPU_ARCH_ARM64;
+    data += std::string(reinterpret_cast<const char*>(&sysInfo), sizeof(sysInfo));
+
+    auto stream = MakeStream(data);
+    MinidumpParser parser(stream);
+    EXPECT_TRUE(parser.Parse());
+
+    auto sysInfo1 = parser.GetSystemInfo();
+    EXPECT_NE(sysInfo1, nullptr);
+
+    auto reader = std::make_shared<MinidumpMemoryReader>(stream);
+    auto newStream = MinidumpStreamFactory::Instance().CreateStream(MD_STREAM_SYSTEM_INFO, reader);
+    parser.InjectStream(MD_STREAM_SYSTEM_INFO, newStream);
+
+    auto sysInfo2 = parser.GetSystemInfo();
+    EXPECT_NE(sysInfo2, nullptr);
+}
+
+/**
+ * @tc.name: ParserGetSubjectTest001
+ * @tc.desc: test MinidumpParser GetSubject returns non-null subject
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserGetSubjectTest001, TestSize.Level2)
+{
+    std::string data = BuildValidMinidumpHeader(1);
+    auto ss = MakeStream(data);
+    MinidumpParser parser(ss);
+    auto subject = parser.GetSubject();
+    EXPECT_NE(subject, nullptr);
+}
+
+/**
+ * @tc.name: ParserOpenWithValidPathTest001
+ * @tc.desc: test MinidumpParser Open with valid file path returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserOpenWithValidPathTest001, TestSize.Level2)
+{
+    std::string data = BuildValidMinidumpHeader(1);
+    int tmpFd = open("/data/test/parser_open_valid_path", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpParser parser("/data/test/parser_open_valid_path");
+    EXPECT_TRUE(parser.Open());
+    unlink("/data/test/parser_open_valid_path");
+}
+
+/**
+ * @tc.name: ParserParseWithPathBasedMmapTest001
+ * @tc.desc: test MinidumpParser Parse with valid file path uses mmap backend
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserParseWithPathBasedMmapTest001, TestSize.Level2)
+{
+    std::string data = BuildValidMinidumpHeader(1);
+    int tmpFd = open("/data/test/parser_parse_mmap", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpParser parser("/data/test/parser_parse_mmap");
+    EXPECT_TRUE(parser.Parse());
+    EXPECT_TRUE(parser.Valid());
+    EXPECT_NE(parser.Header(), nullptr);
+    unlink("/data/test/parser_parse_mmap");
+}
+
+/**
+ * @tc.name: ParserParseWithSystemInfoPathTest001
+ * @tc.desc: test MinidumpParser Parse with path-based mmap reads system info stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserParseWithSystemInfoPathTest001, TestSize.Level2)
+{
+    MDRawHeader header = {};
+    header.signature = MINIDUMP_HEADER_SIGNATURE;
+    header.version = (MINIDUMP_HEADER_VERSION & 0xffff) | MINIDUMP_VERSION_TIMESTAMP;
+    header.numberOfStreams = 1;
+    header.streamDirectoryRva = sizeof(MDRawHeader);
+    MDRawDirectory dir = {};
+    dir.streamType = MD_STREAM_SYSTEM_INFO;
+    dir.location.dataSize = sizeof(MDRawSystemInfo);
+    dir.location.rva = sizeof(MDRawHeader) + sizeof(MDRawDirectory);
+
+    std::string data(reinterpret_cast<const char*>(&header), sizeof(header));
+    data += std::string(reinterpret_cast<const char*>(&dir), sizeof(dir));
+    MDRawSystemInfo sysInfo = {};
+    sysInfo.platformId = MINIDUMP_OS_LINUX;
+    sysInfo.processorArchitecture = MD_CPU_ARCH_ARM64;
+    data += std::string(reinterpret_cast<const char*>(&sysInfo), sizeof(sysInfo));
+
+    int tmpFd = open("/data/test/parser_sys_info_path", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpParser parser("/data/test/parser_sys_info_path");
+    EXPECT_TRUE(parser.Parse());
+    auto sysInfoResult = parser.GetSystemInfo();
+    EXPECT_NE(sysInfoResult, nullptr);
+    unlink("/data/test/parser_sys_info_path");
+}
+
 } // namespace HiviewDFX
 } // namespace OHOS

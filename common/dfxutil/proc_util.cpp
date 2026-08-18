@@ -328,7 +328,7 @@ bool IsProcessMinidumpAllowed(pid_t pid)
         DFXLOGE("uid(%{public}ld) not allowed", uid);
         return false;
     }
-    return name == "appspawn" || name == "init" || name == "hdf_devmgr" || name == "samgr";
+    return name == "appspawn" || name == "init" || name == "hdf_devmgr" || name == "samgr" || name == "appspawndf";
 }
 
 bool IsSigDumpMask(uint64_t sigBlk)

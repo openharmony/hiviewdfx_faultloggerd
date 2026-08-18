@@ -66,6 +66,22 @@ void MinidumpConfigManager::SetEnableChecksumValidation(bool enable)
     config_.enableChecksumValidation = enable;
 }
 
+void MinidumpConfigManager::SetPerformanceConfig(bool enableRangeMap, bool enableIntervalTree,
+                                                 bool enableBitmapIndex, uint32_t bitmapGranularity)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    config_.enableRangeMap = enableRangeMap;
+    config_.enableIntervalTree = enableIntervalTree;
+    config_.enableBitmapIndex = enableBitmapIndex;
+    config_.bitmapGranularity = bitmapGranularity;
+}
+
+void MinidumpConfigManager::SetParallelParsing(bool enable)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+    config_.enableParallelParsing = enable;
+}
+
 MinidumpConfigManager::MinidumpConfigManager()
     : config_()
 {

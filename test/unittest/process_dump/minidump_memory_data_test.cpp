@@ -15,6 +15,8 @@
 
 #include "minidump_test_common.h"
 
+#include "minidump_index.h"
+
 constexpr uint64_t TEST_MEMORY_REGION_BASE = 0x1000;
 constexpr uint32_t DEFAULT_BITMAP_GRANULARITY = 128 * 1024 * 1024;
 constexpr uint32_t TEST_BITMAP_GRANULARITY_SMALL = 0x100;
@@ -506,12 +508,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListSubjectNotificationTest001, TestSize.Lev
  */
 HWTEST_F(MinidumpMemoryListTest, MemListAddressLookupDisabledTest001, TestSize.Level2)
 {
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = false;
     config.enableBitmapIndex = false;
     config.bitmapGranularity = 0;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t regionCount = 1;
     MDMemoryDescriptor desc = {};
@@ -529,12 +531,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListAddressLookupDisabledTest001, TestSize.L
     EXPECT_EQ(list.GetMemoryRegionForAddress(0x1000), nullptr);
 
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -589,12 +591,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListGetMemoryCachedTest001, TestSize.Level2)
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 
     uint32_t regionCount = 1;
     MDMemoryDescriptor desc = {};
@@ -645,12 +647,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListGetMemoryRegionsTest001, TestSize.Level2
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 
     uint32_t regionCount = 2;
     MDMemoryDescriptor desc1 = {};
@@ -687,12 +689,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListReadWithoutSubjectTest001, TestSize.Leve
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 
     uint32_t regionCount = 1;
     MDMemoryDescriptor desc = {};
@@ -722,12 +724,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListGetMemoryRegionForAddressBitmapNotInRang
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = true;
     config.bitmapGranularity = TEST_BITMAP_GRANULARITY_SMALL;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t regionCount = 1;
     MDMemoryDescriptor desc = {};
@@ -747,12 +749,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListGetMemoryRegionForAddressBitmapNotInRang
 
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -765,11 +767,11 @@ HWTEST_F(MinidumpMemoryListTest, MemListGetMemoryRegionForAddressTreeNotFoundTes
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = false;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t regionCount = 1;
     MDMemoryDescriptor desc = {};
@@ -789,12 +791,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListGetMemoryRegionForAddressTreeNotFoundTes
 
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -807,12 +809,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListBuildMemoryRegionsOnlyRangeMapTest001, T
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = true;
     config.enableIntervalTree = false;
     config.enableBitmapIndex = false;
     config.bitmapGranularity = 0;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t regionCount = 1;
     MDMemoryDescriptor desc = {};
@@ -832,12 +834,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListBuildMemoryRegionsOnlyRangeMapTest001, T
 
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -850,12 +852,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListPrintValidTest001, TestSize.Level2)
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 
     uint32_t regionCount = 1;
     MDMemoryDescriptor desc = {};
@@ -1037,12 +1039,12 @@ HWTEST_F(MinidumpMemoryListTest, MemListOverlapRangeTest001, TestSize.Level2)
     auto& mgr = MinidumpConfigManager::Instance();
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = false;
     config.bitmapGranularity = 0;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     uint32_t regionCount = 2;
     MDMemoryDescriptor desc1 = {};
@@ -1067,12 +1069,201 @@ HWTEST_F(MinidumpMemoryListTest, MemListOverlapRangeTest001, TestSize.Level2)
 
     mgr.SetConfig(MinidumpConfig());
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
+}
+
+/**
+ * @tc.name: MemListAddressIndexTest001
+ * @tc.desc: test MinidumpMemoryList with addressIndex_ set uses adaptive index for lookup
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryListTest, MemListAddressIndexTest001, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+
+    uint32_t regionCount = 1;
+    MDMemoryDescriptor desc = {};
+    desc.startOfMemoryRange = TEST_MEMORY_REGION_BASE;
+    desc.memory.dataSize = 6;
+    desc.memory.rva = sizeof(uint32_t) + sizeof(MDMemoryDescriptor);
+
+    std::string data(reinterpret_cast<const char*>(&regionCount), sizeof(regionCount));
+    data += std::string(reinterpret_cast<const char*>(&desc), sizeof(desc));
+    data += "ABCDEF";
+
+    auto reader = MakeReader(data);
+    MinidumpMemoryList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    EXPECT_TRUE(list.Read(sizeof(uint32_t) + sizeof(MDMemoryDescriptor) + 6));
+
+    auto region = list.GetMemoryRegionForAddress(TEST_MEMORY_REGION_BASE);
+    EXPECT_NE(region, nullptr);
+    EXPECT_EQ(region->GetBase(), TEST_MEMORY_REGION_BASE);
+
+    auto cachedRegion = list.GetMemoryRegionForAddress(TEST_MEMORY_REGION_BASE);
+    EXPECT_NE(cachedRegion, nullptr);
+
+    EXPECT_EQ(list.GetMemoryRegionForAddress(0x500), nullptr);
+
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+}
+
+/**
+ * @tc.name: MemListAddressIndexCachedTest001
+ * @tc.desc: test MinidumpMemoryList GetMemoryRegionForAddress returns cached result on second call
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryListTest, MemListAddressIndexCachedTest001, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+
+    uint32_t regionCount = 1;
+    MDMemoryDescriptor desc = {};
+    desc.startOfMemoryRange = TEST_MEMORY_REGION_BASE;
+    desc.memory.dataSize = 4;
+    desc.memory.rva = sizeof(uint32_t) + sizeof(MDMemoryDescriptor);
+
+    std::string data(reinterpret_cast<const char*>(&regionCount), sizeof(regionCount));
+    data += std::string(reinterpret_cast<const char*>(&desc), sizeof(desc));
+    data += "ABCD";
+
+    auto reader = MakeReader(data);
+    MinidumpMemoryList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    EXPECT_TRUE(list.Read(sizeof(uint32_t) + sizeof(MDMemoryDescriptor) + 4));
+
+    auto region1 = list.GetMemoryRegionForAddress(TEST_MEMORY_REGION_BASE);
+    EXPECT_NE(region1, nullptr);
+    auto region2 = list.GetMemoryRegionForAddress(TEST_MEMORY_REGION_BASE);
+    EXPECT_NE(region2, nullptr);
+    EXPECT_EQ(region1, region2);
+
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+}
+
+/**
+ * @tc.name: MemListAddressIndexOverlapTest001
+ * @tc.desc: test MinidumpMemoryList with addressIndex_ and overlapping ranges does not crash
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryListTest, MemListAddressIndexOverlapTest001, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+
+    uint32_t regionCount = 2;
+    MDMemoryDescriptor desc1 = {};
+    desc1.startOfMemoryRange = TEST_MEMORY_REGION_BASE;
+    desc1.memory.dataSize = 4;
+    desc1.memory.rva = sizeof(uint32_t) + sizeof(MDMemoryDescriptor) * 2;
+    MDMemoryDescriptor desc2 = {};
+    desc2.startOfMemoryRange = TEST_MEMORY_REGION_BASE;
+    desc2.memory.dataSize = 4;
+    desc2.memory.rva = sizeof(uint32_t) + sizeof(MDMemoryDescriptor) * 2 + 4;
+
+    std::string data(reinterpret_cast<const char*>(&regionCount), sizeof(regionCount));
+    data += std::string(reinterpret_cast<const char*>(&desc1), sizeof(desc1));
+    data += std::string(reinterpret_cast<const char*>(&desc2), sizeof(desc2));
+    data += "ABCD";
+    data += "EFGH";
+
+    auto reader = MakeReader(data);
+    MinidumpMemoryList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    EXPECT_TRUE(list.Read(sizeof(uint32_t) + sizeof(MDMemoryDescriptor) * 2 + 8));
+    EXPECT_EQ(list.RegionCount(), 2u);
+
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+}
+
+/**
+ * @tc.name: MemListAddressIndexOutOfRangeTest001
+ * @tc.desc: test MinidumpMemoryList with addressIndex_ returns null for address out of range
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryListTest, MemListAddressIndexOutOfRangeTest001, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+
+    uint32_t regionCount = 1;
+    MDMemoryDescriptor desc = {};
+    desc.startOfMemoryRange = TEST_MEMORY_REGION_BASE;
+    desc.memory.dataSize = 4;
+    desc.memory.rva = sizeof(uint32_t) + sizeof(MDMemoryDescriptor);
+
+    std::string data(reinterpret_cast<const char*>(&regionCount), sizeof(regionCount));
+    data += std::string(reinterpret_cast<const char*>(&desc), sizeof(desc));
+    data += "ABCD";
+
+    auto reader = MakeReader(data);
+    MinidumpMemoryList list(reader);
+
+    AdaptiveAddressIndex addrIndex;
+    list.SetAddressIndex(&addrIndex);
+    EXPECT_TRUE(list.Read(sizeof(uint32_t) + sizeof(MDMemoryDescriptor) + 4));
+
+    EXPECT_EQ(list.GetMemoryRegionForAddress(0x9999), nullptr);
+
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+}
+
+/**
+ * @tc.name: MemListSetAddressIndexesTest001
+ * @tc.desc: test MinidumpMemoryList SetAddressIndexes sets both memory and module indexes
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryListTest, MemListSetAddressIndexesTest001, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
+
+    AdaptiveAddressIndex memIndex;
+    AdaptiveAddressIndex modIndex;
+    EXPECT_TRUE(memIndex.Insert(0x1000, 0x2000, 0u));
+
+    uint32_t regionCount = 1;
+    MDMemoryDescriptor desc = {};
+    desc.startOfMemoryRange = 0x1000;
+    desc.memory.dataSize = 4;
+    desc.memory.rva = sizeof(uint32_t) + sizeof(MDMemoryDescriptor);
+
+    std::string data(reinterpret_cast<const char*>(&regionCount), sizeof(regionCount));
+    data += std::string(reinterpret_cast<const char*>(&desc), sizeof(desc));
+    data += "ABCD";
+
+    auto reader = MakeReader(data);
+    MinidumpMemoryList list(reader);
+    list.SetAddressIndexes(&memIndex, &modIndex);
+    EXPECT_TRUE(list.Read(sizeof(uint32_t) + sizeof(MDMemoryDescriptor) + 4));
+
+    auto region = list.GetMemoryRegionForAddress(0x1500);
+    EXPECT_NE(region, nullptr);
+
+    mgr.SetConfig(MinidumpConfig());
+    PerformanceOptimizer::Instance().Reset();
 }
 
 } // namespace HiviewDFX

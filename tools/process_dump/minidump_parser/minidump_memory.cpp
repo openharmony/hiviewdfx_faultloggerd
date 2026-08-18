@@ -19,6 +19,7 @@
 #include "dfx_log.h"
 #include "minidump_config.h"
 #include "minidump_factory.h"
+#include "minidump_index.h"
 #include "minidump_memory_reader.h"
 #include "minidump_optimizer.h"
 #include "minidump_stream.h"
@@ -158,7 +159,8 @@ void MinidumpMemoryRegion::Print() const
 
 MinidumpMemoryList::MinidumpMemoryList(std::shared_ptr<MinidumpMemoryReader> memoryReader)
     : MinidumpStream(memoryReader),
-      regionCount_(0)
+      regionCount_(0),
+      addressCache_(MinidumpConfigManager::Instance().GetConfig().lruCacheCapacity)
 {
 }
 
@@ -212,19 +214,24 @@ bool MinidumpMemoryList::BuildMemoryRegions(const std::vector<MDMemoryDescriptor
 
 void MinidumpMemoryList::RegisterMemoryRange(uint64_t start, uint64_t end, uint32_t size, uint32_t index)
 {
-    if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
-        PerformanceOptimizer::Instance().GetMemoryRangeMap().StoreRange(start, size, index);
-    }
-    if (PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
-        auto& memoryTree = PerformanceOptimizer::Instance().GetMemoryIntervalTree();
-        if (!memoryTree.Insert(start, end, index)) {
-            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
-                std::string("memory range overlap detected"), __LINE__);
-            DFXLOGW("MinidumpMemoryList detected range overlap for memory %{public}u", index);
+    if (addressIndex_ != nullptr) {
+        addressIndex_->Insert(start, end, index);
+    } else {
+        auto config = MinidumpConfigManager::Instance().GetConfig();
+        if (config.enableRangeMap) {
+            PerformanceOptimizer::Instance().GetMemoryRangeMap().StoreRange(start, size, index);
         }
-    }
-    if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
-        PerformanceOptimizer::Instance().GetBitmapIndex().MarkRange(start, end);
+        if (config.enableIntervalTree) {
+            auto& memoryTree = PerformanceOptimizer::Instance().GetMemoryIntervalTree();
+            if (!memoryTree.Insert(start, end, index)) {
+                lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
+                    std::string("memory range overlap detected"), __LINE__);
+                DFXLOGW("MinidumpMemoryList detected range overlap for memory %{public}u", index);
+            }
+        }
+        if (config.enableBitmapIndex) {
+            PerformanceOptimizer::Instance().GetBitmapIndex().MarkRange(start, end);
+        }
     }
 }
 
@@ -266,24 +273,38 @@ std::shared_ptr<MinidumpMemoryRegion> MinidumpMemoryList::GetMemoryRegionForAddr
         return nullptr;
     }
 
-    uint32_t regionIndex = 0;
-    bool found = false;
-    if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
-        found = PerformanceOptimizer::Instance().GetMemoryRangeMap().RetrieveRange(address, &regionIndex);
-    }
-    if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
-        auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
-        if (!bitmapIndex.IsInRange(address) && bitmapIndex.Size() != 0) {
-            return nullptr;
+    auto cached = addressCache_.Get(address);
+    if (cached.has_value()) {
+        uint32_t idx = cached.value();
+        if (idx < regionCount_) {
+            return regions_[idx];
         }
     }
-    if (PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
-        auto& memoryTree = PerformanceOptimizer::Instance().GetMemoryIntervalTree();
-        found = memoryTree.Search(address, &regionIndex);
+
+    uint32_t regionIndex = 0;
+    bool found = false;
+    if (addressIndex_ != nullptr) {
+        found = addressIndex_->Lookup(address, regionIndex);
+    } else {
+        auto config = MinidumpConfigManager::Instance().GetConfig();
+        if (config.enableRangeMap) {
+            found = PerformanceOptimizer::Instance().GetMemoryRangeMap().RetrieveRange(address, &regionIndex);
+        }
+        if (config.enableBitmapIndex) {
+            auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
+            if (!bitmapIndex.IsInRange(address) && bitmapIndex.Size() != 0) {
+                return nullptr;
+            }
+        }
+        if (!found && config.enableIntervalTree) {
+            auto& memoryTree = PerformanceOptimizer::Instance().GetMemoryIntervalTree();
+            found = memoryTree.Search(address, &regionIndex);
+        }
     }
     if (!found) {
         return nullptr;
     }
+    addressCache_.Put(address, regionIndex);
     return GetMemoryRegionAtIndex(regionIndex);
 }
 

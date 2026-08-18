@@ -19,10 +19,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <vector>
+#include "minidump_config.h"
 
 namespace OHOS {
 namespace HiviewDFX {
+
+class IAddressIndex;
+class AdaptiveAddressIndex;
 template <typename AddressType, typename EntryType>
 class RangeMap {
 public:
@@ -58,6 +63,21 @@ private:
 template<typename AddressType, typename EntryType>
 struct IntervalNode;
 
+template<typename NodeType>
+class NodeArena {
+public:
+    NodeArena() = default;
+    NodeType* Allocate();
+    void Clear();
+    ~NodeArena() { Clear(); }
+    NodeArena(const NodeArena&) = delete;
+    NodeArena& operator=(const NodeArena&) = delete;
+private:
+    std::vector<std::unique_ptr<char[]>> chunks_;
+    size_t chunkUsed_ = 0;
+    static constexpr size_t CHUNK_BYTES = 8192;
+};
+
 template<typename AddressType, typename EntryType>
 class IntervalTree {
 public:
@@ -79,6 +99,7 @@ public:
 private:
     IntervalNode<AddressType, EntryType>* root_;
     size_t size_;
+    NodeArena<IntervalNode<AddressType, EntryType>> arena_;
 
     int GetHeight(IntervalNode<AddressType, EntryType>* node) const;
 
@@ -104,8 +125,6 @@ private:
 
 class BitmapIndex {
 public:
-    // 0x800000000000ULL : 128TB
-    // 134217728: 128 MB
     explicit BitmapIndex(uint64_t addressRange = 0x800000000000ULL, uint32_t granularity = 134217728);
     void MarkRange(uint64_t start, uint64_t end);
     bool IsInRange(uint64_t address) const;
@@ -116,18 +135,12 @@ public:
 
 private:
     uint32_t granularity_;
-    std::vector<bool> bitmap_;
+    std::vector<uint64_t> bitmap_;
+    size_t bitCount_;
 };
 
 class PerformanceOptimizer {
 public:
-    struct Config {
-        bool enableRangeMap;
-        bool enableIntervalTree;
-        bool enableBitmapIndex;
-        uint32_t bitmapGranularity;
-    };
-
     struct Statistics {
         size_t intervalTreeModuleSize;
         size_t intervalTreeMemorySize;
@@ -139,24 +152,25 @@ public:
     PerformanceOptimizer(const PerformanceOptimizer&) = delete;
     PerformanceOptimizer& operator=(const PerformanceOptimizer&) = delete;
     
-    void SetConfig(const Config& config);
-    Config GetConfig() const;
     IntervalTree<uint64_t, uint32_t>& GetModuleIntervalTree();
     IntervalTree<uint64_t, uint32_t>& GetMemoryIntervalTree();
     BitmapIndex& GetBitmapIndex();
     RangeMap<uint64_t, uint32_t>& GetModuleRangeMap();
     RangeMap<uint64_t, uint32_t>& GetMemoryRangeMap();
+    IAddressIndex* GetMemoryAddressIndex();
+    IAddressIndex* GetModuleAddressIndex();
     void Reset();
     Statistics GetStatistics() const;
 
 private:
     PerformanceOptimizer();
-    Config config_;
     IntervalTree<uint64_t, uint32_t> intervalTreeModule_;
     IntervalTree<uint64_t, uint32_t> intervalTreeMemory_;
     BitmapIndex bitmapIndex_;
     RangeMap<uint64_t, uint32_t> rangeMapModule_;
     RangeMap<uint64_t, uint32_t> rangeMapMemory_;
+    std::unique_ptr<AdaptiveAddressIndex> adaptiveMemoryIndex_;
+    std::unique_ptr<AdaptiveAddressIndex> adaptiveModuleIndex_;
 };
 }
 }

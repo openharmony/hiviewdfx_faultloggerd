@@ -38,6 +38,7 @@
 #include "hisysevent.h"
 #include "lite_process_dumper.h"
 #include "minidump_dumper.h"
+#include "minidump_stream_pipeline.h"
 #include "procinfo.h"
 #include "reporter.h"
 #include "thread_context.h"
@@ -106,16 +107,20 @@ void MinidumpDumper::CollectDumpHeaderInfo(int pid)
     CppCrashInfoCollector::Instance().SetNeedFormatFlag(true);
 }
 
-void MinidumpDumper::ConfigurePerformance(MinidumpParser &minidumpParser)
+void MinidumpDumper::ConfigureMinidumpParser(MinidumpParser &minidumpParser)
 {
-    PerformanceOptimizer::Config config;
-    config.enableRangeMap = false;
-    config.enableIntervalTree = true;
-    config.enableBitmapIndex = true;
-    config.bitmapGranularity = 134217728; // 134217728 : Divide the address space into 128MB granularity
-
-    minidumpParser.SetPerformanceConfig(config);
-    DFXLOGI("Performance optimization enabled");
+    auto config = MinidumpConfigManager::Instance().GetConfig();
+    minidumpParser.SetMinidumpConfig(config);
+    DFXLOGI("MinidumpConfig: maxStreams=%{public}u maxStringLength=%{public}u maxThreads=%{public}u "
+            "maxModules=%{public}u maxMemoryRegions=%{public}u maxMemoryBytes=%{public}u "
+            "enableChecksumValidation=%{public}d enablePerformanceStats=%{public}d "
+            "enableRangeMap=%{public}d enableIntervalTree=%{public}d enableBitmapIndex=%{public}d "
+            "bitmapGranularity=%{public}u enableParallelParsing=%{public}d lruCacheCapacity=%{public}u",
+            config.maxStreams, config.maxStringLength, config.maxThreads,
+            config.maxModules, config.maxMemoryRegions, config.maxMemoryBytes,
+            config.enableChecksumValidation, config.enablePerformanceStats,
+            config.enableRangeMap, config.enableIntervalTree, config.enableBitmapIndex,
+            config.bitmapGranularity, config.enableParallelParsing, config.lruCacheCapacity);
 }
 
 bool MinidumpDumper::ParseMinidump()
@@ -123,10 +128,9 @@ bool MinidumpDumper::ParseMinidump()
     auto startTime = std::chrono::steady_clock::now();
     lseek(outputFdGuard_.GetFd(), 0, SEEK_SET);
     std::string fdPath = "/proc/self/fd/" + std::to_string(outputFdGuard_.GetFd());
-    auto input = std::make_shared<std::ifstream>(fdPath, std::ios::binary);
-    MinidumpParser minidumpParser(input);
+    MinidumpParser minidumpParser(fdPath);
 
-    ConfigurePerformance(minidumpParser);
+    ConfigureMinidumpParser(minidumpParser);
 
     if (!minidumpParser.Parse()) {
         DFXLOGE("Failed to read minidumpParser file");
@@ -135,11 +139,22 @@ bool MinidumpDumper::ParseMinidump()
         DFXLOGE("Last error: %{public}s", error.ToString().c_str());
         return false;
     }
-    
+
     if (!ParseExceptionStream(minidumpParser)) {
         DFXLOGE("Failed to parse exception stream");
         return false;
     }
+
+    {
+        StreamPipeline pipeline(minidumpParser);
+        pipeline.ParseParallel({
+            MD_STREAM_THREAD_NAME_LIST,
+            MD_STREAM_THREAD_LIST,
+            MD_STREAM_MEMORY_LIST,
+            MD_STREAM_LINUX_MAPS
+        });
+    }
+
     if (!ParseThreadNameStream(minidumpParser)) {
         DFXLOGE("Failed to parse thread name stream");
         return false;

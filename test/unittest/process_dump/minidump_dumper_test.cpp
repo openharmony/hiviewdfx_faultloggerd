@@ -31,10 +31,11 @@
 #include "dfx_util.h"
 #include "dump_utils.h"
 #include "lite_process_dumper.h"
+#include "minidump_config.h"
 #include "minidump_dumper.h"
 #include "minidump_format.h"
 #include "minidump_parser.h"
-#include "minidump_config.h"
+#include "minidump_stream_pipeline.h"
 #include "procinfo.h"
 
 using namespace OHOS::HiviewDFX;
@@ -492,7 +493,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest027, TestSize.Level2)
 
 /**
  * @tc.name: MinidumpDumperTest028
- * @tc.desc: test ConfigurePerformance is callable (no-op)
+ * @tc.desc: test ConfigureMinidumpParser is callable (no-op)
  * @tc.type: FUNC
  */
 HWTEST_F(MinidumpDumperTest, MinidumpDumperTest028, TestSize.Level2)
@@ -504,7 +505,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest028, TestSize.Level2)
     write(tmpFd, invalidData.c_str(), invalidData.size());
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     close(tmpFd);
     unlink("/data/test/minidump_cfg_perf_test");
 }
@@ -1178,7 +1179,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest057, TestSize.Level2)
     write(tmpFd, minidumpData.c_str(), minidumpData.size());
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     EXPECT_TRUE(parser.Parse());
     bool ret = dumper.ParseExceptionStream(parser);
     EXPECT_TRUE(ret);
@@ -1260,7 +1261,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest061, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     parser.Parse();
     dumper.ParseThreadNameStream(parser);
     close(tmpFd);
@@ -1288,7 +1289,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest062, TestSize.Level2)
     write(tmpFd, minidumpData.c_str(), minidumpData.size());
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     EXPECT_TRUE(parser.Parse());
     bool ret = dumper.ParseMemoryListStream(parser);
     EXPECT_TRUE(ret);
@@ -1337,7 +1338,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest064, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         dumper.outputFdGuard_ = SmartFd(tmpFd);
@@ -1364,7 +1365,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest065, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         bool ret = dumper.ParseExceptionStream(parser);
@@ -1476,7 +1477,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest069, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         MinidumpModuleList* moduleList = parser.GetModuleList();
@@ -2107,7 +2108,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest089, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     parser.Parse();
     bool ret = dumper.ParseThreadNameStream(parser);
     EXPECT_TRUE(ret);
@@ -2138,7 +2139,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest091, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         bool ret = dumper.ParseMapListStream(parser);
@@ -2173,7 +2174,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest092, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         bool ret = dumper.ParseMemoryListStream(parser);
@@ -2234,7 +2235,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest094, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         MinidumpThreadList* threadList = parser.GetThreadList();
@@ -2268,7 +2269,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest095, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         MinidumpThreadList* threadList = parser.GetThreadList();
@@ -2304,7 +2305,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest096, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         bool ret = dumper.ParseThreadListStream(parser);
@@ -2429,7 +2430,7 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest101, TestSize.Level2)
     lseek(tmpFd, 0, SEEK_SET);
     auto input = std::make_shared<std::ifstream>("/proc/self/fd/" + std::to_string(tmpFd), std::ios::binary);
     MinidumpParser parser(input);
-    dumper.ConfigurePerformance(parser);
+    dumper.ConfigureMinidumpParser(parser);
     bool parsed = parser.Parse();
     if (parsed) {
         MinidumpThreadList* threadList = parser.GetThreadList();
@@ -2462,4 +2463,183 @@ HWTEST_F(MinidumpDumperTest, MinidumpDumperTest102, TestSize.Level2)
     EXPECT_EQ(dumper.process_.GetOtherThreads().size(), 1u);
     dumper.UnwindOtherThread();
     EXPECT_EQ(dumper.process_.GetOtherThreads().size(), 1u);
+}
+
+/**
+ * @tc.name: MinidumpDumperTest103
+ * @tc.desc: test ConfigureMinidumpParser with MinidumpConfigManager config applies optimizer config
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest103, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    MinidumpConfig config;
+    config.enableRangeMap = true;
+    config.enableIntervalTree = false;
+    config.enableBitmapIndex = false;
+    config.bitmapGranularity = 0;
+    mgr.SetConfig(config);
+
+    MinidumpDumper dumper;
+    int tmpFd = open("/data/test/minidump_cfg_perf_103", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    std::string invalidData = "not a minidump";
+    write(tmpFd, invalidData.c_str(), invalidData.size());
+    MinidumpParser parser("/proc/self/fd/" + std::to_string(tmpFd));
+    dumper.ConfigureMinidumpParser(parser);
+    auto optConfig = MinidumpConfigManager::Instance().GetConfig();
+    EXPECT_TRUE(optConfig.enableRangeMap);
+    EXPECT_FALSE(optConfig.enableIntervalTree);
+    close(tmpFd);
+    unlink("/data/test/minidump_cfg_perf_103");
+    mgr.SetConfig(MinidumpConfig());
+}
+
+/**
+ * @tc.name: MinidumpDumperTest104
+ * @tc.desc: test ConfigureMinidumpParser with default config enables interval tree and bitmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest104, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetConfig(MinidumpConfig());
+
+    MinidumpDumper dumper;
+    int tmpFd = open("/data/test/minidump_cfg_perf_104", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    std::string invalidData = "not a minidump";
+    write(tmpFd, invalidData.c_str(), invalidData.size());
+    MinidumpParser parser("/proc/self/fd/" + std::to_string(tmpFd));
+    dumper.ConfigureMinidumpParser(parser);
+    auto optConfig = MinidumpConfigManager::Instance().GetConfig();
+    EXPECT_TRUE(optConfig.enableIntervalTree);
+    EXPECT_TRUE(optConfig.enableBitmapIndex);
+    close(tmpFd);
+    unlink("/data/test/minidump_cfg_perf_104");
+    mgr.SetConfig(MinidumpConfig());
+}
+
+/**
+ * @tc.name: MinidumpDumperTest105
+ * @tc.desc: test ParseMinidump with valid minidump and StreamPipeline integration succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest105, TestSize.Level2)
+{
+    MinidumpDumper dumper;
+    CppCrashInfoCollector::Instance().SetNeedFormatFlag(true);
+    dumper.CollectDumpHeaderInfo(getpid());
+    std::string minidumpData = BuildMinidumpWithExceptionAndContext();
+    int tmpFd = open("/data/test/minidump_pipeline_105", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, minidumpData.c_str(), minidumpData.size());
+    dumper.outputFdGuard_ = SmartFd(tmpFd, false);
+    bool parseRet = dumper.ParseMinidump();
+    EXPECT_FALSE(parseRet);
+    unlink("/data/test/minidump_pipeline_105");
+}
+
+/**
+ * @tc.name: MinidumpDumperTest106
+ * @tc.desc: test ParseMinidump with StreamPipeline and parallel parsing disabled succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest106, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    MinidumpConfig config;
+    config.enableParallelParsing = false;
+    mgr.SetConfig(config);
+
+    MinidumpDumper dumper;
+    CppCrashInfoCollector::Instance().SetNeedFormatFlag(true);
+    dumper.CollectDumpHeaderInfo(getpid());
+    std::string minidumpData = BuildMinidumpWithExceptionAndContext();
+    int tmpFd = open("/data/test/minidump_pipeline_106", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, minidumpData.c_str(), minidumpData.size());
+    dumper.outputFdGuard_ = SmartFd(tmpFd, false);
+    bool parseRet = dumper.ParseMinidump();
+    EXPECT_FALSE(parseRet);
+    unlink("/data/test/minidump_pipeline_106");
+    mgr.SetConfig(MinidumpConfig());
+}
+
+/**
+ * @tc.name: MinidumpDumperTest107
+ * @tc.desc: test ParseMinidump with StreamPipeline and memory list stream succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest107, TestSize.Level2)
+{
+    MinidumpDumper dumper;
+    CppCrashInfoCollector::Instance().SetNeedFormatFlag(true);
+    dumper.CollectDumpHeaderInfo(getpid());
+    std::string minidumpData = BuildMinidumpWithMemoryList();
+    int tmpFd = open("/data/test/minidump_pipeline_mem_107", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, minidumpData.c_str(), minidumpData.size());
+    dumper.outputFdGuard_ = SmartFd(tmpFd, false);
+    bool parseRet = dumper.ParseMinidump();
+    EXPECT_FALSE(parseRet);
+    unlink("/data/test/minidump_pipeline_mem_107");
+}
+
+/**
+ * @tc.name: MinidumpDumperTest108
+ * @tc.desc: test ConfigureMinidumpParser with custom bitmap granularity applies to optimizer
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest108, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    MinidumpConfig config;
+    config.enableRangeMap = false;
+    config.enableIntervalTree = true;
+    config.enableBitmapIndex = true;
+    config.bitmapGranularity = 0x1000;
+    mgr.SetConfig(config);
+
+    MinidumpDumper dumper;
+    int tmpFd = open("/data/test/minidump_cfg_perf_108", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    std::string invalidData = "not a minidump";
+    write(tmpFd, invalidData.c_str(), invalidData.size());
+    MinidumpParser parser("/proc/self/fd/" + std::to_string(tmpFd));
+    dumper.ConfigureMinidumpParser(parser);
+    auto optConfig = MinidumpConfigManager::Instance().GetConfig();
+    EXPECT_EQ(optConfig.bitmapGranularity, 0x1000u);
+    close(tmpFd);
+    unlink("/data/test/minidump_cfg_perf_108");
+    mgr.SetConfig(MinidumpConfig());
+}
+
+/**
+ * @tc.name: MinidumpDumperTest109
+ * @tc.desc: test ParseMinidump with full crash log and StreamPipeline succeeds
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpDumperTest, MinidumpDumperTest109, TestSize.Level2)
+{
+    MinidumpDumper dumper;
+    CppCrashInfoCollector::Instance().SetNeedFormatFlag(true);
+    dumper.CollectDumpHeaderInfo(getpid());
+
+    std::string minidumpData = BuildMinidumpWithFullCrashLog();
+    const char* filePath = "/data/test/minidump_pipeline_full_109";
+    int tmpFd = open(filePath, O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, minidumpData.c_str(), minidumpData.size());
+    dumper.outputFdGuard_ = SmartFd(tmpFd, false);
+
+    DfxBufferWriter::GetInstance().InitBufferWriter(dumper.request_);
+    bool parseRet = dumper.ParseMinidump();
+    if (parseRet) {
+        dumper.UnwindProcess();
+        dumper.PrintDumpInfo();
+    }
+    DfxBufferWriter::GetInstance().WriteFormatCrashInfo();
+    EXPECT_TRUE(CppCrashInfoCollector::Instance().GetNeedFormatFlag());
+    unlink(filePath);
 }

@@ -22,6 +22,7 @@
 #include <unordered_map>
 #include <vector>
 #include "minidump_error.h"
+#include "minidump_lru_cache.h"
 #include "minidump_memory_reader.h"
 #include "minidump_format.h"
 #include "minidump_observer.h"
@@ -30,6 +31,9 @@
 namespace OHOS {
 namespace HiviewDFX {
 using namespace MinidumpFormat;
+
+class IAddressIndex;
+
 class MinidumpStream {
 public:
     explicit MinidumpStream(std::shared_ptr<MinidumpMemoryReader> memoryReader)
@@ -38,6 +42,7 @@ public:
     void operator=(const MinidumpStream&) = delete;
     virtual ~MinidumpStream() = default;
     virtual bool Read(uint32_t expectedSize) = 0;
+    virtual void SetAddressIndexes(IAddressIndex* memory, IAddressIndex* module) {}
     void SetMinidumpSubject(std::shared_ptr<MinidumpSubject> subject) { subject_ = subject; }
     const MinidumpErrorInfo& GetLastError() const { return lastError_; }
     bool Valid() const { return isValid_; }
@@ -155,9 +160,11 @@ public:
     std::shared_ptr<MinidumpMemoryRegion> GetMemoryRegionAtIndex(uint32_t index);
     std::shared_ptr<MinidumpMemoryRegion> GetMemoryRegionForAddress(uint64_t address);
     const std::vector<std::shared_ptr<MinidumpMemoryRegion>>& GetMemoryRegions() { return regions_; }
+    void SetAddressIndex(IAddressIndex* index) { addressIndex_ = index; }
+    void SetAddressIndexes(IAddressIndex* memory, IAddressIndex* /*module*/) override { addressIndex_ = memory; }
 
     void Print();
-    bool Read(uint32_t expectedSize);
+    bool Read(uint32_t expectedSize) override;
 
     static const uint32_t streamType = MD_STREAM_MEMORY_LIST;
 
@@ -169,6 +176,8 @@ private:
     std::vector<MDMemoryDescriptor> descriptors_;
     std::vector<std::shared_ptr<MinidumpMemoryRegion>> regions_;
     uint32_t regionCount_;
+    LruCache<uint64_t, uint32_t> addressCache_;
+    IAddressIndex* addressIndex_ = nullptr;
 };
 
 class MinidumpMiscInfo : public MinidumpStream {
@@ -252,18 +261,22 @@ public:
     std::shared_ptr<MinidumpModule> GetModuleForAddress(uint64_t address);
     std::shared_ptr<MinidumpModule> GetModuleAtIndex(uint32_t index) const;
     std::shared_ptr<MinidumpModule> GetMainModule() const;
+    void SetAddressIndex(IAddressIndex* index) { addressIndex_ = index; }
+    void SetAddressIndexes(IAddressIndex* /*memory*/, IAddressIndex* module) override { addressIndex_ = module; }
 
     void Print();
-    bool Read(uint32_t expectedSize);
+    bool Read(uint32_t expectedSize) override;
 
     static const uint32_t streamType = MD_STREAM_MODULE_LIST;
 
 private:
     bool ReadModuleRawData(uint32_t moduleCount);
     bool ReadModuleAuxiliaryDataAndIndex(uint32_t moduleCount);
+    void RegisterModuleRange(uint64_t baseAddress, uint64_t moduleSize, uint32_t index);
 
     std::vector<std::shared_ptr<MinidumpModule>> modules_;
     uint32_t moduleCount_;
+    IAddressIndex* addressIndex_ = nullptr;
 };
 
 class MinidumpSystemInfo : public MinidumpStream {

@@ -20,6 +20,7 @@
 #include "dfx_log.h"
 #include "minidump_config.h"
 #include "minidump_factory.h"
+#include "minidump_index.h"
 #include "minidump_optimizer.h"
 #include "minidump_memory_reader.h"
 #include "minidump_stream.h"
@@ -151,6 +152,45 @@ bool MinidumpModuleList::ReadModuleRawData(uint32_t moduleCount)
     return true;
 }
 
+void MinidumpModuleList::RegisterModuleRange(uint64_t baseAddress, uint64_t moduleSize, uint32_t index)
+{
+    uint64_t endAddress = 0;
+    if (__builtin_add_overflow(baseAddress, moduleSize, &endAddress)) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
+            std::string("Module range overflow"), __LINE__);
+        DFXLOGE("MinidumpModuleList range overflow for module %{public}u", index);
+        return;
+    }
+    if (addressIndex_ != nullptr) {
+        if (!addressIndex_->Insert(baseAddress, endAddress, index)) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
+                std::string("Module range overlap detected"), __LINE__);
+            DFXLOGW("MinidumpModuleList detected range overlap for module %{public}u", index);
+        }
+        return;
+    }
+    auto config = MinidumpConfigManager::Instance().GetConfig();
+    if (config.enableRangeMap) {
+        if (!PerformanceOptimizer::Instance().GetModuleRangeMap().StoreRange(baseAddress, moduleSize, index)) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
+                std::string("Module range overlap detected"), __LINE__);
+            DFXLOGW("MinidumpModuleList detected range overlap for module %{public}u", index);
+        }
+    }
+    if (config.enableIntervalTree) {
+        auto& moduleTree = PerformanceOptimizer::Instance().GetModuleIntervalTree();
+        if (!moduleTree.Insert(baseAddress, endAddress, index)) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
+                std::string("Module range overlap detected"), __LINE__);
+            DFXLOGW("MinidumpModuleList detected range overlap for module %{public}u", index);
+        }
+    }
+    if (config.enableBitmapIndex) {
+        auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
+        bitmapIndex.MarkRange(baseAddress, endAddress);
+    }
+}
+
 bool MinidumpModuleList::ReadModuleAuxiliaryDataAndIndex(uint32_t moduleCount)
 {
     for (uint32_t i = 0; i < moduleCount; ++i) {
@@ -162,39 +202,13 @@ bool MinidumpModuleList::ReadModuleAuxiliaryDataAndIndex(uint32_t moduleCount)
         }
 
         uint64_t baseAddress = minidumpModule->BaseAddress();
-        uint64_t moduleSize = minidumpModule->Size();
         if (baseAddress == static_cast<uint64_t>(-1)) {
             lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
                 std::string("Invalid module base address"), __LINE__);
             DFXLOGE("MinidumpModuleList found bad base address for module %{public}u", i);
             return false;
         }
-        uint64_t endAddress = 0;
-        if (__builtin_add_overflow(baseAddress, moduleSize, &endAddress)) {
-            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
-                std::string("Module range overflow"), __LINE__);
-            DFXLOGE("MinidumpModuleList range overflow for module %{public}u", i);
-            continue;
-        }
-        if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
-            if (!PerformanceOptimizer::Instance().GetModuleRangeMap().StoreRange(baseAddress, moduleSize, i)) {
-                lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
-                std::string("Module range overlap detected"), __LINE__);
-                DFXLOGW("MinidumpModuleList detected range overlap for module %{public}u", i);
-            }
-        }
-        if (PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
-            auto& moduleTree = PerformanceOptimizer::Instance().GetModuleIntervalTree();
-            if (!moduleTree.Insert(baseAddress, endAddress, i)) {
-                lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_RANGE_OVERLAP,
-                    std::string("Module range overlap detected"), __LINE__);
-                DFXLOGW("MinidumpModuleList detected range overlap for module %{public}u", i);
-            }
-        }
-        if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
-            auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
-            bitmapIndex.MarkRange(baseAddress, endAddress);
-        }
+        RegisterModuleRange(baseAddress, minidumpModule->Size(), i);
     }
     return true;
 }
@@ -246,21 +260,25 @@ std::shared_ptr<MinidumpModule> MinidumpModuleList::GetModuleForAddress(uint64_t
         return nullptr;
     }
 
-    if (PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex) {
-        auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
-        if (!bitmapIndex.IsInRange(address) && bitmapIndex.Size() != 0) {
-            return nullptr;
-        }
-    }
-
     uint32_t moduleIndex = 0;
     bool found = false;
-    if (PerformanceOptimizer::Instance().GetConfig().enableRangeMap) {
-        found = PerformanceOptimizer::Instance().GetModuleRangeMap().RetrieveRange(address, &moduleIndex);
-    }
-    if (!found && PerformanceOptimizer::Instance().GetConfig().enableIntervalTree) {
-        auto& moduleTree = PerformanceOptimizer::Instance().GetModuleIntervalTree();
-        found = moduleTree.Search(address, &moduleIndex);
+    if (addressIndex_ != nullptr) {
+        found = addressIndex_->Lookup(address, moduleIndex);
+    } else {
+        auto config = MinidumpConfigManager::Instance().GetConfig();
+        if (config.enableBitmapIndex) {
+            auto& bitmapIndex = PerformanceOptimizer::Instance().GetBitmapIndex();
+            if (!bitmapIndex.IsInRange(address) && bitmapIndex.Size() != 0) {
+                return nullptr;
+            }
+        }
+        if (config.enableRangeMap) {
+            found = PerformanceOptimizer::Instance().GetModuleRangeMap().RetrieveRange(address, &moduleIndex);
+        }
+        if (!found && config.enableIntervalTree) {
+            auto& moduleTree = PerformanceOptimizer::Instance().GetModuleIntervalTree();
+            found = moduleTree.Search(address, &moduleIndex);
+        }
     }
     if (!found) {
         return nullptr;

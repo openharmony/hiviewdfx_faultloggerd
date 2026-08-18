@@ -23,10 +23,12 @@
 #include <future>
 #include <memory>
 #include <mutex>
+#include <new>
 #include <queue>
 #include <thread>
 
 #include "dfx_log.h"
+#include "minidump_index.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -45,6 +47,26 @@ struct IntervalNode {
         : low(l), high(h), max(h), value(v), left(nullptr), right(nullptr), height(1)
     {}
 };
+
+template<typename NodeType>
+NodeType* NodeArena<NodeType>::Allocate()
+{
+    constexpr size_t chunkBytes = CHUNK_BYTES;
+    if (chunks_.empty() || chunkUsed_ + sizeof(NodeType) > chunkBytes) {
+        chunks_.push_back(std::make_unique<char[]>(chunkBytes));
+        chunkUsed_ = 0;
+    }
+    char* mem = chunks_.back().get() + chunkUsed_;
+    chunkUsed_ += sizeof(NodeType);
+    return reinterpret_cast<NodeType*>(mem);
+}
+
+template<typename NodeType>
+void NodeArena<NodeType>::Clear()
+{
+    chunks_.clear();
+    chunkUsed_ = 0;
+}
 
 template <typename AddressType, typename EntryType>
 RangeMap<AddressType, EntryType>::RangeMap() : high_(0) {}
@@ -168,9 +190,9 @@ std::vector<EntryType> IntervalTree<AddressType, EntryType>::SearchRange(Address
 template<typename AddressType, typename EntryType>
 void IntervalTree<AddressType, EntryType>::Clear()
 {
-    ClearNode(root_);
     root_ = nullptr;
     size_ = 0;
+    arena_.Clear();
 }
 
 template<typename AddressType, typename EntryType>
@@ -251,7 +273,8 @@ IntervalNode<AddressType, EntryType>* IntervalTree<AddressType, EntryType>::Inse
     AddressType low, AddressType high, EntryType value)
 {
     if (node == nullptr) {
-        auto* newNode = new IntervalNode<AddressType, EntryType>(low, high, value);
+        auto* mem = arena_.Allocate();
+        auto* newNode = new (mem) IntervalNode<AddressType, EntryType>(low, high, value);
         size_++;
         return newNode;
     }
@@ -332,8 +355,13 @@ void IntervalTree<AddressType, EntryType>::ClearNode(IntervalNode<AddressType, E
     delete node;
 }
 
+namespace {
+constexpr size_t BITS_PER_WORD = 64;
+constexpr size_t WORD_ALL_BITS = BITS_PER_WORD - 1;
+}
+
 BitmapIndex::BitmapIndex(uint64_t addressRange, uint32_t granularity)
-    : granularity_(granularity)
+    : granularity_(granularity), bitCount_(0)
 {
     if (granularity != 0) {
         uint64_t bitmapSize64 = (addressRange / granularity) + 1;
@@ -344,61 +372,103 @@ BitmapIndex::BitmapIndex(uint64_t addressRange, uint32_t granularity)
             granularity_ = 0;
             return;
         }
-        std::vector<bool> bitmap(static_cast<size_t>(bitmapSize64), false);
-        bitmap_ = std::move(bitmap);
+        bitCount_ = static_cast<size_t>(bitmapSize64);
+        size_t wordCount = (bitCount_ + WORD_ALL_BITS) / BITS_PER_WORD;
+        bitmap_.assign(wordCount, 0);
     }
 }
 
 void BitmapIndex::MarkRange(uint64_t start, uint64_t end)
 {
-    if (granularity_ == 0) {
+    if (granularity_ == 0 || bitCount_ == 0) {
         return;
     }
     uint64_t startIdx = start / granularity_;
     uint64_t endIdx = end / granularity_;
-    
-    for (uint64_t idx = startIdx; idx <= endIdx && idx < bitmap_.size(); ++idx) {
-        bitmap_[idx] = true;
+    if (startIdx >= bitCount_) {
+        return;
+    }
+    if (endIdx >= bitCount_) {
+        endIdx = bitCount_ - 1;
+    }
+
+    uint64_t startWord = startIdx / BITS_PER_WORD;
+    uint64_t endWord = endIdx / BITS_PER_WORD;
+    if (startWord == endWord) {
+        uint64_t mask = 0;
+        for (uint64_t i = startIdx; i <= endIdx; ++i) {
+            mask |= (1ULL << (i % BITS_PER_WORD));
+        }
+        bitmap_[startWord] |= mask;
+    } else {
+        uint64_t startBit = startIdx % BITS_PER_WORD;
+        uint64_t endBit = endIdx % BITS_PER_WORD;
+        bitmap_[startWord] |= ~((1ULL << startBit) - 1);
+        for (uint64_t w = startWord + 1; w < endWord; ++w) {
+            bitmap_[w] = ~0ULL;
+        }
+        if (endBit == BITS_PER_WORD - 1) {
+            bitmap_[endWord] = ~0ULL;
+        } else {
+            bitmap_[endWord] |= ((1ULL << (endBit + 1)) - 1);
+        }
     }
 }
 
 bool BitmapIndex::IsInRange(uint64_t address) const
 {
-    if (granularity_ == 0) {
+    if (granularity_ == 0 || bitCount_ == 0) {
         return false;
     }
     uint64_t idx = address / granularity_;
-    if (idx >= bitmap_.size()) {
+    if (idx >= bitCount_) {
         return false;
     }
-    return bitmap_[idx];
+    uint64_t word = idx / BITS_PER_WORD;
+    uint64_t bit = idx % BITS_PER_WORD;
+    return (bitmap_[word] & (1ULL << bit)) != 0;
 }
 
 uint64_t BitmapIndex::FindNextInRange(uint64_t start) const
 {
-    if (granularity_ == 0) {
+    if (granularity_ == 0 || bitCount_ == 0) {
         return UINT64_MAX;
     }
     uint64_t idx = start / granularity_;
-    while (idx < bitmap_.size() && !bitmap_[idx]) {
-        idx++;
+    if (idx >= bitCount_) {
+        return UINT64_MAX;
     }
-    return idx < bitmap_.size() ? idx * granularity_ : UINT64_MAX;
+    uint64_t word = idx / BITS_PER_WORD;
+    uint64_t bit = idx % BITS_PER_WORD;
+    uint64_t val = bitmap_[word] >> bit;
+    if (val != 0) {
+        return (word * BITS_PER_WORD + bit + __builtin_ctzll(val)) * granularity_;
+    }
+    for (size_t w = word + 1; w < bitmap_.size(); ++w) {
+        if (bitmap_[w] != 0) {
+            return (w * BITS_PER_WORD + __builtin_ctzll(bitmap_[w])) * granularity_;
+        }
+    }
+    return UINT64_MAX;
 }
 
 void BitmapIndex::Clear()
 {
-    std::fill(bitmap_.begin(), bitmap_.end(), false);
+    std::fill(bitmap_.begin(), bitmap_.end(), 0ULL);
 }
 
 size_t BitmapIndex::Size() const
 {
-    return bitmap_.size();
+    return bitCount_;
 }
 
 size_t BitmapIndex::MarkedCount() const
 {
-    return std::count(bitmap_.begin(), bitmap_.end(), true);
+    size_t count = 0;
+    for (size_t i = 0; i < bitmap_.size(); ++i) {
+        count += __builtin_popcountll(bitmap_[i]);
+    }
+    return count;
 }
 
 PerformanceOptimizer& PerformanceOptimizer::Instance()
@@ -408,29 +478,13 @@ PerformanceOptimizer& PerformanceOptimizer::Instance()
 }
 
 PerformanceOptimizer::PerformanceOptimizer()
-    : config_({
-        .enableIntervalTree = true,
-        .enableBitmapIndex = true,
-        .bitmapGranularity = 134217728  // 134217728: 128 MB
-    }),
-      intervalTreeModule_(),
+    : intervalTreeModule_(),
       intervalTreeMemory_(),
-      bitmapIndex_(0x800000000000ULL, config_.bitmapGranularity) // 0x800000000000ULL : 128TB
+      bitmapIndex_(0x800000000000ULL,
+                   MinidumpConfigManager::Instance().GetConfig().bitmapGranularity),
+      adaptiveMemoryIndex_(std::make_unique<AdaptiveAddressIndex>()),
+      adaptiveModuleIndex_(std::make_unique<AdaptiveAddressIndex>())
 {
-}
-
-void PerformanceOptimizer::SetConfig(const Config& config)
-{
-    Reset();
-    config_ = config;
-    if (config_.enableBitmapIndex) {
-        bitmapIndex_ = BitmapIndex(0x800000000000ULL, config_.bitmapGranularity); // 0x800000000000ULL : 128TB
-    }
-}
-
-PerformanceOptimizer::Config PerformanceOptimizer::GetConfig() const
-{
-    return config_;
 }
 
 IntervalTree<uint64_t, uint32_t>& PerformanceOptimizer::GetModuleIntervalTree()
@@ -458,6 +512,16 @@ RangeMap<uint64_t, uint32_t>& PerformanceOptimizer::GetMemoryRangeMap()
     return rangeMapMemory_;
 }
 
+IAddressIndex* PerformanceOptimizer::GetMemoryAddressIndex()
+{
+    return adaptiveMemoryIndex_.get();
+}
+
+IAddressIndex* PerformanceOptimizer::GetModuleAddressIndex()
+{
+    return adaptiveModuleIndex_.get();
+}
+
 PerformanceOptimizer::Statistics PerformanceOptimizer::GetStatistics() const
 {
     Statistics stats;
@@ -473,11 +537,14 @@ void PerformanceOptimizer::Reset()
 {
     intervalTreeModule_.Clear();
     intervalTreeMemory_.Clear();
-    bitmapIndex_.Clear();
+    bitmapIndex_ = BitmapIndex(0x800000000000ULL, MinidumpConfigManager::Instance().GetConfig().bitmapGranularity);
+    if (adaptiveMemoryIndex_) adaptiveMemoryIndex_->Clear();
+    if (adaptiveModuleIndex_) adaptiveModuleIndex_->Clear();
 }
 
 template class RangeMap<uint64_t, uint32_t>;
 template struct IntervalNode<uint64_t, uint32_t>;
+template class NodeArena<IntervalNode<uint64_t, uint32_t>>;
 template class IntervalTree<uint64_t, uint32_t>;
 }
 }

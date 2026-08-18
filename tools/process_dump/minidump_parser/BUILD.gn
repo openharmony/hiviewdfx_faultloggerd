@@ -40,7 +40,9 @@ if (!defined(ohos_lite)) {
       "minidump_config.cpp",
       "minidump_esr_info.cpp",
       "minidump_maps.cpp",
-      "minidump_observer.cpp"
+      "minidump_observer.cpp",
+      "minidump_index.cpp",
+      "minidump_stream_pipeline.cpp",
     ]
     branch_protector_ret = "pac_ret"
     public_configs = [ ":minidump_config" ]

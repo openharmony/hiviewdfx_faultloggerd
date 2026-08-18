@@ -45,6 +45,8 @@ public:
 
     virtual std::string Path() const { return path_; }
     const MDRawHeader* Header() const { return isValid_ ? &header_ : nullptr; }
+    std::shared_ptr<MinidumpSubject> GetSubject() const { return minidumpSubject_; }
+    void InjectStream(uint32_t streamType, std::shared_ptr<MinidumpStream> stream);
 
     MinidumpThreadList* GetThreadList();
     MinidumpThreadNameList* GetThreadNameList();
@@ -74,7 +76,7 @@ public:
     const MinidumpErrorInfo& GetLastError() const { return lastError_; }
     void Print();
     void SetupObservers();
-    void SetPerformanceConfig(const PerformanceOptimizer::Config& config);
+    void SetMinidumpConfig(const MinidumpConfig& config);
     void PrintPerformanceStats() const;
 
 private:
