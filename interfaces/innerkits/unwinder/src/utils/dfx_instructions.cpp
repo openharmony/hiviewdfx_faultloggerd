@@ -80,6 +80,13 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
     uintptr_t cfa = 0;
     RegLoc cfaLoc;
     if (rsState.cfaReg != 0) {
+        if (rsState.cfaReg >= regs.RegsSize()) {
+            DFXLOGE("Invalid cfa reg %{public}u, out of range [0, %{public}zu)",
+                rsState.cfaReg, regs.RegsSize());
+            INSTR_STATISTIC(UnsupportedDefCfa, rsState.cfaReg, UNW_ERROR_DWARF_INVALID_CFA);
+            errCode = UNW_ERROR_DWARF_INVALID_CFA;
+            return false;
+        }
         cfa = regs[rsState.cfaReg] + static_cast<uint32_t>(rsState.cfaRegOffset);
     } else if (rsState.cfaExprPtr != 0) {
         cfaLoc.type = REG_LOC_VAL_EXPRESSION;

@@ -172,12 +172,20 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
         case DW_CFA_def_cfa:
             reg = memory_->ReadUleb128(instPtr);
             offset = (int64_t)memory_->ReadUleb128(instPtr);
+            if (reg >= REG_LAST) {
+                INSTR_STATISTIC(UnsupportedDefCfa, reg, UNW_ERROR_DWARF_INVALID_CFA);
+                break;
+            }
             rsState.cfaReg = (uint32_t)reg;
             rsState.cfaRegOffset = (int32_t)offset;
             DFXLOGU("DW_CFA_def_cfa: reg=%{public}d, offset=%{public}" PRIu64 "", (int)reg, offset);
             break;
         case DW_CFA_def_cfa_register:
             reg = memory_->ReadUleb128(instPtr);
+            if (reg >= REG_LAST) {
+                INSTR_STATISTIC(UnsupportedDefCfa, reg, UNW_ERROR_DWARF_INVALID_CFA);
+                break;
+            }
             rsState.cfaReg = (uint32_t)reg;
             DFXLOGU("DW_CFA_def_cfa_register: reg=%{public}d", (int)reg);
             break;
@@ -199,6 +207,10 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             reg = memory_->ReadUleb128(instPtr);
             offset = (int64_t)(memory_->ReadSleb128(instPtr)) * cie.dataAlignFactor;
             DFXLOGU("DW_CFA_def_cfa_sf: reg=%{public}d, offset=%{public}d", rsState.cfaReg, rsState.cfaRegOffset);
+            if (reg >= REG_LAST) {
+                INSTR_STATISTIC(UnsupportedDefCfa, reg, UNW_ERROR_DWARF_INVALID_CFA);
+                break;
+            }
             rsState.cfaReg = (uint32_t)reg;
             rsState.cfaRegOffset = (int32_t)offset;
             break;
