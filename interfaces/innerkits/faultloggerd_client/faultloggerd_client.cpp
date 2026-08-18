@@ -302,7 +302,7 @@ int32_t StartCoredumpCb(int32_t targetPid, int32_t processDumpPid)
 
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     int32_t retCode =
-        SendRequestToServer(SERVER_SOCKET_NAME, socketRequestData, COREDUMP_SOCKET_TIMEOUT);
+        SendRequestToServer(SERVER_CRASH_SOCKET_NAME, socketRequestData, COREDUMP_SOCKET_TIMEOUT);
 
     DFXLOGI("%{public}s has received retcode : %{public}d %{public}d", __func__, retCode, __LINE__);
     return retCode;
@@ -332,7 +332,7 @@ int32_t FinishCoredumpCb(int32_t targetPid, std::string& fileName, int32_t ret)
 
     SocketRequestData socketRequestData = {&request, sizeof(request)};
     int32_t retCode =
-        SendRequestToServer(SERVER_SOCKET_NAME, socketRequestData, COREDUMP_SOCKET_TIMEOUT);
+        SendRequestToServer(SERVER_CRASH_SOCKET_NAME, socketRequestData, COREDUMP_SOCKET_TIMEOUT);
 
     DFXLOGI("%{public}s has received retcode : %{public}d %{public}d", __func__, retCode, __LINE__);
     return retCode;

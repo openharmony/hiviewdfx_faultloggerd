@@ -155,6 +155,35 @@ HWTEST_F(FaultloggerdCoredumpTest, HandleProcessDumpPidTest002, TestSize.Level2)
 }
 
 /**
+ * @tc.name: CoredumpCallbackValidatorTest001
+ * @tc.desc: ValidateRequest accepts the coredump callback only on the crash socket
+ *           and only when the reporter is the declared worker
+ * @tc.type: FUNC
+ */
+HWTEST_F(FaultloggerdCoredumpTest, CoredumpCallbackValidatorTest001, TestSize.Level2)
+{
+    GTEST_LOG_(INFO) << "CoredumpCallbackValidatorTest001: start.";
+    int fds[2] = {-1, -1};
+    ASSERT_EQ(socketpair(AF_UNIX, SOCK_STREAM, 0, fds), 0);
+    CoreDumpStatusData data{};
+    data.pid = 123; // 123 : valid target pid
+    data.processDumpPid = getpid(); // SO_PEERCRED of the socketpair peer == getpid()
+    data.coredumpStatus = CoreDumpStatus::CORE_DUMP_START;
+    // A frame on the main socket (reachable by a non-system app) is rejected.
+    EXPECT_EQ(CoredumpCallbackValidator::ValidateRequest(SERVER_SOCKET_NAME, fds[0], data),
+        ResponseCode::REQUEST_REJECT);
+    // A valid callback on the crash socket with reporter == declared worker passes.
+    EXPECT_EQ(CoredumpCallbackValidator::ValidateRequest(SERVER_CRASH_SOCKET_NAME, fds[0], data), 0);
+    // Crash socket but the declared worker != reporter pid: rejected.
+    data.processDumpPid = getpid() + 1; // 1 : offset to differ from the reporter pid
+    EXPECT_EQ(CoredumpCallbackValidator::ValidateRequest(SERVER_CRASH_SOCKET_NAME, fds[0], data),
+        ResponseCode::REQUEST_REJECT);
+    close(fds[0]);
+    close(fds[1]);
+    GTEST_LOG_(INFO) << "CoredumpCallbackValidatorTest001: end.";
+}
+
+/**
  * @tc.name: DoCoredumpRequestTest
  * @tc.desc: DoCoredumpRequest
  * @tc.type: FUNC

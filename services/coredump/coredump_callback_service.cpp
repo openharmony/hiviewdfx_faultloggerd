@@ -15,6 +15,7 @@
 #include "coredump_callback_service.h"
 
 #include "dfx_log.h"
+#include "fault_common_util.h"
 #include "faultloggerd_socket.h"
 
 namespace OHOS {
@@ -76,6 +77,12 @@ int32_t CoredumpCallbackValidator::ValidateRequest(const std::string& socketName
         DFXLOGE("Unauthorized socket: %{public}s", socketName.c_str());
         return ResponseCode::REQUEST_REJECT;
     }
+
+    if (requestData.coredumpStatus == CoreDumpStatus::CORE_DUMP_START &&
+        !IsReporterWorker(connectionFd, requestData.processDumpPid)) {
+        DFXLOGE("Reporter is not the declared worker, declared:%{public}d", requestData.processDumpPid);
+        return ResponseCode::REQUEST_REJECT;
+    }
     return 0;
 }
 
@@ -86,7 +93,18 @@ bool CoredumpCallbackValidator::IsValidPid(pid_t pid)
 
 bool CoredumpCallbackValidator::IsAuthorizedSocket(const std::string& socketName)
 {
-    return socketName == SERVER_SOCKET_NAME;
+    // The coredump callback is accepted only on the crash socket, whose SELinux
+    // type (faultloggerd_socket_crash) is reachable only by the processdump domain.
+    return socketName == SERVER_CRASH_SOCKET_NAME;
+}
+
+bool CoredumpCallbackValidator::IsReporterWorker(int32_t connectionFd, pid_t workerPid)
+{
+    struct ucred creds;
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return false;
+    }
+    return creds.pid == workerPid;
 }
 }
 }

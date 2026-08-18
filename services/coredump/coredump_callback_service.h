@@ -38,6 +38,7 @@ public:
 private:
     static bool IsValidPid(pid_t pid);
     static bool IsAuthorizedSocket(const std::string& socketName);
+    static bool IsReporterWorker(int32_t connectionFd, pid_t workerPid);
 };
 }
 }
