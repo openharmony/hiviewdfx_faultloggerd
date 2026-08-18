@@ -75,9 +75,9 @@ bool DfxInstructions::Flush(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, ui
     return true;
 }
 
-bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState, uint16_t& errCode)
+bool DfxInstructions::GetCfa(DfxRegs& regs, std::shared_ptr<DfxMemory> memory, RegLocState& rsState,
+    uintptr_t& cfa, uint16_t& errCode)
 {
-    uintptr_t cfa = 0;
     RegLoc cfaLoc;
     if (rsState.cfaReg != 0) {
         if (rsState.cfaReg >= regs.RegsSize()) {
@@ -101,6 +101,15 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         return false;
     }
     DFXLOGU("Update cfa : %{public}" PRIx64 "", (uint64_t)cfa);
+    return true;
+}
+
+bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, RegLocState& rsState, uint16_t& errCode)
+{
+    uintptr_t cfa = 0;
+    if (!GetCfa(regs, memory, rsState, cfa, errCode)) {
+        return false;
+    }
 
     for (size_t i = 0; i < rsState.locs.size(); i++) {
         if (rsState.locs[i].type != REG_LOC_UNUSED) {
@@ -117,21 +126,19 @@ bool DfxInstructions::Apply(std::shared_ptr<DfxMemory> memory, DfxRegs& regs, Re
         regs.SetPc(0);
         errCode = UNW_ERROR_RETURN_ADDRESS_UNDEFINED;
         return false;
+    }
+    if (rsState.returnAddressRegister >= REG_EH && rsState.returnAddressRegister < REG_LAST) {
+        DFXLOGU("returnAddressRegister: %{public}d", (int)rsState.returnAddressRegister);
+        regs.SetPc(regs[rsState.returnAddressRegister]);
     } else {
-        if (rsState.returnAddressRegister >= REG_EH && rsState.returnAddressRegister < REG_LAST) {
-            DFXLOGU("returnAddressRegister: %{public}d", (int)rsState.returnAddressRegister);
-            regs.SetPc(regs[rsState.returnAddressRegister]);
-        } else {
-            DFXLOGE("returnAddressRegister: %{public}d error", (int)rsState.returnAddressRegister);
-            errCode = UNW_ERROR_ILLEGAL_VALUE;
-            return false;
-        }
+        DFXLOGE("returnAddressRegister: %{public}d error", (int)rsState.returnAddressRegister);
+        errCode = UNW_ERROR_ILLEGAL_VALUE;
+        return false;
     }
     if (rsState.returnAddressSame) {
         errCode = UNW_ERROR_RETURN_ADDRESS_SAME;
         return false;
     }
-
     return true;
 }
 } // namespace HiviewDFX
