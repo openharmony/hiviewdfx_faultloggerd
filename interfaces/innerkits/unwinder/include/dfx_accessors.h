@@ -64,6 +64,7 @@ private:
     bool CreatePipe();
 
     std::mutex mutex_;
+    std::atomic<bool> pipeReady_{false};
     SmartFd readFd_;
     SmartFd writeFd_;
 };

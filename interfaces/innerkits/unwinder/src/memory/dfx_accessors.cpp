@@ -62,11 +62,13 @@ bool DfxAccessors::GetMapByPcAndCtx(uintptr_t pc, std::shared_ptr<DfxMap>& map, 
 
 bool DfxAccessorsLocal::CreatePipe()
 {
-    if (readFd_) {
+    // Fast path: an acquire load pairs with the release store below, so a reader
+    // observing pipeReady_ == true also observes the fully constructed readFd_/writeFd_.
+    if (pipeReady_.load(std::memory_order_acquire)) {
         return true;
     }
     std::lock_guard<std::mutex> lock(mutex_);
-    if (readFd_) {
+    if (pipeReady_.load(std::memory_order_acquire)) {
         return true;
     }
     int pipe[PIPE_NUM_SZ] = {-1, -1};
@@ -75,6 +77,7 @@ bool DfxAccessorsLocal::CreatePipe()
     }
     readFd_ = SmartFd{pipe[PIPE_READ]};
     writeFd_ = SmartFd{pipe[PIPE_WRITE]};
+    pipeReady_.store(true, std::memory_order_release);
     return static_cast<bool>(readFd_);
 }
 
