@@ -41,6 +41,8 @@ namespace {
 #define LOG_TAG "DfxBacktrace"
 #define LOG_DOMAIN 0xD002D11
 
+constexpr int64_t PROCESS_BACKTRACE_TIMEOUT_MS = 90 * 1000;
+
 bool GetBacktraceFramesByTid(std::vector<DfxFrame>& frames, int32_t tid, size_t skipFrameNum, bool fast,
                              size_t maxFrameNums)
 {
@@ -156,8 +158,17 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bo
     DFXLOGI("Receive GetProcessStacktrace request.");
     std::string ss = "\n" + GetStacktraceHeader();
     Unwinder unwinder{};
+
+    bool deadlineExceeded = false;
     std::function<bool(int)> func = [&](int tid) {
         if (tid <= 0 || tid == gettid()) {
+            return false;
+        }
+        if (et.Elapsed<std::chrono::milliseconds>() >= PROCESS_BACKTRACE_TIMEOUT_MS) {
+            if (!deadlineExceeded) {
+                deadlineExceeded = true;
+                DFXLOGW("GetProcessStacktrace timeout");
+            }
             return false;
         }
         std::vector<DfxFrame> frames;
@@ -182,7 +193,9 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bo
 
     std::vector<int> tids;
     GetTidsByPidWithFunc(getpid(), tids, func);
-    DFXLOGI("GetProcessStacktrace elapsed time: %{public}" PRId64 " ms", et.Elapsed<std::chrono::milliseconds>());
+    if (!deadlineExceeded) {
+        DFXLOGI("GetProcessStacktrace elapsed time: %{public}" PRId64 " ms", et.Elapsed<std::chrono::milliseconds>());
+    }
     return ss;
 }
 } // namespace HiviewDFX
