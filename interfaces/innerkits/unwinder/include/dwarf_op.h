@@ -43,6 +43,7 @@ public:
     AddressType Eval(DfxRegs& regs, AddressType initStackValue, AddressType startPtr);
 
 protected:
+    static constexpr size_t STACK_SIZE_CHECK = 2;
     bool Decode(DfxRegs& regs, uintptr_t& addr);
 
     inline void StackReset(AddressType initialStackValue)
@@ -76,6 +77,9 @@ protected:
     /* DW_OP_deref */
     inline void OpDeref()
     {
+        if (StackSize() == 0) {
+            return;
+        }
         auto addr = static_cast<uintptr_t>(StackPop());
         uintptr_t val;
         memory_->Read<uintptr_t>(addr, &val);
@@ -85,6 +89,9 @@ protected:
     /* DW_OP_deref_size */
     void OpDerefSize(AddressType& exprPtr)
     {
+        if (StackSize() == 0) {
+            return;
+        }
         auto addr = static_cast<uintptr_t>(StackPop());
         AddressType value = 0;
         uint8_t operand;
@@ -127,18 +134,27 @@ protected:
     /* DW_OP_dup */
     inline void OpDup()
     {
+        if (StackSize() == 0) {
+            return;
+        }
         StackPush(StackAt(0));
     };
 
     /* DW_OP_drop */
     inline void OpDrop()
     {
+        if (StackSize() == 0) {
+            return;
+        }
         StackPop();
     };
 
     /* DW_OP_over */
     inline void OpOver()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         StackPush(StackAt(1));
     };
 
@@ -147,7 +163,7 @@ protected:
     {
         uint8_t reg;
         memory_->Read<uint8_t>(exprPtr, &reg, true);
-        if (reg > StackSize()) {
+        if (reg >= StackSize()) {
             return;
         }
         AddressType value = StackAt(reg);
@@ -157,6 +173,9 @@ protected:
     /* DW_OP_swap */
     inline void OpSwap()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType oldValue = stack_[0];
         stack_[0] = stack_[1];
         stack_[1] = oldValue;
@@ -165,6 +184,9 @@ protected:
     /* DW_OP_rot */
     inline void OpRot()
     {
+        if (StackSize() <= STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = stack_[0];
         stack_[0] = stack_[1];
         stack_[1] = stack_[2]; // 2:the index of the array
@@ -174,6 +196,9 @@ protected:
     /* DW_OP_abs */
     inline void OpAbs()
     {
+        if (StackSize() == 0) {
+            return;
+        }
         SignedType signedValue = static_cast<SignedType>(stack_[0]);
         if (signedValue < 0) {
             signedValue = -signedValue;
@@ -184,6 +209,9 @@ protected:
     /* DW_OP_and */
     inline void OpAnd()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] &= top;
     };
@@ -191,6 +219,9 @@ protected:
     /* DW_OP_div */
     inline void OpDiv()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         if (top == 0) {
             return;
@@ -203,6 +234,9 @@ protected:
     /* DW_OP_minus */
     inline void OpMinus()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] -= top;
     };
@@ -210,6 +244,9 @@ protected:
     /* DW_OP_mod */
     inline void OpMod()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         if (top == 0) {
             return;
@@ -220,52 +257,79 @@ protected:
     /* DW_OP_mul */
     inline void OpMul()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] *= top;
     };
 
     inline void OpNeg()
     {
+        if (StackSize() == 0) {
+            return;
+        }
         SignedType signedValue = static_cast<SignedType>(stack_[0]);
         stack_[0] = static_cast<AddressType>(-signedValue);
     };
 
     inline void OpNot()
     {
+        if (StackSize() == 0) {
+            return;
+        }
         stack_[0] = ~stack_[0];
     };
 
     inline void OpOr()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] |= top;
     };
 
     inline void OpPlus()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] += top;
     };
 
     inline void OpPlusULEBConst(AddressType& exprPtr)
     {
+        if (StackSize() == 0) {
+            return;
+        }
         stack_[0] += memory_->ReadUleb128(exprPtr);
     };
 
     inline void OpShl()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] <<= top;
     };
 
     inline void OpShr()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] >>= top;
     };
 
     inline void OpShra()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         SignedType signedValue = static_cast<SignedType>(stack_[0]) >> top;
         stack_[0] = static_cast<AddressType>(signedValue);
@@ -273,6 +337,9 @@ protected:
 
     inline void OpXor()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] ^= top;
     };
@@ -287,6 +354,9 @@ protected:
     // DW_OP_bra
     inline void OpBra(AddressType& exprPtr)
     {
+        if (StackSize() == 0) {
+            return;
+        }
         AddressType top = StackPop();
         int16_t offset;
         memory_->Read<int16_t>(exprPtr, &offset, true);
@@ -297,36 +367,54 @@ protected:
 
     inline void OpEQ()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] = ((stack_[0] == top) ? 1 : 0);
     };
 
     inline void OpGE()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] = ((stack_[0] >= top) ? 1 : 0);
     };
 
     inline void OpGT()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] = ((stack_[0] > top) ? 1 : 0);
     };
 
     inline void OpLE()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] = ((stack_[0] <= top) ? 1 : 0);
     };
 
     inline void OpLT()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] = ((stack_[0] < top) ? 1 : 0);
     };
 
     inline void OpNE()
     {
+        if (StackSize() < STACK_SIZE_CHECK) {
+            return;
+        }
         AddressType top = StackPop();
         stack_[0] = ((stack_[0] != top) ? 1 : 0);
     };
