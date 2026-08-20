@@ -418,12 +418,32 @@ bool ElfParser::ParseFuncSymbols(const ElfShdr& shdr)
 template <typename SymType>
 bool ElfParser::ParseFuncSymbolName(const ShdrInfo& linkShdr, SymType sym, std::string& nameStr)
 {
-    if (!IsFunc(sym) || (static_cast<uint64_t>(sym.st_name) >= linkShdr.size) || mmap_->Get() == nullptr) {
+    if (!IsFunc(sym) || mmap_->Get() == nullptr) {
         return false;
     }
-    uintptr_t nameOffset = static_cast<uintptr_t>(linkShdr.offset + sym.st_name);
+    uint64_t mmapSize = MmapSize();
+    // Reject forged string-table section headers: an attacker can set linkShdr.size
+    // to 0xFFFFFFFF so that the st_name bounds check below is effectively bypassed.
+    if (linkShdr.offset >= mmapSize || linkShdr.size > mmapSize - linkShdr.offset) {
+        DFXLOGE("Invalid strtab section, offset: 0x%{public}" PRIx64 ", size: 0x%{public}" PRIx64
+            ", mmapSize: %{public}" PRIu64, linkShdr.offset, linkShdr.size, mmapSize);
+        return false;
+    }
+    if (static_cast<uint64_t>(sym.st_name) >= linkShdr.size) {
+        return false;
+    }
+    // Guard against unsigned underflow in (mmapSize - nameOffset): if the attacker
+    // crafts st_name so that offset + st_name exceeds the mapping, the subtraction
+    // wraps to ~2^64 and strnlen reads past the file mapping into arbitrary memory.
+    uint64_t nameOffset = 0;
+    if (__builtin_add_overflow(linkShdr.offset, static_cast<uint64_t>(sym.st_name), &nameOffset) ||
+        nameOffset >= mmapSize) {
+        DFXLOGE("Invalid symbol name offset, strtab.off: 0x%{public}" PRIx64 ", st_name: 0x%{public}" PRIx64
+            ", mmapSize: %{public}" PRIu64, linkShdr.offset, static_cast<uint64_t>(sym.st_name), mmapSize);
+        return false;
+    }
     nameStr = std::string(static_cast<char*>(mmap_->Get()) + nameOffset, strnlen(
-        static_cast<char*>(mmap_->Get()) + nameOffset, mmap_->Size() - nameOffset));
+        static_cast<char*>(mmap_->Get()) + nameOffset, mmapSize - nameOffset));
     return true;
 }
 
