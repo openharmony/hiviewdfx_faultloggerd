@@ -56,18 +56,27 @@ public:
     static DfxAsyncContextPool* Instance();
     bool Init();
     void DeInit();
-    DfxAsyncContext* AcquireAsyncContext();
     void ReleaseAsyncContext(DfxAsyncContext* ctx);
     DfxThreadAsyncContext* AcquireThreadContext();
     void ReleaseThreadContext(DfxThreadAsyncContext* ctx);
     bool IsValidAsyncContextAddress(DfxAsyncContext* ctx);
-    std::shared_lock<std::shared_mutex> AcquireReadLock();
-    bool IsValidAsyncContextAddressLocked(DfxAsyncContext* ctx);
+    DfxAsyncContext* AcquireAndInitAsyncContext(DfxThreadAsyncContext* threadCtx,
+        uint64_t stackId, uint64_t asyncType);
+    int32_t GetCurrentChainedContext(DfxThreadAsyncContext* threadCtx, DfxAsyncCtx buffer[], size_t sz);
+    bool IsAsyncContextHeadTypeMatched(DfxAsyncContext* ctx, uint64_t typeMask);
+    bool PushContextToThread(DfxThreadAsyncContext* threadCtx, DfxAsyncContext* ctx);
+    bool PopContextFromThread(DfxThreadAsyncContext* threadCtx);
+    bool PopContextFromThreadIfMatch(DfxThreadAsyncContext* threadCtx, DfxAsyncContext* ctx);
+    bool ClearThreadContext(DfxThreadAsyncContext* threadCtx);
 private:
     DfxAsyncContextPool() = default;
     ~DfxAsyncContextPool() = default;
     DfxAsyncContextPool(const DfxAsyncContextPool&) = delete;
     DfxAsyncContextPool& operator=(const DfxAsyncContextPool&) = delete;
+    bool IsValidAsyncContextAddressLocked(DfxAsyncContext* ctx);
+    bool IsValidThreadContextAddressLocked(DfxThreadAsyncContext* threadCtx);
+    bool IsValidThreadContextLocked(DfxThreadAsyncContext* threadCtx);
+    bool IsValidAsyncContextLocked(DfxAsyncContext* ctx);
     DfxAsyncContext* pool_{nullptr};
     uint32_t poolSize_{0};
     DfxThreadAsyncContext threadCtxPool_[THREAD_POOL_SIZE];
@@ -84,7 +93,7 @@ public:
     bool Init();
     void DeInit();
     DfxAsyncContext* HandleCollectAsyncStack(uint64_t stackId, uint64_t asyncType);
-    DfxAsyncContext* GetCurrentContext();
+    int32_t GetCurrentChainedContext(DfxAsyncCtx buffer[], size_t sz);
     void SetCurrentThreadContext(uint64_t stackId);
     void PopCurrentThreadContext(uint64_t stackId);
     bool RecycleAsyncContext(DfxAsyncContext* ctx);
@@ -94,9 +103,7 @@ private:
     ~DfxAsyncContextManager() = default;
     DfxAsyncContextManager(const DfxAsyncContextManager&) = delete;
     DfxAsyncContextManager& operator=(const DfxAsyncContextManager&) = delete;
-    void ClearThreadContext(DfxThreadAsyncContext* threadCtx);
-    void PushAsyncContext(DfxThreadAsyncContext* threadCtx, DfxAsyncContext* ctx);
-    void PopAsyncContext(DfxThreadAsyncContext* threadCtx);
+    DfxThreadAsyncContext* GetOrCreateThreadContext();
     pthread_key_t threadAsyncCtxKey_;
     std::atomic<bool> initialized_{false};
     std::mutex mutex_;
