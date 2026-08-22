@@ -88,18 +88,14 @@ bool CheckCallerUID(uint32_t callerUid)
     return true;
 }
 
-bool CheckRequestCredential(int32_t connectionFd, int32_t requestPid)
+bool CheckRequestCredential(const struct ucred& creds, int32_t requestPid)
 {
-    struct ucred creds{};
-    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
-        return false;
-    }
     if (CheckCallerUID(creds.uid)) {
         return true;
     }
     if (creds.pid != requestPid) {
-        DFXLOGW("Failed to check request credential request:%{public}d: cred:%{public}d fd:%{public}d",
-                requestPid, creds.pid, connectionFd);
+        DFXLOGW("Failed to check request credential request:%{public}d: cred:%{public}d",
+                requestPid, creds.pid);
         return false;
     }
     return true;
@@ -250,7 +246,11 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
     const FaultLoggerdRequest& requestData)
 {
     DFX_TRACE_SCOPED("FileDesServiceOnRequest");
-    if (!Filter(socketName, connectionFd, requestData)) {
+    struct ucred creds;
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return ResponseCode::REQUEST_REJECT;
+    }
+    if (!Filter(socketName, creds, requestData)) {
         return ResponseCode::REQUEST_REJECT;
     }
     std::string filePath;
@@ -272,6 +272,7 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
         }
     }
     TempFileManager::RecordFileCreation(requestData.type, requestData.pid);
+    TempFileManager::RecordFdFileCreation(requestData.type, filePath, creds.uid);
 #endif
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
@@ -280,7 +281,7 @@ int32_t FileDesService::OnRequest(const std::string& socketName, int32_t connect
     return responseData;
 }
 
-bool FileDesService::Filter(const std::string& socketName, int32_t connectionFd,
+bool FileDesService::Filter(const std::string& socketName, const struct ucred& creds,
     const FaultLoggerdRequest& requestData)
 {
     switch (requestData.type) {
@@ -290,7 +291,7 @@ bool FileDesService::Filter(const std::string& socketName, int32_t connectionFd,
         case FaultLoggerType::JIT_CODE_LOG:
             return socketName == SERVER_CRASH_SOCKET_NAME;
         default:
-            return CheckRequestCredential(connectionFd, requestData.pid);
+            return CheckRequestCredential(creds, requestData.pid);
     }
 }
 
@@ -393,7 +394,7 @@ int32_t SdkDumpService::OnRequest(const std::string& socketName, int32_t connect
     return res;
 }
 
-bool PipeService::Filter(const std::string &socketName, int32_t connectionFd, const PipFdRequestData &requestData)
+bool PipeService::Filter(const std::string &socketName, const struct ucred& creds, const PipFdRequestData &requestData)
 {
     if (requestData.pipeType > FaultLoggerPipeType::PIPE_FD_DELETE ||
         requestData.pipeType < FaultLoggerPipeType::PIPE_FD_READ) {
@@ -402,13 +403,17 @@ bool PipeService::Filter(const std::string &socketName, int32_t connectionFd, co
     if (socketName == SERVER_CRASH_SOCKET_NAME) {
         return true;
     }
-    return CheckRequestCredential(connectionFd, requestData.pid);
+    return CheckRequestCredential(creds, requestData.pid);
 }
 
 int32_t PipeService::OnRequest(const std::string& socketName, int32_t connectionFd, const PipFdRequestData& requestData)
 {
     DFX_TRACE_SCOPED("PipeServiceOnRequest");
-    if (!Filter(socketName, connectionFd, requestData)) {
+    struct ucred creds;
+    if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+        return ResponseCode::REQUEST_REJECT;
+    }
+    if (!Filter(socketName, creds, requestData)) {
         return ResponseCode::REQUEST_REJECT;
     }
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;

@@ -18,7 +18,9 @@
 
 #include <filesystem>
 #include <list>
+#include <map>
 #include <string>
+#include <sys/types.h>
 #include <utility>
 
 #include "epoll_manager.h"
@@ -35,6 +37,7 @@ public:
 #ifndef is_ohos_lite
     static bool CheckCrashFileRecord(int32_t pid);
     static void RecordFileCreation(int32_t type, int32_t pid);
+    static void RecordFdFileCreation(int32_t type, const std::string& filePath, uid_t uid);
 #endif
 
 private:
@@ -49,8 +52,9 @@ private:
         void HandleFileCreate(const std::string& filePath, const SingleFileConfig& fileConfig);
         void HandleFileDeleteOrMove(const std::string& filePath, const SingleFileConfig& fileConfig);
         void HandleDirRemoved();
-        static void HandleFileWrite(const std::string& filePath, const SingleFileConfig& fileConfig);
+        void HandleFileWrite(const std::string& filePath, const SingleFileConfig& fileConfig);
         TempFileManager &tempFileManager_;
+        std::map<std::string, uint64_t> fileSizeMonitorTasks_;
     };
     bool InitTempFileWatcher();
     void ScanTempFilesOnStart();
@@ -58,12 +62,14 @@ private:
 
 #ifndef is_ohos_lite
     static void ClearTimeOutRecords();
+    static void ClearOverLimitFdFiles(uid_t uid);
 #endif
 
     int32_t& GetTargetFileCount(int32_t type);
     std::vector<std::pair<int32_t, int32_t>> fileCounts_;
 #ifndef is_ohos_lite
     static std::list<std::pair<int32_t, int64_t>> crashFileRecords_;
+    static std::list<std::pair<std::string, uid_t>> fdFileRecords_;
 #endif
 
 #ifdef FAULTLOGGERD_TEST

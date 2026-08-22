@@ -91,6 +91,12 @@ inline uint64_t CalculateDelayTaskId(uint64_t executeTimeInMicroSecond)
     static std::atomic<uint8_t> delaySequence{0};
     return (static_cast<uint64_t>(delaySequence.fetch_add(1)) << SEQUENCE_START_BIT) | executeTimeInMicroSecond;
 }
+
+inline uint64_t CalculatePeriodicTaskId()
+{
+    static std::atomic<uint64_t> periodicSequence{1};
+    return periodicSequence.fetch_add(1);
+}
 }
 
 uint64_t GetMicroSecondsSinceBoot()
@@ -410,9 +416,123 @@ bool DelayTaskQueue::Executor::OnTimer()
             return true;
         }
         delayTaskQueue_.delayTasks_.front().second();
-        delayTaskQueue_.RemoveDelayTask(delayTaskId);
+        delayTaskQueue_.delayTasks_.pop_front();
     }
     return false;
+}
+
+PeriodicTaskQueue::~PeriodicTaskQueue()
+{
+    if (currentDelayTaskId_ != 0) {
+        DelayTaskQueue::GetInstance().RemoveDelayTask(currentDelayTaskId_);
+    }
+}
+
+PeriodicTaskQueue& PeriodicTaskQueue::GetInstance()
+{
+    static thread_local PeriodicTaskQueue queue;
+    return queue;
+}
+
+void PeriodicTaskQueue::Execute()
+{
+    auto currentTime = GetMicroSecondsSinceBoot();
+    while (!periodicTasks_.empty()) {
+        auto& frontTask = periodicTasks_.front();
+        
+        if (std::get<0>(frontTask) > currentTime) {
+            break;
+        }
+        
+        uint32_t interval = std::get<2>(frontTask);
+        auto task = std::get<3>(frontTask);
+        
+        if (task && task()) {
+            auto nextTime = currentTime + static_cast<uint64_t>(interval) * MS_PER_S * US_PER_MS;
+            std::get<0>(frontTask) = nextTime;
+            
+            auto it = periodicTasks_.begin();
+            auto newPos = std::find_if(periodicTasks_.begin(), periodicTasks_.end(),
+                [nextTime](const std::tuple<uint64_t, uint64_t, uint32_t, std::function<bool()>>& item) {
+                    return std::get<0>(item) > nextTime;
+                });
+            periodicTasks_.splice(newPos, periodicTasks_, it);
+        } else {
+            periodicTasks_.pop_front();
+        }
+    }
+    
+    ScheduleNextTask(currentTime);
+}
+
+void PeriodicTaskQueue::ScheduleNextTask(uint64_t currentTime)
+{
+    if (periodicTasks_.empty()) {
+        return;
+    }
+    auto nextExecuteTime = std::get<0>(periodicTasks_.front());
+    if (nextExecuteTime <= currentTime) {
+        return;
+    }
+    uint32_t delayTime =
+        static_cast<uint32_t>((nextExecuteTime - currentTime + MS_PER_S * US_PER_MS - 1) / (MS_PER_S * US_PER_MS));
+    if (delayTime == 0) {
+        delayTime++;
+    }
+    currentDelayTaskId_ = DelayTaskQueue::GetInstance().AddDelayTask(
+        [this]() { Execute(); }, delayTime);
+}
+
+uint64_t PeriodicTaskQueue::AddPeriodicTask(std::function<bool()> workFunc, uint32_t intervalTimeInS)
+{
+    if (!workFunc || intervalTimeInS == 0) {
+        return 0;
+    }
+    
+    auto taskId = CalculatePeriodicTaskId();
+    uint64_t currentTime = GetMicroSecondsSinceBoot();
+    auto nextExecuteTime = GetMicroSecondsSinceBoot() +
+        static_cast<uint64_t>(intervalTimeInS) * MS_PER_S * US_PER_MS;
+    
+    auto insertPos = std::find_if(periodicTasks_.begin(), periodicTasks_.end(),
+        [nextExecuteTime](const std::tuple<uint64_t, uint64_t, uint32_t, std::function<bool()>>& item) {
+            return std::get<0>(item) > nextExecuteTime;
+        });
+    periodicTasks_.insert(insertPos, std::make_tuple(nextExecuteTime, taskId, intervalTimeInS, std::move(workFunc)));
+    
+    if (insertPos == periodicTasks_.begin()) {
+        if (currentDelayTaskId_ != 0) {
+            DelayTaskQueue::GetInstance().RemoveDelayTask(currentDelayTaskId_);
+            currentDelayTaskId_ = 0;
+        }
+        ScheduleNextTask(currentTime);
+    }
+    return taskId;
+}
+
+bool PeriodicTaskQueue::RemovePeriodicTask(uint64_t taskId)
+{
+    auto it = std::find_if(periodicTasks_.begin(), periodicTasks_.end(),
+        [taskId](const std::tuple<uint64_t, uint64_t, uint32_t, std::function<bool()>>& item) {
+            return std::get<1>(item) == taskId;
+        });
+    
+    if (it == periodicTasks_.end()) {
+        return false;
+    }
+    
+    bool isBegin = (it == periodicTasks_.begin());
+    periodicTasks_.erase(it);
+    
+    if (isBegin) {
+        auto currentTime = GetMicroSecondsSinceBoot();
+        if (currentDelayTaskId_ != 0 && currentTime < std::get<0>(periodicTasks_.front())) {
+            DelayTaskQueue::GetInstance().RemoveDelayTask(currentDelayTaskId_);
+            currentDelayTaskId_ = 0;
+        }
+        ScheduleNextTask(currentTime);
+    }
+    return true;
 }
 }
 }
