@@ -597,7 +597,6 @@ void TempFileManager::TempFileWatcher::HandleFileCreate(const std::string& fileP
                     config.maxSingleFileSize = maxSingleFileSize;
                     config.overFileSizeAction = overFileSizeAction;
                     CheckTempFileSize(config, filePath);
-                    return false;
                 }
                 return true;
             }, FILE_SIZE_MONITOR_INTERVAL);

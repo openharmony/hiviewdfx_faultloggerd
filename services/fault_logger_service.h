@@ -56,7 +56,8 @@ public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const FaultLoggerdRequest& requestData) override;
 private:
-    static bool Filter(const std::string& socketName, const ucred& creds, const FaultLoggerdRequest& requestData);
+    static bool Filter(const std::string& socketName, const struct ucred& creds,
+        const FaultLoggerdRequest& requestData);
 };
 
 #ifndef HISYSEVENT_DISABLE

@@ -416,7 +416,7 @@ bool DelayTaskQueue::Executor::OnTimer()
             return true;
         }
         delayTaskQueue_.delayTasks_.front().second();
-        delayTaskQueue_.delayTasks_.pop_front();
+        delayTaskQueue_.RemoveDelayTask(delayTaskId);
     }
     return false;
 }
@@ -471,11 +471,10 @@ void PeriodicTaskQueue::ScheduleNextTask(uint64_t currentTime)
         return;
     }
     auto nextExecuteTime = std::get<0>(periodicTasks_.front());
-    if (nextExecuteTime <= currentTime) {
-        return;
+    uint64_t delayTime = 0;
+    if (nextExecuteTime > currentTime) {
+        delayTime = (nextExecuteTime - currentTime + MS_PER_S * US_PER_MS - 1) / (MS_PER_S * US_PER_MS);
     }
-    uint32_t delayTime =
-        static_cast<uint32_t>((nextExecuteTime - currentTime + MS_PER_S * US_PER_MS - 1) / (MS_PER_S * US_PER_MS));
     if (delayTime == 0) {
         delayTime++;
     }
@@ -491,20 +490,14 @@ uint64_t PeriodicTaskQueue::AddPeriodicTask(std::function<bool()> workFunc, uint
     
     auto taskId = CalculatePeriodicTaskId();
     uint64_t currentTime = GetMicroSecondsSinceBoot();
-    auto nextExecuteTime = GetMicroSecondsSinceBoot() +
-        static_cast<uint64_t>(intervalTimeInS) * MS_PER_S * US_PER_MS;
-    
+    auto nextExecuteTime = currentTime + static_cast<uint64_t>(intervalTimeInS) * MS_PER_S * US_PER_MS;
     auto insertPos = std::find_if(periodicTasks_.begin(), periodicTasks_.end(),
         [nextExecuteTime](const std::tuple<uint64_t, uint64_t, uint32_t, std::function<bool()>>& item) {
             return std::get<0>(item) > nextExecuteTime;
         });
+    auto isBegin = insertPos == periodicTasks_.begin();
     periodicTasks_.insert(insertPos, std::make_tuple(nextExecuteTime, taskId, intervalTimeInS, std::move(workFunc)));
-    
-    if (insertPos == periodicTasks_.begin()) {
-        if (currentDelayTaskId_ != 0) {
-            DelayTaskQueue::GetInstance().RemoveDelayTask(currentDelayTaskId_);
-            currentDelayTaskId_ = 0;
-        }
+    if (isBegin) {
         ScheduleNextTask(currentTime);
     }
     return taskId;
@@ -526,10 +519,6 @@ bool PeriodicTaskQueue::RemovePeriodicTask(uint64_t taskId)
     
     if (isBegin) {
         auto currentTime = GetMicroSecondsSinceBoot();
-        if (currentDelayTaskId_ != 0 && currentTime < std::get<0>(periodicTasks_.front())) {
-            DelayTaskQueue::GetInstance().RemoveDelayTask(currentDelayTaskId_);
-            currentDelayTaskId_ = 0;
-        }
         ScheduleNextTask(currentTime);
     }
     return true;
