@@ -44,7 +44,7 @@ private:
     bool ParseMemoryListStream(MinidumpParser& minidumpParser);
     bool ParseMapListStream(MinidumpParser& minidumpParser);
 
-    void ConfigurePerformance(MinidumpParser& minidumpParser);
+    void ConfigureMinidumpParser(MinidumpParser& minidumpParser);
     bool TransferData(int srcFd, int dstFd);
     bool GenerateMinidump(int pid, pid_t pipeFd, bool enableMinidump);
     void UnwindProcess();

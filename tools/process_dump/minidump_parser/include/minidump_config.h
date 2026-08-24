@@ -33,6 +33,12 @@ struct MinidumpConfig {
     uint32_t maxMemoryBytes = 64 * 1024 * 1024;
     bool enableChecksumValidation = true;
     bool enablePerformanceStats = true;
+    bool enableRangeMap = false;
+    bool enableIntervalTree = true;
+    bool enableBitmapIndex = true;
+    uint32_t bitmapGranularity = 134217728;
+    bool enableParallelParsing = true;
+    uint32_t lruCacheCapacity = 32;
 };
 
 class MinidumpConfigManager {
@@ -45,6 +51,9 @@ public:
     void SetMaxModules(uint32_t value);
     void SetMaxMemoryBytes(uint32_t value);
     void SetEnableChecksumValidation(bool enable);
+    void SetPerformanceConfig(bool enableRangeMap, bool enableIntervalTree,
+                               bool enableBitmapIndex, uint32_t bitmapGranularity);
+    void SetParallelParsing(bool enable);
 
     MinidumpConfigManager(const MinidumpConfigManager&) = delete;
     MinidumpConfigManager& operator=(const MinidumpConfigManager&) = delete;

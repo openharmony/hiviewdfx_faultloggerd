@@ -361,5 +361,27 @@ HWTEST(ProcUtilTest, GetPssMemoryTest001, TestSize.Level2)
     uint32_t pssMemory = GetPssMemory();
     ASSERT_TRUE(pssMemory > 0);
 }
+
+/**
+ * @tc.name: IsProcessMinidumpAllowedTest001
+ * @tc.desc: check IsProcessMinidumpAllowed returns false for current process
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, IsProcessMinidumpAllowedTest001, TestSize.Level2)
+{
+    bool result = IsProcessMinidumpAllowed(getpid());
+    ASSERT_FALSE(result);
+}
+
+/**
+ * @tc.name: IsProcessMinidumpAllowedTest002
+ * @tc.desc: check IsProcessMinidumpAllowed returns false for invalid pid
+ * @tc.type: FUNC
+ */
+HWTEST(ProcUtilTest, IsProcessMinidumpAllowedTest002, TestSize.Level2)
+{
+    bool result = IsProcessMinidumpAllowed(999999);
+    ASSERT_FALSE(result);
+}
 } // namespace HiviewDFX
 } // namespace OHOS

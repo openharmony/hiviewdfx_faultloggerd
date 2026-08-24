@@ -15,6 +15,8 @@
 
 #include "minidump_test_common.h"
 
+#include "minidump_index.h"
+
 constexpr uint32_t DEFAULT_BITMAP_GRANULARITY = 128 * 1024 * 1024;
 constexpr uint32_t TEST_UNKNOWN_STREAM_TYPE = 9999;
 constexpr uint32_t TEST_CUSTOM_STREAM_TYPE = 0xFF00;
@@ -654,7 +656,7 @@ HWTEST_F(MinidumpOptimizerTest, BitmapTest004, TestSize.Level2)
  */
 HWTEST_F(MinidumpOptimizerTest, PerfOptTest001, TestSize.Level2)
 {
-    auto config = PerformanceOptimizer::Instance().GetConfig();
+    auto config = MinidumpConfigManager::Instance().GetConfig();
     EXPECT_TRUE(config.enableIntervalTree);
     EXPECT_TRUE(config.enableBitmapIndex);
 }
@@ -666,12 +668,12 @@ HWTEST_F(MinidumpOptimizerTest, PerfOptTest001, TestSize.Level2)
  */
 HWTEST_F(MinidumpOptimizerTest, PerfOptTest002, TestSize.Level2)
 {
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = true;
     config.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(config);
-    EXPECT_TRUE(PerformanceOptimizer::Instance().GetConfig().enableBitmapIndex);
+    MinidumpConfigManager::Instance().SetConfig(config);
+    EXPECT_TRUE(MinidumpConfigManager::Instance().GetConfig().enableBitmapIndex);
 }
 
 /**
@@ -1078,14 +1080,14 @@ HWTEST_F(MinidumpOptimizerTest, BitmapLargeAllocationTest001, TestSize.Level2)
 HWTEST_F(MinidumpOptimizerTest, PerfOptDisabledFeaturesTest001, TestSize.Level2)
 {
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = false;
     config.enableBitmapIndex = false;
     config.bitmapGranularity = 0;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
-    auto retrievedConfig = PerformanceOptimizer::Instance().GetConfig();
+    auto retrievedConfig = MinidumpConfigManager::Instance().GetConfig();
     EXPECT_FALSE(retrievedConfig.enableRangeMap);
     EXPECT_FALSE(retrievedConfig.enableIntervalTree);
     EXPECT_FALSE(retrievedConfig.enableBitmapIndex);
@@ -1095,12 +1097,12 @@ HWTEST_F(MinidumpOptimizerTest, PerfOptDisabledFeaturesTest001, TestSize.Level2)
     EXPECT_FALSE(PerformanceOptimizer::Instance().GetBitmapIndex().IsInRange(0x1000));
 
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -1111,12 +1113,12 @@ HWTEST_F(MinidumpOptimizerTest, PerfOptDisabledFeaturesTest001, TestSize.Level2)
 HWTEST_F(MinidumpOptimizerTest, PerfOptOnlyRangeMapTest001, TestSize.Level2)
 {
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = true;
     config.enableIntervalTree = false;
     config.enableBitmapIndex = false;
     config.bitmapGranularity = 0;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     auto& rangeMap = PerformanceOptimizer::Instance().GetModuleRangeMap();
     EXPECT_TRUE(rangeMap.StoreRange(0x1000, 0x100, 0));
@@ -1130,12 +1132,12 @@ HWTEST_F(MinidumpOptimizerTest, PerfOptOnlyRangeMapTest001, TestSize.Level2)
     EXPECT_EQ(stats.bitmapMarkedCount, 0u);
 
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -1289,23 +1291,23 @@ HWTEST_F(MinidumpObserverTest, RemoveObserverNotFoundTest001, TestSize.Level2)
 HWTEST_F(MinidumpOptimizerTest, IntervalTreeOverlapTest001, TestSize.Level2)
 {
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = false;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     IntervalTree<uint64_t, uint32_t> tree;
     EXPECT_TRUE(tree.Insert(100, 200, 0));
     EXPECT_TRUE(tree.Insert(150, 250, 1));
 
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -1349,26 +1351,26 @@ HWTEST_F(MinidumpOptimizerTest, IntervalTreeTraversalTest001, TestSize.Level2)
  */
 HWTEST_F(MinidumpOptimizerTest, BitmapIndexZeroGranularityTest001, TestSize.Level2)
 {
-    PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = false;
     config.enableBitmapIndex = true;
     config.bitmapGranularity = 0;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
+    PerformanceOptimizer::Instance().Reset();
 
     auto& bitmap = PerformanceOptimizer::Instance().GetBitmapIndex();
     bitmap.MarkRange(0x1000, 0x2000);
     EXPECT_FALSE(bitmap.IsInRange(0x1500));
     EXPECT_EQ(bitmap.Size(), 0u);
 
-    PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
+    PerformanceOptimizer::Instance().Reset();
 }
 
 /**
@@ -1449,11 +1451,11 @@ HWTEST_F(MinidumpOptimizerTest, BitmapIndexOutOfRangeTest001, TestSize.Level2)
 HWTEST_F(MinidumpOptimizerTest, PerfOptOnlyIntervalTreeTest001, TestSize.Level2)
 {
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config config;
+    MinidumpConfig config;
     config.enableRangeMap = false;
     config.enableIntervalTree = true;
     config.enableBitmapIndex = false;
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
 
     auto& tree = PerformanceOptimizer::Instance().GetModuleIntervalTree();
     EXPECT_TRUE(tree.Insert(0x1000, 0x1100, 0));
@@ -1462,12 +1464,12 @@ HWTEST_F(MinidumpOptimizerTest, PerfOptOnlyIntervalTreeTest001, TestSize.Level2)
     EXPECT_EQ(val, 0u);
 
     PerformanceOptimizer::Instance().Reset();
-    PerformanceOptimizer::Config defaultConfig;
+    MinidumpConfig defaultConfig;
     defaultConfig.enableRangeMap = true;
     defaultConfig.enableIntervalTree = true;
     defaultConfig.enableBitmapIndex = true;
     defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
-    PerformanceOptimizer::Instance().SetConfig(defaultConfig);
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
 }
 
 /**
@@ -1518,6 +1520,316 @@ HWTEST_F(MinidumpOptimizerTest, IntervalTreeSearchRangeLeftSubtreeTest001, TestS
     EXPECT_TRUE(tree.Insert(0x2000, 0x2100, 2));
     auto results = tree.SearchRange(0x400, 0x1200);
     EXPECT_EQ(results.size(), 2u);
+}
+
+/**
+ * @tc.name: ConfigSetPerformanceConfigTest001
+ * @tc.desc: test MinidumpConfigManager SetPerformanceConfig updates all performance config fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpConfigTest, ConfigSetPerformanceConfigTest001, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetPerformanceConfig(true, false, true, 0x1000);
+    auto config = mgr.GetConfig();
+    EXPECT_TRUE(config.enableRangeMap);
+    EXPECT_FALSE(config.enableIntervalTree);
+    EXPECT_TRUE(config.enableBitmapIndex);
+    EXPECT_EQ(config.bitmapGranularity, 0x1000u);
+}
+
+/**
+ * @tc.name: ConfigSetParallelParsingTest001
+ * @tc.desc: test MinidumpConfigManager SetParallelParsing updates parallel parsing fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpConfigTest, ConfigSetParallelParsingTest001, TestSize.Level2)
+{
+    auto& mgr = MinidumpConfigManager::Instance();
+    mgr.SetParallelParsing(false);
+    auto config = mgr.GetConfig();
+    EXPECT_FALSE(config.enableParallelParsing);
+}
+
+/**
+ * @tc.name: ConfigDefaultValuesTest001
+ * @tc.desc: test MinidumpConfig default values for new performance fields
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpConfigTest, ConfigDefaultValuesTest001, TestSize.Level2)
+{
+    MinidumpConfig config;
+    EXPECT_FALSE(config.enableRangeMap);
+    EXPECT_TRUE(config.enableIntervalTree);
+    EXPECT_TRUE(config.enableBitmapIndex);
+    EXPECT_EQ(config.bitmapGranularity, 134217728u);
+    EXPECT_TRUE(config.enableParallelParsing);
+    EXPECT_EQ(config.lruCacheCapacity, 32u);
+}
+
+/**
+ * @tc.name: PerfOptGetMemoryAddressIndexTest001
+ * @tc.desc: test PerformanceOptimizer GetMemoryAddressIndex returns non-null adaptive index
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, PerfOptGetMemoryAddressIndexTest001, TestSize.Level2)
+{
+    PerformanceOptimizer::Instance().Reset();
+    auto* memIndex = PerformanceOptimizer::Instance().GetMemoryAddressIndex();
+    EXPECT_NE(memIndex, nullptr);
+    EXPECT_TRUE(memIndex->Insert(0x1000, 0x2000, 1u));
+    uint32_t result = 0;
+    EXPECT_TRUE(memIndex->Lookup(0x1500, result));
+    EXPECT_EQ(result, 1u);
+    PerformanceOptimizer::Instance().Reset();
+}
+
+/**
+ * @tc.name: PerfOptGetModuleAddressIndexTest001
+ * @tc.desc: test PerformanceOptimizer GetModuleAddressIndex returns non-null adaptive index
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, PerfOptGetModuleAddressIndexTest001, TestSize.Level2)
+{
+    PerformanceOptimizer::Instance().Reset();
+    auto* modIndex = PerformanceOptimizer::Instance().GetModuleAddressIndex();
+    EXPECT_NE(modIndex, nullptr);
+    EXPECT_TRUE(modIndex->Insert(0x5000, 0x6000, 2u));
+    uint32_t result = 0;
+    EXPECT_TRUE(modIndex->Lookup(0x5500, result));
+    EXPECT_EQ(result, 2u);
+    PerformanceOptimizer::Instance().Reset();
+}
+
+/**
+ * @tc.name: PerfOptStatisticsAllFieldsTest001
+ * @tc.desc: test PerformanceOptimizer GetStatistics returns all fields including range map sizes
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, PerfOptStatisticsAllFieldsTest001, TestSize.Level2)
+{
+    PerformanceOptimizer::Instance().Reset();
+    MinidumpConfig config;
+    config.enableRangeMap = true;
+    config.enableIntervalTree = true;
+    config.enableBitmapIndex = true;
+    config.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
+    MinidumpConfigManager::Instance().SetConfig(config);
+
+    PerformanceOptimizer::Instance().GetModuleRangeMap().StoreRange(0x1000, 0x100, 0);
+    PerformanceOptimizer::Instance().GetMemoryRangeMap().StoreRange(0x2000, 0x100, 1);
+    PerformanceOptimizer::Instance().GetModuleIntervalTree().Insert(0x3000, 0x3100, 2);
+    PerformanceOptimizer::Instance().GetMemoryIntervalTree().Insert(0x4000, 0x4100, 3);
+
+    auto stats = PerformanceOptimizer::Instance().GetStatistics();
+    EXPECT_EQ(stats.rangeMapModuleSize, 1u);
+    EXPECT_EQ(stats.rangeMapMemorySize, 1u);
+    EXPECT_EQ(stats.intervalTreeModuleSize, 1u);
+    EXPECT_EQ(stats.intervalTreeMemorySize, 1u);
+
+    PerformanceOptimizer::Instance().Reset();
+    MinidumpConfig defaultConfig;
+    defaultConfig.enableRangeMap = true;
+    defaultConfig.enableIntervalTree = true;
+    defaultConfig.enableBitmapIndex = true;
+    defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
+}
+
+/**
+ * @tc.name: PerfOptSetConfigBitmapDisabledTest001
+ * @tc.desc: test PerformanceOptimizer SetConfig with bitmap disabled does not initialize bitmap
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, PerfOptSetConfigBitmapDisabledTest001, TestSize.Level2)
+{
+    PerformanceOptimizer::Instance().Reset();
+    MinidumpConfig config;
+    config.enableRangeMap = true;
+    config.enableIntervalTree = true;
+    config.enableBitmapIndex = false;
+    config.bitmapGranularity = 0;
+    MinidumpConfigManager::Instance().SetConfig(config);
+
+    EXPECT_FALSE(MinidumpConfigManager::Instance().GetConfig().enableBitmapIndex);
+    EXPECT_FALSE(PerformanceOptimizer::Instance().GetBitmapIndex().IsInRange(0x1000));
+
+    PerformanceOptimizer::Instance().Reset();
+    MinidumpConfig defaultConfig;
+    defaultConfig.enableRangeMap = true;
+    defaultConfig.enableIntervalTree = true;
+    defaultConfig.enableBitmapIndex = true;
+    defaultConfig.bitmapGranularity = DEFAULT_BITMAP_GRANULARITY;
+    MinidumpConfigManager::Instance().SetConfig(defaultConfig);
+}
+
+/**
+ * @tc.name: BitmapIndexMultiWordMarkTest001
+ * @tc.desc: test BitmapIndex MarkRange spanning multiple words marks correct bits
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, BitmapIndexMultiWordMarkTest001, TestSize.Level2)
+{
+    BitmapIndex bitmap(0x100000, 0x100);
+    bitmap.MarkRange(0x0, 0x5000);
+    if (bitmap.Size() > 0) {
+        EXPECT_TRUE(bitmap.IsInRange(0x0));
+        EXPECT_TRUE(bitmap.IsInRange(0x1000));
+        EXPECT_TRUE(bitmap.IsInRange(0x5000));
+        EXPECT_FALSE(bitmap.IsInRange(0x6000));
+        EXPECT_GT(bitmap.MarkedCount(), 0u);
+    }
+}
+
+/**
+ * @tc.name: BitmapIndexFindNextInRangeMultiWordTest001
+ * @tc.desc: test BitmapIndex FindNextInRange with multiple words finds next marked address
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, BitmapIndexFindNextInRangeMultiWordTest001, TestSize.Level2)
+{
+    BitmapIndex bitmap(0x100000, 0x100);
+    bitmap.MarkRange(0x1000, 0x1100);
+    if (bitmap.Size() > 0) {
+        uint64_t next = bitmap.FindNextInRange(0);
+        EXPECT_NE(next, UINT64_MAX);
+    }
+}
+
+/**
+ * @tc.name: IntervalTreeGetMaxAddressTest001
+ * @tc.desc: test IntervalTree GetMaxAddress returns correct maximum address
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, IntervalTreeGetMaxAddressTest001, TestSize.Level2)
+{
+    IntervalTree<uint64_t, uint32_t> tree;
+    EXPECT_EQ(tree.GetMaxAddress(), 0u);
+    EXPECT_TRUE(tree.Insert(0x1000, 0x2000, 0));
+    EXPECT_TRUE(tree.Insert(0x500, 0x600, 1));
+    EXPECT_TRUE(tree.Insert(0x3000, 0x3100, 2));
+    EXPECT_EQ(tree.GetMaxAddress(), 0x3100u);
+}
+
+/**
+ * @tc.name: RangeMapGetHighestAddressTest001
+ * @tc.desc: test RangeMap GetHighestAddress returns correct highest address after stores
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, RangeMapGetHighestAddressTest001, TestSize.Level2)
+{
+    RangeMap<uint64_t, uint32_t> rm;
+    EXPECT_EQ(rm.GetHighestAddress(), 0u);
+    EXPECT_TRUE(rm.StoreRange(0x1000, 0x100, 0));
+    EXPECT_EQ(rm.GetHighestAddress(), 0x10FFu);
+    EXPECT_TRUE(rm.StoreRange(0x2000, 0x100, 1));
+    EXPECT_EQ(rm.GetHighestAddress(), 0x20FFu);
+}
+
+/**
+ * @tc.name: RangeMapIsEmptyTest001
+ * @tc.desc: test RangeMap IsEmpty returns true initially and false after store
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, RangeMapIsEmptyTest001, TestSize.Level2)
+{
+    RangeMap<uint64_t, uint32_t> rm;
+    EXPECT_TRUE(rm.IsEmpty());
+    EXPECT_TRUE(rm.StoreRange(0x1000, 0x100, 0));
+    EXPECT_FALSE(rm.IsEmpty());
+    rm.Clear();
+    EXPECT_TRUE(rm.IsEmpty());
+}
+
+/**
+ * @tc.name: RangeMapStoreZeroSizeTest001
+ * @tc.desc: test RangeMap StoreRange with zero size returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, RangeMapStoreZeroSizeTest001, TestSize.Level2)
+{
+    RangeMap<uint64_t, uint32_t> rm;
+    EXPECT_FALSE(rm.StoreRange(0x1000, 0, 0));
+}
+
+/**
+ * @tc.name: RangeMapStoreOverflowTest001
+ * @tc.desc: test RangeMap StoreRange with overflow base+size returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, RangeMapStoreOverflowTest001, TestSize.Level2)
+{
+    RangeMap<uint64_t, uint32_t> rm;
+    uint64_t maxAddr = std::numeric_limits<uint64_t>::max();
+    EXPECT_FALSE(rm.StoreRange(maxAddr - 10, 100, 0));
+}
+
+/**
+ * @tc.name: RangeMapStoreOverlapForwardTest001
+ * @tc.desc: test RangeMap StoreRange with forward overlap returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, RangeMapStoreOverlapForwardTest001, TestSize.Level2)
+{
+    RangeMap<uint64_t, uint32_t> rm;
+    EXPECT_TRUE(rm.StoreRange(0x1000, 0x100, 0));
+    EXPECT_FALSE(rm.StoreRange(0x1050, 0x100, 1));
+}
+
+/**
+ * @tc.name: RangeMapStoreOverlapBackwardTest001
+ * @tc.desc: test RangeMap StoreRange with backward overlap returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, RangeMapStoreOverlapBackwardTest001, TestSize.Level2)
+{
+    RangeMap<uint64_t, uint32_t> rm;
+    EXPECT_TRUE(rm.StoreRange(0x2000, 0x100, 0));
+    EXPECT_FALSE(rm.StoreRange(0x1F00, 0x200, 1));
+}
+
+/**
+ * @tc.name: IntervalTreeDuplicateLowTest001
+ * @tc.desc: test IntervalTree Insert with duplicate low bound does not increase size
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, IntervalTreeDuplicateLowTest001, TestSize.Level2)
+{
+    IntervalTree<uint64_t, uint32_t> tree;
+    EXPECT_TRUE(tree.Insert(0x1000, 0x2000, 0));
+    EXPECT_FALSE(tree.Insert(0x1000, 0x3000, 1));
+    EXPECT_EQ(tree.Size(), 1u);
+}
+
+/**
+ * @tc.name: IntervalTreeSearchRangeAllTest001
+ * @tc.desc: test IntervalTree SearchRange covering all intervals returns all values
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, IntervalTreeSearchRangeAllTest001, TestSize.Level2)
+{
+    IntervalTree<uint64_t, uint32_t> tree;
+    EXPECT_TRUE(tree.Insert(0x1000, 0x1100, 0));
+    EXPECT_TRUE(tree.Insert(0x2000, 0x2100, 1));
+    EXPECT_TRUE(tree.Insert(0x3000, 0x3100, 2));
+    auto results = tree.SearchRange(0, 0xFFFF);
+    EXPECT_EQ(results.size(), 3u);
+}
+
+/**
+ * @tc.name: BitmapIndexClearResetsMarkedCountTest001
+ * @tc.desc: test BitmapIndex Clear resets marked count to zero
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpOptimizerTest, BitmapIndexClearResetsMarkedCountTest001, TestSize.Level2)
+{
+    BitmapIndex bitmap(0x10000, 0x1000);
+    bitmap.MarkRange(0x1000, 0x2000);
+    if (bitmap.Size() > 0) {
+        EXPECT_GT(bitmap.MarkedCount(), 0u);
+        bitmap.Clear();
+        EXPECT_EQ(bitmap.MarkedCount(), 0u);
+    }
 }
 
 } // namespace HiviewDFX

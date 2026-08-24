@@ -15,7 +15,11 @@
 
 #include <algorithm>
 #include <cinttypes>
+#include <fcntl.h>
 #include <fstream>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "dfx_log.h"
 #include "minidump_optimizer.h"
@@ -23,18 +27,116 @@
 #include "minidump_format.h"
 #include "minidump_memory_reader.h"
 #include "minidump_optimizer.h"
+#include "securec.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 using namespace MinidumpFormat;
-bool MinidumpMemoryReader::ReadBytes(void* bytes, size_t count)
+constexpr size_t DEFAULT_READ_AHEAD_SIZE = 65536;
+MinidumpMemoryReader::MinidumpMemoryReader(std::shared_ptr<std::istream> stream)
+    : backend_(BackendType::ISTREAM), stream_(stream)
 {
-    if (stream_ == nullptr || !stream_->good()) {
+}
+
+MinidumpMemoryReader::MinidumpMemoryReader(const std::string& path)
+    : backend_(BackendType::MMAP)
+{
+    if (!InitMmap(path)) {
+        backend_ = BackendType::ISTREAM;
+        auto fileStream = std::make_shared<std::ifstream>();
+        streamBuf_ = new char[DEFAULT_READ_AHEAD_SIZE];
+        fileStream->rdbuf()->pubsetbuf(streamBuf_, DEFAULT_READ_AHEAD_SIZE);
+        fileStream->open(path, std::ios::binary);
+        stream_ = fileStream;
+    }
+}
+
+MinidumpMemoryReader::~MinidumpMemoryReader()
+{
+    if (mmapData_ != nullptr) {
+        munmap(mmapData_, mmapSize_);
+        mmapData_ = nullptr;
+    }
+    if (mmapFd_ >= 0) {
+        close(mmapFd_);
+        mmapFd_ = -1;
+    }
+    if (streamBuf_ != nullptr) {
+        stream_.reset();
+        delete[] streamBuf_;
+    }
+}
+
+bool MinidumpMemoryReader::InitMmap(const std::string& path)
+{
+    mmapFd_ = open(path.c_str(), O_RDONLY | O_CLOEXEC);
+    if (mmapFd_ < 0) {
+        DFXLOGE("MinidumpMemoryReader open failed for %{public}s errno=%{public}d", path.c_str(), errno);
+        return false;
+    }
+
+    struct stat st;
+    if (fstat(mmapFd_, &st) != 0) {
+        DFXLOGE("MinidumpMemoryReader fstat failed errno=%{public}d", errno);
+        close(mmapFd_);
+        mmapFd_ = -1;
+        return false;
+    }
+
+    fileSize_ = static_cast<size_t>(st.st_size);
+    if (fileSize_ == 0) {
+        DFXLOGE("MinidumpMemoryReader file is empty");
+        close(mmapFd_);
+        mmapFd_ = -1;
+        return false;
+    }
+
+    void* mapped = mmap(nullptr, fileSize_, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, mmapFd_, 0);
+    if (mapped == MAP_FAILED) {
+        DFXLOGW("MinidumpMemoryReader mmap failed errno=%{public}d, fallback to istream", errno);
+        close(mmapFd_);
+        mmapFd_ = -1;
+        return false;
+    }
+
+    mmapData_ = static_cast<uint8_t*>(mapped);
+    mmapSize_ = fileSize_;
+    mmapPos_ = 0;
+    madvise(mmapData_, mmapSize_, MADV_RANDOM);
+    DFXLOGI("MinidumpMemoryReader mmap enabled, size=%{public}zu", fileSize_);
+    return true;
+}
+
+bool MinidumpMemoryReader::ReadFromMmap(void* bytes, size_t count)
+{
+    if (mmapPos_ < 0 || static_cast<size_t>(mmapPos_) + count > mmapSize_) {
+        auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+        stats.IncrementError();
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_READ, "mmap read out of range", __LINE__);
+        return false;
+    }
+    if (count > 0) {
+        if (memcpy_s(bytes, count, mmapData_ + mmapPos_, count) != EOK) {
+            auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+            stats.IncrementError();
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_READ, "memcpy_s failed", __LINE__);
+            return false;
+        }
+        mmapPos_ += static_cast<off_t>(count);
+    }
+    auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+    stats.IncrementRead(static_cast<uint32_t>(count));
+    return true;
+}
+
+bool MinidumpMemoryReader::ReadFromStream(void* bytes, size_t count)
+{
+    if (stream_ == nullptr || (!stream_->good() && !stream_->eof())) {
         auto& stats = MinidumpPerfMonitor::Instance().GetStats();
         stats.IncrementError();
         return false;
     }
-
+    stream_->clear(stream_->rdstate() & ~std::ios::eofbit);
     stream_->read(static_cast<char*>(bytes), count);
     if (static_cast<size_t>(stream_->gcount()) != count) {
         stream_->setstate(std::ios::badbit);
@@ -42,14 +144,47 @@ bool MinidumpMemoryReader::ReadBytes(void* bytes, size_t count)
         stats.IncrementError();
         return false;
     }
-
     auto& stats = MinidumpPerfMonitor::Instance().GetStats();
     stats.IncrementRead(static_cast<uint32_t>(count));
     return true;
 }
 
+bool MinidumpMemoryReader::ReadBytes(void* bytes, size_t count)
+{
+    if (bytes == nullptr && count > 0) {
+        return false;
+    }
+    if (count == 0) {
+        return true;
+    }
+    if (backend_ == BackendType::MMAP && mmapData_ != nullptr) {
+        return ReadFromMmap(bytes, count);
+    }
+    return ReadFromStream(bytes, count);
+}
+
 bool MinidumpMemoryReader::SeekSet(off_t offset)
 {
+    if (offset < 0) {
+        auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+        stats.IncrementError();
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "negative offset", __LINE__);
+        return false;
+    }
+
+    if (backend_ == BackendType::MMAP && mmapData_ != nullptr) {
+        if (static_cast<size_t>(offset) > mmapSize_) {
+            auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+            stats.IncrementError();
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "mmap seek out of range", __LINE__);
+            return false;
+        }
+        mmapPos_ = offset;
+        auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+        stats.IncrementSeek();
+        return true;
+    }
+
     if (!stream_) {
         auto& stats = MinidumpPerfMonitor::Instance().GetStats();
         stats.IncrementError();
@@ -58,14 +193,8 @@ bool MinidumpMemoryReader::SeekSet(off_t offset)
     }
 
     stream_->clear(stream_->rdstate() & ~std::ios::eofbit);
-    if (!stream_->good()) {
-        auto& stats = MinidumpPerfMonitor::Instance().GetStats();
-        stats.IncrementError();
-        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "stream is not good", __LINE__);
-        return false;
-    }
     stream_->seekg(offset, std::ios::beg);
-    if (!stream_->good()) {
+    if (!stream_->good() && !stream_->eof()) {
         auto& stats = MinidumpPerfMonitor::Instance().GetStats();
         stats.IncrementError();
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "seek failed", __LINE__);
@@ -78,7 +207,12 @@ bool MinidumpMemoryReader::SeekSet(off_t offset)
 
 off_t MinidumpMemoryReader::Tell()
 {
-    if (!stream_ || !stream_->good()) return -1;
+    if (backend_ == BackendType::MMAP && mmapData_ != nullptr) {
+        return mmapPos_;
+    }
+    if (!stream_ || (!stream_->good() && !stream_->eof())) {
+        return -1;
+    }
     return stream_->tellg();
 }
 

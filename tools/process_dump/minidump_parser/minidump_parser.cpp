@@ -20,10 +20,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <fcntl.h>
 #include <fstream>
+#include <unistd.h>
 
 #include "dfx_log.h"
 #include "minidump_factory.h"
+#include "minidump_index.h"
 #include "minidump_parser.h"
 
 #ifdef LOG_DOMAIN
@@ -75,14 +78,49 @@ bool MinidumpParser::Open()
         }
         return stream_->good();
     }
-
-    stream_= std::make_shared<std::ifstream>(path_, std::ios::binary);
-    std::ifstream* fileStream = static_cast<std::ifstream*>(stream_.get());
-    if (!fileStream->is_open()) {
-        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_OPEN, "Cannot open file: " + path_, __LINE__);
-        DFXLOGE("MinidumpParser could not open path: %{public}s errno%{public}d", path_.c_str(), errno);
+    int fd = open(path_.c_str(), O_RDONLY | O_CLOEXEC);
+    if (fd < 0) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_OPEN,
+            "Cannot open file: " + path_, __LINE__);
+        DFXLOGE("MinidumpParser could not open path: %{public}s errno=%{public}d", path_.c_str(), errno);
         return false;
     }
+    close(fd);
+    return true;
+}
+
+bool MinidumpParser::ReadMinidumpHeader()
+{
+    if (!Open()) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_OPEN, "Cannot open file", __LINE__);
+        DFXLOGE("MinidumpParser cannot open file");
+        return false;
+    }
+    if (!path_.empty()) {
+        memoryReader_ = std::make_shared<MinidumpMemoryReader>(path_);
+    } else {
+        memoryReader_ = std::make_shared<MinidumpMemoryReader>(stream_);
+    }
+    if (!memoryReader_->ReadBytes(&header_, sizeof(header_))) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_READ,
+            "Cannot read header", __LINE__);
+        DFXLOGE("MinidumpParser cannot read header");
+        return false;
+    }
+    uint32_t curProcess = 1;
+    if (header_.numberOfStreams > 0xFFFFFFFD) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
+            "numberOfStreams too large", __LINE__);
+        DFXLOGE("MinidumpParser numberOfStreams too large: %{public}u", header_.numberOfStreams);
+        return false;
+    }
+    uint32_t totalStep = header_.numberOfStreams + 2;
+    minidumpSubject_->NotifyParseProgress(curProcess++, totalStep, "header");
+
+    if (!ValidateFileHeader()) {
+        return false;
+    }
+    minidumpSubject_->NotifyParseProgress(curProcess++, totalStep, "validation");
     return true;
 }
 
@@ -127,6 +165,7 @@ void MinidumpParser::RecordParseTime(uint64_t startTimeMs)
         stats.RecordParseTime(endMs - startTimeMs);
     }
 }
+
 void MinidumpParser::SetupObservers()
 {
     if (observersSetup_) {
@@ -148,37 +187,6 @@ void MinidumpParser::SetupObservers()
         }
     });
     minidumpSubject_->AddObserver(streamLoadObserver);
-}
-
-bool MinidumpParser::ReadMinidumpHeader()
-{
-    if (!Open()) {
-        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_OPEN, "Cannot open file", __LINE__);
-        DFXLOGE("MinidumpParser cannot open file");
-        return false;
-    }
-    memoryReader_ = std::make_shared<MinidumpMemoryReader>(stream_);
-    if (!memoryReader_->ReadBytes(&header_, sizeof(header_))) {
-        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_READ,
-            "Cannot read header", __LINE__);
-        DFXLOGE("MinidumpParser cannot read header");
-        return false;
-    }
-    uint32_t curProcess = 1;
-    if (header_.numberOfStreams > 0xFFFFFFFD) {
-        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
-            "numberOfStreams too large", __LINE__);
-        DFXLOGE("MinidumpParser numberOfStreams too large: %{public}u", header_.numberOfStreams);
-        return false;
-    }
-    uint32_t totalStep = header_.numberOfStreams + 2;
-    minidumpSubject_->NotifyParseProgress(curProcess++, totalStep, "header");
-
-    if (!ValidateFileHeader()) {
-        return false;
-    }
-    minidumpSubject_->NotifyParseProgress(curProcess++, totalStep, "validation");
-    return true;
 }
 
 bool MinidumpParser::ReadStreamDirectory()
@@ -360,6 +368,9 @@ T* MinidumpParser::GetStream()
             return nullptr;
         }
         minidumpStream->SetMinidumpSubject(minidumpSubject_);
+        minidumpStream->SetAddressIndexes(
+            PerformanceOptimizer::Instance().GetMemoryAddressIndex(),
+            PerformanceOptimizer::Instance().GetModuleAddressIndex());
         if (!minidumpStream->Read(streamLength)) {
             lastError_ = minidumpStream->GetLastError();
             auto& stats = MinidumpPerfMonitor::Instance().GetStats();
@@ -449,9 +460,24 @@ const MDRawDirectory* MinidumpParser::GetDirectoryEntryAtIndex(uint32_t index) c
     return &(*directory_)[index];
 }
 
-void MinidumpParser::SetPerformanceConfig(const PerformanceOptimizer::Config& config)
+void MinidumpParser::SetMinidumpConfig(const MinidumpConfig& config)
 {
-    PerformanceOptimizer::Instance().SetConfig(config);
+    MinidumpConfigManager::Instance().SetConfig(config);
+}
+
+void MinidumpParser::InjectStream(uint32_t streamType, std::shared_ptr<MinidumpStream> stream)
+{
+    if (!isValid_ || !stream) {
+        return;
+    }
+    MinidumpStreamMap::iterator it = streamMap_->find(streamType);
+    if (it == streamMap_->end()) {
+        return;
+    }
+    if (it->second.stream_) {
+        return;
+    }
+    it->second.stream_ = std::move(stream);
 }
 
 void MinidumpParser::PrintPerformanceStats() const
