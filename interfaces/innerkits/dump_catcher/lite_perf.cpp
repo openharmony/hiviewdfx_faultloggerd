@@ -73,6 +73,7 @@ private:
     bool DoReadRes(int fd, int& pollRet);
     bool ParseSampleStacks(const std::string& datas);
     int WaitpidTimeout(pid_t pid);
+    void AppendResult(const std::string& result);
 
     std::string bufMsg_;
     std::string resMsg_;
@@ -214,6 +215,12 @@ void LitePerf::Impl::FinishDump()
     }
 }
 
+void LitePerf::Impl::AppendResult(const std::string& result)
+{
+    std::lock_guard<std::mutex> lck(mutex_);
+    resMsg_.append(result);
+}
+
 int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
 {
     MAYBE_UNUSED int pollRet = DUMP_POLL_INIT;
@@ -230,10 +237,7 @@ int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
         uint64_t now = GetAbsTimeMilliSeconds();
         if (now >= endTime) {
             pollRet = DUMP_POLL_TIMEOUT;
-            {
-                std::lock_guard<std::mutex> lck(mutex_);
-                resMsg_.append("Result: poll timeout.\n");
-            }
+            AppendResult("Result: poll timeout.\n");
             isContinue = false;
             break;
         }
@@ -245,18 +249,12 @@ int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
                 continue;
             }
             pollRet = DUMP_POLL_FAILED;
-            {
-                std::lock_guard<std::mutex> lck(mutex_);
-                resMsg_.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
-            }
+            AppendResult("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             isContinue = false;
             break;
         } else if (pRet == 0) {
             pollRet = DUMP_POLL_TIMEOUT;
-            {
-                std::lock_guard<std::mutex> lck(mutex_);
-                resMsg_.append("Result: poll timeout.\n");
-            }
+            AppendResult("Result: poll timeout.\n");
             isContinue = false;
             break;
         }
@@ -285,10 +283,7 @@ bool LitePerf::Impl::HandlePollEvents(const struct pollfd (&readFds)[2], const i
         }
 
         if (bPipeConnect && ((static_cast<uint32_t>(readFd.revents) & POLLERR))) {
-            {
-                std::lock_guard<std::mutex> lck(mutex_);
-                resMsg_.append("Result: poll events error.\n");
-            }
+            AppendResult("Result: poll events error.\n");
             eventRet = false;
             break;
         }
@@ -335,10 +330,7 @@ bool LitePerf::Impl::DoReadRes(int fd, int& pollRet)
         return false;
     }
     pollRet = (res == DUMP_ESUCCESS) ? DUMP_POLL_OK : DUMP_POLL_FAILED;
-    {
-        std::lock_guard<std::mutex> lck(mutex_);
-        resMsg_.append("Result: " + DfxDumpRes::ToString(res) + "\n");
-    }
+    AppendResult("Result: " + DfxDumpRes::ToString(res) + "\n");
     return true;
 }
 
