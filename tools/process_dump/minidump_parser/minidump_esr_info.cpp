@@ -37,6 +37,12 @@ bool MinidumpEsrInfo::Read(uint32_t expectedSize)
     }
 
     (void)memset_s(&esrRegsInfo_, sizeof(esrRegsInfo_), 0, sizeof(esrRegsInfo_));
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            "MinidumpEsrInfo memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpEsrInfo memoryReader is null");
+        return false;
+    }
 
     if (!memoryReader_->ReadBytes(&esrRegsInfo_, sizeof(esrRegsInfo_))) {
         DFXLOGE("MinidumpEsrInfo cannot read breakpad info");

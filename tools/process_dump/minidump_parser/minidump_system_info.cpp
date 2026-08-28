@@ -29,6 +29,12 @@ MinidumpSystemInfo::MinidumpSystemInfo(std::shared_ptr<MinidumpMemoryReader> mem
 bool MinidumpSystemInfo::Read(uint32_t expectedSize)
 {
     isValid_ = false;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            "MinidumpSystemInfo memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpSystemInfo memoryReader is null");
+        return false;
+    }
 
     if (!memoryReader_->ReadBytes(&systemInfo_, sizeof(systemInfo_))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,

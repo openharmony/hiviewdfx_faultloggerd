@@ -33,6 +33,12 @@ bool MinidumpMiscInfo::Read(uint32_t expectedSize)
 {
     isValid_ = false;
     uint32_t sizeOfInfo = 0;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            "MinidumpMiscInfo memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpMiscInfo memoryReader is null");
+        return false;
+    }
 
     if (!memoryReader_->ReadBytes(&sizeOfInfo, sizeof(sizeOfInfo))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,

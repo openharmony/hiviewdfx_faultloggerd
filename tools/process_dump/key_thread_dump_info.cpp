@@ -57,7 +57,7 @@ bool ParseUnwindStack(const std::vector<uintptr_t>& stackValues,
     size_t index = frames.size();
     for (const auto& value : stackValues) {
         std::shared_ptr<DfxMap> map;
-        if (!maps->FindMapByAddr(value, map) ||
+        if (!maps->FindMapByAddr(value, map) || map == nullptr ||
             (map->prots & PROT_EXEC) == 0) {
             continue;
         }

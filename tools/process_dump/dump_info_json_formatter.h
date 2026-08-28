@@ -30,7 +30,7 @@ namespace HiviewDFX {
 
 class DumpInfoJsonFormatter {
 public:
-    static bool GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
+    static void GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
         std::string& jsonStringInfo, int dumpError = 0);
 
 private:

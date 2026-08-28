@@ -194,7 +194,7 @@ bool MinidumpMemoryReader::SeekSet(off_t offset)
 
     stream_->clear(stream_->rdstate() & ~std::ios::eofbit);
     stream_->seekg(offset, std::ios::beg);
-    if (!stream_->good() && !stream_->eof()) {
+    if (stream_->fail() || stream_->tellg() != static_cast<std::streampos>(offset)) {
         auto& stats = MinidumpPerfMonitor::Instance().GetStats();
         stats.IncrementError();
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "seek failed", __LINE__);

@@ -75,6 +75,12 @@ bool MinidumpContext::Read(uint32_t expectedSize)
         return false;
     }
     uint32_t contextFlags;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CONTEXT_READ,
+            "MinidumpContext memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpContext memoryReader is null");
+        return false;
+    }
     if (!memoryReader_->ReadBytes(&contextFlags, sizeof(contextFlags))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CONTEXT_READ, "Failed to read context flags", __LINE__);
         DFXLOGE("MinidumpContext could not read context flags");

@@ -56,6 +56,12 @@ std::shared_ptr<std::vector<uint8_t>> MinidumpMemoryRegion::GetMemory()
                 descriptor_.memory.dataSize, MinidumpConfigManager::Instance().GetConfig().maxMemoryBytes);
         return nullptr;
     }
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_MEMORY_ALLOC,
+            "MinidumpMemoryRegion memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpMemoryRegion memoryReader is null");
+        return nullptr;
+    }
     auto memory = std::make_shared<std::vector<uint8_t>>(descriptor_.memory.dataSize);
 
     off_t position = memoryReader_->Tell();
@@ -167,6 +173,12 @@ MinidumpMemoryList::MinidumpMemoryList(std::shared_ptr<MinidumpMemoryReader> mem
 bool MinidumpMemoryList::ReadRegionCountAndDescriptors(std::vector<MDMemoryDescriptor>& descriptors)
 {
     regionCount_ = 0;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_MEMORY_ALLOC,
+            "MinidumpMemoryList memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpMemoryList memoryReader is null");
+        return false;
+    }
     if (!memoryReader_->ReadBytes(&regionCount_, sizeof(regionCount_))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_MEMORY_ALLOC, "Cannot read memory region count", __LINE__);
         DFXLOGE("MinidumpMemoryList cannot read region count");

@@ -35,6 +35,12 @@ bool MinidumpThreadName::Read()
 {
     isValid_ = false;
     threadNameValid_ = false;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            "MinidumpThreadName memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpThreadName memoryReader is null");
+        return false;
+    }
 
     if (!memoryReader_->ReadBytes(&threadName_, sizeof(threadName_))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
@@ -52,6 +58,12 @@ bool MinidumpThreadName::ReadAuxiliaryData()
         return false;
     }
     name_.reset();
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STRING_READ,
+            "MinidumpThreadName memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpThreadName memoryReader is null");
+        return false;
+    }
     if (threadName_.rvaOfThreadName) {
         name_ = memoryReader_->ReadString(threadName_.rvaOfThreadName);
     }
@@ -142,6 +154,12 @@ bool MinidumpThreadNameList::Read(uint32_t expectedSize)
     threadIdToNameMap_.clear();
 
     uint32_t threadNameCount = 0;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            "MinidumpThreadNameList memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpThreadNameList memoryReader is null");
+        return false;
+    }
     if (!memoryReader_->ReadBytes(&threadNameCount, sizeof(threadNameCount))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
             std::string("Cannot read thread name count"), __LINE__);

@@ -21,6 +21,8 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <vector>
 #include "minidump_optimizer.h"
@@ -98,6 +100,7 @@ private:
     bool Open();
     bool ReadMinidumpHeader();
     bool ReadStreamDirectory();
+    bool RegisterStreamDirectoryEntry(const MDRawDirectory& entry, uint32_t index);
     bool ValidateFileHeader();
     void RecordParseTime(uint64_t startTimeMs);
     std::string GetStreamTypeName(uint32_t streamType);
@@ -105,6 +108,7 @@ private:
     MDRawHeader header_;
     std::shared_ptr<MDRawDirectoryEntries> directory_;
     std::shared_ptr<MinidumpStreamMap> streamMap_;
+    mutable std::shared_mutex streamMapMutex_;
     const std::string path_;
     std::shared_ptr<std::istream> stream_;
     std::shared_ptr<MinidumpMemoryReader> memoryReader_;
