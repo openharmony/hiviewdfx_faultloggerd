@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2021-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 
+#include <charconv>
 #include <cstdio>
 #include <cstdlib>
 #include <securec.h>
 #include <string>
+#include <system_error>
 #include <unistd.h>
 #include <getopt.h>
 #include "dfx_define.h"
@@ -52,28 +54,43 @@ static void PrintCommandFailed()
 }
 
 
+template<typename T>
+static bool ParseDumpInt(const char *text, T &out)
+{
+    if (text == nullptr || *text == '\0') {
+        return false;
+    }
+    T parsed {};
+    const char *last = text + std::char_traits<char>::length(text);
+    auto [ptr, ec] = std::from_chars(text, last, parsed);
+    if (ec != std::errc{} || ptr != last) {
+        return false;
+    }
+    out = parsed;
+    return true;
+}
+
 static int GetIdFromArgs(char *optarg, int32_t &id)
 {
-    int ret = 0;
-
-    if (atoi(optarg) > 0) {
-        ret = 1;
-        id = atoi(optarg);
-    } else {
-        ret = -1;
-        PrintCommandFailed();
+    int32_t parsed = 0;
+    if (ParseDumpInt(optarg, parsed) && parsed > 0) {
+        id = parsed;
+        return 1;
     }
-
-    return ret;
+    DFXLOGE("invalid dumpcatcher id: %{public}s", (optarg == nullptr) ? "null" : optarg);
+    PrintCommandFailed();
+    return -1;
 }
 
 static int ExecuteCoredumpCmd(std::string subCmd, char* pidChar)
 {
-    if (atoi(pidChar) <= 0) {
+    int32_t pidValue = 0;
+    if (!ParseDumpInt(pidChar, pidValue) || pidValue <= 0) {
+        DFXLOGE("invalid coredump pid: %{public}s", (pidChar == nullptr) ? "null" : pidChar);
         printf("pid error, input should like dumpcatcher -c save/cancel pid\n");
         return -1;
     }
-    pid_t pid = atoi(pidChar);
+    pid_t pid = static_cast<pid_t>(pidValue);
     printf("cmd is -c %s %d \n", subCmd.c_str(), pid);
     if (subCmd == "save") {
         SaveCoredumpToFileTimeout(pid, SAVE_CORE_DUMP_TIMEOUT);
