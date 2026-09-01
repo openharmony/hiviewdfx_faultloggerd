@@ -73,6 +73,7 @@ private:
     bool DoReadRes(int fd, int& pollRet);
     bool ParseSampleStacks(const std::string& datas);
     int WaitpidTimeout(pid_t pid);
+    void AppendResult(const std::string& result);
 
     std::string bufMsg_;
     std::string resMsg_;
@@ -214,6 +215,12 @@ void LitePerf::Impl::FinishDump()
     }
 }
 
+void LitePerf::Impl::AppendResult(const std::string& result)
+{
+    std::lock_guard<std::mutex> lck(mutex_);
+    resMsg_.append(result);
+}
+
 int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
 {
     MAYBE_UNUSED int pollRet = DUMP_POLL_INIT;
@@ -230,7 +237,7 @@ int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
         uint64_t now = GetAbsTimeMilliSeconds();
         if (now >= endTime) {
             pollRet = DUMP_POLL_TIMEOUT;
-            resMsg_.append("Result: poll timeout.\n");
+            AppendResult("Result: poll timeout.\n");
             isContinue = false;
             break;
         }
@@ -242,12 +249,12 @@ int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
                 continue;
             }
             pollRet = DUMP_POLL_FAILED;
-            resMsg_.append("Result: poll error, errno(" + std::to_string(errno) + ")\n");
+            AppendResult("Result: poll error, errno(" + std::to_string(errno) + ")\n");
             isContinue = false;
             break;
         } else if (pRet == 0) {
             pollRet = DUMP_POLL_TIMEOUT;
-            resMsg_.append("Result: poll timeout.\n");
+            AppendResult("Result: poll timeout.\n");
             isContinue = false;
             break;
         }
@@ -257,7 +264,10 @@ int LitePerf::Impl::DumpPoll(const int (&pipeFds)[2], const int timeout)
             break;
         }
     } while (isContinue);
-    DFXLOGI("%{public}s :: %{public}s", __func__, resMsg_.c_str());
+    {
+        std::lock_guard<std::mutex> lck(mutex_);
+        DFXLOGI("%{public}s :: %{public}s", __func__, resMsg_.c_str());
+    }
     return pollRet == DUMP_POLL_OK ? 0 : -1;
 }
 
@@ -273,7 +283,7 @@ bool LitePerf::Impl::HandlePollEvents(const struct pollfd (&readFds)[2], const i
         }
 
         if (bPipeConnect && ((static_cast<uint32_t>(readFd.revents) & POLLERR))) {
-            resMsg_.append("Result: poll events error.\n");
+            AppendResult("Result: poll events error.\n");
             eventRet = false;
             break;
         }
@@ -304,7 +314,10 @@ bool LitePerf::Impl::DoReadBuf(int fd)
         return false;
     }
     DFXLOGI("%{public}s :: nread: %{public}zu", __func__, nread);
-    bufMsg_.append(buffer.data(), static_cast<size_t>(nread));
+    {
+        std::lock_guard<std::mutex> lck(mutex_);
+        bufMsg_.append(buffer.data(), static_cast<size_t>(nread));
+    }
     return true;
 }
 
@@ -317,7 +330,7 @@ bool LitePerf::Impl::DoReadRes(int fd, int& pollRet)
         return false;
     }
     pollRet = (res == DUMP_ESUCCESS) ? DUMP_POLL_OK : DUMP_POLL_FAILED;
-    resMsg_.append("Result: " + DfxDumpRes::ToString(res) + "\n");
+    AppendResult("Result: " + DfxDumpRes::ToString(res) + "\n");
     return true;
 }
 
@@ -451,13 +464,14 @@ bool LitePerf::Impl::ExecDumpPipe(const int (&pipefd)[2], const LitePerfParam& l
 
 bool LitePerf::Impl::ParseSampleStacks(const std::string& datas)
 {
-    if (datas.empty()) {
-        return false;
-    }
-
+    // bufMsg_ is mutated by DoReadBuf/FinishProcessStackSampling under mutex_,
+    // so datas (which aliases bufMsg_) must only be read while holding mutex_.
     std::unique_lock<std::mutex> lck(mutex_);
     if (!stackMaps_.empty()) {
         return true;
+    }
+    if (datas.empty()) {
+        return false;
     }
     auto unwinder = std::make_shared<Unwinder>(false);
     auto maps = DfxMaps::Create();
