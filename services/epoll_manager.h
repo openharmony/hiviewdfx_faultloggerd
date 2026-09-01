@@ -20,6 +20,7 @@
 #include <list>
 #include <memory>
 #include <mutex>
+#include <tuple>
 
 #include "smart_fd.h"
 
@@ -145,6 +146,24 @@ private:
      */
     const Executor* executor_{};
     std::list<std::pair<uint64_t, std::function<void()>>> delayTasks_;
+};
+
+class PeriodicTaskQueue {
+public:
+    static PeriodicTaskQueue& GetInstance();
+    PeriodicTaskQueue& operator=(const PeriodicTaskQueue&) = delete;
+    PeriodicTaskQueue(const PeriodicTaskQueue&) = delete;
+    PeriodicTaskQueue(PeriodicTaskQueue&&) = delete;
+    PeriodicTaskQueue& operator=(PeriodicTaskQueue&&) = delete;
+    uint64_t AddPeriodicTask(std::function<bool()> workFunc, uint32_t intervalTimeInS);
+    bool RemovePeriodicTask(uint64_t taskId);
+private:
+    PeriodicTaskQueue() = default;
+    ~PeriodicTaskQueue();
+    void Execute();
+    void ScheduleNextTask(uint64_t currentTime);
+    std::list<std::tuple<uint64_t, uint64_t, uint32_t, std::function<bool()>>> periodicTasks_;
+    uint64_t currentDelayTaskId_{0};
 };
 }
 }

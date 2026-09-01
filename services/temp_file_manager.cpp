@@ -49,6 +49,9 @@ namespace HiviewDFX {
 
 namespace {
 constexpr uint64_t SECONDS_TO_MILLISECONDS = 1000;
+constexpr uint64_t BIG_FILE_SIZE_LIMIT = 500ULL * 1024 * 1024; // 500MB
+constexpr size_t MAX_FD_FILE_COUNT = 10;
+constexpr uint32_t FILE_SIZE_MONITOR_INTERVAL = 10; // 10s
 
 const SingleFileConfig* GetTargetFileConfig(const std::function<bool(const SingleFileConfig&)>& filter)
 {
@@ -395,6 +398,7 @@ int32_t TempFileManager::CreateFileDescriptor(int32_t type, int32_t pid, int32_t
 
 #ifndef is_ohos_lite
 std::list<std::pair<int32_t, int64_t>> TempFileManager::crashFileRecords_{};
+std::list<std::pair<std::string, uid_t>> TempFileManager::fdFileRecords_{};
 
 void TempFileManager::ClearTimeOutRecords()
 {
@@ -427,7 +431,7 @@ void TempFileManager::RecordFileCreation(int32_t type, int32_t pid)
         return;
     }
     auto iter = std::find_if(crashFileRecords_.begin(), crashFileRecords_.end(),
-        [pid](const auto& record) {
+        [pid](const std::pair<int32_t, int64_t>& record) {
             return record.first == pid;
         });
     if (iter != crashFileRecords_.end()) {
@@ -435,6 +439,39 @@ void TempFileManager::RecordFileCreation(int32_t type, int32_t pid)
     } else {
         crashFileRecords_.emplace_back(pid, time(nullptr));
     }
+}
+
+void TempFileManager::ClearOverLimitFdFiles(uid_t uid)
+{
+    size_t uidFileCount = 0;
+    for (const auto& record : fdFileRecords_) {
+        if (record.second == uid) {
+            uidFileCount++;
+        }
+    }
+    while (uidFileCount > MAX_FD_FILE_COUNT) {
+        auto iter = std::find_if(fdFileRecords_.begin(), fdFileRecords_.end(),
+            [uid](const std::pair<std::string, uid_t>& record) {
+                return record.second == uid;
+            });
+        if (iter == fdFileRecords_.end()) {
+            break;
+        }
+        RemoveTempFile(iter->first);
+        fdFileRecords_.erase(iter);
+        uidFileCount--;
+    }
+}
+
+void TempFileManager::RecordFdFileCreation(int32_t type, const std::string& filePath, uid_t uid)
+{
+    const auto fileConfig = GetTargetFileConfig(type);
+    if (fileConfig == nullptr || fileConfig->maxSingleFileSize <= BIG_FILE_SIZE_LIMIT) {
+        return;
+    }
+    ClearOverLimitFdFiles(uid);
+    fdFileRecords_.emplace_back(filePath, uid);
+    DFXLOGI("record fd file: %{public}s, uid: %{public}u", filePath.c_str(), uid);
 }
 #endif
 
@@ -544,6 +581,29 @@ void TempFileManager::TempFileWatcher::HandleFileCreate(const std::string& fileP
         RemoveTimeOutFileIfNeed(fileConfig, files);
         ForceRemoveFileIfNeed(fileConfig, files);
     }
+
+    if (fileConfig.maxSingleFileSize > 0) {
+        auto taskId = PeriodicTaskQueue::GetInstance().AddPeriodicTask(
+            [filePath, maxSingleFileSize = fileConfig.maxSingleFileSize,
+             overFileSizeAction = fileConfig.overFileSizeAction]() -> bool {
+                if (access(filePath.c_str(), F_OK) != 0) {
+                    return false;
+                }
+                uint64_t fileSize = GetFileSize(filePath);
+                if (fileSize > maxSingleFileSize) {
+                    DFXLOGW("file %{public}s size %{public}" PRIu64 " exceeds limit %{public}" PRIu64,
+                        filePath.c_str(), fileSize, maxSingleFileSize);
+                    SingleFileConfig config;
+                    config.maxSingleFileSize = maxSingleFileSize;
+                    config.overFileSizeAction = overFileSizeAction;
+                    CheckTempFileSize(config, filePath);
+                }
+                return true;
+            }, FILE_SIZE_MONITOR_INTERVAL);
+        if (taskId > 0) {
+            fileSizeMonitorTasks_[filePath] = taskId;
+        }
+    }
 }
 
 void TempFileManager::TempFileWatcher::HandleFileDeleteOrMove(const std::string& filePath,
@@ -554,12 +614,22 @@ void TempFileManager::TempFileWatcher::HandleFileDeleteOrMove(const std::string&
         currentFileCount--;
     }
     DFXLOGD("file %{public}s is deleted or moved, currentFileCount: %{public}d", filePath.c_str(), currentFileCount);
+    auto it = fileSizeMonitorTasks_.find(filePath);
+    if (it != fileSizeMonitorTasks_.end()) {
+        PeriodicTaskQueue::GetInstance().RemovePeriodicTask(it->second);
+        fileSizeMonitorTasks_.erase(it);
+    }
 }
 
 void TempFileManager::TempFileWatcher::HandleFileWrite(const std::string& filePath, const SingleFileConfig& fileConfig)
 {
     if (access(filePath.c_str(), F_OK) == 0) {
         CheckTempFileSize(fileConfig, filePath);
+    }
+    auto it = fileSizeMonitorTasks_.find(filePath);
+    if (it != fileSizeMonitorTasks_.end()) {
+        PeriodicTaskQueue::GetInstance().RemovePeriodicTask(it->second);
+        fileSizeMonitorTasks_.erase(it);
     }
 }
 

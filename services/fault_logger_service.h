@@ -18,6 +18,7 @@
 
 #include <map>
 #include <string>
+#include <sys/socket.h>
 #include <vector>
 
 #include "dfx_socket_request.h"
@@ -55,7 +56,8 @@ public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const FaultLoggerdRequest& requestData) override;
 private:
-    static bool Filter(const std::string& socketName, int32_t connectionFd, const FaultLoggerdRequest& requestData);
+    static bool Filter(const std::string& socketName, const struct ucred& creds,
+        const FaultLoggerdRequest& requestData);
 };
 
 #ifndef HISYSEVENT_DISABLE
@@ -163,7 +165,7 @@ public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const PipFdRequestData& requestData) override;
 private:
-    static bool Filter(const std::string& socketName, int32_t connectionFd, const PipFdRequestData& requestData);
+    static bool Filter(const std::string& socketName, const struct ucred& creds, const PipFdRequestData& requestData);
 };
 #endif
 }
