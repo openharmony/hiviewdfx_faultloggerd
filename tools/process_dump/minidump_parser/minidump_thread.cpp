@@ -37,6 +37,12 @@ bool MinidumpThread::Read()
     memory_.reset();
     context_.reset();
     isValid_ = false;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_THREAD_READ,
+            "MinidumpThread memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpThread memoryReader is null");
+        return false;
+    }
 
     if (!memoryReader_->ReadBytes(&thread_, sizeof(thread_))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_THREAD_READ, "Cannot read thread data", __LINE__);
@@ -71,7 +77,20 @@ std::shared_ptr<MinidumpContext> MinidumpThread::GetContext() const
     }
 
     if (!context_) {
+        if (memoryReader_ == nullptr) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CONTEXT_READ,
+                "MinidumpThread memoryReader is null", __LINE__);
+            DFXLOGE("MinidumpThread memoryReader is null");
+            return nullptr;
+        }
         off_t position = memoryReader_->Tell();
+        if (position < 0) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK,
+                "Cannot tell stream position for thread context", __LINE__);
+            DFXLOGE("MinidumpThread cannot tell stream position");
+            return nullptr;
+        }
+
         if (!memoryReader_->SeekSet(thread_.threadContext.rva)) {
             lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "Cannot seek to thread context", __LINE__);
             DFXLOGE("MinidumpThread cannot seek to context");
@@ -145,6 +164,12 @@ bool MinidumpThreadList::ReadThreadCount(uint32_t expectedSize, uint32_t& thread
 
     if (expectedSize < sizeof(threadCount)) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA, "Invalid thread list size", __LINE__);
+        return false;
+    }
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_THREAD_READ,
+            "MinidumpThreadList memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpThreadList memoryReader is null");
         return false;
     }
     if (!memoryReader_->ReadBytes(&threadCount, sizeof(threadCount))) {

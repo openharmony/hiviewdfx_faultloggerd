@@ -96,7 +96,7 @@ void MemoryNearRegister::CollectRegistersBlock(pid_t tid, std::shared_ptr<DfxReg
 #endif
         index++;
         std::shared_ptr<DfxMap> map;
-        if (!maps->FindMapByAddr(data, map) || (map->prots & PROT_READ) == 0) {
+        if (!maps->FindMapByAddr(data, map) || map == nullptr || (map->prots & PROT_READ) == 0) {
             continue;
         }
         std::string name = regs->GetSpecialRegsNameByIndex(index - 1);

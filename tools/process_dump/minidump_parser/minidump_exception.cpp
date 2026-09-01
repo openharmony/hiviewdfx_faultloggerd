@@ -37,6 +37,12 @@ bool MinidumpException::Read(uint32_t expectedSize)
         DFXLOGE("MinidumpException expected size %{public}u too small", expectedSize);
         return false;
     }
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
+            "MinidumpException memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpException memoryReader is null");
+        return false;
+    }
     if (!memoryReader_->ReadBytes(&exception_, sizeof(exception_))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STREAM_READ,
             std::string("Cannot read exception stream"), __LINE__);
@@ -68,12 +74,32 @@ std::shared_ptr<MinidumpContext> MinidumpException::GetContext()
     }
 
     if (!context_) {
+        if (memoryReader_ == nullptr) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CONTEXT_READ,
+                "MinidumpException memoryReader is null", __LINE__);
+            DFXLOGE("MinidumpException memoryReader is null");
+            return nullptr;
+        }
         off_t position = memoryReader_->Tell();
+        if (position < 0) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK,
+                std::string("Cannot tell stream position for exception context"), __LINE__);
+            DFXLOGE("MinidumpException cannot tell stream position");
+            return nullptr;
+        }
 
         if (!memoryReader_->SeekSet(exception_.threadContext.rva)) {
             lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK,
                 std::string("Cannot seek to exception context"), __LINE__);
             DFXLOGE("MinidumpException cannot seek to context");
+            return nullptr;
+        }
+
+        constexpr uint32_t maxContextDataSize = 4096;
+        if (exception_.threadContext.dataSize > maxContextDataSize) {
+            lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
+                std::string("Exception context data size too large"), __LINE__);
+            DFXLOGE("MinidumpException context data size %{public}u too large", exception_.threadContext.dataSize);
             return nullptr;
         }
 

@@ -26,6 +26,7 @@
 #include "dfx_dump_res.h"
 #include "dfx_log.h"
 #include "dfx_trace.h"
+#include "dfx_util.h"
 #include "faultloggerd_client.h"
 #include "lperf_event_record.h"
 #include "lperf_events.h"
@@ -88,7 +89,10 @@ int LitePerfDumper::PerfRecord(const int (&pipeWriteFd)[2], LitePerfParam& lperf
     if (res == 0) {
         std::string data;
         if (record.CollectSampleStack(data) == 0) {
-            WriteSampleData(bufFd.GetFd(), data);
+            size_t nwrite = WriteSampleData(bufFd.GetFd(), data);
+            if (nwrite != data.size()) {
+                res = -1;
+            }
         }
     }
     ssize_t nresWrite = OHOS_TEMP_FAILURE_RETRY(write(resFd.GetFd(), &res, sizeof(res)));
@@ -100,18 +104,13 @@ int LitePerfDumper::PerfRecord(const int (&pipeWriteFd)[2], LitePerfParam& lperf
     return 0;
 }
 
-void LitePerfDumper::WriteSampleData(int bufFd, const std::string& data) const
+size_t LitePerfDumper::WriteSampleData(int bufFd, const std::string& data) const
 {
-    constexpr size_t step = MAX_PIPE_SIZE;
-    for (size_t i = 0; i < data.size(); i += step) {
-        size_t length = (i + step) < data.size() ? step : data.size() - i;
-        DFXLOGI("%{public}s write length: %{public}zu", __func__, length);
-        ssize_t nwrite = OHOS_TEMP_FAILURE_RETRY(write(bufFd, data.substr(i, length).c_str(), length));
-        if (nwrite != static_cast<ssize_t>(length)) {
-            DFXLOGE("%{public}s write fail, err:%{public}d", __func__, errno);
-            return;
-        }
+    size_t nwrite = WriteStringMsg(bufFd, data);
+    if (nwrite != data.size()) {
+        DFXLOGE("%{public}s write fail, written %{public}zu/%{public}zu", __func__, nwrite, data.size());
     }
+    return nwrite;
 }
 
 int32_t LitePerfDumper::ReadLperfAndCheck(LitePerfParam& lperf, int reqeustFd)

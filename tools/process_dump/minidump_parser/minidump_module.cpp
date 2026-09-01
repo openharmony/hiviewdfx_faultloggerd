@@ -40,6 +40,12 @@ bool MinidumpModule::Read()
 {
     moduleValid_ = false;
     isValid_ = false;
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_MODULE_READ,
+            "MinidumpModule memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpModule memoryReader is null");
+        return false;
+    }
 
     if (!memoryReader_->ReadBytes(&module_, sizeof(module_))) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_MODULE_READ,
@@ -57,6 +63,12 @@ bool MinidumpModule::ReadAuxiliaryData()
         return false;
     }
     name_.reset();
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_STRING_READ,
+            "MinidumpModule memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpModule memoryReader is null");
+        return false;
+    }
 
     if (module_.moduleNameRva > 0) {
         name_ = memoryReader_->ReadString(module_.moduleNameRva);

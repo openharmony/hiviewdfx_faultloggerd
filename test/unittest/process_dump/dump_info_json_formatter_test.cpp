@@ -85,11 +85,10 @@ HWTEST_F(DumpInfoJsonFormatterTest, GetJsonFormatInfo_DumpCatchType_001, TestSiz
     process.GetKeyThread()->SetFrames(unwinder.GetFrames());
 
     string jsonInfo;
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
 #ifdef is_ohos_lite
-    ASSERT_EQ(ret, false);
+    ASSERT_TRUE(jsonInfo.empty());
 #else
-    ASSERT_EQ(ret, true);
     ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("dump_result") != string::npos);
     ASSERT_TRUE(jsonInfo.find("dump_threads") != string::npos);
@@ -116,11 +115,11 @@ HWTEST_F(DumpInfoJsonFormatterTest, GetJsonFormatInfo_NonDumpCatchType_002, Test
 
     string jsonInfo;
 #ifdef is_ohos_lite
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, false);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_TRUE(jsonInfo.empty());
 #else
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("dump_result") == string::npos);
 #endif
     GTEST_LOG_(INFO) << "DumpInfoJsonFormatterTest002: end.";
@@ -146,11 +145,11 @@ HWTEST_F(DumpInfoJsonFormatterTest, GetJsonFormatInfo_NullKeyThread_003, TestSiz
 
     string jsonInfo;
 #ifdef is_ohos_lite
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, false);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_TRUE(jsonInfo.empty());
 #else
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("\"thread_name\":\"\"") != string::npos);
     ASSERT_TRUE(jsonInfo.find("\"tid\":0") != string::npos);
 #endif
@@ -186,11 +185,11 @@ HWTEST_F(DumpInfoJsonFormatterTest, GetJsonFormatInfo_WithOtherThreads_004, Test
 
     string jsonInfo;
 #ifdef is_ohos_lite
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, false);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_TRUE(jsonInfo.empty());
 #else
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("thread_name") != string::npos);
 #endif
     process.ClearOtherThreads();
@@ -231,8 +230,8 @@ HWTEST_F(DumpInfoJsonFormatterTest, FillFramesJson_JsFrame_005, TestSize.Level2)
     process.GetKeyThread()->SetFrames(frames);
 
     string jsonInfo;
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("\"file\":\"test.js\"") != string::npos);
     ASSERT_TRUE(jsonInfo.find("\"packageName\":\"com.test.app\"") != string::npos);
     ASSERT_TRUE(jsonInfo.find("\"symbol\":\"testFunc\"") != string::npos);
@@ -276,8 +275,8 @@ HWTEST_F(DumpInfoJsonFormatterTest, FillFramesJson_NativeFrame_006, TestSize.Lev
     process.GetKeyThread()->SetFrames(frames);
 
     string jsonInfo;
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("\"symbol\":\"shortFunc\"") != string::npos);
     ASSERT_TRUE(jsonInfo.find("\"offset\":8") != string::npos);
 #endif
@@ -319,8 +318,8 @@ HWTEST_F(DumpInfoJsonFormatterTest, FillFramesJson_NativeFrameLongFuncName_007, 
     process.GetKeyThread()->SetFrames(frames);
 
     string jsonInfo;
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("\"symbol\":\"\"") != string::npos);
 #endif
     GTEST_LOG_(INFO) << "DumpInfoJsonFormatterTest007: end.";
@@ -350,8 +349,8 @@ HWTEST_F(DumpInfoJsonFormatterTest, FillFramesJson_EmptyFrames_008, TestSize.Lev
     process.GetKeyThread()->SetFrames({});
 
     string jsonInfo;
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("\"frames\":[]") != string::npos);
 #endif
     GTEST_LOG_(INFO) << "DumpInfoJsonFormatterTest008: end.";
@@ -383,8 +382,8 @@ HWTEST_F(DumpInfoJsonFormatterTest, FillThreadstatInfo_NullInfo_009, TestSize.Le
     process.GetKeyThread() = thread;
 
     string jsonInfo;
-    bool ret = DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
-    ASSERT_EQ(ret, true);
+    DumpInfoJsonFormatter::GetJsonFormatInfo(request, process, jsonInfo, 0);
+    ASSERT_FALSE(jsonInfo.empty());
     ASSERT_TRUE(jsonInfo.find("\"state\"") == string::npos);
 #endif
     GTEST_LOG_(INFO) << "DumpInfoJsonFormatterTest009: end.";

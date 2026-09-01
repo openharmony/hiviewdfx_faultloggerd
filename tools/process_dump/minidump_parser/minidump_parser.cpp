@@ -189,12 +189,45 @@ void MinidumpParser::SetupObservers()
     minidumpSubject_->AddObserver(streamLoadObserver);
 }
 
+bool MinidumpParser::RegisterStreamDirectoryEntry(const MDRawDirectory& entry, uint32_t index)
+{
+    switch (entry.streamType) {
+        case MD_STREAM_THREAD_LIST:
+        case MD_STREAM_THREAD_NAME_LIST:
+        case MD_STREAM_MODULE_LIST:
+        case MD_STREAM_MEMORY_LIST:
+        case MD_STREAM_EXCEPTION:
+        case MD_STREAM_SYSTEM_INFO:
+        case MD_STREAM_MISC_INFO:
+        case MD_STREAM_LINUX_MAPS: {
+            if (streamMap_->find(entry.streamType) != streamMap_->end()) {
+                lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_ALREADY_EXISTS,
+                    "Duplicate stream type", __LINE__);
+                DFXLOGE("MinidumpParser found multiple streams of type: %{public}u", entry.streamType);
+                return false;
+            }
+            [[fallthrough]];
+        }
+        default: {
+            (*streamMap_)[entry.streamType].streamIndex_ = index;
+            break;
+        }
+    }
+    return true;
+}
+
 bool MinidumpParser::ReadStreamDirectory()
 {
     if (header_.streamDirectoryRva < sizeof(MDRawHeader)) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_CORRUPTED_DATA,
             "Stream directory RVA overlaps with header", __LINE__);
         DFXLOGE("Stream directory RVA 0x%{public}u too small", header_.streamDirectoryRva);
+        return false;
+    }
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK,
+            "MinidumpParser memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpParser memoryReader is null");
         return false;
     }
     if (!memoryReader_->SeekSet(header_.streamDirectoryRva)) {
@@ -215,28 +248,8 @@ bool MinidumpParser::ReadStreamDirectory()
     for (uint32_t i = 0; i < header_.numberOfStreams; ++i) {
         MDRawDirectory* directoryEntry = &(*directory)[i];
         minidumpSubject_->NotifyParseProgress(currentStep++, totalStep, GetStreamTypeName(directoryEntry->streamType));
-
-        switch (directoryEntry->streamType) {
-            case MD_STREAM_THREAD_LIST:
-            case MD_STREAM_THREAD_NAME_LIST:
-            case MD_STREAM_MODULE_LIST:
-            case MD_STREAM_MEMORY_LIST:
-            case MD_STREAM_EXCEPTION:
-            case MD_STREAM_SYSTEM_INFO:
-            case MD_STREAM_MISC_INFO:
-            case MD_STREAM_LINUX_MAPS: {
-                if (streamMap_->find(directoryEntry->streamType) != streamMap_->end()) {
-                    lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_ALREADY_EXISTS,
-                        "Duplicate stream type", __LINE__);
-                    DFXLOGE("MinidumpParser found multiple streams of type: %{public}u", directoryEntry->streamType);
-                    return false;
-                }
-                [[fallthrough]];
-            }
-            default: {
-                (*streamMap_)[directoryEntry->streamType].streamIndex_ = i;
-                break;
-            }
+        if (!RegisterStreamDirectoryEntry(*directoryEntry, i)) {
+            return false;
         }
     }
     directory_ = std::move(directory);
@@ -353,34 +366,48 @@ T* MinidumpParser::GetStream()
         return nullptr;
     }
     const uint32_t streamType = T::streamType;
-    MinidumpStreamMap::iterator it = streamMap_->find(streamType);
-    if (it == streamMap_->end()) {
+    {
+        std::shared_lock<std::shared_mutex> lock(streamMapMutex_);
+        MinidumpStreamMap::const_iterator it = streamMap_->find(streamType);
+        if (it == streamMap_->end()) {
+            return nullptr;
+        }
+        if (it->second.stream_) {
+            lastError_.Clear();
+            return static_cast<T*>(it->second.stream_.get());
+        }
+    }
+
+    uint32_t streamLength;
+    if (!SeekToStreamType(streamType, streamLength)) {
         return nullptr;
     }
-    MinidumpStreamInfo& info = it->second;
-    if (!info.stream_) {
-        uint32_t streamLength;
-        if (!SeekToStreamType(streamType, streamLength)) {
-            return nullptr;
-        }
-        auto minidumpStream = MinidumpStreamFactory::Instance().CreateStream(streamType, memoryReader_);
-        if (minidumpStream == nullptr) {
-            return nullptr;
-        }
-        minidumpStream->SetMinidumpSubject(minidumpSubject_);
-        minidumpStream->SetAddressIndexes(
-            PerformanceOptimizer::Instance().GetMemoryAddressIndex(),
-            PerformanceOptimizer::Instance().GetModuleAddressIndex());
-        if (!minidumpStream->Read(streamLength)) {
-            lastError_ = minidumpStream->GetLastError();
-            auto& stats = MinidumpPerfMonitor::Instance().GetStats();
-            stats.IncrementError();
-            return nullptr;
-        }
-        info.stream_ = std::move(minidumpStream);
+    auto minidumpStream = MinidumpStreamFactory::Instance().CreateStream(streamType, memoryReader_);
+    if (minidumpStream == nullptr) {
+        return nullptr;
     }
-    lastError_.Clear();
-    return static_cast<T*>(info.stream_.get());
+    minidumpStream->SetMinidumpSubject(minidumpSubject_);
+    minidumpStream->SetAddressIndexes(
+        PerformanceOptimizer::Instance().GetMemoryAddressIndex(),
+        PerformanceOptimizer::Instance().GetModuleAddressIndex());
+    if (!minidumpStream->Read(streamLength)) {
+        lastError_ = minidumpStream->GetLastError();
+        auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+        stats.IncrementError();
+        return nullptr;
+    }
+    {
+        std::unique_lock<std::shared_mutex> lock(streamMapMutex_);
+        MinidumpStreamMap::iterator it = streamMap_->find(streamType);
+        if (it == streamMap_->end()) {
+            return nullptr;
+        }
+        if (!it->second.stream_) {
+            it->second.stream_ = std::move(minidumpStream);
+        }
+        lastError_.Clear();
+        return static_cast<T*>(it->second.stream_.get());
+    }
 }
 
 void MinidumpParser::Print()
@@ -427,6 +454,12 @@ bool MinidumpParser::SeekToStreamType(uint32_t streamType, uint32_t& streamLengt
         return false;
     }
 
+    if (memoryReader_ == nullptr) {
+        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK,
+            "MinidumpParser memoryReader is null", __LINE__);
+        DFXLOGE("MinidumpParser memoryReader is null");
+        return false;
+    }
     if (!memoryReader_->SeekSet(directoryEntry->location.rva)) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "Cannot seek to stream type", __LINE__);
         DFXLOGE("SeekToStreamType: could not seek to stream type %{public}u", streamType);
@@ -444,6 +477,7 @@ const MDRawDirectory* MinidumpParser::GetDirectoryEntryAtType(uint32_t streamTyp
         return nullptr;
     }
 
+    std::shared_lock<std::shared_mutex> lock(streamMapMutex_);
     MinidumpStreamMap::const_iterator it = streamMap_->find(streamType);
     if (it == streamMap_->end()) {
         return nullptr;
@@ -470,6 +504,7 @@ void MinidumpParser::InjectStream(uint32_t streamType, std::shared_ptr<MinidumpS
     if (!isValid_ || !stream) {
         return;
     }
+    std::unique_lock<std::shared_mutex> lock(streamMapMutex_);
     MinidumpStreamMap::iterator it = streamMap_->find(streamType);
     if (it == streamMap_->end()) {
         return;

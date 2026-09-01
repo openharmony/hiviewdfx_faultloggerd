@@ -31,7 +31,7 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
+void DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request, DfxProcess& process,
     std::string& jsonStringInfo, int dumpError)
 {
 #ifndef is_ohos_lite
@@ -47,9 +47,7 @@ bool DumpInfoJsonFormatter::GetJsonFormatInfo(const ProcessDumpRequest& request,
             break;
     }
     jsonStringInfo.append(Json::FastWriter().write(jsonInfo));
-    return true;
 #endif
-    return false;
 }
 
 #ifndef is_ohos_lite

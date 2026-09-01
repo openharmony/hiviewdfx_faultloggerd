@@ -15,6 +15,7 @@
 
 #ifndef THREAD_POOL_H
 #define THREAD_POOL_H
+#include <atomic>
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -41,7 +42,7 @@ private:
     std::mutex queueMutex_;
     std::condition_variable condition_;
     std::atomic<size_t> completeTaskCount_;
-    size_t taskNum_;
+    std::atomic<size_t> taskNum_;
     bool stop_ = false;
 };
 } // namespace HiviewDFX
