@@ -190,11 +190,56 @@ std::string StatsService::GetElfName(const FaultLoggerdStatsRequest& request)
     return StringPrintf("%s(%p)", request.callerElf, reinterpret_cast<void*>(request.offset));
 }
 
+bool StatsService::Filter(const std::string& socketName, int32_t connectionFd,
+    const FaultLoggerdStatsRequest& requestData)
+{
+    if (requestData.type == PROCESS_DUMP) {
+        return socketName == SERVER_CRASH_SOCKET_NAME;
+    }
+    if (requestData.type == DUMP_CATCHER) {
+        struct ucred creds{};
+        if (!FaultCommonUtil::GetUcredByPeerCred(creds, connectionFd)) {
+            return false;
+        }
+        return CheckCallerUID(creds.uid);
+    }
+    return false;
+}
+
+void StatsService::HandleDumpCatcherStats(const FaultLoggerdStatsRequest& requestData)
+{
+    constexpr int32_t delayTime = 7; // allow 10s for processdump report, 3s for dumpcatch timeout and 7s for delay
+    auto task = [requestData, this] {
+        auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
+            return dumpStats.pid == requestData.pid;
+        });
+        DumpStats stats;
+        if (iter != stats_.end()) {
+            stats = *iter;
+            stats_.erase(iter);
+        }
+        stats.pid = requestData.pid;
+        stats.requestTime = requestData.requestTime;
+        stats.dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
+        stats.callerElfName = GetElfName(requestData);
+        stats.result = requestData.result;
+        stats.callerProcessName = requestData.callerProcess;
+        stats.summary = requestData.summary;
+        stats.targetProcessName = requestData.targetProcess;
+        stats.targetProcessThreadCount = requestData.targetProcessThreadCount;
+        ReportDumpStats(stats);
+        RemoveTimeoutDumpStats();
+    };
+    DelayTaskQueue::GetInstance().AddDelayTask(std::move(task), delayTime);
+}
+
 int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectionFd,
     const FaultLoggerdStatsRequest& requestData)
 {
-    constexpr int32_t delayTime = 7; // allow 10s for processdump report, 3s for dumpcatch timeout and 7s for delay
     DFXLOGI("%{public}s :: %{public}s: HandleDumpStats", FAULTLOGGERD_SERVICE_TAG, __func__);
+    if (!Filter(socketName, connectionFd, requestData)) {
+        return ResponseCode::REQUEST_REJECT;
+    }
     auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
         return dumpStats.pid == requestData.pid;
     });
@@ -210,28 +255,7 @@ int32_t StatsService::OnRequest(const std::string& socketName, int32_t connectio
         stats.pssMemory = requestData.pssMemory;
         stats.keyThreadUnwindTimestamp = requestData.keyThreadUnwindTimestamp;
     } else if (requestData.type == DUMP_CATCHER) {
-        auto task = [requestData, this] {
-            auto iter = std::find_if(stats_.begin(), stats_.end(), [&requestData](const DumpStats& dumpStats) {
-                return dumpStats.pid == requestData.pid;
-            });
-            DumpStats stats;
-            if (iter != stats_.end()) {
-                stats = *iter;
-                stats_.erase(iter);
-            }
-            stats.pid = requestData.pid;
-            stats.requestTime = requestData.requestTime;
-            stats.dumpCatcherFinishTime = requestData.dumpCatcherFinishTime;
-            stats.callerElfName = GetElfName(requestData);
-            stats.result = requestData.result;
-            stats.callerProcessName = requestData.callerProcess;
-            stats.summary = requestData.summary;
-            stats.targetProcessName = requestData.targetProcess;
-            stats.targetProcessThreadCount = requestData.targetProcessThreadCount;
-            ReportDumpStats(stats);
-            RemoveTimeoutDumpStats();
-        };
-        DelayTaskQueue::GetInstance().AddDelayTask(std::move(task), delayTime);
+        HandleDumpCatcherStats(requestData);
     }
     RemoveTimeoutDumpStats();
 #ifdef FAULTLOGGERD_TEST
@@ -403,7 +427,7 @@ bool PipeService::Filter(const std::string &socketName, const struct ucred& cred
     if (socketName == SERVER_CRASH_SOCKET_NAME) {
         return true;
     }
-    return CheckRequestCredential(creds, requestData.pid);
+    return CheckCallerUID(creds.uid);
 }
 
 int32_t PipeService::OnRequest(const std::string& socketName, int32_t connectionFd, const PipFdRequestData& requestData)
