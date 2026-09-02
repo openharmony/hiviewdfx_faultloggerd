@@ -113,6 +113,17 @@ int32_t StartCoredumpCb(int32_t targetPid, int32_t processDumpPid);
 */
 int32_t FinishCoredumpCb(int32_t targetPid, std::string& fileName, int32_t ret);
 
+/**
+ * @brief request faultloggerd to send signals to multiple binder processes
+ * @param pids array of target process ids
+ * @param nsPids array of namespace process ids
+ * @param count number of processes in the arrays (max 10)
+ * @param fd output parameter to receive file descriptor from server
+ * @return if succeed return 0, otherwise return the error code
+ */
+int32_t RequestBinderPidsDump(int32_t pid, const int32_t* binderPids,
+    const int32_t* nsBinderPids, uint32_t count, int* fd);
+
 #ifdef __cplusplus
 }
 #endif

@@ -51,6 +51,7 @@
 #include "dfx_regs.h"
 #include "key_thread_dump_info.h"
 #include "cppcrash_info_collector.h"
+#include "file_util.h"
 #if defined(DEBUG_CRASH_LOCAL_HANDLER)
 #include "dfx_signal_local_handler.h"
 #endif
@@ -152,6 +153,7 @@ DumpErrorCode ProcessDumper::DumpProcess()
         "threadname(%{public}s).",
         request_.siginfo.si_value.sival_int, request_.pid, request_.nsPid, request_.tid, request_.threadName);
     SetProcessdumpTimeout(request_.siginfo);
+    ReadBinderProcInfo();
     DumpErrorCode prepareRes = DumpPreparation();
     if (prepareRes != DumpErrorCode::DUMP_ESUCCESS && prepareRes != DumpErrorCode::DUMP_THREAD_OVER_LIMIT) {
         return prepareRes;
@@ -265,6 +267,101 @@ void ProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
 
     if (setitimer(ITIMER_REAL, &timer, nullptr) != 0) {
         DFXLOGE("start processdump timer fail %{public}d", errno);
+    }
+}
+
+struct BinderRecord {
+    int pid;
+    int nsPid;
+    int tid;
+    int nsTid;
+};
+
+struct BinderInfo {
+    std::string dataHead;
+    std::vector<BinderRecord> records;
+};
+
+BinderInfo ParseBinderInfo(const std::string& path, pid_t pid, pid_t tid)
+{
+    BinderInfo binderInfo;
+    std::ifstream binderFile(path);
+    if (!binderFile.is_open()) {
+        DFXLOGE("Failed to open binder proc file %{public}s, errno:%{public}d", path.c_str(), errno);
+        return binderInfo;
+    }
+    binderInfo.dataHead =
+        StringPrintf("faultloggerd BinderCatcher --\nbinder proc state:\nproc %d\ncontext binder\n", pid);
+    std::string feature = StringPrintf("to %d:%d code", pid, tid);
+    std::string line;
+    while (std::getline(binderFile, line)) {
+        if (line.find("pid") == 0) {
+            break;
+        }
+        if (line.find(feature) == std::string::npos) {
+            continue;
+        }
+        auto nsPidStart = line.find("ns:");
+        if (nsPidStart == std::string::npos) {
+            continue;
+        }
+        int nsFromPid = -1;
+        int nsFromTid = -1;
+        constexpr auto binderPidPairParamsSize = 2;
+        if (sscanf_s(line.c_str() + nsPidStart, "ns:%d:%d", &nsFromPid, &nsFromTid) != binderPidPairParamsSize) {
+            continue;
+        }
+        if (nsFromPid == -1 || nsFromTid == -1) {
+            continue;
+        }
+        size_t index = 0;
+        int fromPid = -1;
+        int fromTid = -1;
+        for (index = 0; index < line.size(); index++) {
+            if (isdigit(static_cast<unsigned char>(line.at(index)))) {
+                break;
+            }
+        }
+        if (sscanf_s(line.c_str() + index, "%d:%d", &fromPid, &fromTid) != binderPidPairParamsSize) {
+            continue;
+        }
+        if (fromPid == -1 || fromTid == -1) {
+            continue;
+        }
+        binderInfo.records.push_back({fromPid, nsFromPid, fromTid, nsFromTid});
+    }
+    return binderInfo;
+}
+
+void ProcessDumper::ReadBinderProcInfo()
+{
+    if (request_.pid <= 0) {
+        DFXLOGE("Invalid pid for binder proc info: %{public}d", request_.pid);
+        return;
+    }
+    std::vector<int> pids;
+    std::vector<int> nsPids;
+    auto binderInfos = ParseBinderInfo("/proc/transaction_proc", request_.pid, request_.tid);
+    if (binderInfos.records.empty()) {
+        return;
+    }
+    std::string recordStringInfo;
+    for (const auto& bindInfoRecord : binderInfos.records) {
+        pids.emplace_back(bindInfoRecord.pid);
+        nsPids.emplace_back(bindInfoRecord.nsPid);
+        recordStringInfo += StringPrintf("Binder catcher stacktrace, pid: %d, ns pid: %d, tid: %d, ns tid: %d\n",
+            bindInfoRecord.pid, bindInfoRecord.nsPid, bindInfoRecord.tid, bindInfoRecord.nsTid);
+    }
+    int fd = -1;
+    if (RequestBinderPidsDump(request_.pid, pids.data(), nsPids.data(), pids.size(), &fd) != REQUEST_SUCCESS
+        || fd < 0) {
+        DFXLOGE("Failed to request binder pids dump for pid: %{public}d", request_.pid);
+        return;
+    }
+    SmartFd sFd(fd);
+    std::string content = binderInfos.dataHead + "\n" +  recordStringInfo;
+    if (write(sFd.GetFd(), content.c_str(), content.size()) != static_cast<ssize_t>(content.size())) {
+        DFXLOGE("Failed write content for pid: %{public}d", request_.pid);
     }
 }
 

@@ -17,6 +17,7 @@
 #define FAULT_LOGGER_SERVICE_H_
 
 #include <map>
+#include <set>
 #include <string>
 #include <sys/socket.h>
 #include <vector>
@@ -166,6 +167,34 @@ public:
                       const PipFdRequestData& requestData) override;
 private:
     static bool Filter(const std::string& socketName, const struct ucred& creds, const PipFdRequestData& requestData);
+};
+
+class BinderPidsDumpService : public FaultLoggerService<BinderPidsDumpRequestData> {
+public:
+    int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
+                      const BinderPidsDumpRequestData& requestData) override;
+
+private:
+    std::set<pid_t> SendSignalToBinderPid(const BinderPidsDumpRequestData& requestData);
+
+    class TempFileListener : public EpollListener {
+    public:
+        static std::unique_ptr<TempFileListener> CreateInstance(const std::string& watchPath, const pid_t pid,
+            std::set<pid_t> nsPids);
+        ~TempFileListener() override = default;
+        EventResult OnEventPoll() override;
+        void OnTimeOut() override;
+    private:
+        static constexpr uint32_t tempFileWaitOutOfTime = 10000;
+        TempFileListener(SmartFd fd, const std::string& watchPath, const pid_t pid,
+            std::set<pid_t> nsPids);
+        void HandlerTempFile(const std::string& filePath);
+        static int32_t ExtractPidFromFile(const std::string& filePath);
+        void CreateSymlinkForPid(int32_t nsPid, const std::string& targetPath);
+        pid_t pid_;
+        std::string watchPath_;
+        std::set<pid_t> nsPids_;
+    };
 };
 #endif
 }

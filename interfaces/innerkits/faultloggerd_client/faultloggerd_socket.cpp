@@ -288,6 +288,7 @@ bool FaultLoggerdSocket::GetMsgFromSocket(void* data, uint32_t dataLength) const
     if (socketFd_ < 0 || data == nullptr || dataLength == 0) {
         return false;
     }
+    errno = 0;
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(socketFd_, data, dataLength));
     if (nread != dataLength) {
         LOGE(signalSafely_, "Failed to get message from socket, %{public}zd, errno(%{public}d). ", nread, errno);

@@ -340,3 +340,26 @@ int32_t FinishCoredumpCb(int32_t targetPid, std::string& fileName, int32_t ret)
     return ResponseCode::DEFAULT_ERROR_CODE;
 #endif
 }
+
+int32_t RequestBinderPidsDump(int32_t pid, const int32_t binderPids[],
+    const int32_t nsBinderPids[], uint32_t count, int* fd)
+{
+#ifndef is_ohos_lite
+    if (pid <= 0 || binderPids == nullptr || nsBinderPids == nullptr || count <= 0 || fd == nullptr) {
+        DFXLOGE("%{public}s.%{public}s :: invalid parameters.", FAULTLOGGERD_CLIENT_TAG, __func__);
+        return ResponseCode::DEFAULT_ERROR_CODE;
+    }
+    struct BinderPidsDumpRequestData request{};
+    FillRequestHeadData(request.head, FaultLoggerClientType::BINDER_PIDS_DUMP_CLIENT);
+    request.pid = pid;
+    for (uint32_t i = 0; i < count && i < MAX_BINDER_PIDS_COUNT; i++) {
+        request.binderPids[i] = binderPids[i];
+        request.nsBinderPids[i] = nsBinderPids[i];
+    }
+    SocketRequestData socketRequestData = {&request, sizeof(request)};
+    SocketFdData socketFdData = {fd, 1};
+    return SendRequestToServer(SERVER_CRASH_SOCKET_NAME, socketRequestData, CRASHDUMP_SOCKET_TIMEOUT, &socketFdData);
+#else
+    return ResponseCode::DEFAULT_ERROR_CODE;
+#endif
+}

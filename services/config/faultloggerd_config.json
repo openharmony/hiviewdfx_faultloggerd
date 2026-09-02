@@ -217,6 +217,26 @@
       "fileExistTimeInSecond": 120,
       "overTimeFileDeleteType": "ACTIVE",
      "fileOwnerUid": 1201
+    },
+    {
+      "type": -1,
+      "fileNamePrefix": "trace",
+      "maxSingleFileSizeInKB": 5120,
+      "keepFileCount": 10,
+      "maxFileCount": 10,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1202
+    },
+    {
+      "type": -2,
+      "fileNamePrefix": "peer_binder_stack",
+      "maxSingleFileSizeInKB": 1024,
+      "keepFileCount": 2,
+      "maxFileCount": 2,
+      "fileExistTimeInSecond": 120,
+      "overTimeFileDeleteType": "ACTIVE",
+      "fileOwnerUid": 1202
     }
   ]
 }
