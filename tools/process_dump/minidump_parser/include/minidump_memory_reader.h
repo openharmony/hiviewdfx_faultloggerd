@@ -36,6 +36,7 @@ public:
     bool ReadBytes(void* bytes, size_t count);
     bool SeekSet(off_t offset);
     off_t Tell();
+    bool ValidateStreamExtent(uint32_t rva, uint32_t dataSize);
 
     std::shared_ptr<std::string> ReadString(off_t offset);
     bool ReadUTF8String(off_t offset, std::string* utf8Str);
@@ -51,6 +52,7 @@ private:
     bool InitMmap(const std::string& path);
     bool ReadFromStream(void* bytes, size_t count);
     bool ReadFromMmap(void* bytes, size_t count);
+    void InitStreamSize();
 
     std::string ConvertUTF16ToUTF8(const std::vector<uint16_t>& in);
     std::shared_ptr<std::istream> stream_;

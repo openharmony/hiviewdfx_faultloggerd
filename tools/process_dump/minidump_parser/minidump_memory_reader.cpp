@@ -36,6 +36,7 @@ constexpr size_t DEFAULT_READ_AHEAD_SIZE = 65536;
 MinidumpMemoryReader::MinidumpMemoryReader(std::shared_ptr<std::istream> stream)
     : backend_(BackendType::ISTREAM), stream_(stream)
 {
+    InitStreamSize();
 }
 
 MinidumpMemoryReader::MinidumpMemoryReader(const std::string& path)
@@ -48,6 +49,7 @@ MinidumpMemoryReader::MinidumpMemoryReader(const std::string& path)
         fileStream->rdbuf()->pubsetbuf(streamBuf_, DEFAULT_READ_AHEAD_SIZE);
         fileStream->open(path, std::ios::binary);
         stream_ = fileStream;
+        InitStreamSize();
     }
 }
 
@@ -161,6 +163,45 @@ bool MinidumpMemoryReader::ReadBytes(void* bytes, size_t count)
         return ReadFromMmap(bytes, count);
     }
     return ReadFromStream(bytes, count);
+}
+
+void MinidumpMemoryReader::InitStreamSize()
+{
+    if (stream_ == nullptr) {
+        return;
+    }
+    stream_->clear(stream_->rdstate() & ~std::ios::eofbit);
+    stream_->seekg(0, std::ios::end);
+    auto endPos = stream_->tellg();
+    if (stream_->fail() || endPos < 0) {
+        stream_->clear(stream_->rdstate() & ~std::ios::eofbit);
+        stream_->seekg(0, std::ios::beg);
+        return;
+    }
+    fileSize_ = static_cast<size_t>(endPos);
+    stream_->clear(stream_->rdstate() & ~std::ios::eofbit);
+    stream_->seekg(0, std::ios::beg);
+}
+
+bool MinidumpMemoryReader::ValidateStreamExtent(uint32_t rva, uint32_t dataSize)
+{
+    if (fileSize_ == 0) {
+        return true;
+    }
+    uint64_t end = static_cast<uint64_t>(rva) + static_cast<uint64_t>(dataSize);
+    if (end <= fileSize_) {
+        return true;
+    }
+    auto& stats = MinidumpPerfMonitor::Instance().GetStats();
+    stats.IncrementError();
+    lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK,
+        "Stream range out of bounds: rva=" + std::to_string(rva) +
+        " dataSize=" + std::to_string(dataSize) +
+        " fileSize=" + std::to_string(fileSize_), __LINE__);
+    DFXLOGE("MinidumpMemoryReader stream extent out of bounds: "
+            "rva=%{public}u dataSize=%{public}u fileSize=%{public}zu",
+            rva, dataSize, fileSize_);
+    return false;
 }
 
 bool MinidumpMemoryReader::SeekSet(off_t offset)

@@ -786,5 +786,102 @@ HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapZeroCountReadTest001, TestSize.L
     unlink("/data/test/mem_reader_mmap_zero_count");
 }
 
+/**
+ * @tc.name: MemReaderValidateStreamExtentValidTest001
+ * @tc.desc: test MinidumpMemoryReader ValidateStreamExtent with in-bounds extents returns true
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderValidateStreamExtentValidTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    ASSERT_NE(reader, nullptr);
+    EXPECT_EQ(reader->GetFileSize(), 6u);
+    EXPECT_TRUE(reader->ValidateStreamExtent(0, 6));
+    EXPECT_TRUE(reader->ValidateStreamExtent(2, 4));
+    EXPECT_TRUE(reader->ValidateStreamExtent(6, 0));
+    EXPECT_TRUE(reader->ValidateStreamExtent(0, 0));
+    EXPECT_FALSE(reader->GetLastError().IsError());
+}
+
+/**
+ * @tc.name: MemReaderValidateStreamExtentOutOfBoundsTest001
+ * @tc.desc: test MinidumpMemoryReader ValidateStreamExtent with extent past EOF returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderValidateStreamExtentOutOfBoundsTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    ASSERT_NE(reader, nullptr);
+    EXPECT_FALSE(reader->ValidateStreamExtent(0, 7));
+    EXPECT_EQ(reader->GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+    EXPECT_FALSE(reader->ValidateStreamExtent(4, 4));
+    EXPECT_EQ(reader->GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+}
+
+/**
+ * @tc.name: MemReaderValidateStreamExtentRvaOutOfBoundsTest001
+ * @tc.desc: test MinidumpMemoryReader ValidateStreamExtent with rva beyond file returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderValidateStreamExtentRvaOutOfBoundsTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    ASSERT_NE(reader, nullptr);
+    EXPECT_FALSE(reader->ValidateStreamExtent(7, 0));
+    EXPECT_EQ(reader->GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+    EXPECT_FALSE(reader->ValidateStreamExtent(100, 1));
+    EXPECT_EQ(reader->GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+}
+
+/**
+ * @tc.name: MemReaderValidateStreamExtentOverflowTest001
+ * @tc.desc: test MinidumpMemoryReader ValidateStreamExtent with uint32 overflow does not wrap around
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderValidateStreamExtentOverflowTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("ABCDEF");
+    ASSERT_NE(reader, nullptr);
+    EXPECT_FALSE(reader->ValidateStreamExtent(0xFFFFFFF0, 0x20));
+    EXPECT_EQ(reader->GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+}
+
+/**
+ * @tc.name: MemReaderValidateStreamExtentEmptyStreamTest001
+ * @tc.desc: test MinidumpMemoryReader ValidateStreamExtent on empty stream degrades gracefully
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderValidateStreamExtentEmptyStreamTest001, TestSize.Level2)
+{
+    auto reader = MakeReader("");
+    ASSERT_NE(reader, nullptr);
+    EXPECT_EQ(reader->GetFileSize(), 0u);
+    EXPECT_TRUE(reader->ValidateStreamExtent(0, 100));
+    EXPECT_FALSE(reader->GetLastError().IsError());
+}
+
+/**
+ * @tc.name: MemReaderMmapValidateStreamExtentTest001
+ * @tc.desc: test MinidumpMemoryReader mmap ValidateStreamExtent rejects extent past EOF
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpMemoryReaderTest, MemReaderMmapValidateStreamExtentTest001, TestSize.Level2)
+{
+    std::string data = "ABCDEF";
+    int tmpFd = open("/data/test/mem_reader_mmap_validate_extent", O_RDWR | O_CREAT | O_TRUNC, 0644);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+
+    MinidumpMemoryReader reader("/data/test/mem_reader_mmap_validate_extent");
+    EXPECT_TRUE(reader.IsMmapEnabled());
+    EXPECT_EQ(reader.GetFileSize(), data.size());
+    EXPECT_TRUE(reader.ValidateStreamExtent(0, 6));
+    EXPECT_FALSE(reader.ValidateStreamExtent(0, 7));
+    EXPECT_EQ(reader.GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+
+    unlink("/data/test/mem_reader_mmap_validate_extent");
+}
+
 } // namespace HiviewDFX
 } // namespace OHOS

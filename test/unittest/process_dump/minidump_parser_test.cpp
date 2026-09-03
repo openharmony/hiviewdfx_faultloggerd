@@ -941,6 +941,81 @@ HWTEST_F(MinidumpParserTest, ParserSeekToStreamTypeValidTest001, TestSize.Level2
     EXPECT_EQ(streamLen, sizeof(MDRawSystemInfo));
 }
 /**
+ * @tc.name: ParserSeekToStreamTypeExtentOutOfBoundsTest001
+ * @tc.desc: test MinidumpParser SeekToStreamType with dataSize exceeding file returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserSeekToStreamTypeExtentOutOfBoundsTest001, TestSize.Level2)
+{
+    MDRawHeader header = {};
+    header.signature = MINIDUMP_HEADER_SIGNATURE;
+    header.version = (MINIDUMP_HEADER_VERSION & 0xffff) | MINIDUMP_VERSION_TIMESTAMP;
+    header.numberOfStreams = 1;
+    header.streamDirectoryRva = sizeof(MDRawHeader);
+    MDRawDirectory dir = {};
+    dir.streamType = MD_STREAM_SYSTEM_INFO;
+    dir.location.rva = sizeof(MDRawHeader) + sizeof(MDRawDirectory);
+    dir.location.dataSize = sizeof(MDRawSystemInfo) + 1;
+    std::string data(reinterpret_cast<const char*>(&header), sizeof(header));
+    data += std::string(reinterpret_cast<const char*>(&dir), sizeof(dir));
+    auto stream = MakeStream(data);
+    MinidumpParser parser(stream);
+    ASSERT_TRUE(parser.Parse());
+    uint32_t streamLen = 0;
+    EXPECT_FALSE(parser.SeekToStreamType(MD_STREAM_SYSTEM_INFO, streamLen));
+    EXPECT_EQ(parser.GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+}
+/**
+ * @tc.name: ParserSeekToStreamTypeRvaOutOfBoundsTest001
+ * @tc.desc: test MinidumpParser SeekToStreamType with rva beyond file returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserSeekToStreamTypeRvaOutOfBoundsTest001, TestSize.Level2)
+{
+    MDRawHeader header = {};
+    header.signature = MINIDUMP_HEADER_SIGNATURE;
+    header.version = (MINIDUMP_HEADER_VERSION & 0xffff) | MINIDUMP_VERSION_TIMESTAMP;
+    header.numberOfStreams = 1;
+    header.streamDirectoryRva = sizeof(MDRawHeader);
+    MDRawDirectory dir = {};
+    dir.streamType = MD_STREAM_SYSTEM_INFO;
+    dir.location.rva = TEST_OUT_OF_RANGE_RVA;
+    dir.location.dataSize = sizeof(MDRawSystemInfo);
+    std::string data(reinterpret_cast<const char*>(&header), sizeof(header));
+    data += std::string(reinterpret_cast<const char*>(&dir), sizeof(dir));
+    auto stream = MakeStream(data);
+    MinidumpParser parser(stream);
+    ASSERT_TRUE(parser.Parse());
+    uint32_t streamLen = 0;
+    EXPECT_FALSE(parser.SeekToStreamType(MD_STREAM_SYSTEM_INFO, streamLen));
+    EXPECT_EQ(parser.GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+}
+/**
+ * @tc.name: ParserSeekToStreamTypeExtentOverflowTest001
+ * @tc.desc: test MinidumpParser SeekToStreamType with rva+dataSize overflowing uint32 returns false
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpParserTest, ParserSeekToStreamTypeExtentOverflowTest001, TestSize.Level2)
+{
+    MDRawHeader header = {};
+    header.signature = MINIDUMP_HEADER_SIGNATURE;
+    header.version = (MINIDUMP_HEADER_VERSION & 0xffff) | MINIDUMP_VERSION_TIMESTAMP;
+    header.numberOfStreams = 1;
+    header.streamDirectoryRva = sizeof(MDRawHeader);
+    MDRawDirectory dir = {};
+    dir.streamType = MD_STREAM_SYSTEM_INFO;
+    dir.location.rva = 0xFFFFFFF0;
+    dir.location.dataSize = 0x20;
+    std::string data(reinterpret_cast<const char*>(&header), sizeof(header));
+    data += std::string(reinterpret_cast<const char*>(&dir), sizeof(dir));
+    auto stream = MakeStream(data);
+    MinidumpParser parser(stream);
+    ASSERT_TRUE(parser.Parse());
+    uint32_t streamLen = 0;
+    EXPECT_FALSE(parser.SeekToStreamType(MD_STREAM_SYSTEM_INFO, streamLen));
+    EXPECT_EQ(parser.GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
+}
+/**
  * @tc.name: ParserGetStreamFactoryNullReturnTest001
  * @tc.desc: test MinidumpParser GetException with factory returning nullptr stream object
  * @tc.type: FUNC
@@ -973,7 +1048,7 @@ HWTEST_F(MinidumpParserTest, ParserGetStreamFactoryNullReturnTest001, TestSize.L
 }
 /**
  * @tc.name: ParserGetStreamReadTruncatedTest001
- * @tc.desc: test MinidumpParser GetSystemInfo with truncated data returns nullptr and ERROR_STREAM_READ
+ * @tc.desc: test MinidumpParser GetSystemInfo with declared size exceeding file returns ERROR_FILE_SEEK
  * @tc.type: FUNC
  */
 HWTEST_F(MinidumpParserTest, ParserGetStreamReadTruncatedTest001, TestSize.Level2)
@@ -994,7 +1069,7 @@ HWTEST_F(MinidumpParserTest, ParserGetStreamReadTruncatedTest001, TestSize.Level
     MinidumpParser parser(stream);
     EXPECT_TRUE(parser.Parse());
     EXPECT_EQ(parser.GetSystemInfo(), nullptr);
-    EXPECT_EQ(parser.GetLastError().GetError(), MinidumpError::ERROR_STREAM_READ);
+    EXPECT_EQ(parser.GetLastError().GetError(), MinidumpError::ERROR_FILE_SEEK);
 }
 /**
  * @tc.name: ParserSetupObserversEmptyNameTest001
