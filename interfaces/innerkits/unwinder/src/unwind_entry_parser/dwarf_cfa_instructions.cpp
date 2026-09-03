@@ -241,12 +241,16 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
             rsState.locs[qutIdx].type = REG_LOC_VAL_OFFSET;
             rsState.locs[qutIdx].val = offset;
             break;
-        case DW_CFA_def_cfa_expression:
+        case DW_CFA_def_cfa_expression: {
             rsState.cfaReg = 0;
             rsState.cfaExprPtr = instPtr;
-            instPtr += static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
+            uintptr_t exprLen = static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
+            if (__builtin_add_overflow(instPtr, exprLen, &instPtr)) {
+                return false;
+            }
             break;
-        case DW_CFA_expression:
+        }
+        case DW_CFA_expression: {
             reg = memory_->ReadUleb128(instPtr);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaExpr, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
@@ -254,9 +258,13 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                 rsState.locs[qutIdx].type = REG_LOC_MEM_EXPRESSION;
                 rsState.locs[qutIdx].val = static_cast<intptr_t>(instPtr);
             }
-            instPtr += static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
+            uintptr_t exprLen = static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
+            if (__builtin_add_overflow(instPtr, exprLen, &instPtr)) {
+                return false;
+            }
             break;
-        case DW_CFA_val_expression:
+        }
+        case DW_CFA_val_expression: {
             reg = memory_->ReadUleb128(instPtr);
             if (!DfxRegsQut::IsQutReg(static_cast<uint16_t>(reg), qutIdx)) {
                 INSTR_STATISTIC(UnsupportedDwCfaValExpr, reg, UNW_ERROR_UNSUPPORTED_QUT_REG);
@@ -264,8 +272,12 @@ bool DwarfCfaInstructions::DecodeDwCfa(uint8_t opCode, CommonInfoEntry cie,
                 rsState.locs[qutIdx].type = REG_LOC_VAL_EXPRESSION;
                 rsState.locs[qutIdx].val = static_cast<intptr_t>(instPtr);
             }
-            instPtr += static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
+            uintptr_t exprLen = static_cast<uintptr_t>(memory_->ReadUleb128(instPtr));
+            if (__builtin_add_overflow(instPtr, exprLen, &instPtr)) {
+                return false;
+            }
             break;
+        }
 #if defined(__aarch64__)
         case DW_CFA_AARCH64_negate_ra_state:
             DFXLOGU("DW_CFA_AARCH64_negate_ra_state");

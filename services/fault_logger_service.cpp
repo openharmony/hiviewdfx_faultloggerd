@@ -195,7 +195,7 @@ void StatsService::ReportDumpStats(const DumpStats& stat)
 
 std::string StatsService::GetElfName(const FaultLoggerdStatsRequest& request)
 {
-    if (strlen(request.callerElf) > NAME_BUF_LEN) {
+    if (strnlen(request.callerElf, sizeof(request.callerElf)) >= sizeof(request.callerElf)) {
         return "";
     }
     return StringPrintf("%s(%p)", request.callerElf, reinterpret_cast<void*>(request.offset));
@@ -562,6 +562,9 @@ int32_t LitePerfPipeService::OnRequest(const std::string& socketName, int32_t co
         }
         auto currentTime = GetMicroSecondsSinceBoot();
         constexpr int maxPerfTimeout = (MAX_STOP_SECONDS + DUMP_LITEPERF_TIMEOUT) / MS_PER_S;
+        if (requestData.timeout < 0) {
+            return ResponseCode::ABNORMAL_SERVICE;
+        }
         int32_t delayTime = std::min(requestData.timeout, maxPerfTimeout);
         constexpr auto usPerS = MS_PER_S * US_PER_MS;
         uint64_t timeOutTime = currentTime + static_cast<uint64_t>(delayTime) * usPerS;
@@ -669,14 +672,15 @@ int32_t LiteProcDumperPipeService::OnRequest(const std::string& socketName, int3
         }
         fd = pipePair->GetPipeFd(FaultLoggerPipeType::PIPE_FD_READ);
     }
-    DelayTaskQueue::GetInstance().AddDelayTask([pid] {
-        LimitedPipePair::DelPipePair(pid);
-        }, 10); // 10 : dump should finish in 10s
     if (fd < 0) {
+        LimitedPipePair::DelPipePair(pid);
         DFXLOGE("%{public}s :: failed to get fd for pipeType(%{public}d).", FAULTLOGGERD_SERVICE_TAG,
             requestData.pipeType);
         return ResponseCode::ABNORMAL_SERVICE;
     }
+    DelayTaskQueue::GetInstance().AddDelayTask([pid] {
+        LimitedPipePair::DelPipePair(pid);
+        }, 10); // 10 : dump should finish in 10s
     SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
     SendFileDescriptorToSocket(connectionFd, &fd, 1);
     return responseData;
@@ -746,7 +750,9 @@ int32_t LiteProcDumperService::OnRequest(const std::string& socketName, int32_t 
 
     LaunchProcessDump(requestData.pid);
     int32_t responseData = ResponseCode::REQUEST_SUCCESS;
-    SendMsgToSocket(connectionFd, &responseData, sizeof(responseData));
+    if (!SendMsgToSocket(connectionFd, &responseData, sizeof(responseData))) {
+        DFXLOGE("%{public}s :: failed to send response to socket.", FAULTLOGGERD_SERVICE_TAG);
+    }
     return responseData;
 }
 
@@ -819,11 +825,20 @@ bool MiniDumpService::RestoreDumpable(pid_t pid)
     if (cmdLine.empty()) {
         return false;
     }
-    auto task = [pid, cmdLine]() {
-        if (cmdLine == GetRealCmdLine(pid)) {
+    ProcessInfo info;
+    std::string statPath = "/proc/" + std::to_string(pid) + "/stat";
+    if (!ParseStat(statPath, info)) {
+        return false;
+    }
+    uint64_t startTime = info.starttime;
+    auto task = [pid, cmdLine, startTime]() {
+        ProcessInfo curInfo;
+        std::string curStatPath = "/proc/" + std::to_string(pid) + "/stat";
+        if (ParseStat(curStatPath, curInfo) && curInfo.starttime == startTime &&
+            cmdLine == GetRealCmdLine(pid)) {
             SendMinidumpSignal(pid);
         } else {
-            DFXLOGI("cmdline changed, don't send sig minidump to %{public}d", pid);
+            DFXLOGI("process changed, don't send sig minidump to %{public}d", pid);
         }
     };
     constexpr int delaySec = 30;

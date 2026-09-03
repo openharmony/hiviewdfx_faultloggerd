@@ -38,7 +38,12 @@ void CoredumpTaskScheduler::ScheduleCancelTime(SessionId sessionId, int timeoutM
     auto curTime = GetAbsTimeMilliSeconds();
     int32_t delaySec = endTime > curTime ? static_cast<int32_t>((endTime - curTime) / NUMBER_ONE_THOUSAND) : 0;
     delaySec = std::min(delaySec, timeoutMs / NUMBER_ONE_THOUSAND);
-    session->delayTaskId = DelayTaskQueue::GetInstance().AddDelayTask(removeTask, delaySec);
+    auto taskId = DelayTaskQueue::GetInstance().AddDelayTask(removeTask, delaySec);
+    if (taskId == 0) {
+        removeTask();
+        return;
+    }
+    session->delayTaskId = taskId;
 }
 
 void CoredumpTaskScheduler::CancelTimeout(SessionId sessionId)

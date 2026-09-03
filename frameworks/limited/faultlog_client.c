@@ -124,14 +124,23 @@ static bool RecvMsgFromSocket(const int sockfd, unsigned char* data, unsigned in
     msgh.msg_control = ctlBuffer;
     msgh.msg_controllen = sizeof(ctlBuffer);
 
-    if (OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0)) < 0) {
+    ssize_t nrecv = OHOS_TEMP_FAILURE_RETRY(recvmsg(sockfd, &msgh, 0));
+    if (nrecv < 0) {
         DFXLOGE("%{public}s :: Failed to recv message, errno(%{public}d)", __func__, errno);
+        return false;
+    }
+    if (msgh.msg_controllen == 0 || msgh.msg_controllen > sizeof(ctlBuffer)) {
+        DFXLOGE("%{public}s :: Invalid msg_controllen", __func__);
         return false;
     }
 
     struct cmsghdr *cmsg = CMSG_FIRSTHDR(&msgh);
     if (cmsg == NULL) {
         DFXLOGE("%{public}s :: Invalid message", __func__);
+        return false;
+    }
+    if (cmsg->cmsg_len < sizeof(struct cmsghdr) || cmsg->cmsg_len > msgh.msg_controllen) {
+        DFXLOGE("%{public}s :: Invalid cmsg_len", __func__);
         return false;
     }
 
@@ -142,6 +151,10 @@ static bool RecvMsgFromSocket(const int sockfd, unsigned char* data, unsigned in
     }
 
     *len = cmsg->cmsg_len - sizeof(struct cmsghdr);
+    if (*len > dataSize) {
+        DFXLOGE("%{public}s :: cmsg data length exceeds buffer size", __func__);
+        return false;
+    }
     if (memcpy_s(data, dataSize, src, *len) != 0) {
         DFXLOGE("%{public}s :: memcpy error", __func__);
         return false;
@@ -164,6 +177,10 @@ static bool ReadFileDescriptorFromSocket(int sockfd, int* fd)
     }
     if (memcpy_s(fd, sizeof(int), data, sizeof(int)) != EOK) {
         DFXLOGE("%{public}s :: memcpy error", __func__);
+        return false;
+    }
+    if (*fd < 0) {
+        DFXLOGE("%{public}s :: invalid fd: %{public}d", __func__, *fd);
         return false;
     }
     DFXLOGD("%{public}s :: fd: %{public}d", __func__, *fd);
