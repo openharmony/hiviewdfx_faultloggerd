@@ -94,6 +94,9 @@ public:
     int32_t OnRequest(const std::string& socketName, int32_t connectionFd,
                       const FaultLoggerdStatsRequest& requestData) override;
 private:
+    static bool Filter(const std::string& socketName, int32_t connectionFd,
+                       const FaultLoggerdStatsRequest& requestData);
+    void HandleDumpCatcherStats(const FaultLoggerdStatsRequest& requestData);
     void RemoveTimeoutDumpStats();
     static void ReportDumpStats(const DumpStats& stat);
     static std::string GetElfName(const FaultLoggerdStatsRequest& request);
