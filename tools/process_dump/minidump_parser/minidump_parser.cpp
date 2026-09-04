@@ -460,6 +460,12 @@ bool MinidumpParser::SeekToStreamType(uint32_t streamType, uint32_t& streamLengt
         DFXLOGE("MinidumpParser memoryReader is null");
         return false;
     }
+    if (!memoryReader_->ValidateStreamExtent(directoryEntry->location.rva,
+                                             directoryEntry->location.dataSize)) {
+        lastError_ = memoryReader_->GetLastError();
+        DFXLOGE("SeekToStreamType: stream %{public}u extent out of bounds", streamType);
+        return false;
+    }
     if (!memoryReader_->SeekSet(directoryEntry->location.rva)) {
         lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_SEEK, "Cannot seek to stream type", __LINE__);
         DFXLOGE("SeekToStreamType: could not seek to stream type %{public}u", streamType);

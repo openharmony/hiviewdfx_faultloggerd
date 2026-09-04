@@ -185,6 +185,37 @@ HWTEST_F(MinidumpStreamPipelineTest, StreamPipelineParseParallelMissingStreamTes
 }
 
 /**
+ * @tc.name: StreamPipelineParseParallelExtentOutOfBoundsTest001
+ * @tc.desc: test StreamPipeline ParseParallel with declared size exceeding file does not inject stream
+ * @tc.type: FUNC
+ */
+HWTEST_F(MinidumpStreamPipelineTest, StreamPipelineParseParallelExtentOutOfBoundsTest001, TestSize.Level2)
+{
+    MDRawHeader header = {};
+    header.signature = MINIDUMP_HEADER_SIGNATURE;
+    header.version = (MINIDUMP_HEADER_VERSION & 0xffff) | MINIDUMP_VERSION_TIMESTAMP;
+    header.numberOfStreams = 1;
+    header.streamDirectoryRva = sizeof(MDRawHeader);
+    MDRawDirectory dir = {};
+    dir.streamType = MD_STREAM_SYSTEM_INFO;
+    dir.location.rva = sizeof(MDRawHeader) + sizeof(MDRawDirectory);
+    dir.location.dataSize = sizeof(MDRawSystemInfo) + 1;
+    std::string data(reinterpret_cast<const char*>(&header), sizeof(header));
+    data += std::string(reinterpret_cast<const char*>(&dir), sizeof(dir));
+
+    int tmpFd = open("/data/test/stream_parallel_extent_oob", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
+    ASSERT_TRUE(tmpFd > 0);
+    write(tmpFd, data.c_str(), data.size());
+    close(tmpFd);
+    MinidumpParser parser("/data/test/stream_parallel_extent_oob");
+    EXPECT_TRUE(parser.Parse());
+    StreamPipeline pipeline(parser);
+    pipeline.ParseParallel({MD_STREAM_SYSTEM_INFO});
+    EXPECT_EQ(parser.GetSystemInfo(), nullptr);
+    unlink("/data/test/stream_parallel_extent_oob");
+}
+
+/**
  * @tc.name: StreamPipelineParseParallelEmptyListTest001
  * @tc.desc: test StreamPipeline ParseParallel with empty stream type list does not crash
  * @tc.type: FUNC

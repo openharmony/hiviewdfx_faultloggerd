@@ -43,6 +43,10 @@ std::shared_ptr<MinidumpStream> StreamPipeline::ParseStream(uint32_t streamType)
     }
 
     auto reader = std::make_shared<MinidumpMemoryReader>(path_);
+    if (!reader->ValidateStreamExtent(dirEntry->location.rva, dirEntry->location.dataSize)) {
+        DFXLOGE("StreamPipeline: stream %{public}u extent out of bounds", streamType);
+        return nullptr;
+    }
     if (!reader->SeekSet(dirEntry->location.rva)) {
         DFXLOGE("StreamPipeline: cannot seek to stream %{public}u", streamType);
         return nullptr;

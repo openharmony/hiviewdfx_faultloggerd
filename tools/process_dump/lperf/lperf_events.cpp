@@ -40,17 +40,17 @@ constexpr unsigned int DEFAULT_WATER_MARK = 5000;
 #define HIPERF_BUF_ALIGN alignas(64)
 
 struct LperfInitArg {
-    unsigned int rbSizeIntKb;
-    unsigned int samplePeriod;
-    unsigned int sampleInterval;
-    unsigned int watermark;
-    unsigned int reserved1;
-    unsigned long long rbAddr;
+    unsigned int rbSizeIntKb = 0;
+    unsigned int samplePeriod = 0;
+    unsigned int sampleInterval = 0;
+    unsigned int watermark = 0;
+    unsigned int reserved1 = 0;
+    unsigned long long rbAddr = 0;
 };
 
 struct LperfThreadInputArg {
-    unsigned int tidCount;
-    unsigned int tids[MAX_SAMPLE_TIDS];
+    unsigned int tidCount = 0;
+    unsigned int tids[MAX_SAMPLE_TIDS] = {0};
 };
 }
 
@@ -145,7 +145,7 @@ bool LperfEvents::PrepareFdEvents()
 
 bool LperfEvents::AddRecordThreads()
 {
-    struct LperfThreadInputArg threadInfo;
+    struct LperfThreadInputArg threadInfo = {0};
     size_t maxCount = 10;
     size_t count = std::min(tids_.size(), maxCount);
     threadInfo.tidCount = static_cast<unsigned int>(count);
@@ -199,6 +199,12 @@ void LperfEvents::GetRecordFromMmap(MmapFd& mmap)
     HIPERF_BUF_ALIGN static uint8_t buf[RECORD_SIZE_LIMIT];
     GetRecordFieldFromMmap(mmap, buf, RECORD_SIZE_LIMIT, mmap.mmapPage->data_tail, mmap.header.size);
     __sync_synchronize();
+    if (mmap.header.size > mmap.dataSize) {
+        DFXLOGE("GetRecordFromMmap header size %{public}u > dataSize %{public}zu, stop drain",
+                static_cast<unsigned>(mmap.header.size), mmap.dataSize);
+        mmap.dataSize = 0;
+        return;
+    }
     mmap.mmapPage->data_tail += mmap.header.size;
     mmap.dataSize -= mmap.header.size;
     recordCallBack_(LperfRecordFactory::GetLperfRecord(mmap.header.type, buf));
@@ -206,10 +212,22 @@ void LperfEvents::GetRecordFromMmap(MmapFd& mmap)
 
 void LperfEvents::ReadRecordsFromMmaps()
 {
-    if (lperfMmap_.mmapPage->data_head <= lperfMmap_.mmapPage->data_tail) {
+    if (lperfMmap_.mmapPage == nullptr || lperfMmap_.bufSize == 0) {
         return;
     }
-    size_t dataSize = static_cast<size_t>(lperfMmap_.mmapPage->data_head - lperfMmap_.mmapPage->data_tail);
+    uint64_t dataHead = lperfMmap_.mmapPage->data_head;
+    uint64_t dataTail = lperfMmap_.mmapPage->data_tail;
+    if (dataHead <= dataTail) {
+        return;
+    }
+    size_t dataSize = static_cast<size_t>(dataHead - dataTail);
+    if (dataSize > lperfMmap_.bufSize) {
+        DFXLOGE("ReadRecordsFromMmaps dataSize %{public}zu exceeds bufSize %{public}zu, skip drain",
+                dataSize, lperfMmap_.bufSize);
+        __sync_synchronize();
+        lperfMmap_.mmapPage->data_tail = dataHead;
+        return;
+    }
     __sync_synchronize();
     lperfMmap_.dataSize = dataSize;
     while (GetHeaderFromMmap(lperfMmap_)) {
