@@ -250,7 +250,11 @@ void ReadProcessStatus(std::string& result, const int pid)
         return;
     }
     std::string content;
-    OHOS::HiviewDFX::LoadStringFromFile(path, content);
+    if (!LoadStringFromFile(path, content)) {
+        result.append(StringPrintf("Failed to read path(%s) content, errno(%d).\n", path.c_str(), errno));
+        return;
+    }
+
     if (!content.empty()) {
         std::string str = StringPrintf("Process status:\n%s\n", content.c_str());
         result.append(str);

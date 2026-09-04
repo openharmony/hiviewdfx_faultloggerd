@@ -278,11 +278,12 @@ bool GetUidAndSigBlk(pid_t pid, long& uid, uint64_t& sigBlk)
     }
 
     char* end;
+    errno = 0;
     uid = strtol(uidStr .c_str(), &end, 10); // 10 : Uid is in decimal format
     if (errno == ERANGE || *end != '\0') {
         return false;
     }
-
+    errno = 0;
     sigBlk = strtoull(sigBlkStr.c_str(), &end, 16); // 16 : SigBlk is in hex format
     if (errno == ERANGE || *end != '\0') {
         return false;

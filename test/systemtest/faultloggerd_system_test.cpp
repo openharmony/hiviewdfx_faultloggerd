@@ -1699,6 +1699,10 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest123, TestSize.Level2)
 HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: start.";
+    if (!IsLinuxKernel()) {
+        std::string stopFaultloggerdServiceCmd = "service_control stop faultloggerd";
+        ExecuteCommands(stopFaultloggerdServiceCmd);
+    }
     const size_t count = 50;
     const size_t threadSize = 10;
     const size_t msgSize = 10;
@@ -1708,7 +1712,7 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
     for (size_t i = 0; i < count; i++) {
         GTEST_LOG_(INFO) << i;
         pid_t pid = fork();
-        ASSERT_NE(pid, -1);
+        EXPECT_NE(pid, -1);
         if (pid == 0) {
             for (size_t j = 0; j < threadSize; j++) {
                 std::thread shmThread(RequestMemory, msg);
@@ -1720,11 +1724,15 @@ HWTEST_F(FaultLoggerdSystemTest, FaultLoggerdSystemTest124, TestSize.Level2)
             kill(pid, SIGSEGV);
             int status = 0;
             waitpid(pid, &status, 0);
-            ASSERT_TRUE(WIFSIGNALED(status));
+            EXPECT_TRUE(WIFSIGNALED(status));
             int signal = WTERMSIG(status);
-            ASSERT_EQ(signal, SIGSEGV);
+            EXPECT_EQ(signal, SIGSEGV);
             sleepTime = sleepTime + deviation;
         }
+    }
+    if (!IsLinuxKernel()) {
+        std::string startFaultloggerdServiceCmd = "service_control start faultloggerd";
+        ExecuteCommands(startFaultloggerdServiceCmd);
     }
     GTEST_LOG_(INFO) << "FaultLoggerdSystemTest124: end.";
 }

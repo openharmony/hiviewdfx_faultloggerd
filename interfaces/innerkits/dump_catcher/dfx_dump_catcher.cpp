@@ -309,7 +309,7 @@ void DfxDumpCatcher::Impl::ReportDumpCatcherStats(int32_t pid,
     }
 
     Dl_info info;
-    if (dladdr(retAddr, &info) != 0) {
+    if (dladdr(retAddr, &info) != 0 && info.dli_fname != nullptr && info.dli_fbase != nullptr) {
         copyLen = std::min(sizeof(stat->callerElf) - 1, strlen(info.dli_fname));
         if (memcpy_s(stat->callerElf, sizeof(stat->callerElf) - 1, info.dli_fname, copyLen) != 0) {
             DFXLOGE("Failed to copy caller elf info");
@@ -321,8 +321,7 @@ void DfxDumpCatcher::Impl::ReportDumpCatcherStats(int32_t pid,
     std::string cmdline;
     if (OHOS::LoadStringFromFile("/proc/self/cmdline", cmdline)) {
         copyLen = std::min(sizeof(stat->callerProcess) - 1, cmdline.size());
-        if (memcpy_s(stat->callerProcess, sizeof(stat->callerProcess) - 1,
-            cmdline.c_str(), copyLen) != 0) {
+        if (memcpy_s(stat->callerProcess, sizeof(stat->callerProcess) - 1, cmdline.c_str(), copyLen) != 0) {
             DFXLOGE("Failed to copy caller cmdline");
             return;
         }
