@@ -239,24 +239,7 @@ extern "C" int GetCurrentChainedAsyncContext(DfxAsyncCtx buffer[], size_t sz)
         DFXLOGW("GetCurrentChainedAsyncContext sz is 0");
         return 0;
     }
-    auto readLock = DfxAsyncContextPool::Instance()->AcquireReadLock();
-    DfxAsyncContext* ctx = DfxAsyncContextManager::Instance()->GetCurrentContext();
-    if (ctx == nullptr) {
-        DFXLOGD("GetCurrentContext failed, ctx is nullptr");
-        return 0;
-    }
-    int32_t count = 0;
-    uint32_t layerLimit = g_maxAsyncChainLayers.load();
-    size_t loopCount = sz > static_cast<size_t>(layerLimit) ? static_cast<size_t>(layerLimit) : sz;
-    for (size_t i = 0; i < loopCount; i++) {
-        if (ctx->ctxs[i].id == 0) {
-            break;
-        }
-        buffer[i].type = ctx->ctxs[i].type;
-        buffer[i].id = ctx->ctxs[i].id;
-        count++;
-    }
-    return count;
+    return DfxAsyncContextManager::Instance()->GetCurrentChainedContext(buffer, sz);
 }
 
 extern "C" void ReleaseAsyncContext(uint64_t stackId)

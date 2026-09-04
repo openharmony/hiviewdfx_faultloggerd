@@ -21,6 +21,7 @@
 #include <memory>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 #include <dlfcn.h>
 #include <fcntl.h>
@@ -30,6 +31,7 @@
 #include <iostream>
 #include <chrono>
 #include "async_stack.h"
+#include "async_context_manager.h"
 #include "dfx_test_util.h"
 #include "elapsed_time.h"
 #include "fp_unwinder.h"
@@ -723,6 +725,286 @@ HWTEST_F(AsyncStackTest, AsyncStackTest016, TestSize.Level2)
     GTEST_LOG_(INFO) << "AsyncStackTest016: survived " << ROUND_COUNT << " rounds.";
     SUCCEED();
     GTEST_LOG_(INFO) << "AsyncStackTest016: end.";
+#endif
+}
+
+/**
+ * @tc.name: AsyncStackTest017
+ * @tc.desc: Multi-module concurrent stress: FFRT + libuv + eventhandler workers
+ *           with profiler readers, verifying no UAF under heavy concurrency
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest017, TestSize.Level3)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "AsyncStackTest017: start.";
+    ASSERT_TRUE(DfxInitAsyncStack());
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE | ASYNC_TYPE_FFRT_POOL |
+        ASYNC_TYPE_FFRT_QUEUE | ASYNC_TYPE_EVENTHANDLER);
+
+    constexpr int THREADS_PER_MODULE = 4;
+    constexpr int ITERATIONS = 5000;
+    std::atomic<bool> stopFlag{false};
+    std::atomic<int> totalOps{0};
+
+    auto worker = [&stopFlag, &totalOps](uint64_t asyncType, int iterations) {
+        for (int i = 0; i < iterations && !stopFlag.load(std::memory_order_relaxed); i++) {
+            uint64_t stackId = DfxCollectAsyncStack(asyncType);
+            if (stackId == 0) {
+                continue;
+            }
+            DfxSetSubmitterStackId(stackId);
+            DfxAsyncCtx buffer[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
+            GetCurrentChainedAsyncContext(buffer, sizeof(buffer) / sizeof(buffer[0]));
+            DfxPopSubmitterStackId(stackId);
+            ReleaseAsyncContext(stackId);
+            totalOps.fetch_add(1, std::memory_order_relaxed);
+        }
+    };
+
+    auto profilerReader = [&stopFlag](int iterations) {
+        DfxAsyncCtx buffer[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
+        for (int i = 0; i < iterations && !stopFlag.load(std::memory_order_relaxed); i++) {
+            (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+            GetCurrentChainedAsyncContext(buffer, sizeof(buffer) / sizeof(buffer[0]));
+        }
+    };
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < THREADS_PER_MODULE; i++) {
+        threads.emplace_back(worker, ASYNC_TYPE_FFRT_POOL, ITERATIONS);
+        threads.emplace_back(worker, ASYNC_TYPE_LIBUV_QUEUE, ITERATIONS);
+        threads.emplace_back(worker, ASYNC_TYPE_EVENTHANDLER, ITERATIONS);
+        threads.emplace_back(profilerReader, ITERATIONS);
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    GTEST_LOG_(INFO) << "AsyncStackTest017: survived, totalOps=" << totalOps.load();
+    SUCCEED();
+    GTEST_LOG_(INFO) << "AsyncStackTest017: end.";
+#endif
+}
+
+#if defined(__aarch64__)
+namespace {
+void ConcurrentToggleWorker(uint64_t asyncType, std::atomic<bool>* stopFlag,
+    std::atomic<bool>* started)
+{
+    uint64_t stackId = DfxCollectAsyncStack(asyncType);
+    if (stackId != 0) {
+        DfxSetSubmitterStackId(stackId);
+    }
+    started->store(true, std::memory_order_release);
+    while (!stopFlag->load(std::memory_order_relaxed)) {
+        DfxAsyncCtx buffer[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
+        GetCurrentChainedAsyncContext(buffer, sizeof(buffer) / sizeof(buffer[0]));
+        if (stackId != 0) {
+            DfxPopSubmitterStackId(stackId);
+            ReleaseAsyncContext(stackId);
+        }
+        stackId = DfxCollectAsyncStack(asyncType);
+        if (stackId != 0) {
+            DfxSetSubmitterStackId(stackId);
+        }
+    }
+    if (stackId != 0) {
+        DfxPopSubmitterStackId(stackId);
+        ReleaseAsyncContext(stackId);
+    }
+}
+
+void ConcurrentToggleReader(std::atomic<bool>* stopFlag, std::atomic<bool>* started)
+{
+    started->store(true, std::memory_order_release);
+    DfxAsyncCtx buffer[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
+    while (!stopFlag->load(std::memory_order_relaxed)) {
+        (void)memset_s(buffer, sizeof(buffer), 0, sizeof(buffer));
+        GetCurrentChainedAsyncContext(buffer, sizeof(buffer) / sizeof(buffer[0]));
+    }
+}
+
+void ConcurrentToggler(std::atomic<bool>* stopFlag, std::atomic<bool>* started,
+    std::chrono::steady_clock::time_point deadline)
+{
+    while (!started->load(std::memory_order_acquire)) {
+        std::this_thread::yield();
+    }
+    while (std::chrono::steady_clock::now() < deadline) {
+        SetAsyncStackMode(MODE_LAST_STACKTRACE);
+        SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    }
+    stopFlag->store(true, std::memory_order_relaxed);
+}
+
+void ConcurrentLongWorker(std::atomic<bool>* stopFlag, std::atomic<int>* totalOps)
+{
+    uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_FFRT_POOL);
+    if (stackId != 0) {
+        DfxSetSubmitterStackId(stackId);
+    }
+    DfxAsyncCtx buffer[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
+    while (!stopFlag->load(std::memory_order_relaxed)) {
+        GetCurrentChainedAsyncContext(buffer, sizeof(buffer) / sizeof(buffer[0]));
+        totalOps->fetch_add(1, std::memory_order_relaxed);
+    }
+    if (stackId != 0) {
+        DfxPopSubmitterStackId(stackId);
+        ReleaseAsyncContext(stackId);
+    }
+}
+
+void ConcurrentShortWorker(std::atomic<int>* totalOps, int iterations)
+{
+    for (int i = 0; i < iterations; i++) {
+        uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_FFRT_POOL);
+        if (stackId == 0) {
+            continue;
+        }
+        DfxSetSubmitterStackId(stackId);
+        DfxAsyncCtx buffer[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
+        GetCurrentChainedAsyncContext(buffer, sizeof(buffer) / sizeof(buffer[0]));
+        DfxPopSubmitterStackId(stackId);
+        ReleaseAsyncContext(stackId);
+    }
+    totalOps->fetch_add(1, std::memory_order_relaxed);
+}
+} // namespace
+#endif
+
+/**
+ * @tc.name: AsyncStackTest018
+ * @tc.desc: Concurrent mode toggle (DeInit/munmap) with ongoing
+ *           collect/set/pop/release/read operations, verifying no UAF
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest018, TestSize.Level3)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "AsyncStackTest018: start.";
+    ASSERT_TRUE(DfxInitAsyncStack());
+    constexpr int ROUNDS = 30;
+    constexpr int DURATION_MS = 200;
+    for (int round = 0; round < ROUNDS; round++) {
+        SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+        DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE | ASYNC_TYPE_FFRT_POOL |
+            ASYNC_TYPE_FFRT_QUEUE | ASYNC_TYPE_EVENTHANDLER);
+        auto deadline = std::chrono::steady_clock::now() +
+            std::chrono::milliseconds(DURATION_MS);
+        std::atomic<bool> stopFlag{false};
+        std::atomic<bool> started{false};
+        std::vector<std::thread> threads;
+        threads.emplace_back(ConcurrentToggleWorker, ASYNC_TYPE_FFRT_POOL, &stopFlag, &started);
+        threads.emplace_back(ConcurrentToggleWorker, ASYNC_TYPE_LIBUV_QUEUE, &stopFlag, &started);
+        threads.emplace_back(ConcurrentToggleWorker, ASYNC_TYPE_EVENTHANDLER, &stopFlag, &started);
+        threads.emplace_back(ConcurrentToggleReader, &stopFlag, &started);
+        threads.emplace_back(ConcurrentToggleReader, &stopFlag, &started);
+        threads.emplace_back(ConcurrentToggler, &stopFlag, &started, deadline);
+        for (auto& t : threads) {
+            t.join();
+        }
+        SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    }
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    GTEST_LOG_(INFO) << "AsyncStackTest018: survived " << ROUNDS << " rounds.";
+    SUCCEED();
+    GTEST_LOG_(INFO) << "AsyncStackTest018: end.";
+#endif
+}
+
+/**
+ * @tc.name: AsyncStackTest019
+ * @tc.desc: Short-lived threads exiting (triggering TLS destructor) concurrent
+ *           with long-lived workers, verifying thread context pool safety
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest019, TestSize.Level3)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "AsyncStackTest019: start.";
+    ASSERT_TRUE(DfxInitAsyncStack());
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE | ASYNC_TYPE_FFRT_POOL);
+    constexpr int SHORT_THREADS = 200;
+    constexpr int SHORT_ITERS = 50;
+    std::atomic<bool> stopFlag{false};
+    std::atomic<int> totalOps{0};
+    std::thread longThread(ConcurrentLongWorker, &stopFlag, &totalOps);
+    std::vector<std::thread> shortThreads;
+    for (int i = 0; i < SHORT_THREADS; i++) {
+        shortThreads.emplace_back(ConcurrentShortWorker, &totalOps, SHORT_ITERS);
+    }
+    for (auto& t : shortThreads) {
+        t.join();
+    }
+    stopFlag.store(true, std::memory_order_relaxed);
+    longThread.join();
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+    GTEST_LOG_(INFO) << "AsyncStackTest019: survived, totalOps=" << totalOps.load();
+    SUCCEED();
+    GTEST_LOG_(INFO) << "AsyncStackTest019: end.";
+#endif
+}
+
+/**
+ * @tc.name: AsyncStackTest020
+ * @tc.desc: Pool exhaustion stress: small pool with many threads collecting
+ *           simultaneously, verifying no double-free or pool corruption
+ * @tc.type: FUNC
+ */
+HWTEST_F(AsyncStackTest, AsyncStackTest020, TestSize.Level3)
+{
+#if defined(__aarch64__)
+    GTEST_LOG_(INFO) << "AsyncStackTest020: start.";
+    ASSERT_TRUE(DfxInitAsyncStack());
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 4);
+    SetAsyncStackMode(MODE_CHAINED_STACKTRACE);
+    DfxSetAsyncStackType(DEFAULT_ASYNC_TYPE);
+
+    constexpr int THREAD_COUNT = 32;
+    constexpr int ITERATIONS = 200;
+    std::atomic<int> collectSuccess{0};
+    std::atomic<int> collectFail{0};
+
+    auto worker = [&collectSuccess, &collectFail](int iterations) {
+        for (int i = 0; i < iterations; i++) {
+            uint64_t stackId = DfxCollectAsyncStack(ASYNC_TYPE_LIBUV_QUEUE);
+            if (stackId == 0) {
+                collectFail.fetch_add(1, std::memory_order_relaxed);
+                continue;
+            }
+            DfxSetSubmitterStackId(stackId);
+            DfxAsyncCtx buffer[MAX_ASYNC_CHAIN_LAYERS_LIMIT];
+            GetCurrentChainedAsyncContext(buffer, sizeof(buffer) / sizeof(buffer[0]));
+            DfxPopSubmitterStackId(stackId);
+            ReleaseAsyncContext(stackId);
+            collectSuccess.fetch_add(1, std::memory_order_relaxed);
+        }
+    };
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < THREAD_COUNT; i++) {
+        threads.emplace_back(worker, ITERATIONS);
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    SetAsyncStackMode(MODE_LAST_STACKTRACE);
+    SetChainedAsyncStackConfig(10, 16, 64 * 1024);
+    int success = collectSuccess.load();
+    int fail = collectFail.load();
+    GTEST_LOG_(INFO) << "AsyncStackTest020: success=" << success << " fail=" << fail;
+    ASSERT_EQ(success + fail, THREAD_COUNT * ITERATIONS);
+    ASSERT_GT(fail, 0) << "pool exhaustion path should be exercised";
+    SUCCEED();
+    GTEST_LOG_(INFO) << "AsyncStackTest020: end.";
 #endif
 }
 } // namespace HiviewDFX
