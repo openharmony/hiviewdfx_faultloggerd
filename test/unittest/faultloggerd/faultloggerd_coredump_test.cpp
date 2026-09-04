@@ -572,14 +572,18 @@ HWTEST_F(FaultloggerdCoredumpTest, CoredumpTaskScheduler001, TestSize.Level2)
 
     CreateCoredumpRequest request;
     request.targetPid = 666;
-    request.endTime = GetAbsTimeMilliSeconds();
-    scheduler.ScheduleCancelTime(request.targetPid, 1 * 1000);
-    sessionManager.CreateSession(request);
-    scheduler.ScheduleCancelTime(request.targetPid, 1 * 1000);
+    request.endTime = GetAbsTimeMilliSeconds() + 10 * 1000;
+    FaultLoggerdTestServer::AddTask(ExecutorThreadType::MAIN, [&] {
+        scheduler.ScheduleCancelTime(request.targetPid, 1 * 1000);
+        sessionManager.CreateSession(request);
+        scheduler.ScheduleCancelTime(request.targetPid, 1 * 1000);
+    });
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     CoredumpSession* session = sessionManager.GetSession(request.targetPid);
     EXPECT_TRUE(session);
     sleep(2);
     session = sessionManager.GetSession(request.targetPid);
+    EXPECT_FALSE(session);
     GTEST_LOG_(INFO) << "CoredumpTaskScheduler001: end.";
 
     scheduler.CancelTimeout(-999);

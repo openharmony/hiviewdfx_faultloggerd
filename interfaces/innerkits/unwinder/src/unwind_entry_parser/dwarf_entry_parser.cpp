@@ -250,8 +250,14 @@ bool DwarfEntryParser::FillInFde(uintptr_t ptr, FrameDescEntry& fdeInfo)
     fdeInfo.lsda = 0;
     // Check for augmentation length.
     if (fdeInfo.cie.hasAugmentationData) {
-        uintptr_t augLen = memory_->ReadUleb128(ptr);
-        uintptr_t instructionsPtr = ptr + augLen;
+        uintptr_t augLen = static_cast<uintptr_t>(memory_->ReadUleb128(ptr));
+        uintptr_t instructionsPtr;
+        if (__builtin_add_overflow(ptr, augLen, &instructionsPtr) ||
+            (fdeInfo.instructionsEnd != 0 && instructionsPtr > fdeInfo.instructionsEnd)) {
+            DFXLOGE("Invalid augmentation length in fde.");
+            lastErrorData_.SetAddrAndCode(ptr, UNW_ERROR_INVALID_MEMORY);
+            return false;
+        }
         if (fdeInfo.cie.lsdaEncoding != DW_EH_PE_omit) {
             uintptr_t lsdaPtr = ptr;
             if (memory_->ReadEncodedValue(ptr, (fdeInfo.cie.lsdaEncoding & 0x0F)) != 0) {
@@ -343,8 +349,12 @@ bool DwarfEntryParser::FillInCie(uintptr_t ptr, CommonInfoEntry& cieInfo)
     std::vector<char> augStr;
     augStr.clear();
     uint8_t ch;
-    while (memory_->Read<uint8_t>(ptr, &ch, true) && ch != '\0') {
+    constexpr size_t maxAugStrLen = 64;
+    size_t augStrLen = 0;
+    while (augStrLen < maxAugStrLen && cieInfo.instructionsEnd != 0 && ptr < cieInfo.instructionsEnd &&
+           memory_->Read<uint8_t>(ptr, &ch, true) && ch != '\0') {
         augStr.push_back(ch);
+        augStrLen++;
     }
 
     // Segment Size

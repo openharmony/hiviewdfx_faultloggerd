@@ -29,11 +29,13 @@ namespace HiviewDFX {
 
 int32_t CoredumpSignalService::SendStartSignal(pid_t targetPid)
 {
+    DFXLOGI("SendStartSignal to targetPid %{public}d", targetPid);
     siginfo_t si{0};
     si.si_signo = SIGLEAK_STACK;
     si.si_errno = 0;
     si.si_code = -SIGLEAK_STACK_COREDUMP;
     if (auto ret = FaultCommonUtil::SendSignalToProcess(targetPid, si); ret != ResponseCode::REQUEST_SUCCESS) {
+        DFXLOGE("Failed to SendStartSignal to pid(%{public}d), ret(%{public}d).", targetPid, ret);
         return ret;
     }
     return ResponseCode::REQUEST_SUCCESS;
