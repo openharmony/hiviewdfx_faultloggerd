@@ -14,6 +14,7 @@
  */
 #include "unique_stack_table.h"
 
+#include <cinttypes>
 #include <utility>
 #include <memory>
 #include <sys/mman.h>
@@ -282,6 +283,11 @@ bool UniqueStackTable::GetPcsByStackId(StackId stackId, std::vector<uintptr_t>& 
         return false;
     }
     uint64_t nr = stackId.section.nr;
+    constexpr uint16_t maxPcsCnt = 256;
+    if (nr > maxPcsCnt) {
+        DFXLOGE("GetPcsByStackId nr too large: %{public}" PRIu64 "", nr);
+        return false;
+    }
     uint64_t tailIdx = stackId.section.id;
 
     Node *node = GetFrame(tailIdx);

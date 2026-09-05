@@ -55,6 +55,8 @@
 
 #define FD_TABLE_SIZE 128
 #define ARG_MAX_NUM 131072
+#define REMAIN_BUF_LEN 100
+#define CONCAT_BUF_LEN 200
 
 typedef struct FdEntry {
     _Atomic(uint64_t) close_tag;
@@ -112,6 +114,7 @@ pid_t GetProcId(const char *statusPath, const char *item)
         }
 
         if (b == '\n' || i == LINE_BUF_SIZE) {
+            buf[LINE_BUF_SIZE - 1] = '\0';
             if (strncmp(buf, item, strlen(item)) != 0) {
                 i = 0;
                 (void)memset_s(buf, sizeof(buf), '\0', sizeof(buf));
@@ -413,7 +416,10 @@ bool WriteStack(const int pipeWriteFd)
         DFXLOGE("failed to write mmap buf %{public}d", errno);
         return false;
     }
-    WriteOtherThreadStack(pipeWriteFd);
+    if (!WriteOtherThreadStack(pipeWriteFd)) {
+        DFXLOGE("failed to write other thread stack");
+        return false;
+    }
     return true;
 }
 
@@ -421,8 +427,14 @@ bool WriteOtherThreadStack(const int pipeWriteFd)
 {
     char* ptr = (char*)g_mmapSpace + g_mmapPos;
     int threadNum = *(int*)(ptr);
+    if (threadNum < 0 || threadNum > MAX_DUMP_THREAD_NUM) {
+        DFXLOGE("invalid threadNum %{public}d", threadNum);
+        return false;
+    }
     size_t length = sizeof(int) + threadNum * (sizeof(ThreadDumpRequest) + THREAD_STACK_BUFFER_SIZE);
-    LoopWritePipe(pipeWriteFd, ptr, length);
+    if (!LoopWritePipe(pipeWriteFd, ptr, length)) {
+        return false;
+    }
     DFXLOGI("Finish WriteOtherThreadStack");
     return true;
 }
@@ -440,9 +452,11 @@ bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length)
         ssize_t writeSize = 0;
         size_t tryTimes = 0;
         do {
+            errno = 0;
             writeSize = syscall(SYS_write, pipeWriteFd, buf, len);
             savedErrno = errno;
             if (writeSize == -1 && savedErrno != EINTR && savedErrno != EAGAIN) {
+                DFXLOGE("write pipe failed errno %{public}d", savedErrno);
                 return false;
             }
             if (writeSize > 0) {
@@ -450,7 +464,7 @@ bool LoopWritePipe(const int pipeWriteFd, void* buf, size_t length)
                 totalWriteSize += writeSize;
             }
             if (tryTimes > maxTryTimes && writeSize == -1) {
-                DFXLOGW("LoopWritePipe exceeding the maximum number of retries!");
+                DFXLOGW("LoopWritePipe exceeding the maximum number of retries! errno %{public}d", savedErrno);
                 return totalWriteSize == length;
             }
             if (writeSize == -1 && savedErrno == EAGAIN) {
@@ -585,10 +599,8 @@ bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAd
 
     char buf[LINE_BUF_SIZE];
     ssize_t n;
-    const int remainBufLen = 100;
-    char remainBuf[remainBufLen];
-    const int concatBufLen = 200;
-    char concatBuf[concatBufLen];
+    char remainBuf[REMAIN_BUF_LEN] = {0};
+    char concatBuf[CONCAT_BUF_LEN] = {0};
     while ((n = syscall(SYS_read, fd, buf, sizeof(buf) - 1)) > 0) {
         if (!LoopWritePipe(pipeFd, buf, n)) {
             DFXLOGE("failed to write maps content %{public}d", errno);
@@ -598,18 +610,18 @@ bool CollectMaps(const int pipeFd, const char* path, uint64_t* arkWebJitSymbolAd
         if (*arkWebJitSymbolAddr != 0) { // if addr not equal zero, already found jit symbol start addr
             continue;
         }
-        if (strcpy_s(concatBuf, concatBufLen, remainBuf) != EOK) {
+        if (strcpy_s(concatBuf, CONCAT_BUF_LEN, remainBuf) != EOK) {
             DFXLOGE("strcpy concatBuf failed errno %{public}d", errno);
         }
-        if (strncat_s(concatBuf, concatBufLen - 1, buf, remainBufLen - 1) != EOK) {
+        if (strncat_s(concatBuf, CONCAT_BUF_LEN - 1, buf, REMAIN_BUF_LEN - 1) != EOK) {
             DFXLOGE("strncat concatBuf failed errno %{public}d", errno);
         }
         if (!FindArkWebJitSymbol(buf, LINE_BUF_SIZE, arkWebJitSymbolAddr) &&
-            !FindArkWebJitSymbol(concatBuf, concatBufLen, arkWebJitSymbolAddr)) {
-            int remainStart = n - remainBufLen + 1;
-            (void)memset_s(remainBuf, remainBufLen, 0, remainBufLen);
-            int ret = remainStart > 0 ? strncpy_s(remainBuf, remainBufLen, buf + remainStart, remainBufLen - 1) :
-                strncpy_s(remainBuf, remainBufLen, buf, n);
+            !FindArkWebJitSymbol(concatBuf, CONCAT_BUF_LEN, arkWebJitSymbolAddr)) {
+            int remainStart = n - REMAIN_BUF_LEN + 1;
+            (void)memset_s(remainBuf, REMAIN_BUF_LEN, 0, REMAIN_BUF_LEN);
+            int ret = remainStart > 0 ? strncpy_s(remainBuf, REMAIN_BUF_LEN, buf + remainStart, REMAIN_BUF_LEN - 1) :
+                strncpy_s(remainBuf, REMAIN_BUF_LEN, buf, n);
             if (ret != EOK) {
                 DFXLOGE("strcpy remainBuf failed errno %{public}d", errno);
             }
@@ -739,7 +751,9 @@ void WriteFileItems(int pipeWriteFd, DIR *dir, const char * path, const uint64_t
             if (ret < 0) {
                 DFXLOGE("CollectOpenFiles :: snprintf_s failed, ret(%{public}d)", ret);
             }
-            LoopWritePipe(pipeWriteFd, output, strlen(output));
+            if (!LoopWritePipe(pipeWriteFd, output, strlen(output))) {
+                DFXLOGE("CollectOpenFiles :: LoopWritePipe failed");
+            }
         } else {
             DFXLOGE("fd %{public}s -> (unreadable: %{public}d)\n", entry->d_name, errno);
         }
@@ -777,6 +791,12 @@ bool CollectOpenFiles(int pipeWriteFd, const uint64_t fdTableAddr)
     uint64_t* fdsanOwners = mmap(NULL, mmapSize, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (fdsanOwners == MAP_FAILED) {
         closedir(dir);
+        if (fdEntries.entries != MAP_FAILED) {
+            munmap(fdEntries.entries, fdEntries.entryCount * sizeof(FdEntry));
+        }
+        if (overflowEntries.entries != MAP_FAILED) {
+            munmap(overflowEntries.entries, overflowEntries.entryCount * sizeof(FdEntry));
+        }
         DFXLOGE("mmap fdsanOwners failed!");
         return false;
     }

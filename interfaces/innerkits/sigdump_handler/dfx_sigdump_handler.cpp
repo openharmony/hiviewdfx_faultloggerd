@@ -15,6 +15,7 @@
 
 #include "dfx_sigdump_handler.h"
 
+#include <atomic>
 #include <cinttypes>
 #include <csignal>
 #include <ctime>
@@ -65,7 +66,7 @@ private:
     DfxSigDumpHandler& operator=(const DfxSigDumpHandler&)=delete;
     static void RunThread(void);
     static void SignalDumpRetranHandler(int signo, siginfo_t* si, void* context);
-    bool isThreadRunning_{false};
+    std::atomic<bool> isThreadRunning_{false};
     int runThreadId_{0};
 };
 
@@ -77,7 +78,7 @@ DfxSigDumpHandler& DfxSigDumpHandler::GetInstance()
 
 bool DfxSigDumpHandler::IsThreadRunning() const
 {
-    return isThreadRunning_;
+    return isThreadRunning_.load();
 }
 
 int DfxSigDumpHandler::GetRunThreadId() const
@@ -128,16 +129,17 @@ void DfxSigDumpHandler::RunThread()
 
         std::string dumpInfo = OHOS::HiviewDFX::GetProcessStacktrace();
         const ssize_t nwrite = static_cast<ssize_t>(dumpInfo.length());
-        if (!dumpInfo.empty() &&
-                OHOS_TEMP_FAILURE_RETRY(write(bufFd.GetFd(), dumpInfo.data(), dumpInfo.length())) != nwrite) {
-            DFXLOGE("Pid %{public}d Write Buf Pipe Failed(%{public}d), nwrite(%{public}zd)", pid, errno, nwrite);
-            res = DUMP_EBADFRAME;
-        } else if (dumpInfo.empty()) {
+        if (!dumpInfo.empty()) {
+            if (OHOS_TEMP_FAILURE_RETRY(write(bufFd.GetFd(), dumpInfo.data(), dumpInfo.length())) != nwrite) {
+                DFXLOGE("Pid %{public}d Write Buf Pipe Failed(%{public}d), nwrite(%{public}zd)", pid, errno, nwrite);
+                res = DUMP_EBADFRAME;
+            }
+        } else {
             res = DUMP_ENOINFO;
         }
         DumpResMessage resMsg {res, dumpInfo.length()};
         ssize_t nres = OHOS_TEMP_FAILURE_RETRY(write(resFd.GetFd(), &resMsg, sizeof(resMsg)));
-        if (nres != sizeof(resMsg)) {
+        if (nres < 0 || static_cast<size_t>(nres) != sizeof(resMsg)) {
             DFXLOGE("Pid %{public}d Write Res Pipe Failed(%{public}d), nres(%{public}zd)", pid, errno, nres);
         }
     }
@@ -158,7 +160,7 @@ bool DfxSigDumpHandler::Init()
     action.sa_sigaction = DfxSigDumpHandler::SignalDumpRetranHandler;
     DFXLOGI("Init Install signal handler");
     sigaction(SIGDUMP, &action, nullptr);
-    isThreadRunning_ = true;
+    isThreadRunning_.store(true);
     std::thread catchThread = std::thread(&DfxSigDumpHandler::RunThread);
     catchThread.detach();
     return true;
@@ -166,7 +168,7 @@ bool DfxSigDumpHandler::Init()
 
 void DfxSigDumpHandler::Deinit()
 {
-    isThreadRunning_ = false;
+    isThreadRunning_.store(false);
 }
 } // namespace HiviewDFX
 } // namespace OHOS
