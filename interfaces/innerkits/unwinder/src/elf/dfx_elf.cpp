@@ -562,6 +562,7 @@ bool DfxElf::FillUnwindTableByEhFrame(ShdrInfo& shdr, uintptr_t loadBase, const 
             DFXLOGE("[%{public}d]: Invalid .eh_frame_hdr section, offset: 0x%{public}" PRIx64
                 ", size: 0x%{public}" PRIx64 ", mmapSize: %{public}" PRIu64, __LINE__,
                 shdr.offset, shdr.size, mmapSize);
+            return false;
         } else {
             INSTR_STATISTIC(InstructionEntriesEhFrame, shdr.size, 0);
             hdr = (struct DwarfEhFrameHdr *)(shdr.offset + (char *)GetMmapPtr());
@@ -571,6 +572,7 @@ bool DfxElf::FillUnwindTableByEhFrame(ShdrInfo& shdr, uintptr_t loadBase, const 
             DFXLOGE("[%{public}d]: Invalid .eh_frame section, offset: 0x%{public}" PRIx64
                 ", size: 0x%{public}" PRIx64 ", mmapSize: %{public}" PRIu64, __LINE__,
                 shdr.offset, shdr.size, mmapSize);
+            return false;
         } else {
             DFXLOGW("[%{public}d]: Elf(%{public}s) no found .eh_frame_hdr section, " \
                 "using synthetic .eh_frame section", __LINE__, mapName.c_str());
