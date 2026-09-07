@@ -251,7 +251,10 @@ std::string SaveCoredumpToFileTimeout(int32_t targetPid, int timeoutMs)
     }
     DFXLOGI("%{public}s connect request retCode : %{public}d", __func__, retCode);
     CoreDumpResult coredumpResult = {"", ResponseCode::RECEIVE_DATA_FAILED};
-    faultLoggerdSocket.GetMsgFromSocket(&coredumpResult, sizeof(coredumpResult));
+    if (!faultLoggerdSocket.GetMsgFromSocket(&coredumpResult, sizeof(coredumpResult))) {
+        DFXLOGE("%{public}s get msg from socket fail", __func__);
+        return "";
+    }
 
     DFXLOGI("%{public}s has received retCode : %{public}d and filename: %{public}s", __func__,
             coredumpResult.retCode, coredumpResult.fileName);
