@@ -21,6 +21,7 @@ ohos_rust_shared_library("stacktrace_rust") {
       [ "$faultloggerd_path/interfaces/innerkits/backtrace:libbacktrace_local" ]
   crate_name = "stacktrace_rust"
   crate_type = "dylib"
+  version_script = "libstacktrace_rust.map"
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"
 }

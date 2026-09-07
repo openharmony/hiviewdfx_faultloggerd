@@ -1,0 +1,6 @@
+{
+  global:
+    rustc_demangle;
+  local:
+    *;
+};

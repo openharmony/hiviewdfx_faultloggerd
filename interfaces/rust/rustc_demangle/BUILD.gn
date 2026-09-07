@@ -23,6 +23,7 @@ ohos_rust_shared_ffi("rustc_demangle") {
     "system",
     "updater",
   ]
+  version_script = "librustc_demangle.map"
   innerapi_tags = [ "chipsetsdk_sp_indirect" ]
   part_name = "faultloggerd"
   subsystem_name = "hiviewdfx"

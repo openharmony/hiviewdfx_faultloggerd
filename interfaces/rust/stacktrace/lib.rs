@@ -38,6 +38,7 @@ pub fn print_trace(fd : i32) -> bool {
 
 /// Get Rust trace by returned parameter
 #[allow(unused_variables)]
+#[no_mangle]
 pub fn get_trace(is_crash : bool) -> String {
     unsafe {
         let mutex = TRACE_MUTEX.lock().unwrap();

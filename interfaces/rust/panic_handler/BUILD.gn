@@ -31,6 +31,7 @@ if (defined(ohos_lite)) {
     }
     crate_name = "panic_handler"
     crate_type = "dylib"
+    version_script = "libpanic_handler.map"
     part_name = "faultloggerd"
     subsystem_name = "hiviewdfx"
   }
