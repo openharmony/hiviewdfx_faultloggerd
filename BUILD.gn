@@ -36,9 +36,6 @@ group("faultloggerd_targets") {
         deps -= [ "tools/process_dump:processdump" ]
         deps -= [ "tools/dump_catcher:dumpcatcher" ]
       }
-      if (faultloggerd_hisysevent_enable) {
-        deps += [ "tools/crash_validator:crash_validator" ]
-      }
     }
   }
 }
@@ -49,8 +46,8 @@ group("faultloggerd_tests") {
       "test:faultloggerd_moduletest",
       "test:faultloggerd_systemtest",
       "test:faultloggerd_unittest",
-      "tools/crasher_c:crasher_c",
-      "tools/crasher_cpp:crasher_cpp",
+      "test/crasher/crasher_c:crasher_c",
+      "test/crasher/crasher_cpp:crasher_cpp",
     ]
     if (!defined(ohos_lite)) {
       testonly = true
@@ -59,7 +56,7 @@ group("faultloggerd_tests") {
         "test:faultloggerd_benchmarktest",
         "test:faultloggerd_funchook",
         "test:faultloggerd_fuzzertest",
-        "tools/panic_maker:panic_maker",
+        "test/crasher/panic_maker:panic_maker",
       ]
     }
   }

@@ -68,11 +68,13 @@ faultloggerd/
 │   └── test
 ├── test                                   # Test resources
 │   ├── BUILD.gn
+│   ├── crasher
+│   │   ├── crasher_c                      # Crash constructor (C)
+│   │   ├── crasher_cpp                    # Crash constructor (C++)
+│   │   └── panic_maker                    # Rust Panic crash constructor
 │   ├── fuzztest                           # Fuzz test
 │   └── systemtest                         # System function test
 └── tools                                  # Tools
-    ├── crasher_c                          # Crash constructor (C)
-    ├── crasher_cpp                        # Crash constructor (C++)
     └── process_dump                       # Process information capture tool
 ```
 

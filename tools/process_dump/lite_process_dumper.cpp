@@ -123,7 +123,7 @@ void LiteProcessDumper::SetProcessdumpTimeout(siginfo_t &si)
 
 bool LiteProcessDumper::ReadStat(int pipeReadFd)
 {
-    char buf[PROC_STAT_BUF_SIZE];
+    char buf[PROC_STAT_BUF_SIZE] = {0};
     if (!LoopReadPipe(pipeReadFd, buf, sizeof(buf))) {
         DFXLOGI("failed to read stat %{public}d", errno);
         return false;

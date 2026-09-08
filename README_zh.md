@@ -61,16 +61,17 @@ faultloggerd/
 │       └── rustc_demangle                 # Rust demangle 库
 ├── services                               # faultloggerd 常驻服务
 ├── test
-│   ├── funchook                           # hook 工具测试用例
-│   ├── fuzztest                           # 模糊测试用例
-│   ├── moduletest                         # 模块测试用例
-│   ├── systemtest                         # 系统测试用例
-│   └── unittest                           # 单元测试用例
+│   ├── crasher
+│   │   ├── crasher_c                      # 崩溃构造器（C）
+│   │   ├── crasher_cpp                    # 崩溃构造器（C++）
+│   │   └── panic_maker                    # Rust Panic 故障构造器
+│   ├── funchook                           # hook 工具测试用例
+│   ├── fuzztest                           # 模糊测试用例
+│   ├── moduletest                         # 模块测试用例
+│   ├── systemtest                         # 系统测试用例
+│   └── unittest                           # 单元测试用例
 └── tools
-    ├── crasher_c                          # 崩溃构造器（C）
-    ├── crasher_cpp                        # 崩溃构造器（C++）
     ├── dump_catcher                       # DumpCatcher 命令行工具
-    ├── panic_maker                        # Rust Panic 故障构造器
     └── process_dump                       # 崩溃抓栈实现
 ```
 
