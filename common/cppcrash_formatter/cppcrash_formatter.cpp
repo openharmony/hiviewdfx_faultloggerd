@@ -51,7 +51,9 @@ std::string CppCrashJsonFormatter::FormatCrashInfo()
         cJSON_Delete(root);
         return "";
     }
-    cJSON_AddItemToObject(root, CPPCRASH_JSON_VERSION_KEY, versionItem);
+    if (!cJSON_AddItemToObject(root, CPPCRASH_JSON_VERSION_KEY, versionItem)) {
+        cJSON_Delete(versionItem);
+    }
     AddHeadInfo(root, collector);
     AddSignalInfo(root, collector);
     AddThreadInfo(root, collector);
@@ -84,11 +86,11 @@ void CppCrashJsonFormatter::AddHeadInfo(cJSON* root, CppCrashInfoCollector& coll
     AddStringValue(root, "TIMESTAMP", collector.GetTimestamp());
     cJSON* pidItem = cJSON_CreateNumber(collector.GetPid());
     cJSON* uidItem = cJSON_CreateNumber(collector.GetUid());
-    if (pidItem != nullptr) {
-        cJSON_AddItemToObject(root, "PID", pidItem);
+    if (pidItem != nullptr && !cJSON_AddItemToObject(root, "PID", pidItem)) {
+        cJSON_Delete(pidItem);
     }
-    if (uidItem != nullptr) {
-        cJSON_AddItemToObject(root, "UID", uidItem);
+    if (uidItem != nullptr && !cJSON_AddItemToObject(root, "UID", uidItem)) {
+        cJSON_Delete(uidItem);
     }
     AddStringValue(root, "HITRACEID", collector.GetHiTraceId());
     AddStringValue(root, "PNAME", collector.GetPname(), true);
@@ -111,7 +113,9 @@ void CppCrashJsonFormatter::AddHeadInfo(cJSON* root, CppCrashInfoCollector& coll
     AddBoolValue(config, "ENABLE_MINIDUMP_LOG", collector.GetMinidumpLog());
     int size = cJSON_GetArraySize(config);
     if (size > 0) {
-        cJSON_AddItemToObject(root, "ENABLED_APP_LOG_CONFIG", config);
+        if (!cJSON_AddItemToObject(root, "ENABLED_APP_LOG_CONFIG", config)) {
+            cJSON_Delete(config);
+        }
     } else {
         cJSON_Delete(config);
     }
@@ -132,16 +136,18 @@ void CppCrashJsonFormatter::AddSignalInfo(cJSON* root, CppCrashInfoCollector& co
     cJSON* signoItem = cJSON_CreateNumber(signo);
     cJSON* codeItem = cJSON_CreateNumber(collector.GetSignalCode());
     cJSON* addrItem = cJSON_CreateString(collector.GetSignalAddress().c_str());
-    if (signoItem != nullptr) {
-        cJSON_AddItemToObject(signal, "signo", signoItem);
+    if (signoItem != nullptr && !cJSON_AddItemToObject(signal, "signo", signoItem)) {
+        cJSON_Delete(signoItem);
     }
-    if (codeItem != nullptr) {
-        cJSON_AddItemToObject(signal, "code", codeItem);
+    if (codeItem != nullptr && !cJSON_AddItemToObject(signal, "code", codeItem)) {
+        cJSON_Delete(codeItem);
     }
-    if (addrItem != nullptr) {
-        cJSON_AddItemToObject(signal, "address", addrItem);
+    if (addrItem != nullptr && !cJSON_AddItemToObject(signal, "address", addrItem)) {
+        cJSON_Delete(addrItem);
     }
-    cJSON_AddItemToObject(root, "SIGNAL", signal);
+    if (!cJSON_AddItemToObject(root, "SIGNAL", signal)) {
+        cJSON_Delete(signal);
+    }
 }
 
 void CppCrashJsonFormatter::AddThreadInfo(cJSON* root, CppCrashInfoCollector& collector)
@@ -153,8 +159,8 @@ void CppCrashJsonFormatter::AddThreadInfo(cJSON* root, CppCrashInfoCollector& co
     const ThreadInfo& keyThread = collector.GetKeyThread();
     if (!keyThread.frames.empty() || !keyThread.threadName.empty() || keyThread.tid != 0) {
         cJSON* keyThreadJson = FillThreadJson(keyThread);
-        if (keyThreadJson != nullptr) {
-            cJSON_AddItemToObject(root, "KEY_THREAD_INFO", keyThreadJson);
+        if (keyThreadJson != nullptr && !cJSON_AddItemToObject(root, "KEY_THREAD_INFO", keyThreadJson)) {
+            cJSON_Delete(keyThreadJson);
         }
     }
     const std::vector<ThreadInfo>& otherThreads = collector.GetOtherThreads();
@@ -168,11 +174,13 @@ void CppCrashJsonFormatter::AddThreadInfo(cJSON* root, CppCrashInfoCollector& co
     }
     for (const auto& thread : otherThreads) {
         cJSON* threadJson = FillThreadJson(thread);
-        if (threadJson != nullptr) {
-            cJSON_AddItemToArray(threadsArray, threadJson);
+        if (threadJson != nullptr && !cJSON_AddItemToArray(threadsArray, threadJson)) {
+            cJSON_Delete(threadJson);
         }
     }
-    cJSON_AddItemToObject(root, "OTHER_THREAD_INFO", threadsArray);
+    if (!cJSON_AddItemToObject(root, "OTHER_THREAD_INFO", threadsArray)) {
+        cJSON_Delete(threadsArray);
+    }
 }
 
 void CppCrashJsonFormatter::AddSubmitterStacktrace(cJSON* root, CppCrashInfoCollector& collector)
@@ -223,7 +231,13 @@ bool CppCrashJsonFormatter::AddStringValue(cJSON* root, const char* key, const s
         DFXLOGE("Failed to create cJSON string for key:%{public}s", key);
         return false;
     }
-    cJSON_AddItemToObject(root, key, item);
+    // cJSON_AddItemToObject does not free item on failure (e.g. key strdup OOM);
+    // the caller owns it and must release it to avoid a leak.
+    if (!cJSON_AddItemToObject(root, key, item)) {
+        DFXLOGE("Failed to add cJSON string for key:%{public}s", key);
+        cJSON_Delete(item);
+        return false;
+    }
     return true;
 }
 
@@ -237,7 +251,11 @@ bool CppCrashJsonFormatter::AddBoolValue(cJSON* root, const char* key, bool valu
         DFXLOGE("Failed to create cJSON bool for key:%{public}s", key);
         return false;
     }
-    cJSON_AddItemToObject(root, key, item);
+    if (!cJSON_AddItemToObject(root, key, item)) {
+        DFXLOGE("Failed to add cJSON bool for key:%{public}s", key);
+        cJSON_Delete(item);
+        return false;
+    }
     return true;
 }
 
@@ -250,15 +268,15 @@ cJSON* CppCrashJsonFormatter::FillThreadJson(const ThreadInfo& threadInfo)
     }
     cJSON* nameItem = cJSON_CreateString(threadInfo.threadName.c_str());
     cJSON* tidItem = cJSON_CreateNumber(threadInfo.tid);
-    if (nameItem != nullptr) {
-        cJSON_AddItemToObject(threadJson, "thread_name", nameItem);
+    if (nameItem != nullptr && !cJSON_AddItemToObject(threadJson, "thread_name", nameItem)) {
+        cJSON_Delete(nameItem);
     }
-    if (tidItem != nullptr) {
-        cJSON_AddItemToObject(threadJson, "tid", tidItem);
+    if (tidItem != nullptr && !cJSON_AddItemToObject(threadJson, "tid", tidItem)) {
+        cJSON_Delete(tidItem);
     }
     cJSON* framesJson = FillFramesJson(threadInfo.frames);
-    if (framesJson != nullptr) {
-        cJSON_AddItemToObject(threadJson, "frames", framesJson);
+    if (framesJson != nullptr && !cJSON_AddItemToObject(threadJson, "frames", framesJson)) {
+        cJSON_Delete(framesJson);
     }
     return threadJson;
 }
@@ -272,8 +290,8 @@ cJSON* CppCrashJsonFormatter::FillFramesJson(const std::vector<DfxFrame>& frames
     }
     for (const auto& frame : frames) {
         cJSON* frameJson = frame.isJsFrame ? FillJsFrameJson(frame) : FillNativeFrameJson(frame);
-        if (frameJson != nullptr) {
-            cJSON_AddItemToArray(framesArray, frameJson);
+        if (frameJson != nullptr && !cJSON_AddItemToArray(framesArray, frameJson)) {
+            cJSON_Delete(frameJson);
         }
 #if defined(__aarch64__)
         if (!frame.isJsFrame && IsLastValidFrame(frame)) {
@@ -302,20 +320,20 @@ cJSON* CppCrashJsonFormatter::FillNativeFrameJson(const DfxFrame& frame)
     std::string strippedMapName = DfxMap::UnFormatMapName(frame.mapName);
     cJSON* fileItem = cJSON_CreateString(strippedMapName.c_str());
     cJSON* buildIdItem = cJSON_CreateString(frame.buildId.c_str());
-    if (pcItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "pc", pcItem);
+    if (pcItem != nullptr && !cJSON_AddItemToObject(frameJson, "pc", pcItem)) {
+        cJSON_Delete(pcItem);
     }
-    if (symItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "symbol", symItem);
+    if (symItem != nullptr && !cJSON_AddItemToObject(frameJson, "symbol", symItem)) {
+        cJSON_Delete(symItem);
     }
-    if (offsetItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "offset", offsetItem);
+    if (offsetItem != nullptr && !cJSON_AddItemToObject(frameJson, "offset", offsetItem)) {
+        cJSON_Delete(offsetItem);
     }
-    if (fileItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "file", fileItem);
+    if (fileItem != nullptr && !cJSON_AddItemToObject(frameJson, "file", fileItem)) {
+        cJSON_Delete(fileItem);
     }
-    if (buildIdItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "buildId", buildIdItem);
+    if (buildIdItem != nullptr && !cJSON_AddItemToObject(frameJson, "buildId", buildIdItem)) {
+        cJSON_Delete(buildIdItem);
     }
     return frameJson;
 }
@@ -332,20 +350,20 @@ cJSON* CppCrashJsonFormatter::FillJsFrameJson(const DfxFrame& frame)
     cJSON* symItem = cJSON_CreateString(frame.funcName.c_str());
     cJSON* lineItem = cJSON_CreateNumber(frame.line);
     cJSON* colItem = cJSON_CreateNumber(frame.column);
-    if (fileItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "file", fileItem);
+    if (fileItem != nullptr && !cJSON_AddItemToObject(frameJson, "file", fileItem)) {
+        cJSON_Delete(fileItem);
     }
-    if (pkgItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "packageName", pkgItem);
+    if (pkgItem != nullptr && !cJSON_AddItemToObject(frameJson, "packageName", pkgItem)) {
+        cJSON_Delete(pkgItem);
     }
-    if (symItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "symbol", symItem);
+    if (symItem != nullptr && !cJSON_AddItemToObject(frameJson, "symbol", symItem)) {
+        cJSON_Delete(symItem);
     }
-    if (lineItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "line", lineItem);
+    if (lineItem != nullptr && !cJSON_AddItemToObject(frameJson, "line", lineItem)) {
+        cJSON_Delete(lineItem);
     }
-    if (colItem != nullptr) {
-        cJSON_AddItemToObject(frameJson, "column", colItem);
+    if (colItem != nullptr && !cJSON_AddItemToObject(frameJson, "column", colItem)) {
+        cJSON_Delete(colItem);
     }
     return frameJson;
 }
