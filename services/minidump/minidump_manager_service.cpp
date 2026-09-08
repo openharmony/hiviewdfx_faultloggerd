@@ -134,7 +134,9 @@ bool MinidumpManagerService::Init()
     DFXLOGI("pdump init successfully");
 
     auto listener = std::make_unique<PDumpListener>(SmartFd{dup(pFd_)});
-    EpollManager::GetInstance().AddListener(std::move(listener));
+    if (!EpollManager::GetInstance().AddListener(std::move(listener))) {
+        DFXLOGE("failed to add pdump listener to epoll manager");
+    }
     return true;
 }
 
@@ -254,6 +256,10 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         return;
     }
     pid_t pid = fork();
+    if (pid < 0) {
+        DFXLOGE("fork failed, errno=%{public}d", errno);
+        return;
+    }
     if (pid == 0) {
         pid_t childPid = fork();
         if (childPid == 0) {
@@ -271,7 +277,7 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         _exit(0);
     }
     if (pid > 0) {
-        waitpid(pid, nullptr, 0);
+        OHOS_TEMP_FAILURE_RETRY(waitpid(pid, nullptr, 0));
     }
 }
 

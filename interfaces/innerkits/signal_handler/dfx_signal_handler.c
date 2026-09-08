@@ -445,6 +445,8 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
 
     int savedErrno = errno;
     if (!FillDumpRequest(signo, si, context, isSigAction)) {
+        (void)memset_s(&(g_request.siginfo), sizeof(g_request.siginfo), 0, sizeof(g_request.siginfo));
+        (void)memset_s(&(g_request.context), sizeof(g_request.context), 0, sizeof(g_request.context));
         handlingTid = 0;
         pthread_mutex_unlock(&g_signalHandlerMutex);
         DFXLOGE("DFX_SignalHandler :: fill dump request faild.");
@@ -453,6 +455,8 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
     }
 
     DispatchDumpRequest(signo);
+    (void)memset_s(&(g_request.siginfo), sizeof(g_request.siginfo), 0, sizeof(g_request.siginfo));
+    (void)memset_s(&(g_request.context), sizeof(g_request.context), 0, sizeof(g_request.context));
     handlingTid = 0;
     pthread_mutex_unlock(&g_signalHandlerMutex);
     DFXLOGI("Finish handle signal(%{public}d) in %{public}d:%{public}d.", signo, g_request.pid, g_request.tid);

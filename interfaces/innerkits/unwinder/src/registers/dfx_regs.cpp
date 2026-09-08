@@ -118,7 +118,8 @@ std::shared_ptr<DfxRegs> DfxRegs::CreateRemoteRegs(pid_t pid)
     dfxregs->regsData_[REG_X86_64_R15] = regs[R15];
     dfxregs->regsData_[REG_X86_64_RIP] = regs[RIP];
 #else
-    if (memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, REG_LAST * sizeof(uintptr_t)) != 0) {
+    size_t copySize = std::min(static_cast<size_t>(REG_LAST * sizeof(uintptr_t)), sizeof(regs));
+    if (memcpy_s(dfxregs->regsData_.data(), REG_LAST * sizeof(uintptr_t), &regs, copySize) != 0) {
         DFXLOGE("Failed to memcpy regs data, errno=%{public}d", errno);
         return nullptr;
     }

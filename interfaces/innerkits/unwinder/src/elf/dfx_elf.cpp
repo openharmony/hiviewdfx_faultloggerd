@@ -109,8 +109,7 @@ bool DfxElf::InitHeaders()
         return false;
     }
     if (elfParse_ != nullptr) {
-        valid_ = true;
-        elfParse_->InitHeaders();
+        valid_ = elfParse_->InitHeaders();
     }
     return valid_;
 }
@@ -156,7 +155,11 @@ uint64_t DfxElf::GetLoadBase(uint64_t mapStart, uint64_t mapOffset)
         if (IsValid()) {
             DFXLOGU("mapStart: %{public}" PRIx64 ", mapOffset: %{public}" PRIx64 "",
                 (uint64_t)mapStart, (uint64_t)mapOffset);
-            loadBase_ = mapStart - mapOffset - static_cast<uint64_t>(GetLoadBias());
+            int64_t loadBias = GetLoadBias();
+            if (loadBias < 0) {
+                return loadBase_;
+            }
+            loadBase_ = mapStart - mapOffset - static_cast<uint64_t>(loadBias);
             DFXLOGU("Elf loadBase: %{public}" PRIx64 "", (uint64_t)loadBase_);
         }
     }
@@ -354,6 +357,9 @@ const std::set<ElfSymbol>& DfxElf::GetFuncSymbols()
 bool DfxElf::GetFuncInfoLazily(uint64_t addr, ElfSymbol& elfSymbol)
 {
     DFX_TRACE_SCOPED_DLSYM("GetFuncInfoLazily");
+    if (elfParse_ == nullptr) {
+        return false;
+    }
     if (FindFuncSymbol(addr, funcSymbols_, elfSymbol)) {
         return true;
     }
@@ -411,7 +417,7 @@ bool DfxElf::FindFuncSymbol(uint64_t addr, const std::set<ElfSymbol>& symbols, E
     if (next != symbols.begin()) {
         next--;
     }
-    if (next->value <= addr && addr < (next->value + next->size)) {
+    if (next->value <= addr && addr - next->value < next->size) {
         elfSymbol = *next;
         return true;
     }
@@ -488,7 +494,7 @@ bool DfxElf::FillUnwindTableByEhhdrLocal(struct DwarfEhFrameHdr* hdr, struct Unw
 
 bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrBase, struct UnwindTableInfo* uti)
 {
-    if ((hdr == nullptr) || (uti == nullptr)) {
+    if ((hdr == nullptr) || (uti == nullptr) || (mmap_ == nullptr)) {
         return false;
     }
     if (hdr->version != DW_EH_VERSION) {
@@ -506,6 +512,13 @@ bool DfxElf::FillUnwindTableByEhhdr(struct DwarfEhFrameHdr* hdr, uintptr_t shdrB
     auto ptrOffset = ptr - reinterpret_cast<uintptr_t>(GetMmapPtr());
     MAYBE_UNUSED uintptr_t ehFrameStart = mmap_->ReadEncodedValue(ptrOffset, hdr->ehFramePtrEnc);
     uintptr_t fdeCount = mmap_->ReadEncodedValue(ptrOffset, hdr->fdeCountEnc);
+    // Sanity check: reject absurdly large fdeCount that would cause out-of-bounds
+    // table traversal. DW_EH_PE_omit means linear search (unlimited), which is valid.
+    constexpr uintptr_t maxFdeCount = 1024 * 1024; // 1M entries upper bound
+    if (hdr->fdeCountEnc != DW_EH_PE_omit && fdeCount > maxFdeCount) {
+        DFXLOGE("[%{public}d]: fdeCount too large: %{public}" PRIu64, __LINE__, (uint64_t)fdeCount);
+        return false;
+    }
     DFXLOGU("[%{public}d]: ehFrameStart: %{public}" PRIx64 ", fdeCount: %{public}d", __LINE__,
         (uint64_t)ehFrameStart, (int)fdeCount);
     ptr = reinterpret_cast<uintptr_t>(GetMmapPtr()) + ptrOffset;
@@ -796,7 +809,11 @@ const uint8_t* DfxElf::GetMmapPtr()
     if (mmap_ == nullptr) {
         return nullptr;
     }
-    return static_cast<uint8_t *>(mmap_->Get());
+    void* ptr = mmap_->Get();
+    if (ptr == nullptr) {
+        return nullptr;
+    }
+    return static_cast<uint8_t *>(ptr);
 }
 
 size_t DfxElf::GetMmapSize()

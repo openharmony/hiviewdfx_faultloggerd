@@ -35,6 +35,8 @@ constexpr int FORMAT_TIME_LEN = 20;
 constexpr int MICROSEC_LEN = 6;
 constexpr size_t MAX_SAMPLE_TIDS = 10;
 constexpr int MAX_TID_VALUE = 65536;
+// lperf: max 256 frames/sample * 200Hz * 10s = 512000 unique frames
+constexpr size_t MAX_SAMPLED_FRAMES_PER_TID = 512000;
 }  // namespace
 
 struct StackRecord {
@@ -387,7 +389,9 @@ std::string StackPrinter::Impl::GetHeaviestStack(int tid, uint64_t beginTime, ui
     std::vector<uintptr_t> pcs;
     StackId stackId;
     stackId.value = it->stackId;
-    uniqueStackTable_->GetPcsByStackId(stackId, pcs);
+    if (!uniqueStackTable_->GetPcsByStackId(stackId, pcs)) {
+        return std::string("");
+    }
 
     std::stringstream heaviestStack;
     heaviestStack << "heaviest stack: \nstack counts: " << std::to_string(it->snapshotTimes.size()) << "\n";
@@ -558,6 +562,10 @@ std::map<int, std::vector<SampledFrame>> StackPrinter::Impl::DeserializeSampledF
         int tid;
         size_t vecSize;
         if (!(is >> tid >> vecSize)) {
+            is.setstate(std::ios::failbit);
+            return std::map<int, std::vector<SampledFrame>>();
+        }
+        if (vecSize > MAX_SAMPLED_FRAMES_PER_TID) {
             is.setstate(std::ios::failbit);
             return std::map<int, std::vector<SampledFrame>>();
         }

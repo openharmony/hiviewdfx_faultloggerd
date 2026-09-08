@@ -70,6 +70,9 @@ static int ConnectSocket(const char* path, const int timeout)
         server.sun_family = AF_LOCAL;
         if (strcpy_s(server.sun_path, sizeof(server.sun_path), path) != EOK) {
             DFXLOGE("server sun_path strcpy fail.");
+            syscall(SYS_close, fd);
+            fd = -1;
+            break;
         }
         int len = sizeof(server.sun_family) + strlen(server.sun_path);
         int connected = OHOS_TEMP_FAILURE_RETRY(connect(fd, (struct sockaddr*)(&server), len));

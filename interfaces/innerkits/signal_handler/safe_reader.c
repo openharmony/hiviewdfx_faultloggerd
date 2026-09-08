@@ -64,8 +64,15 @@ static size_t ReadableDataByPipe(uintptr_t srcAddr, size_t size, uintptr_t destA
         }
     }
 
-    OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, g_pipeFd[PIPE_WRITE], srcAddr,  size));
-    return  OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, g_pipeFd[PIPE_READ], destAddr,  size));
+    ssize_t written = OHOS_TEMP_FAILURE_RETRY(syscall(SYS_write, g_pipeFd[PIPE_WRITE], srcAddr,  size));
+    if (written < 0) {
+        return 0;
+    }
+    ssize_t bytesRead = OHOS_TEMP_FAILURE_RETRY(syscall(SYS_read, g_pipeFd[PIPE_READ], destAddr,  size));
+    if (bytesRead < 0) {
+        return 0;
+    }
+    return (size_t)bytesRead;
 }
 
 size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, size_t srcLen)
@@ -73,9 +80,15 @@ size_t CopyReadableBufSafe(uintptr_t destPtr, size_t destLen, uintptr_t srcPtr, 
     if (destPtr == 0) {
         return 0;
     }
+    if (srcPtr == 0) {
+        return 0;
+    }
     size_t copeSize = Min(destLen, srcLen);
     uintptr_t currentPtr = srcPtr;
-    uintptr_t srcEndPtr = srcPtr + copeSize;
+    uintptr_t srcEndPtr;
+    if (__builtin_add_overflow(srcPtr, copeSize, &srcEndPtr)) {
+        return 0;
+    }
     size_t totalReadSize = 0;
     while (currentPtr < srcEndPtr) {
         uintptr_t pageEndPtr = GetCurrentPageEndAddr(currentPtr);

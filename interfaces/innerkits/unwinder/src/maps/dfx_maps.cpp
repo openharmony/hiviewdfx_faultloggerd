@@ -176,6 +176,7 @@ bool DfxMaps::Parse(const pid_t pid, const std::string& path)
     ParseMaps(pid, fp, fgetCount);
 
     (void)fclose(fp);
+    fp = nullptr;
 
     if (fgetCount == 0) {
         DFXLOGE("Failed to get maps(%{public}s), err(%{public}d).", path.c_str(), errno);
@@ -400,6 +401,9 @@ bool DfxMaps::FindMapGroupByAddr(uintptr_t addr, std::set<DfxMap>& maps) const
 bool DfxMaps::FindMapByFileInfo(std::string name, uint64_t offset, std::shared_ptr<DfxMap>& map) const
 {
     for (auto &iter : maps_) {
+        if (iter == nullptr) {
+            continue;
+        }
         if (name != iter->name) {
             continue;
         }
@@ -421,6 +425,9 @@ bool DfxMaps::FindMapsByName(std::string name, std::vector<std::shared_ptr<DfxMa
         return false;
     }
     for (auto &iter : maps_) {
+        if (iter == nullptr) {
+            continue;
+        }
         if (EndsWith(iter->name, name)) {
             maps.emplace_back(iter);
         }
@@ -496,6 +503,9 @@ bool DfxMaps::GetStaticArkRange(uintptr_t& start, uintptr_t& end)
     }
     std::shared_ptr<DfxMap> execMap;
     for (const auto& map : maps) {
+        if (map == nullptr) {
+            continue;
+        }
         if (map->IsMapExec()) {
             execMap = map;
             break;
