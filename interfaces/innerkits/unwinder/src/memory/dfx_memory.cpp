@@ -146,16 +146,19 @@ bool DfxMemory::ReadString(uintptr_t& addr, std::string* str, size_t maxSize, bo
             return false;
         }
         size_t length = strnlen(buf, size);
-        if (length < size) {
-            if (offset == 0) {
-                str->assign(buf, length);
-                return true;
-            } else {
-                str->assign(offset + length, '\0');
-                Read(addr, (void*)str->data(), str->size(), false);
-                return true;
-            }
+        if (length >= size) {
+            continue;
         }
+        if (offset == 0) {
+            str->assign(buf, length);
+            return true;
+        }
+        str->assign(offset + length, '\0');
+        size_t readSize = Read(addr, (void*)str->data(), str->size(), false);
+        if (readSize != str->size()) {
+            DFXLOGE("ReadString partial read: expected %{public}zu, got %{public}zu", str->size(), readSize);
+        }
+        return true;
     }
     if (incre && str != nullptr) {
         addr += str->size();

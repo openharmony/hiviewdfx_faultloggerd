@@ -100,6 +100,11 @@ bool DfxHap::MmapForHap(const std::string& mapName)
         DFXLOGE("fd is empty or error, fd(%{public}d)", smartFd.GetFd());
         return false;
     }
+    constexpr off_t maxHapSize = 1024LL * 1024LL * 1024LL; // 1GB upper bound to prevent resource exhaustion
+    if (hapSize_ > maxHapSize) {
+        DFXLOGE("hap file size too large: %{public}" PRId64, (int64_t)hapSize_);
+        return false;
+    }
     mmap_ = mmap(nullptr, hapSize_, PROT_READ, MAP_PRIVATE, smartFd.GetFd(), 0);
     if (mmap_ == MAP_FAILED) {
         DFXLOGE("mmap failed, fd(%{public}d), errno(%{public}d)", smartFd.GetFd(), errno);

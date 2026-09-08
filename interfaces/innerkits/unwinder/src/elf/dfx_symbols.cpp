@@ -124,7 +124,9 @@ bool DfxSymbols::AddSymbolsByPlt(std::vector<DfxSymbol>& symbols, std::shared_pt
         return false;
     }
     ShdrInfo shdr;
-    elf->GetSectionInfo(shdr, PLT);
+    if (!elf->GetSectionInfo(shdr, PLT)) {
+        return false;
+    }
     symbols.emplace_back(shdr.addr, shdr.size, PLT, filePath);
     return true;
 }

@@ -44,6 +44,37 @@ namespace {
 #define LOG_DOMAIN 0xD002D11
 #define LOG_TAG "DfxElfParser"
 #define PT_ADLT 0x6788FC61
+
+uint64_t CalcMmapLen(uint64_t tableSize, uint64_t tableVaddr, uint64_t align)
+{
+    if (align == 1) {
+        return tableSize;
+    }
+    uint64_t len = tableSize + (tableVaddr & (align - 1));
+    return len - (len & (align - 1)) + align;
+}
+
+bool ReadNoteName(uint64_t noteAddr, uint64_t noteSize, uint64_t& offset,
+                  uint32_t nNamesz, std::string& name)
+{
+    if (noteSize - offset < nNamesz) {
+        return false;
+    }
+    name.resize(nNamesz);
+    uint64_t ptr = noteAddr + offset;
+    if (memcpy_s(&(name[0]), name.size(), reinterpret_cast<void*>(ptr), nNamesz) != 0) {
+        return false;
+    }
+    if (!name.empty() && name.back() == '\0') {
+        name.resize(name.size() - 1);
+    }
+    uint64_t alignedNamesz = (static_cast<uint64_t>(nNamesz) + 3) & ~3;
+    if (noteSize - offset < alignedNamesz) {
+        return false;
+    }
+    offset += alignedNamesz;
+    return true;
+}
 }
 
 bool ElfParser::Read(uintptr_t pos, void *buf, size_t size)
@@ -112,7 +143,7 @@ bool ElfParser::ParseElfHeaders(const EhdrType& ehdr)
     } else {
         DFXLOGW("Failed the machine = %{public}d", machine);
     }
-    elfSize_ = ehdr.e_shoff + ehdr.e_shentsize * ehdr.e_shnum;
+    elfSize_ = ehdr.e_shoff + static_cast<uint64_t>(ehdr.e_shentsize) * ehdr.e_shnum;
     return true;
 }
 
@@ -123,8 +154,9 @@ void ElfParser::UpdateVaddrAndOffset(const PhdrType& phdr)
         startVaddr_ = static_cast<uint64_t>(phdr.p_vaddr);
         startOffset_ = static_cast<uint64_t>(phdr.p_offset);
     }
-    if (static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz) > static_cast<uint64_t>(endVaddr_)) {
-        endVaddr_ = static_cast<uint64_t>(phdr.p_vaddr + phdr.p_memsz);
+    uint64_t endVaddr = static_cast<uint64_t>(phdr.p_vaddr) + static_cast<uint64_t>(phdr.p_memsz);
+    if (endVaddr > static_cast<uint64_t>(endVaddr_)) {
+        endVaddr_ = endVaddr;
     }
     DFXLOGU("Elf startVaddr: %{public}" PRIx64 ", endVaddr: %{public}" PRIx64 "",
         startVaddr_, endVaddr_);
@@ -135,6 +167,10 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
 {
     uint64_t offset = ehdr.e_phoff;
     bool firstLoadHeader = true;
+    if (ehdr.e_phentsize < sizeof(PhdrType)) {
+        DFXLOGE("Invalid phentsize: %{public}u", ehdr.e_phentsize);
+        return false;
+    }
     for (size_t i = 0; i < ehdr.e_phnum; i++, offset += ehdr.e_phentsize) {
         PhdrType phdr;
         if (!Read((uintptr_t)offset, &phdr, sizeof(phdr))) {
@@ -151,8 +187,7 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
                 if (loadInfo.align == 0) {
                     continue;
                 }
-                uint64_t len = loadInfo.tableSize + (loadInfo.tableVaddr & (loadInfo.align - 1));
-                loadInfo.mmapLen = len - (len & (loadInfo.align - 1)) + loadInfo.align;
+                loadInfo.mmapLen = CalcMmapLen(loadInfo.tableSize, loadInfo.tableVaddr, loadInfo.align);
                 ptLoads_[phdr.p_offset] = loadInfo;
                 if ((phdr.p_flags & PF_X) == 0) {
                     continue;
@@ -169,10 +204,9 @@ bool ElfParser::ParseProgramHeaders(const EhdrType& ehdr)
             case PT_ADLT:
                 ptAdlt = true;
                 break;
-            case PT_DYNAMIC: {
+            case PT_DYNAMIC:
                 dynamicOffset_ = phdr.p_offset;
                 break;
-            }
             default:
                 break;
         }
@@ -187,6 +221,10 @@ const GnuDebugDataHdr& ElfParser::GetGnuDebugDataHdr() const
 
 void ElfParser::GetAdltStrTabSectionInfo(uint64_t shOffset, uint64_t shSize)
 {
+    if (shSize == 0 || shSize > MmapSize()) {
+        DFXLOGE("Invalid .adlt.strtab size: 0x%{public}" PRIx64, shSize);
+        return;
+    }
     std::vector<char> tabBuf(shSize, 0);
     if (!Read(shOffset, tabBuf.data(), shSize)) {
         DFXLOGE("Get .adlt.strtab failed, offset: 0x%{public}" PRIx64 ", size: 0x%{public}" PRIx64, shOffset, shSize);
@@ -204,6 +242,11 @@ void ElfParser::GetAdltMapSectionInfo(uint64_t shOffset, uint64_t shSize)
         return;
     }
     uint64_t mapNum = shSize / sizeof(AdltMapInfo);
+    if (mapNum == 0 || shSize > MmapSize()) {
+        DFXLOGE("Invalid .adlt.map section, mapNum: %{public}" PRIu64 ", shSize: 0x%{public}" PRIx64,
+            mapNum, shSize);
+        return;
+    }
     std::vector<AdltMapInfo> buf(mapNum);
     if (Read(shOffset, buf.data(), shSize)) {
         adltMap_ = std::move(buf);
@@ -231,6 +274,10 @@ template <typename EhdrType, typename ShdrType>
 bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
 {
     uint64_t offset = ehdr.e_shoff;
+    if (ehdr.e_shentsize < sizeof(ShdrType)) {
+        DFXLOGE("Invalid e_shentsize: %{public}u", ehdr.e_shentsize);
+        return false;
+    }
     offset += ehdr.e_shentsize;
     for (size_t i = 1; i < ehdr.e_shnum; i++, offset += ehdr.e_shentsize) {
         if (i == ehdr.e_shstrndx) {
@@ -255,9 +302,11 @@ bool ElfParser::ExtractSectionHeadersInfo(const EhdrType& ehdr, ShdrType& shdr)
         }
 
         if (shdr.sh_size != 0 && secName == GNU_DEBUGDATA) {
-            gnuDebugDataHdr_.address = reinterpret_cast<uintptr_t>(shdr.sh_offset +
-                static_cast<uint8_t *>(mmap_->Get()));
-            gnuDebugDataHdr_.size = static_cast<uintptr_t>(shdr.sh_size);
+            auto mmapPtr = static_cast<uint8_t *>(mmap_->Get());
+            if (mmapPtr != nullptr) {
+                gnuDebugDataHdr_.address = reinterpret_cast<uintptr_t>(shdr.sh_offset + mmapPtr);
+                gnuDebugDataHdr_.size = static_cast<uintptr_t>(shdr.sh_size);
+            }
         }
 
         ShdrInfo shdrInfo;
@@ -285,7 +334,7 @@ bool ElfParser::ParseSectionHeaders(const EhdrType& ehdr)
     if (ehdr.e_shstrndx < ehdr.e_shnum) {
         uint64_t secOffset = 0;
         uint64_t secSize = 0;
-        uint64_t shNdxOffset = ehdr.e_shoff + ehdr.e_shstrndx * ehdr.e_shentsize;
+        uint64_t shNdxOffset = ehdr.e_shoff + static_cast<uint64_t>(ehdr.e_shstrndx) * ehdr.e_shentsize;
         if (!Read(static_cast<uintptr_t>(shNdxOffset), &shdr, sizeof(shdr))) {
             DFXLOGE("Read section header string table failed");
             return false;
@@ -319,7 +368,9 @@ bool ElfParser::ParseElfDynamic()
     if (dyn == nullptr) {
         return false;
     }
-    for (; dyn->d_tag != DT_NULL; ++dyn) {
+    const uint8_t* mmapEnd = static_cast<const uint8_t*>(mmap_->Get()) + mmap_->Size();
+    for (; reinterpret_cast<const uint8_t*>(dyn) + sizeof(DynType) <= mmapEnd &&
+         dyn->d_tag != DT_NULL; ++dyn) {
         if (dyn->d_tag == DT_PLTGOT) {
             // Assume that _DYNAMIC is writable and GLIBC has relocated it (true for x86 at least).
             dtPltGotAddr_ = dyn->d_un.d_ptr;
@@ -345,10 +396,18 @@ bool ElfParser::ParseElfName()
     if (!GetSectionInfo(shdrInfo, DYNSTR)) {
         return false;
     }
-    uintptr_t sonameOffset = shdrInfo.offset + dtSonameOffset_;
-    uint64_t sonameOffsetMax = shdrInfo.offset + dtStrtabSize_;
+    uint64_t sonameOffset = 0;
+    uint64_t sonameOffsetMax = 0;
+    if (__builtin_add_overflow(shdrInfo.offset, dtSonameOffset_, &sonameOffset) ||
+        __builtin_add_overflow(shdrInfo.offset, dtStrtabSize_, &sonameOffsetMax) ||
+        dtSonameOffset_ > dtStrtabSize_ || sonameOffset >= MmapSize()) {
+        DFXLOGE("Invalid soname offset, dtSonameOffset_: 0x%{public}" PRIx64 ", dtStrtabSize_: 0x%{public}" PRIx64,
+            static_cast<uint64_t>(dtSonameOffset_), static_cast<uint64_t>(dtStrtabSize_));
+        return false;
+    }
     size_t maxStrSize = static_cast<size_t>(sonameOffsetMax - sonameOffset);
-    mmap_->ReadString(sonameOffset, &soname_, maxStrSize);
+    uintptr_t sonameAddr = static_cast<uintptr_t>(sonameOffset);
+    mmap_->ReadString(sonameAddr, &soname_, maxStrSize);
     DFXLOGU("parse current elf file soname is %{public}s.", soname_.c_str());
     return true;
 }
@@ -396,7 +455,17 @@ bool ElfParser::ParseFuncSymbols(const ElfShdr& shdr)
         return false;
     }
 
-    uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
+    if (shdr.entSize == 0 || shdr.size > MmapSize()) {
+        DFXLOGE("Invalid symbol section, size: 0x%{public}" PRIx64 ", entSize: 0x%{public}" PRIx64,
+            shdr.size, shdr.entSize);
+        return true;
+    }
+    uint32_t count = static_cast<uint32_t>(shdr.size / shdr.entSize);
+    constexpr uint32_t maxSymbolCount = 1024 * 1024; // 1M symbols upper bound
+    if (count > maxSymbolCount) {
+        DFXLOGE("Symbol count too large: %{public}u", count);
+        return true;
+    }
     for (uint32_t idx = 0; idx < count; ++idx) {
         SymType sym;
         if (!ReadSymType(shdr, idx, sym)) {
@@ -460,14 +529,17 @@ bool ElfParser::ParseFuncSymbolByAddr(uint64_t addr, ElfSymbol& elfSymbol)
             return false;
         }
 
-        uint32_t count = static_cast<uint32_t>((shdr.entSize != 0) ? (shdr.size / shdr.entSize) : 0);
+        if (shdr.entSize == 0 || shdr.size > MmapSize()) {
+            continue;
+        }
+        uint32_t count = static_cast<uint32_t>(shdr.size / shdr.entSize);
         for (uint32_t idx = 0; idx < count; ++idx) {
             SymType sym;
             if (!ReadSymType(shdr, idx, sym)) {
                 continue;
             }
 
-            if ((sym.st_value <= addr) && (addr < (sym.st_value + sym.st_size)) &&
+            if ((sym.st_value <= addr) && (addr - sym.st_value < sym.st_size) &&
                 ParseFuncSymbolName(linkShdrInfo, sym, elfSymbol.nameStr)) {
                 elfSymbol.value = static_cast<uint64_t>(sym.st_value);
                 elfSymbol.size = static_cast<uint64_t>(sym.st_size);
@@ -497,8 +569,10 @@ bool ElfParser::GetSectionNameByIndex(std::string& nameStr, const uint32_t name)
 
 bool ElfParser::ParseStrTab(std::string& nameStr, const uint64_t offset, const uint64_t size)
 {
-    if (size > MmapSize()) {
-        DFXLOGE("size(%{public}" PRIu64 ") is too large.", size);
+    uint64_t mmapSize = MmapSize();
+    uint64_t endOffset = 0;
+    if (__builtin_add_overflow(offset, size, &endOffset) || size > mmapSize || endOffset > mmapSize) {
+        DFXLOGE("Invalid strtab range, offset: 0x%{public}" PRIx64 ", size: %{public}" PRIu64, offset, size);
         return false;
     }
     std::vector<char> namesBuf(size, 0);
@@ -536,6 +610,10 @@ bool ElfParser::GetSectionInfo(ShdrInfo& shdr, const std::string& secName)
 
 bool ElfParser::GetSectionData(unsigned char* buf, uint64_t size, std::string secName)
 {
+    if (buf == nullptr) {
+        DFXLOGE("buf is null");
+        return false;
+    }
     ShdrInfo shdr;
     if (GetSectionInfo(shdr, secName)) {
         if (Read(shdr.offset, buf, size)) {
@@ -590,38 +668,35 @@ std::string ElfParser::ParseHexBuildId(uint64_t noteAddr, uint64_t noteSize)
             return "";
         }
         offset += sizeof(nhdr);
-        if (noteSize - offset < nhdr.n_namesz) {
+        if (nhdr.n_namesz == 0) {
+            uint64_t alignedDescsz = (static_cast<uint64_t>(nhdr.n_descsz) + 3) & ~3;
+            if (noteSize - offset < alignedDescsz) {
+                break;
+            }
+            offset += alignedDescsz;
+            continue;
+        }
+        std::string name;
+        if (!ReadNoteName(noteAddr, noteSize, offset, nhdr.n_namesz, name)) {
             return "";
         }
-        if (nhdr.n_namesz > 0) {
-            std::string name(nhdr.n_namesz, '\0');
-            ptr = noteAddr + offset;
-            if (memcpy_s(&(name[0]), name.size(), reinterpret_cast<void*>(ptr), nhdr.n_namesz) != 0) {
-                DFXLOGE("memcpy_s note name failed");
-                return "";
-            }
-            // Trim trailing \0 as GNU is stored as a C string in the ELF file.
-            if (name.size() != 0 && name.back() == '\0') {
-                name.resize(name.size() - 1);
-            }
-            // Align nhdr.n_namesz to next power multiple of 4. See man 5 elf.
-            offset += (nhdr.n_namesz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
-            if (name != "GNU" || nhdr.n_type != NT_GNU_BUILD_ID) {
-                offset += (nhdr.n_descsz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
+        if (name != "GNU" || nhdr.n_type != NT_GNU_BUILD_ID) {
+            uint64_t alignedDescsz = (static_cast<uint64_t>(nhdr.n_descsz) + 3) & ~3;
+            if (noteSize - offset < alignedDescsz) {
                 continue;
             }
-            if (noteSize - offset < nhdr.n_descsz || nhdr.n_descsz == 0) {
-                return "";
-            }
-            std::string buildIdRaw(nhdr.n_descsz, '\0');
-            ptr = noteAddr + offset;
-            if (memcpy_s(&buildIdRaw[0], buildIdRaw.size(), reinterpret_cast<void*>(ptr), nhdr.n_descsz) != 0) {
-                return "";
-            }
-            return buildIdRaw;
+            offset += alignedDescsz;
+            continue;
         }
-        // Align hdr.n_descsz to next power multiple of 4. See man 5 elf.
-        offset += (nhdr.n_descsz + 3) & ~3; // 3 : Align the offset to a 4-byte boundary
+        if (noteSize - offset < nhdr.n_descsz || nhdr.n_descsz == 0) {
+            return "";
+        }
+        std::string buildIdRaw(nhdr.n_descsz, '\0');
+        ptr = noteAddr + offset;
+        if (memcpy_s(&buildIdRaw[0], buildIdRaw.size(), reinterpret_cast<void*>(ptr), nhdr.n_descsz) != 0) {
+            return "";
+        }
+        return buildIdRaw;
     }
     return "";
 }
@@ -635,6 +710,10 @@ std::string ElfParser::ToReadableBuildId(const std::string& buildIdHex)
     const int hexLength = 16;
     const int hexExpandParam = 2;
     const size_t len = buildIdHex.length();
+    if (len > (SIZE_MAX / hexExpandParam)) {
+        DFXLOGE("buildIdHex length too large: %{public}zu", len);
+        return "";
+    }
     std::string buildId(len * hexExpandParam, '\0');
 
     for (size_t i = 0; i < len; i++) {
