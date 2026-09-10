@@ -95,6 +95,7 @@ fn report_info_handler(info: &PanicInfo) {
 }
 
 /// Initializes the panic hook
+#[no_mangle]
 pub fn init() {
     panic_handler();
 }
