@@ -116,21 +116,51 @@ enum DumpPreparationStage {
     EXEC_FAIL,
 };
 
+#define DFX_KERNEL_SIGSET_SIZE 8
+// define the kernel sigaction structure
+struct DfxKernelSigAction {
+    void (*handler)(int);
+    unsigned long flags;
+#ifdef SA_RESTORER
+    // signal return address of userspace; only on arches that need it (x86, arm32).
+    void (*restorer)(void);
+#endif
+    unsigned long mask[DFX_KERNEL_SIGSET_SIZE / sizeof(unsigned long)];
+};
+
 static void DFX_ChildProcessSigHandler(int signo)
 {
-    DFXLOGI("Child process received SIGSEGV(%{public}d), exiting", signo);
     syscall(SYS_exit, signo);
 }
 
 static void DFX_SetUpChildSigHandler(void)
 {
-    sigset_t set;
-    sigemptyset(&set);
-    sigaddset(&set, SIGSEGV);
-    sigprocmask(SIG_UNBLOCK, &set, NULL);
-
-    if (signal(SIGSEGV, DFX_ChildProcessSigHandler) == SIG_ERR) {
-        DFXLOGW("Failed to set SIGSEGV handler for child process");
+    // rt_sigaction uses the kernel ABI
+    struct DfxKernelSigAction action;
+    // Keep the inherited kernel restorer on architectures that require it.
+    if (syscall(SYS_rt_sigaction, SIGSEGV, NULL, &action, DFX_KERNEL_SIGSET_SIZE) != 0) {
+        DFX_ChildProcessSigHandler(PROCESS_ABNORMAL_EXIT);
+        return;
+    }
+    action.handler = DFX_ChildProcessSigHandler;
+#ifdef SA_RESTORER
+    // Keep inherited SA_RESTORER + restorer pointer so the handler can return.
+    action.flags = (action.flags & SA_RESTORER) | SA_ONSTACK;
+#else
+    action.flags = SA_ONSTACK;
+#endif
+    for (size_t i = 0; i < sizeof(action.mask) / sizeof(action.mask[0]); ++i) {
+        action.mask[i] = 0;
+    }
+    // use rt_sigaction bypass sigchain entirely, because sigchain call pthread_getspecific() maybe crash.
+    if (syscall(SYS_rt_sigaction, SIGSEGV, &action, NULL, DFX_KERNEL_SIGSET_SIZE) != 0) {
+        DFX_ChildProcessSigHandler(PROCESS_ABNORMAL_EXIT);
+        return;
+    }
+    unsigned long mask[DFX_KERNEL_SIGSET_SIZE / sizeof(unsigned long)] = {1UL << (SIGSEGV - 1)};
+    // use rt_sigprocmask replace sigprocmask.
+    if (syscall(SYS_rt_sigprocmask, SIG_UNBLOCK, mask, NULL, DFX_KERNEL_SIGSET_SIZE) != 0) {
+        DFX_ChildProcessSigHandler(PROCESS_ABNORMAL_EXIT);
     }
 }
 
@@ -410,10 +440,13 @@ static int WaitProcessExitTimeout(pid_t pid, int timeoutMs, bool isPrvi)
 
 static void TryNonSafeOperate(bool isCrash)
 {
+    if (!isCrash) {
+        return;
+    }
     DFX_SetUpSigAlarmAction();
     alarm(TRY_WAIT_SECONDS);
 #ifndef is_ohos_lite
-    if (HiTraceChainGetId != NULL && isCrash) {
+    if (HiTraceChainGetId != NULL) {
         DumpHiTraceIdStruct hitraceChainId = HiTraceChainGetId();
         if (memcpy_s(&g_request->hitraceId, sizeof(g_request->hitraceId),
             &hitraceChainId, sizeof(hitraceChainId)) != 0) {
@@ -476,9 +509,9 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
         DFXLOGE("Failed to fork dummy processdump(%{public}d)", errno);
         return START_PROCESS_DUMP_FAIL;
     } else if (pid == 0) {
+        DFX_SetUpChildSigHandler();
         // for avoid dummy process crash but send signal to parent process
         ((DfxMuslPthread*)pthread_self())->tid = syscall(SYS_gettid);
-        DFX_SetUpChildSigHandler();
         if (gettid() != syscall(SYS_gettid)) {
             DFXLOGE("Failed to set dummy pthread!");
         }
