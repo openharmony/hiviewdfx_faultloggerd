@@ -236,7 +236,7 @@ static inline uint32_t SelectMempoolType(size_t num)
 {
     uint32_t res = 0;
     size_t n = num - 1;
-    // alloc size（1~1024）, use diffrent block size mempool
+    // alloc size（1~1024）, use different block size mempool
     // The 16-byte size range is the smallest.
     // Each subsequent level is twice that of the previous level. The maximum is 1024 bytes
     while (n != 0) {

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef DFX_UNIQUE_CRASH_OBJ
-#define DFX_UNIQUE_CRASH_OBJ
+#ifndef DFX_UNIQUE_CRASH_OBJ_H
+#define DFX_UNIQUE_CRASH_OBJ_H
 
 #include "dfx_signal_handler.h"
 
@@ -77,4 +77,4 @@ private:
 } // namespace HiviewDFX
 } // namespace OHOS
 
-#endif // DFX_UNIQUE_CRASH_OBJ
+#endif // DFX_UNIQUE_CRASH_OBJ_H

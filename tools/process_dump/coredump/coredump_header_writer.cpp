@@ -150,7 +150,7 @@ bool SectionHeaderTableWriter::Write()
     char *strTableAddr = bw_.GetCurrent();
     char strTable[] = "\0.note\0.shstrtab\0.load\0.note.dfx.system.version\0";
     if (!bw_.Write(strTable, sizeof(strTable))) {
-        DFXLOGE("Wrtie strTable fail, errno:%{public}d", errno);
+        DFXLOGE("Write strTable fail, errno:%{public}d", errno);
         return false;
     }
 

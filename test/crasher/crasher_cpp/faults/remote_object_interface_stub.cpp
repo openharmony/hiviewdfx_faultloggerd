@@ -22,9 +22,9 @@ namespace HiviewDFX {
 int RemoteObjectInterfaceStub::OnRemoteRequest(uint32_t code, MessageParcel &data,
     MessageParcel &reply, MessageOption &option)
 {
-    std::u16string descripter = RemoteObjectInterfaceStub::GetDescriptor();
-    std::u16string remoteDescripter = data.ReadInterfaceToken();
-    if (descripter != remoteDescripter) {
+    std::u16string descriptor = RemoteObjectInterfaceStub::GetDescriptor();
+    std::u16string remoteDescriptor = data.ReadInterfaceToken();
+    if (descriptor != remoteDescriptor) {
         return -1;
     }
 

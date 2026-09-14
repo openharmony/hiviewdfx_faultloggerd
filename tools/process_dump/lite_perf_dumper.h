@@ -35,7 +35,7 @@ private:
     DISALLOW_COPY_AND_MOVE(LitePerfDumper);
 
     int PerfProcess(LitePerfParam& lperf, int requestFd);
-    int32_t ReadLperfAndCheck(LitePerfParam& lperf, int reqeustFd);
+    int32_t ReadLperfAndCheck(LitePerfParam& lperf, int requestFd);
     int PerfRecord(const int (&pipeWriteFd)[2], LitePerfParam& lperf) const;
     size_t WriteSampleData(int bufFd, const std::string& data) const;
 };
