@@ -113,10 +113,10 @@ size_t LitePerfDumper::WriteSampleData(int bufFd, const std::string& data) const
     return nwrite;
 }
 
-int32_t LitePerfDumper::ReadLperfAndCheck(LitePerfParam& lperf, int reqeustFd)
+int32_t LitePerfDumper::ReadLperfAndCheck(LitePerfParam& lperf, int requestFd)
 {
     DFX_TRACE_SCOPED("ReadRequestAndCheck");
-    ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(reqeustFd, &lperf, sizeof(LitePerfParam)));
+    ssize_t readCount = OHOS_TEMP_FAILURE_RETRY(read(requestFd, &lperf, sizeof(LitePerfParam)));
     if (readCount != static_cast<long>(sizeof(LitePerfParam))) {
         DFXLOGE("Failed to read LitePerfParam(%{public}d), readCount(%{public}zd).", errno, readCount);
         return -1;

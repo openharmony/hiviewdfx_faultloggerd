@@ -482,7 +482,7 @@ bool AuxvWriter::Write()
     bw_.Advance(sizeof(Elf64_Nhdr));
     char noteName[NOTE_NAME_SIZE] = "CORE";
     if (!bw_.Write(noteName, sizeof(noteName))) {
-        DFXLOGE("Wrtie noteName fail, errno:%{public}d", errno);
+        DFXLOGE("Write noteName fail, errno:%{public}d", errno);
         return false;
     }
 
@@ -528,7 +528,7 @@ bool FileRegionWriter::Write()
     bw_.Advance(sizeof(Elf64_Nhdr));
     char noteName[NOTE_NAME_SIZE] = "CORE";
     if (!bw_.Write(noteName, sizeof(noteName))) {
-        DFXLOGE("Wrtie notename fail, errno:%{public}d", errno);
+        DFXLOGE("Write notename fail, errno:%{public}d", errno);
         return false;
     }
 
@@ -567,7 +567,7 @@ bool FileRegionWriter::WriteAddrRelated() const
         ntFile.end = region.endHex;
         ntFile.offset = region.offsetHex;
         if (!bw_.Write(&ntFile, sizeof(ntFile))) {
-            DFXLOGE("Wrtie ntFile fail, errno:%{public}d", errno);
+            DFXLOGE("Write ntFile fail, errno:%{public}d", errno);
             return false;
         }
     }
@@ -581,7 +581,7 @@ bool FileRegionWriter::WriteFilePath(Elf64_Half &lineNumber)
             continue;
         }
         if (!bw_.Write(region.pathName, strlen(region.pathName))) {
-            DFXLOGE("Wrtie pathName fail, errno:%{public}d", errno);
+            DFXLOGE("Write pathName fail, errno:%{public}d", errno);
             return false;
         }
         *bw_.GetCurrent() = '\0';

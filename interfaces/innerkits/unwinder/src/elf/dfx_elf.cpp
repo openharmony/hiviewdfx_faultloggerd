@@ -711,7 +711,7 @@ void DfxElf::ParsePhdr(struct dl_phdr_info* info, const ElfW(Phdr)* (&pHdrSectio
     }
 }
 
-bool DfxElf::ProccessDynamic(const ElfW(Phdr)* pDynamic, ElfW(Addr) loadBase, UnwindTableInfo* uti)
+bool DfxElf::ProcessDynamic(const ElfW(Phdr)* pDynamic, ElfW(Addr) loadBase, UnwindTableInfo* uti)
 {
     ElfW(Dyn)* dyn = reinterpret_cast<ElfW(Dyn) *>(pDynamic->p_vaddr + loadBase);
     if (dyn == nullptr) {
@@ -782,7 +782,7 @@ int DfxElf::DlPhdrCb(struct dl_phdr_info* info, size_t size, void* data)
 #endif
 
     if (pHdrSections[SECTION_DYNAMIC]) {
-        if (!ProccessDynamic(pHdrSections[SECTION_DYNAMIC], loadBase, uti)) {
+        if (!ProcessDynamic(pHdrSections[SECTION_DYNAMIC], loadBase, uti)) {
             return 0;
         }
     } else {

@@ -449,7 +449,7 @@ static bool DFX_SignalHandler(int signo, siginfo_t *si, void *context, bool isSi
         (void)memset_s(&(g_request.context), sizeof(g_request.context), 0, sizeof(g_request.context));
         handlingTid = 0;
         pthread_mutex_unlock(&g_signalHandlerMutex);
-        DFXLOGE("DFX_SignalHandler :: fill dump request faild.");
+        DFXLOGE("DFX_SignalHandler :: fill dump request failed.");
         errno = savedErrno;
         return IsDumpSignal(signo);
     }

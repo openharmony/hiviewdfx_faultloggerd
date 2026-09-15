@@ -12,8 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef COREDUMP_CONFIG_MANGER_H
-#define COREDUMP_CONFIG_MANGER_H
+#ifndef COREDUMP_CONFIG_MANAGER_H
+#define COREDUMP_CONFIG_MANAGER_H
 
 #include <string>
 #include "cJSON.h"

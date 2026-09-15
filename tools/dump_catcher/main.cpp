@@ -87,7 +87,7 @@ static int ExecuteCoredumpCmd(std::string subCmd, char* pidChar)
     }
 }
 
-static int ParseParamters(int argc, char *argv[], DumpOptions& dumpOpt)
+static int ParseParameters(int argc, char *argv[], DumpOptions& dumpOpt)
 {
     int ret = 0;
     if (argc <= 1) {
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     alarm(DUMPCATCHER_TIMEOUT);
     setsid();
 
-    if (ParseParamters(argc, argv, dumpOpt) <= 0) {
+    if (ParseParameters(argc, argv, dumpOpt) <= 0) {
         return 0;
     }
 
