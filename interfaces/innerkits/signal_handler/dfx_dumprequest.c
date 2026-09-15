@@ -106,6 +106,7 @@ static int g_pipeFds[PIPE_MAX][2] = {
 static const int ALARM_TIME_S = 10;
 static const int PRVI_FORK_ALARM_TIME_S = 8;
 static const int TRY_WAIT_SECONDS = 1;
+static const int DUMMY_PROCESS_ALARM_TIME_S = 3; // 3 sec, > readRegsTimeout(3s), defensive self-terminate for dummy
 static const uint32_t CRASH_SNAPSHOT_FLAG = 0x8;
 static const int WAITPID_TIMEOUT = 3000; // 3000 : 3 sec timeout
 enum DumpPreparationStage {
@@ -390,7 +391,6 @@ static int WaitProcessExitTimeout(pid_t pid, int timeoutMs, bool isPrvi)
         if (timeoutMs == 0) {
             DFXLOGI("waitpid %{public}d timeout", pid);
             if (!isPrvi) {
-                kill(pid, SIGKILL);
                 FillCrashExceptionAndReport(CRASH_SIGNAL_EWAITPIDTIMEOUT);
             }
             return PROCESS_ABNORMAL_EXIT;
@@ -485,6 +485,8 @@ static int StartProcessdump(bool allowNonSafeOperate, bool isCrash)
         if (allowNonSafeOperate) {
             TryNonSafeOperate(isCrash);
         }
+        DFX_SetUpSigAlarmAction();
+        alarm(DUMMY_PROCESS_ALARM_TIME_S);
         /**
          * Setup fd safe region to avoid unexpected conflicts (e.g., hook, tracker)
          * Note: These fds are intentionally not closed as this is a temporary process.
@@ -625,7 +627,7 @@ static bool ReadProcessDumpGetRegsMsg(void)
     CleanFd(&g_pipeFds[READ_FROM_DUMP_TO_CHILD][1]);
 
     DFXLOGI("start wait processdump read registers");
-    const uint64_t readRegsTimeout = 5000; // 5s
+    const uint64_t readRegsTimeout = 3000; // 3s
     uint32_t isFinishGetRegs = OPE_FAIL;
     if (ReadPipeTimeout(g_pipeFds[READ_FROM_DUMP_TO_CHILD][0], readRegsTimeout, &isFinishGetRegs)) {
         if (isFinishGetRegs == OPE_SUCCESS) {
