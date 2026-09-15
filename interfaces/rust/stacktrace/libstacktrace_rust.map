@@ -1,6 +1,7 @@
 {
   global:
     get_trace;
+    print_trace;
   local:
     *;
 };

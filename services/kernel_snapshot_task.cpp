@@ -62,7 +62,7 @@ ReadKernelSnapshotTask::ReadKernelSnapshotTask()
     constexpr int minInterval = 3;
     constexpr auto kernelSnapshotInterval = "kernel_snapshot_check_interval";
     // Read snapshot interval log version is 1 minute, nolog version is 5 minutes.
-    int defaultInterval = OHOS::HiviewDFX::IsBetaVersion() ? 60 : 300;
+    int defaultInterval = OHOS::HiviewDFX::IsDfrBetaVersion() ? 60 : 300;
     int interval = std::max(system::GetIntParameter(kernelSnapshotInterval, defaultInterval), minInterval);
 #ifdef FAULTLOGGERD_TEST
     SetTimeOption(minInterval, interval);

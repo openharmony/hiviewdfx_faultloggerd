@@ -165,7 +165,7 @@ void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid)
     }
 }
 
-bool IsBetaVersion()
+bool IsDfrBetaVersion()
 {
 #if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
     const char *const logsystemVersionType = "const.logsystem.versiontype";
@@ -176,7 +176,7 @@ bool IsBetaVersion()
 #endif
 }
 
-bool IsDeveloperMode()
+bool IsDfrDeveloperMode()
 {
 #if !defined(is_ohos_lite) && !defined(DFX_UTIL_STATIC)
     const char *const developerMode = "const.security.developermode.state";

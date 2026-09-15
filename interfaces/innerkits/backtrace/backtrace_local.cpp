@@ -86,7 +86,7 @@ bool GetBacktraceStringByTid(std::string& out, int32_t tid, size_t skipFrameNum,
             ret = true;
             DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
         }
-        if (IsBetaVersion()) {
+        if (IsDfrBetaVersion()) {
             DFXLOGI("%{public}s", msg.c_str());
         }
     }
@@ -185,7 +185,7 @@ std::string GetProcessStacktrace(size_t maxFrameNums, bool enableKernelStack, bo
             ss += BacktraceLocalThread::GetFormattedStr(tid, threadStack.frames, true, true) + "\n";
             DFXLOGI("Failed to get tid(%{public}d) user stack, try kernel", tid);
         }
-        if (IsBetaVersion()) {
+        if (IsDfrBetaVersion()) {
             DFXLOGI("%{public}s", msg.c_str());
         }
         return true;
