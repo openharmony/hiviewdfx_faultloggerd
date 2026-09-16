@@ -110,7 +110,7 @@ void DumpUtils::GetThreadKernelStack(DfxThread& thread, bool needParseSymbols)
         thread.SetParseSymbolNecessity(false);
         thread.SetFrames(threadStack.frames);
     }
-    if (IsBetaVersion()) {
+    if (IsDfrBetaVersion()) {
         DFXLOGI("%{public}s", threadKernelStack.c_str());
     }
 }

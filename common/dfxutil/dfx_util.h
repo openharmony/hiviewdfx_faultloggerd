@@ -40,8 +40,8 @@ uint64_t GetAbsTimeMilliSeconds(void);
 AT_SYMBOL_DEFAULT std::string GetCurrentTimeStr(uint64_t current = 0);
 bool ReadDirFiles(const std::string& path, std::vector<std::string>& files);
 void ParseSiValue(siginfo_t& si, uint64_t& endTime, int& tid);
-bool IsBetaVersion();
-bool IsDeveloperMode();
+bool IsDfrBetaVersion();
+bool IsDfrDeveloperMode();
 bool IsOversea();
 #endif
 std::string GetArkWebCorePathPrefix();

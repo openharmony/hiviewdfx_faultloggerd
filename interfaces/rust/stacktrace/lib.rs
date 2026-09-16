@@ -29,6 +29,7 @@ extern "C" {
 }
 
 /// Print Rust trace into File
+#[no_mangle]
 pub fn print_trace(fd : i32) -> bool {
     unsafe {
         let max_frame_num = 256;

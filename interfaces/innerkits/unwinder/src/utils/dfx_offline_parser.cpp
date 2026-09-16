@@ -293,7 +293,7 @@ bool DfxOfflineParser::ReportDumpStats(const DfxFrame& frame, uint32_t costTime,
             frame.buildId.c_str());
     }
     reportData.summary = summary;
-    reportData.pssMemory = IsBetaVersion() ? GetPssMemory() : 0;
+    reportData.pssMemory = IsDfrBetaVersion() ? GetPssMemory() : 0;
     return ReportDumpStats(reportData);
 }
 } // namespace HiviewDFX

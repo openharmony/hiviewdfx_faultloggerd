@@ -818,7 +818,7 @@ void ProcessDumper::ReportSigDumpStats()
     stat->writeDumpInfoCost = finishParseSymbolTime_ > 0 ? stat->processdumpFinishTime - finishParseSymbolTime_ : 0;
     stat->smoParseTime = __atomic_load_n(&smoParseTime_, __ATOMIC_RELAXED);
     stat->keyThreadUnwindTimestamp = KeyThreadDumpInfo::GetUnwindTimestamp();
-    if (IsBetaVersion()) {
+    if (IsDfrBetaVersion()) {
         stat->pssMemory = GetPssMemory();
     }
     if (memcpy_s(stat->targetProcess, sizeof(stat->targetProcess),
