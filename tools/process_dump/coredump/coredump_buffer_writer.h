@@ -34,6 +34,7 @@ public:
     bool SetCurrent(char* current);
     uint64_t GetOffset() const;
     size_t GetCapacity() const;
+    size_t GetRemaining() const;
 private:
     char* base_{nullptr};
     char* current_{nullptr};

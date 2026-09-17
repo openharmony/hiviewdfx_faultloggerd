@@ -68,11 +68,13 @@ uint64_t LoadSegmentWriter::WriteMergedSeg(size_t idxBegin, size_t idxEnd, char 
             DFXLOGE("buffer no space to write load seg");
             break;
         }
-
         struct iovec local = { oldStart, phdr.p_memsz };
         struct iovec remote =  { reinterpret_cast<void*>(phdr.p_vaddr), phdr.p_memsz };
         DFX_TRACE_SCOPED("WriteLoadSeg %d", ++count);
-        process_vm_readv(pid_, &local, 1, &remote, 1, 0);
+        errno = 0;
+        if (process_vm_readv(pid_, &local, 1, &remote, 1, 0) == -1) {
+            DFXLOGE("failed read process memory of pid %{public}d, errno %{public}d", pid_, errno);
+        }
         oldStart += phdr.p_memsz;
         totalSize += phdr.p_memsz;
     }
@@ -105,9 +107,11 @@ int LoadSegmentWriter::GetDumpThreadCount()
 
 auto LoadSegmentWriter::GenerateWriteTasks()
 {
-    char* base = bw_.GetCurrent();
-
     std::vector<WriteTask> tasks;
+    char* base = bw_.GetCurrent();
+    if (base == nullptr) {
+        return tasks;
+    }
     auto threadCount = GetDumpThreadCount();
     size_t totalSize = GetTotalSize();
     size_t targetSize = totalSize / static_cast<size_t>(threadCount);
@@ -153,7 +157,11 @@ void LoadSegmentWriter::RunWriteTasks(std::vector<WriteTask>& tasks)
 
 bool LoadSegmentWriter::Write()
 {
-    char *ptLoadAddr = bw_.GetBase() + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr);
+    char* base = bw_.GetBase();
+    if (base == nullptr) {
+        return false;
+    }
+    char *ptLoadAddr = base + sizeof(Elf64_Ehdr) + sizeof(Elf64_Phdr);
     Elf64_Phdr *ptLoad = reinterpret_cast<Elf64_Phdr *>(ptLoadAddr);
     if (ptLoad == nullptr) {
         return false;

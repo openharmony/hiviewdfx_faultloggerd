@@ -28,6 +28,7 @@ namespace HiviewDFX {
 namespace {
 constexpr int HEX_BASE = 16;
 constexpr uint64_t LARGE_ANON_THRESHOLD = 64UL * 1024 * 1024;
+constexpr uint64_t MAX_COREDUMP_SIZE = 4ULL * 1024 * 1024 * 1024;
 bool HasValidPermissions(const DumpMemoryRegions& region)
 {
     std::string perms = region.priority;
@@ -108,8 +109,8 @@ uint64_t CoredumpMappingManager::EstimateFileSize() const
     uint64_t totalMem = std::accumulate(maps_.begin(), maps_.end(), uint64_t{0}, [](uint64_t sum, auto const &r) {
         return ShouldIncludeRegion(r) ? sum + r.memorySizeHex : sum;
     });
-
-    return headerSize + notesSize + totalMem + 1000; // 1000 : reserve space
+    uint64_t estimatedSize = headerSize + notesSize + totalMem + 1000;
+    return estimatedSize < MAX_COREDUMP_SIZE ? estimatedSize : MAX_COREDUMP_SIZE;
 }
 
 void CoredumpMappingManager::ObtainDumpRegion(std::string &line, DumpMemoryRegions &region)

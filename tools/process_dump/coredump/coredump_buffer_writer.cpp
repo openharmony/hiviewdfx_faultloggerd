@@ -70,6 +70,12 @@ size_t CoredumpBufferWriter::GetCapacity() const
     return capacity_;
 }
 
+
+size_t CoredumpBufferWriter::GetRemaining() const
+{
+    return capacity_ - static_cast<size_t>(current_ - base_);
+}
+
 bool CoredumpBufferWriter::Advance(size_t size)
 {
     if (current_ + size > base_ + capacity_) {

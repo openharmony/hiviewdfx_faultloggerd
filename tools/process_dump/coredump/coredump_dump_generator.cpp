@@ -106,7 +106,9 @@ bool CoredumpGenerator::WriteSegmentHeader()
     }
     bw_->Advance(sizeof(Elf64_Ehdr));
     ProgramSegmentHeaderWriter programSegmentHeader(CoredumpMappingManager::GetInstance().GetMaps(), *bw_);
-    programSegmentHeader.Write();
+    if (!programSegmentHeader.Write()) {
+        return false;
+    }
     ePhnum_ = programSegmentHeader.GetPhnum();
     return true;
 }
