@@ -728,8 +728,7 @@ HWTEST_F(FaultloggerdClientTest, MinidumpManagerInitNewInstanceTest001, TestSize
     bool result = newInstance.Init();
     GTEST_LOG_(INFO) << "MinidumpManagerInitNewInstanceTest001 result: " << result;
     if (result) {
-        close(newInstance.pFd_);
-        newInstance.pFd_ = -1;
+        newInstance.pFd_.Reset();
     }
 }
 #endif

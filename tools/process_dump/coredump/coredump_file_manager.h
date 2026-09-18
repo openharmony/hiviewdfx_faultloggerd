@@ -17,6 +17,7 @@
 #include <string>
 
 #include "coredump_common.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -42,7 +43,7 @@ public:
 private:
     int32_t targetPid_ {0};
     uint32_t uid_ {0};
-    int fd_ {-1};
+    SmartFd fd_;
     uint64_t coreFileSize_ {0};
     std::string bundleName_;
     char *mappedMemory_ {nullptr};

@@ -57,15 +57,6 @@ void CoredumpSessionService::UpdateReport(SessionId sessionId, const CoredumpCal
     session->errorCode = rpt.errorCode;
 }
 
-int CoredumpSessionService::GetClientFd(SessionId sessionId) const
-{
-    auto session = sessionManager_.GetSession(sessionId);
-    if (!session) {
-        return -1;
-    }
-    return session->clientFd;
-}
-
 bool CoredumpSessionService::WriteTimeout(SessionId sessionId) const
 {
     CoreDumpResult coredumpRequest {};
@@ -101,8 +92,7 @@ bool CoredumpSessionService::WriteResult(SessionId sessionId, const CoreDumpResu
         return false;
     }
 
-    int32_t savedConnectionFd = session->clientFd;
-    SendMsgToSocket(savedConnectionFd, &coredumpResult, sizeof(coredumpResult));
+    SendMsgToSocket(session->clientFd.GetFd(), &coredumpResult, sizeof(coredumpResult));
     ReportCoredumpStatistics(sessionId);
     sessionManager_.RemoveSession(sessionId);
     return true;

@@ -391,9 +391,6 @@ HWTEST_F(FaultloggerdCoredumpTest, CoredumpSessionService001, TestSize.Level2)
     sessionService.UpdateReport(sessionId, reportReq);
     sessionService.UpdateReport(validPid, reportReq);
 
-    sessionService.GetClientFd(sessionId);
-    sessionService.GetClientFd(validPid);
-
     sessionService.WriteTimeout(sessionId);
     sessionService.WriteTimeout(validPid);
 

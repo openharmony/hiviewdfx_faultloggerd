@@ -54,12 +54,12 @@ private:
     bool IsEnableMinidump(pid_t pid);
     bool IsDisableMinidumpToCrashLog(pid_t pid);
     MinidumpManagerService() = default;
-    ~MinidumpManagerService();
+    ~MinidumpManagerService() = default;
     MinidumpManagerService(const MinidumpManagerService&) = delete;
     MinidumpManagerService& operator=(const MinidumpManagerService&) = delete;
     void ProcessWorkStart(const struct __pdump_data_s& data);
     void ProcessWorkEnd(const struct __pdump_data_s& data);
-    int pFd_ {-1};
+    SmartFd pFd_;
     std::mutex configsMutex_;
     std::unordered_map<pid_t, int> enableMinidumpConfigs;
     std::unordered_set<pid_t> disableMinidumpToCrashLogConfigs;

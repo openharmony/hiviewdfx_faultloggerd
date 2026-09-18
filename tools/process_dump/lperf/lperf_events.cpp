@@ -110,7 +110,7 @@ void LperfEvents::SetSampleFrequency(unsigned int frequency)
 
 bool LperfEvents::PerfEventsEnable(bool enable)
 {
-    int err = ioctl(lperfFd_, static_cast<unsigned long>(LPERF_IOCTL_PROFILE), enable ? 1 : 0);
+    int err = ioctl(lperfFd_.GetFd(), static_cast<unsigned long>(LPERF_IOCTL_PROFILE), enable ? 1 : 0);
     CHECK_ERR(err, "enable lperfFd_ failed");
     return true;
 }
@@ -130,16 +130,16 @@ bool LperfEvents::PrepareFdEvents()
         .watermark = DEFAULT_WATER_MARK,
         .rbAddr = 0,
     };
-    lperfFd_ = open(LPERF_DEV, O_RDWR);
-    CHECK_ERR(lperfFd_, "open lperfFd_ failed");
-    int err = ioctl(lperfFd_, LPERF_IOCTL_INIT, &initArg);
+    lperfFd_ = SmartFd(open(LPERF_DEV, O_RDWR));
+    CHECK_ERR(lperfFd_.GetFd(), "open lperfFd_ failed");
+    int err = ioctl(lperfFd_.GetFd(), LPERF_IOCTL_INIT, &initArg);
     CHECK_ERR(err, "init lperf failed");
     CHECK_TRUE_AND_RET(initArg.rbAddr != 0, false, "lperf init rbAddr is 0");
-    lperfMmap_.fd = lperfFd_;
+    lperfMmap_.fd = lperfFd_.GetFd();
     lperfMmap_.mmapPage = reinterpret_cast<perf_event_mmap_page *>(initArg.rbAddr);
     lperfMmap_.buf = reinterpret_cast<uint8_t *>(initArg.rbAddr) + pageSize_;
     lperfMmap_.bufSize = mmapPages_ * pageSize_;
-    pollFds_.emplace_back(pollfd {lperfFd_, POLLIN | POLLHUP, 0});
+    pollFds_.emplace_back(pollfd {lperfFd_.GetFd(), POLLIN | POLLHUP, 0});
     return true;
 }
 
@@ -152,7 +152,7 @@ bool LperfEvents::AddRecordThreads()
     for (size_t i = 0; i < count; i++) {
         threadInfo.tids[i] = static_cast<unsigned int>(tids_[i]);
     }
-    int err = ioctl(lperfFd_, static_cast<unsigned long>(LPERF_IOCTL_ADD_THREADS), &threadInfo);
+    int err = ioctl(lperfFd_.GetFd(), static_cast<unsigned long>(LPERF_IOCTL_ADD_THREADS), &threadInfo);
     CHECK_ERR(err, "add lperf threads failed");
     return true;
 }
@@ -265,10 +265,9 @@ void LperfEvents::Clear()
 {
     LperfRecordFactory::ClearData();
     pollFds_.clear();
-    if (lperfFd_ != -1) {
+    if (lperfFd_) {
         // munmap(lperfMmap_.mmapPage) in kernel when close lperfFd_.
-        close(lperfFd_);
-        lperfFd_ = -1;
+        lperfFd_.Reset();
     }
     lperfMmap_.mmapPage = nullptr;
     lperfMmap_.buf = nullptr;

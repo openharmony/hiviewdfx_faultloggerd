@@ -30,8 +30,6 @@ public:
     bool UpdateWorkerPid(SessionId sessionId, pid_t workerPid) const;
     void UpdateReport(SessionId sessionId, const CoredumpCallbackReport& rpt) const;
 
-    int GetClientFd(SessionId sessionId) const;
-
     bool WriteTimeout(SessionId sessionId) const;
     bool WriteResult(SessionId sessionId) const;
 private:

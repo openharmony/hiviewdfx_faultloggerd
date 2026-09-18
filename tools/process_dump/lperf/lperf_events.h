@@ -22,6 +22,7 @@
 #include <poll.h>
 
 #include "lperf_event_record.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -65,7 +66,7 @@ private:
     MmapFd lperfMmap_ = {};
     ProcessRecordCB recordCallBack_;
 
-    int lperfFd_ = -1;
+    SmartFd lperfFd_;
     int timeOut_ = 0;
     unsigned int pageSize_ = 4096;
     unsigned int mmapPages_ = 1024;

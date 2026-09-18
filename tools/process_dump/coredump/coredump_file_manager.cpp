@@ -59,7 +59,7 @@ void CoredumpFileManager::WriteNativeCoredump()
         DFXLOGI("is write coredump lite is false");
         return;
     }
-    auto ret = write(fd_, mappedMemory_, coreFileSize_);
+    auto ret = write(fd_.GetFd(), mappedMemory_, coreFileSize_);
     if (ret < 0 || static_cast<uint64_t>(ret) != coreFileSize_) {
         DFXLOGE("write coredump lite fail, errno:%{public}d", errno);
     } else {
@@ -72,10 +72,6 @@ CoredumpFileManager::~CoredumpFileManager()
     if (mappedMemory_ != nullptr) {
         munmap(static_cast<void*>(mappedMemory_), coreFileSize_);
         mappedMemory_ = nullptr;
-    }
-    if (fd_ != -1) {
-        close(fd_);
-        fd_ = -1;
     }
 }
 
@@ -106,7 +102,7 @@ bool CoredumpFileManager::CreateFile()
 
 bool CoredumpFileManager::MmapForFd()
 {
-    if (fd_ <= 0) {
+    if (fd_.GetFd() <= 0) {
         DFXLOGE("The fd is invalid, not to mmap");
         return false;
     }
@@ -122,7 +118,8 @@ bool CoredumpFileManager::MmapForFd()
             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
         isWriteNativeCoredump_ = true;
     } else {
-        mappedMemory_ = static_cast<char *>(mmap(nullptr, coreFileSize_, PROT_READ | PROT_WRITE, MAP_SHARED, fd_, 0));
+        mappedMemory_ = static_cast<char *>(mmap(nullptr, coreFileSize_, PROT_READ | PROT_WRITE,
+            MAP_SHARED, fd_.GetFd(), 0));
     }
     if (mappedMemory_ == MAP_FAILED) {
         DFXLOGE("mmap fail %{public}d", errno);
@@ -138,7 +135,7 @@ bool CoredumpFileManager::CreateFileForCoreDump()
     if (uid_ < minUid) {
         if (CoredumpConfigManager::GetInstance().GetConfig().coredumpSwitch) {
             bundleName_ = "native";
-            fd_ = RequestFileDescriptor(COREDUMP_LITE);
+            fd_ = SmartFd(RequestFileDescriptor(COREDUMP_LITE));
             CoredumpMappingManager::isNativeProcess_ = true;
         }
     } else {
@@ -151,9 +148,10 @@ bool CoredumpFileManager::CreateFileForCoreDump()
             return false;
         }
         std::string filePath = GetCoredumpFilePath();
-        fd_ = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDWR | O_CREAT | O_NOFOLLOW, S_IRUSR | S_IWUSR));
+        fd_ = SmartFd(OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(),
+            O_RDWR | O_CREAT | O_NOFOLLOW, S_IRUSR | S_IWUSR)));
     }
-    if (fd_ == INVALID_FD) {
+    if (!fd_) {
         DFXLOGE("create coredump file fail, errno = %{public}d", errno);
         return false;
     }
@@ -164,7 +162,7 @@ bool CoredumpFileManager::CreateFileForCoreDump()
 
 bool CoredumpFileManager::AdjustFileSize(uint64_t fileSize)
 {
-    if (fd_ == -1) {
+    if (!fd_) {
         DFXLOGE("fd is invalid, not to adjust file size");
         return false;
     }
@@ -172,7 +170,7 @@ bool CoredumpFileManager::AdjustFileSize(uint64_t fileSize)
         DFXLOGE("filesize is 0, not to adjust file size");
         return false;
     }
-    if (ftruncate(fd_, fileSize) == -1) {
+    if (ftruncate(fd_.GetFd(), fileSize) == -1) {
         DFXLOGE("ftruncate fail, errno:%{public}d", errno);
         return false;
     }
