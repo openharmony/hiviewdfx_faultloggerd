@@ -399,7 +399,7 @@ HWTEST_F(CppCrashFormatterTest, CppCrashJsonFormatterFormatWithOtherThread, Test
 
 /**
  * @tc.name: CppCrashJsonFormatterNativeFrameEmptyMapName
- * @tc.desc: Test FillNativeFrameJson outputs "Unknown" when frame map name is empty
+ * @tc.desc: Test FillNativeFrameJson outputs "[Unknown]" when frame map name is empty
  * @tc.type: FUNC
  */
 HWTEST_F(CppCrashFormatterTest, CppCrashJsonFormatterNativeFrameEmptyMapName, TestSize.Level0)
@@ -416,7 +416,7 @@ HWTEST_F(CppCrashFormatterTest, CppCrashJsonFormatterNativeFrameEmptyMapName, Te
     ASSERT_NE(frameJson, nullptr);
     cJSON* fileItem = cJSON_GetObjectItem(frameJson, "file");
     ASSERT_TRUE(cJSON_IsString(fileItem));
-    EXPECT_STREQ(fileItem->valuestring, "Unknown");
+    EXPECT_STREQ(fileItem->valuestring, "[Unknown]");
     cJSON_Delete(frameJson);
 }
 
@@ -468,7 +468,7 @@ HWTEST_F(CppCrashFormatterTest, CppCrashJsonFormatterNativeFrameNormalMapName, T
 /**
  * @tc.name: CppCrashJsonFormatterNativeFrameSandboxMapName
  * @tc.desc: Test FillNativeFrameJson strips the sandbox /proc/xxx/root prefix and
- *           never falls back to "Unknown" for a non-empty stripped name
+ *           never falls back to "[Unknown]" for a non-empty stripped name
  * @tc.type: FUNC
  */
 HWTEST_F(CppCrashFormatterTest, CppCrashJsonFormatterNativeFrameSandboxMapName, TestSize.Level0)
@@ -490,7 +490,7 @@ HWTEST_F(CppCrashFormatterTest, CppCrashJsonFormatterNativeFrameSandboxMapName, 
 
 /**
  * @tc.name: CppCrashJsonFormatterFormatCrashInfoEmptyMapName
- * @tc.desc: Test the full JSON crash info shows "file":"Unknown" for a native frame
+ * @tc.desc: Test the full JSON crash info shows "file":"[Unknown]" for a native frame
  *           whose map name is empty
  * @tc.type: FUNC
  */
@@ -517,7 +517,7 @@ HWTEST_F(CppCrashFormatterTest, CppCrashJsonFormatterFormatCrashInfoEmptyMapName
     CppCrashJsonFormatter formatter;
     std::string jsonStr = formatter.FormatCrashInfo();
 
-    EXPECT_TRUE(jsonStr.find("\"file\":\"Unknown\"") != std::string::npos);
+    EXPECT_TRUE(jsonStr.find("\"file\":\"[Unknown]\"") != std::string::npos);
     EXPECT_TRUE(jsonStr.find("\"file\":\"Not mapped\"") != std::string::npos);
 }
 
