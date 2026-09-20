@@ -27,6 +27,7 @@
 
 #include "dfx_frame_formatter.h"
 #include "dfx_log.h"
+#include "dfx_util.h"
 #include "fp_backtrace.h"
 #include "unique_stack_table.h"
 #include "unwinder.h"
@@ -71,12 +72,67 @@ static std::atomic<DfxAsyncMode> g_mode{MODE_LAST_STACKTRACE};
 
 namespace {
 
+constexpr const char* const ARKWEB_PACKAGE_NAME_KEY = "persist.arkwebcore.package_name";
+constexpr const char* const ASYNC_STACK_ENABLE_KEY = "const.dfx.async_stack.enable";
+constexpr const char* const DEVELOPER_STACK_ENABLE_KEY = "hilog.debug.async_stack.enable_developer_stack";
+constexpr const char* const FANS_STAGE_KEY = "const.product.dfx.fans.stage";
+constexpr const char* const HAP_DEBUGGABLE_ENV = "HAP_DEBUGGABLE";
+constexpr uint32_t SAMPLE_INTERVAL = 2000;
+
+enum SampleMode : uint8_t {
+    SAMPLE_MODE_NONE,
+    SAMPLE_MODE_FULL,
+    SAMPLE_MODE_SAMPLED,
+};
+
+static std::atomic<SampleMode> g_sampleMode{SAMPLE_MODE_FULL};
+
+static bool IsDebuggableApp()
+{
+    const char* debuggableEnv = getenv(HAP_DEBUGGABLE_ENV);
+    return debuggableEnv != nullptr && strcmp(debuggableEnv, "true") == 0;
+}
+
+static bool IsFansStage()
+{
+    return OHOS::system::GetParameter(FANS_STAGE_KEY, "0") == "1";
+}
+
+static bool IsAsyncStackEnabled()
+{
+    return OHOS::system::GetBoolParameter(ASYNC_STACK_ENABLE_KEY, false);
+}
+
+static SampleMode GetSampleMode()
+{
+    // Full collection when: force, debuggable HAP, enable flag, or Beta/FUT version.
+    bool isFullCollect = IsDebuggableApp() || IsAsyncStackEnabled() || IsDfrBetaVersion() || IsFansStage();
+    return isFullCollect ? SAMPLE_MODE_FULL : SAMPLE_MODE_SAMPLED;
+}
+
+static bool ShouldTakeSample()
+{
+    SampleMode mode = g_sampleMode.load();
+    if (mode == SAMPLE_MODE_NONE) {
+        return false;
+    }
+    if (mode == SAMPLE_MODE_FULL) {
+        return true;
+    }
+    static std::atomic<uint32_t> sampleCountdown{SAMPLE_INTERVAL};
+    if (--sampleCountdown != 0) {
+        return false;
+    }
+    sampleCountdown.store(SAMPLE_INTERVAL);
+    return true;
+}
+
 static void* PreloadArkWebEngineLib(const std::string arkwebEngineSandboxLibPath)
 {
     Dl_namespace dlns;
     Dl_namespace ndkns;
     dlns_init(&dlns, "nweb_ns");
-    std::string bundleName = OHOS::system::GetParameter("persist.arkwebcore.package_name", "");
+    std::string bundleName = OHOS::system::GetParameter(ARKWEB_PACKAGE_NAME_KEY, "");
     if (bundleName.empty()) {
         DFXLOGE("Fail to get persist.arkwebcore.package_name");
         return nullptr;
@@ -270,6 +326,9 @@ extern "C" uint64_t DfxCollectAsyncStack(uint64_t type)
     if (isTargetType == 0) {
         return DFX_INVALID_STACK_ID;
     }
+    if (!ShouldTakeSample()) {
+        return DFX_INVALID_STACK_ID;
+    }
     const uint32_t maxDepthLimit = MAX_STACK_DEPTH_LIMIT;
     uint32_t depth = g_maxStackDepth.load();
     if (depth > maxDepthLimit) {
@@ -354,8 +413,7 @@ void DfxSetAsyncStackCallback(void)
     if (uvSetAsyncStackFn != nullptr) {
         uvSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
     }
-    const char* debuggableEnv = getenv("HAP_DEBUGGABLE");
-    if (debuggableEnv != nullptr && strcmp(debuggableEnv, "true") == 0) {
+    if (IsDebuggableApp()) {
         const char* ffrtSetAsyncStackFnName = "FFRTSetAsyncStackFunc";
         auto ffrtSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(
             dlsym(RTLD_DEFAULT, ffrtSetAsyncStackFnName));
@@ -381,6 +439,8 @@ bool DfxInitAsyncStack()
         return false;
     }
     g_fpBacktrace = std::unique_ptr<OHOS::HiviewDFX::FpBacktrace>(OHOS::HiviewDFX::FpBacktrace::CreateInstance());
+    g_sampleMode.store(GetSampleMode());
+    DFXLOGI("Init async stack, sample mode: %{public}d", static_cast<int>(g_sampleMode.load()));
     DfxSetAsyncStackCallback();
     g_init.store(true);
 #endif
@@ -395,8 +455,7 @@ extern "C" void DfxSetHiDebugAsyncStackCallback(HiDebugSetSwitchCallbackFunc fun
 #if defined(__aarch64__)
 static void DfxInvokeHiDebugCallback()
 {
-    const char* debuggableEnv = getenv("HAP_DEBUGGABLE");
-    if (debuggableEnv == nullptr || strcmp(debuggableEnv, "true") != 0) {
+    if (!IsDebuggableApp()) {
         DFXLOGW("No debuggable env!");
         return;
     }
@@ -404,7 +463,7 @@ static void DfxInvokeHiDebugCallback()
     HiDebugSetSwitchCallbackFunc callback = g_hiDebugCallback.load(std::memory_order_acquire);
     if (callback != nullptr) {
         const std::string enableDeveloperStackParam =
-            OHOS::system::GetParameter("hilog.debug.async_stack.enable_developer_stack", "false");
+            OHOS::system::GetParameter(DEVELOPER_STACK_ENABLE_KEY, "false");
         bool enableDeveloperStack = (enableDeveloperStackParam == "true");
         callback(enableDeveloperStack);
     }
