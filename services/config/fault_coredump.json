@@ -18,7 +18,7 @@
             "dumpType": "FULL",
             "outputPath": "/data/storage/el2/base/files",
             "maxCoredumpSize": 0,
-            "coredumpSwitch": false,
+            "coredumpSwitch": true,
             "dumperThreadCount": 2,
             "loadCfg": {
                 "coredumpFilter": 0,

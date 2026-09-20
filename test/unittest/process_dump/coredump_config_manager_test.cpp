@@ -233,12 +233,12 @@ HWTEST_F(CoredumpConfigManagerTest, CoredumpController_IsCoredumpSignal_011, Tes
 
 /**
  * @tc.name: CoredumpConfigManagerTest012
- * @tc.desc: test CoredumpController verifying coredump trust list for signal permission
+ * @tc.desc: test CoredumpController IsCoredumpAllowed for signal permission
  * @tc.type: FUNC
  */
-HWTEST_F(CoredumpConfigManagerTest, CoredumpController_VerifyTrustList_012, TestSize.Level2)
+HWTEST_F(CoredumpConfigManagerTest, CoredumpController_IsCoredumpAllowed_012, TestSize.Level2)
 {
-    GTEST_LOG_(INFO) << "CoredumpController_VerifyTrustList_012: start.";
+    GTEST_LOG_(INFO) << "CoredumpController_IsCoredumpAllowed_012: start.";
     ProcessDumpRequest reqMdm = {};
     reqMdm.siginfo.si_signo = SIGSEGV;
     ASSERT_FALSE(CoredumpController::IsCoredumpAllowed(reqMdm));
@@ -250,6 +250,6 @@ HWTEST_F(CoredumpConfigManagerTest, CoredumpController_VerifyTrustList_012, Test
 
     reqCoredump.siginfo.si_code = -SIGLEAK_STACK_COREDUMP;
     ASSERT_TRUE(CoredumpController::IsCoredumpAllowed(reqCoredump));
-    GTEST_LOG_(INFO) << "CoredumpController_VerifyTrustList_012: end.";
+    GTEST_LOG_(INFO) << "CoredumpController_IsCoredumpAllowed_012: end.";
 }
 }

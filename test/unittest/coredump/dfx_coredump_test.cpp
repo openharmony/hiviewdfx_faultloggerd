@@ -20,6 +20,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "coredump_config_manager.h"
 #include "coredump_dump_generator.h"
 #include "coredump_file_manager.h"
 #include "coredump_generator_factory.h"
@@ -38,6 +39,7 @@ using namespace std;
 namespace OHOS {
 namespace HiviewDFX {
 constexpr const char* const TEST_TEMP_FILE = "/data/test/testfile";
+constexpr uint32_t TEST_HAP_UID = 20000000; // 20000000 : hap uid that has no bundle name in UT environment
 class DfxCoreDumpTest : public testing::Test {};
 } // namespace HiviewDFX
 } // namespace OHOS
@@ -71,9 +73,10 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator002, TestSize.Level2)
     ProcessDumpRequest request;
     request.pid = getpid();
     request.tid = gettid();
+    request.uid = TEST_HAP_UID;
     FullCoredumpGenerator generator(request);
     bool ret = generator.TriggerCoredump();
-    EXPECT_FALSE(ret); // native not support coredump
+    EXPECT_FALSE(ret); // query bundleName fails for the non-app caller in UT environment
 
     GTEST_LOG_(INFO) << "FullCoredumpGenerator002: end.";
 }
@@ -89,6 +92,7 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator003, TestSize.Level2)
     ProcessDumpRequest req;
     req.pid = getpid();
     req.tid = gettid();
+    req.uid = TEST_HAP_UID;
     FullCoredumpGenerator generator(req);
 
     bool ret = generator.MmapCoredumpFile();
@@ -276,6 +280,8 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator009, TestSize.Level2)
         GTEST_LOG_(INFO) << "fork success";
         auto pid = getpid();
         ProcessDumpRequest request;
+        request.pid = pid;
+        request.uid = TEST_HAP_UID;
         std::vector<char> buf(1024 * 1024);
         FullCoredumpGenerator generator(request);
         generator.bw_ = std::make_unique<CoredumpBufferWriter>(buf.data(), buf.size());
@@ -397,10 +403,14 @@ HWTEST_F(DfxCoreDumpTest, CoredumpFileManager004, TestSize.Level2)
 HWTEST_F(DfxCoreDumpTest, CoredumpFileManager005, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CoredumpFileManager005: start.";
+    auto& configManager = CoredumpConfigManager::GetInstance();
+    bool oldSwitch = configManager.dumpConfig_.coredumpSwitch;
+    configManager.dumpConfig_.coredumpSwitch = false;
     CoredumpFileManager fileManager;
     fileManager.Init(0, 0);
     auto ret = fileManager.CreateFileForCoreDump();
-    EXPECT_FALSE(ret);
+    EXPECT_FALSE(ret); // native coredump is not created while the switch is off
+    configManager.dumpConfig_.coredumpSwitch = oldSwitch;
     GTEST_LOG_(INFO) << "CoredumpFileManager005: end.";
 }
 
@@ -509,6 +519,7 @@ HWTEST_F(DfxCoreDumpTest, CoredumpManager001, TestSize.Level2)
     CoredumpManager manager;
     ProcessDumpRequest request;
     request.pid = getpid();
+    request.uid = TEST_HAP_UID;
     request.siginfo.si_signo = 42;
     request.siginfo.si_code = 3;
     manager.ProcessRequest(request);

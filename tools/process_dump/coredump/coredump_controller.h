@@ -14,7 +14,6 @@
  */
 #ifndef COREDUMP_CONTROLLER_H
 #define COREDUMP_CONTROLLER_H
-#include <string>
 #include "dfx_dump_request.h"
 
 namespace OHOS {
@@ -26,9 +25,6 @@ public:
     static bool IsCoredumpAllowed(const ProcessDumpRequest& request);
     static bool VerifyProcess();
     static bool IsMdmCoredumpDisabled();
-private:
-    static bool VerifyTrustList(const std::string& bundleName);
-    static std::string GetCoredumpHapList();
 };
 } // namespace HiviewDFX
 } // namespace OHOS
