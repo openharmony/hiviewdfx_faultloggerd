@@ -71,6 +71,7 @@ bool MinidumpDumper::Dump(int pid, int pipeFd, bool enableMinidump, bool enableM
                 "HAPPEN_TIME", request_.timeStamp,
                 "SUMMARY", "Failed to parse minidump file!");
             DFXLOGI("Report pid %{public}d parse minidump failed event ret %{public}d", request_.pid, ret);
+            return false;
         }
         UnwindProcess();
         PrintDumpInfo();
