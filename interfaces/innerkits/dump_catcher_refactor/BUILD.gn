@@ -1,0 +1,144 @@
+# Copyright (c) 2026 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This is the refactored variant of dump_catcher. It keeps the public API
+# (DfxDumpCatcher / LitePerf) identical to interfaces/innerkits/dump_catcher
+# but splits the monolithic Impl into single-responsibility components:
+#   - LocalDumper / RemoteDumper / PipePoller / TimeoutAnalyzer
+#   - StatsReporter / ResultHandler / DumpCatcherPipeData
+# It produces an independent shared library libdfx_dumpcatcher_refactor.
+
+import("//base/hiviewdfx/faultloggerd/faultloggerd.gni")
+
+dumpcatcher_refactor_sources = [
+  "dfx_dump_catcher.cpp",
+  "dfx_dump_catcher_errno.cpp",
+  "dfx_dump_catcher_slow_policy.cpp",
+  "kernel_stack_async_collector.cpp",
+  "dump_catcher_pipe_data.cpp",
+  "local_dumper.cpp",
+  "pipe_poller.cpp",
+  "timeout_analyzer.cpp",
+  "stats_reporter.cpp",
+  "result_handler.cpp",
+  "remote_dumper.cpp",
+]
+
+if (defined(ohos_lite)) {
+  shared_library("libdfx_dumpcatcher_refactor") {
+    visibility = [ "*:*" ]
+
+    include_dirs = [
+      "include",
+      ".",
+      "$c_utils_include_path",
+      "$faultloggerd_common_path/dfxlog",
+      "$faultloggerd_common_path/dfxutil",
+      "$faultloggerd_interfaces_path/common",
+      "$faultloggerd_interfaces_path/innerkits/backtrace/include",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client/include",
+      "$faultloggerd_interfaces_path/innerkits/procinfo/include",
+      "$faultloggerd_interfaces_path/innerkits/unwinder/include",
+      "$hilog_lite_include_path",
+    ]
+
+    sources = dumpcatcher_refactor_sources
+
+    cflags = [ "-fstack-protector-strong" ]
+
+    deps = [
+      "$faultloggerd_common_path/dfxlog:dfx_hilog",
+      "$faultloggerd_common_path/dfxutil:dfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym",
+      "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
+    ]
+
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "hilog_lite:hilog_shared",
+    ]
+  }
+} else {
+  config("dfx_dump_catcher_refactor_config") {
+    visibility = [ "*:*" ]
+    include_dirs = [
+      "include",
+      ".",
+    ]
+    if (is_emulator) {
+      defines = [ "IS_EMULATOR" ]
+    }
+  }
+
+  ohos_shared_library("libdfx_dumpcatcher_refactor") {
+    branch_protector_ret = "pac_ret"
+    public_configs = [
+      ":dfx_dump_catcher_refactor_config",
+      "$faultloggerd_path/common/build:coverage_flags",
+    ]
+    sources = dumpcatcher_refactor_sources
+    sources += [ "lite_perf.cpp" ]
+    include_dirs = [ "$faultloggerd_interfaces_path/common" ]
+    version_script = "libdfx_dumpcatcher_refactor.map"
+    deps = [
+      "$faultloggerd_common_path/cutil:dfx_cutil_cfi",
+      "$faultloggerd_common_path/dfxlog:dfx_hilog_cfi",
+      "$faultloggerd_common_path/dfxutil:libdfx_util",
+      "$faultloggerd_common_path/trace:dfx_trace_dlsym_cfi",
+      "$faultloggerd_interfaces_path/innerkits/backtrace:libbacktrace_local",
+      "$faultloggerd_interfaces_path/innerkits/faultloggerd_client:libfaultloggerd",
+      "$faultloggerd_interfaces_path/innerkits/procinfo:libdfx_procinfo",
+      "$faultloggerd_interfaces_path/innerkits/stack_printer:libstack_printer",
+      "$faultloggerd_interfaces_path/innerkits/unwinder:libunwinder",
+    ]
+
+    external_deps = [
+      "bounds_checking_function:libsec_shared",
+      "c_utils:utils",
+      "hilog:libhilog",
+    ]
+    install_images = [
+      "system",
+      "updater",
+    ]
+    innerapi_tags = [
+      "chipsetsdk_sp_indirect",
+      "platformsdk_indirect",
+    ]
+    part_name = "faultloggerd"
+    subsystem_name = "hiviewdfx"
+
+    cflags = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
+    cflags_cc = [
+      "-Os",
+      "-fdata-sections",
+      "-ffunction-sections",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-unwind-tables",
+      "-fno-omit-frame-pointer",
+      "-fno-rtti",
+      "-fno-exceptions",
+    ]
+  }
+}
