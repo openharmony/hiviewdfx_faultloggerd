@@ -14,24 +14,18 @@
  */
 #include "coredump_controller.h"
 
+#include <cstdlib>
+
 #include "coredump_config_manager.h"
 #include "coredump_mapping_manager.h"
 #include "dfx_log.h"
-#include "dump_utils.h"
 #include "parameters.h"
 
 namespace OHOS {
 namespace HiviewDFX {
 namespace {
-    constexpr const char* const COREDUMP_HAP_LIST = "const.dfx.coredump.hap_list";
     constexpr const char* const HWASAN_COREDUMP_ENABLE = "faultloggerd.priv.hwasan_coredump.enabled";
     constexpr const char* const MDM_COREDUMP_DISABLED = "persist.edm.coredump_disable";
-}
-
-std::string CoredumpController::GetCoredumpHapList()
-{
-    static std::string uidList = OHOS::system::GetParameter(COREDUMP_HAP_LIST, "");
-    return uidList;
 }
 
 bool CoredumpController::IsHwasanCoredumpEnabled()
@@ -51,28 +45,12 @@ bool CoredumpController::IsCoredumpSignal(const ProcessDumpRequest& request)
     return request.siginfo.si_signo == SIGLEAK_STACK && abs(request.siginfo.si_code) == SIGLEAK_STACK_COREDUMP;
 }
 
-bool CoredumpController::VerifyTrustList(const std::string& bundleName)
-{
-    if (bundleName.empty()) {
-        return false;
-    }
-    std::string hapList = GetCoredumpHapList();
-    size_t pos = hapList.find(bundleName);
-    if (pos != std::string::npos && (pos == 0 || hapList[pos - 1] == ',')) {
-        return true;
-    }
-    DFXLOGE("The bundleName %{public}s is not allowed to coredump", bundleName.c_str());
-    return false;
-}
-
 bool CoredumpController::VerifyProcess()
 {
-    if (DumpUtils::HasCoredumpPermission() || VerifyTrustList(DumpUtils::GetSelfBundleName()) ||
-        (IsHwasanCoredumpEnabled() && CoredumpMappingManager::GetInstance().IsHwAsanProcess())) {
-        return true;
+    if (!IsHwasanCoredumpEnabled() && CoredumpMappingManager::GetInstance().IsHwAsanProcess()) {
+        return false;
     }
-
-    return CoredumpConfigManager::GetInstance().GetConfig().coredumpSwitch;
+    return CoredumpConfigManager::GetInstance().GetConfig().coredumpSwitch; // default true via config
 }
 
 bool CoredumpController::IsCoredumpAllowed(const ProcessDumpRequest& request)
