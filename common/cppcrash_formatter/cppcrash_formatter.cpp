@@ -29,6 +29,10 @@ namespace OHOS {
 namespace HiviewDFX {
 
 #ifndef is_ohos_lite
+namespace {
+constexpr const char* const UNKNOWN_MAP_NAME = "[Unknown]";
+} // namespace
+
 bool CppCrashJsonFormatter::NeedFormatCrashInfo()
 {
     return CppCrashInfoCollector::Instance().GetNeedFormatFlag();
@@ -318,6 +322,12 @@ cJSON* CppCrashJsonFormatter::FillNativeFrameJson(const DfxFrame& frame)
     cJSON* symItem = cJSON_CreateString(funcName.c_str());
     cJSON* offsetItem = cJSON_CreateNumber(frame.funcOffset);
     std::string strippedMapName = DfxMap::UnFormatMapName(frame.mapName);
+    if (strippedMapName.empty()) {
+        // Show "[Unknown]" for frames without a map name in the JSON output, while
+        // "Not mapped" set by the unwinder is kept as-is, so the two missing
+        // reasons remain distinguishable for JSON consumers.
+        strippedMapName = UNKNOWN_MAP_NAME;
+    }
     cJSON* fileItem = cJSON_CreateString(strippedMapName.c_str());
     cJSON* buildIdItem = cJSON_CreateString(frame.buildId.c_str());
     if (pcItem != nullptr && !cJSON_AddItemToObject(frameJson, "pc", pcItem)) {
