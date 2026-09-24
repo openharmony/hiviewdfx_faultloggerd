@@ -18,6 +18,8 @@
 #include <chrono>
 #include <string>
 
+#include "smart_fd.h"
+
 namespace OHOS {
 namespace HiviewDFX {
 enum class CoredumpStatus {
@@ -41,17 +43,17 @@ enum class CoredumpEvent {
 };
 
 struct CreateCoredumpRequest {
-    pid_t targetPid;
+    pid_t targetPid {0};
     std::string dumpType;
-    int clientFd;
-    uint64_t endTime;
+    int clientFd {-1};
+    uint64_t endTime {0};
 };
 
 struct CoredumpCallbackReport {
-    pid_t workerPid;
-    CoredumpStatus status;
+    pid_t workerPid {0};
+    CoredumpStatus status {CoredumpStatus::PENDING};
     std::string filePath;
-    int errorCode;
+    int errorCode {0};
 };
 
 using SessionId = pid_t;
@@ -62,7 +64,7 @@ struct CoredumpSession {
     CoredumpStatus status {CoredumpStatus::PENDING};
     std::string filePath;
     int errorCode {0};
-    int clientFd {-1};
+    SmartFd clientFd;
     uint64_t startTime {0};
     uint64_t endTime {0};
     uint64_t delayTaskId {0};

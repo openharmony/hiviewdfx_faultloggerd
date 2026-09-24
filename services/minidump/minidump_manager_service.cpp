@@ -100,19 +100,11 @@ MinidumpManagerService& MinidumpManagerService::GetInstance()
     return instance;
 }
 
-MinidumpManagerService::~MinidumpManagerService()
-{
-    if (pFd_ >= 0) {
-        close(pFd_);
-        pFd_ = -1;
-    }
-}
-
 bool MinidumpManagerService::Init()
 {
     DFXLOGI("minidump manager init");
-    pFd_ = open("/dev/pdump", O_NONBLOCK);
-    if (pFd_ < 0) {
+    pFd_ = SmartFd{open("/dev/pdump", O_NONBLOCK)};
+    if (!pFd_) {
         DFXLOGE("failed to open /dev/pdump, errno=%{public}d", errno);
         return false;
     }
@@ -124,16 +116,15 @@ bool MinidumpManagerService::Init()
     initArg.dump_type_flag = __PDUMP_TYPE_FLAG_MINIDUMP;
     initArg.config.nr_threads_max = MAX_PDUMP_THREAD_COUNT;
 
-    int ret = ioctl(pFd_, __PDUMP_IOCTL_INIT, &initArg);
+    int ret = ioctl(pFd_.GetFd(), __PDUMP_IOCTL_INIT, &initArg);
     if (ret < 0) {
         DFXLOGE("failed to ioctl init pdump, errno=%{public}d", errno);
-        close(pFd_);
-        pFd_ = -1;
+        pFd_.Reset();
         return false;
     }
     DFXLOGI("pdump init successfully");
 
-    auto listener = std::make_unique<PDumpListener>(SmartFd{dup(pFd_)});
+    auto listener = std::make_unique<PDumpListener>(SmartFd{dup(pFd_.GetFd())});
     if (!EpollManager::GetInstance().AddListener(std::move(listener))) {
         DFXLOGE("failed to add pdump listener to epoll manager");
     }
@@ -142,7 +133,7 @@ bool MinidumpManagerService::Init()
 
 int MinidumpManagerService::SetMiniDump(pid_t pid, int8_t enableMinidump, int8_t enableMinidumpToCrashLog)
 {
-    if (pFd_ < 0) {
+    if (!pFd_) {
         DFXLOGE("pdump device not initialized");
         return -1;
     }
@@ -245,7 +236,7 @@ void MinidumpManagerService::ProcessWorkStart(const struct __pdump_data_s& data)
         struct __pdump_work_cancel_arg_s arg = {0};
         arg.workid = data.header.workid;
         int retryTimes = 0;
-        while (ioctl(pFd_, __PDUMP_IOCTL_CANCEL, &arg) < 0) {
+        while (ioctl(pFd_.GetFd(), __PDUMP_IOCTL_CANCEL, &arg) < 0) {
             constexpr int retryMaxTimes = 3;
             if (++retryTimes >= retryMaxTimes) {
                 DFXLOGE("failed to ioctl cancel pdump, errno=%{public}d", errno);

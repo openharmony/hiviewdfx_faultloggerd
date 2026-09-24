@@ -24,7 +24,6 @@
 #include "coredump_dump_generator.h"
 #include "coredump_file_manager.h"
 #include "coredump_generator_factory.h"
-#define private public
 #include "coredump_mapping_manager.h"
 #include "coredump_manager.h"
 
@@ -116,7 +115,7 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator004, TestSize.Level2)
     ASSERT_TRUE(!ret);
 
     CoredumpFileManager fileManager;
-    fileManager.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    fileManager.fd_ = SmartFd(open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
     fileManager.coreFileSize_ = 1024 * 1024;
     fileManager.MmapForFd();
     generator.bw_ = make_unique<CoredumpBufferWriter>(fileManager.GetMappedMemory(), fileManager.GetCoreFileSize());
@@ -151,7 +150,7 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator005, TestSize.Level2)
 
 
     CoredumpFileManager fileManager;
-    fileManager.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    fileManager.fd_ = SmartFd(open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
     fileManager.coreFileSize_ = 1024 * 1024;
     fileManager.MmapForFd();
     generator.bw_ =
@@ -199,7 +198,7 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator006, TestSize.Level2)
     ASSERT_TRUE(!ret);
 
     CoredumpFileManager fileManager;
-    fileManager.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    fileManager.fd_ = SmartFd(open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
     fileManager.coreFileSize_ = 1024 * 1024;
     fileManager.MmapForFd();
     generator.bw_ =
@@ -228,7 +227,7 @@ HWTEST_F(DfxCoreDumpTest, FullCoredumpGenerator007, TestSize.Level2)
     bool ret = generator.WriteSectionHeader();
     EXPECT_FALSE(ret);
 
-    fileManager.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    fileManager.fd_ = SmartFd(open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
     fileManager.coreFileSize_ = 1024 * 1024;
     fileManager.MmapForFd();
     generator.bw_ =
@@ -381,17 +380,16 @@ HWTEST_F(DfxCoreDumpTest, CoredumpFileManager004, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CoredumpFileManager004: start.";
     CoredumpFileManager fileManager;
-    fileManager.fd_ = -1;
+    fileManager.fd_.Reset();
     auto ret = fileManager.AdjustFileSize(0);
     ASSERT_TRUE(!ret);
     int fd = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
     ASSERT_TRUE(fd > 0);
-    fileManager.fd_ = fd;
+    fileManager.fd_ = SmartFd(fd);
     ret = fileManager.AdjustFileSize(0);
     ASSERT_TRUE(!ret);
     ret = fileManager.AdjustFileSize(1024);
     ASSERT_TRUE(ret);
-    close(fd);
     GTEST_LOG_(INFO) << "CoredumpFileManager004: end.";
 }
 
@@ -457,8 +455,8 @@ HWTEST_F(DfxCoreDumpTest, CoredumpFileManager008, TestSize.Level2)
     CoredumpFileManager fileManager;
     bool ret = fileManager.MmapForFd();
     ASSERT_TRUE(!ret);
-    fileManager.fd_ = open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-    ASSERT_TRUE(fileManager.fd_ > 0);
+    fileManager.fd_ = SmartFd(open(TEST_TEMP_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR));
+    ASSERT_TRUE(fileManager.fd_.GetFd() > 0);
     ret = fileManager.MmapForFd();
     ASSERT_TRUE(!ret);
     fileManager.coreFileSize_ = 1024 * 1024;

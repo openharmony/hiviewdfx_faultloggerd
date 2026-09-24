@@ -580,8 +580,8 @@ std::string ProcessDumper::ReadFileWithTimeHeader(const std::string& filePath)
         return "Error: File path empty";
     }
 
-    int fd = OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDONLY | O_NOFOLLOW));
-    if (fd < 0) {
+    SmartFd sFd(OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDONLY | O_NOFOLLOW)));
+    if (!sFd) {
         std::string errMsg = "Error: File not found or open failed. Path:" + filePath +
                              ", errno:" + std::to_string(errno) + ", desc: " + strerror(errno);
         DFXLOGE("readFileWithTimeHeader error msg:%{public}s", errMsg.c_str());
@@ -589,20 +589,17 @@ std::string ProcessDumper::ReadFileWithTimeHeader(const std::string& filePath)
     }
 
     struct stat fileInfo = {0};
-    if (fstat(fd, &fileInfo) != 0) {
+    if (fstat(sFd.GetFd(), &fileInfo) != 0) {
         DFXLOGE("readFileWithTimeHeader fstat failed: %{public}s", filePath.c_str());
-        close(fd);
         return "Error: fstat failed";
     }
     if (!S_ISREG(fileInfo.st_mode)) {
         DFXLOGE("readFileWithTimeHeader not a regular file: %{public}s", filePath.c_str());
-        close(fd);
         return "Error: not a regular file";
     }
 
     std::string result = GetFileModificationTime(fileInfo);
-    result += ReadFileContent(fd, static_cast<size_t>(fileInfo.st_size));
-    close(fd);
+    result += ReadFileContent(sFd.GetFd(), static_cast<size_t>(fileInfo.st_size));
     return result;
 }
 

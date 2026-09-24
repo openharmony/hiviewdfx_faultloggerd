@@ -32,7 +32,7 @@ SessionId CoredumpSessionManager::CreateSession(const CreateCoredumpRequest& req
 {
     CoredumpSession session;
     session.sessionId = request.targetPid;
-    session.clientFd = request.clientFd;
+    session.clientFd = SmartFd(request.clientFd);
     session.status = CoredumpStatus::PENDING;
     session.endTime = request.endTime;
     session.startTime = GetTimeMilliSeconds();
@@ -58,11 +58,6 @@ void CoredumpSessionManager::RemoveSession(SessionId sessionId)
 {
     if (auto it = sessions_.find(sessionId); it != sessions_.end()) {
         DFXLOGI("success remove session %{public}d", sessionId);
-        if (int& fd = it->second.clientFd; fd >= 0) {
-            close(fd);
-            fd = -1;
-        }
-
         CoredumpTaskScheduler().CancelTimeout(sessionId);
         sessions_.erase(it);
     }
