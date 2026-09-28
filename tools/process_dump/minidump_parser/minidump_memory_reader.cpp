@@ -29,6 +29,7 @@
 #include "minidump_optimizer.h"
 #include "securec.h"
 #include "smart_fd.h"
+#include "string_util.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -48,7 +49,10 @@ MinidumpMemoryReader::MinidumpMemoryReader(const std::string& path)
         auto fileStream = std::make_shared<std::ifstream>();
         streamBuf_ = new char[DEFAULT_READ_AHEAD_SIZE];
         fileStream->rdbuf()->pubsetbuf(streamBuf_, DEFAULT_READ_AHEAD_SIZE);
-        fileStream->open(path, std::ios::binary);
+        auto realPath = RealPath(path);
+        if (realPath != nullptr) {
+            fileStream->open(realPath.get(), std::ios::binary);
+        }
         stream_ = fileStream;
         InitStreamSize();
     }
@@ -68,7 +72,11 @@ MinidumpMemoryReader::~MinidumpMemoryReader()
 
 bool MinidumpMemoryReader::InitMmap(const std::string& path)
 {
-    SmartFd fd(open(path.c_str(), O_RDONLY | O_CLOEXEC));
+    auto realPath = RealPath(path);
+    SmartFd fd;
+    if (realPath != nullptr) {
+        fd = SmartFd(open(path.c_str(), O_RDONLY | O_CLOEXEC));
+    }
     if (!fd) {
         DFXLOGE("MinidumpMemoryReader open failed for %{public}s errno=%{public}d", path.c_str(), errno);
         return false;

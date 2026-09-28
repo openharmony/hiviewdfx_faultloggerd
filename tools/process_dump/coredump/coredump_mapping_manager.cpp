@@ -28,7 +28,7 @@ namespace HiviewDFX {
 namespace {
 constexpr int HEX_BASE = 16;
 constexpr uint64_t LARGE_ANON_THRESHOLD = 64UL * 1024 * 1024;
-constexpr uint64_t MAX_COREDUMP_SIZE = 4ULL * 1024 * 1024 * 1024;
+constexpr uint64_t MAX_COREDUMP_SIZE = 10ULL * 1024 * 1024 * 1024;
 bool HasValidPermissions(const DumpMemoryRegions& region)
 {
     std::string perms = region.priority;

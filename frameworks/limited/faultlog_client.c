@@ -210,7 +210,7 @@ static int32_t RequestServer(const void *buf, int len, int* fd)
 
     retCode = RECEIVE_DATA_FAILED;
     ssize_t nread = OHOS_TEMP_FAILURE_RETRY(read(sockfd, &retCode, sizeof(retCode)));
-    if (nread != sizeof(retCode)) {
+    if (nread != (ssize_t)sizeof(retCode)) {
         DFXLOGE("Failed to get message from socket, %{public}zd, errno(%{public}d). ", nread, errno);
     }
 

@@ -229,7 +229,7 @@ int SysOpen(const char *pathname, int flags)
         errno = EINVAL;
         return -1;
     }
-    if (flags & O_CREAT) {
+    if ((unsigned)flags & (unsigned)O_CREAT) {
         errno = EPERM;
         return -1;
     }

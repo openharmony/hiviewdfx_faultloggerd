@@ -321,7 +321,7 @@ bool IsProcessMinidumpAllowed(pid_t pid)
     long uid = -1;
     uint64_t sigBlk = 0;
     if (!GetUidAndSigBlk(info.ppid, uid, sigBlk)) {
-        DFXLOGE("get uid failed", errno);
+        DFXLOGE("get uid failed errno(%{public}d)", errno);
         return false;
     }
     if (uid != 0 && uid != 3044 && // 3044 : hdf_devmgr uid
