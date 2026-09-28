@@ -141,10 +141,11 @@ int DfxArk::ArkDestroyLocal()
 }
 
 int DfxArk::ParseArkFileInfo(uintptr_t byteCodePc, uintptr_t mapBase, uintptr_t offset, const char* name,
-    uintptr_t extractorPtr, JsFunction *jsFunction, bool needTranslate)
+    uintptr_t extractorPtr, JsFunction *jsFunction, bool needTranslate, bool isStaticArkFrame)
 {
     if (parseArkFileInfoFn_ != nullptr || InitArkFunction(ARK_PARSE_JS_FILE_INFO)) {
-        return parseArkFileInfoFn_(byteCodePc, mapBase, offset, name, extractorPtr, needTranslate, jsFunction);
+        return parseArkFileInfoFn_(
+            byteCodePc, mapBase, offset, name, extractorPtr, needTranslate, isStaticArkFrame, jsFunction);
     }
     return -1;
 }

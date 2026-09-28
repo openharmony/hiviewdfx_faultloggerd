@@ -1062,7 +1062,7 @@ bool Unwinder::Impl::AddFrameMap(const StepFrame& frame, std::shared_ptr<DfxMap>
 bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxMap>& map, bool& stopUnwind)
 {
 #if defined(ENABLE_MIXSTACK)
-    if (stopWhenArkFrame_ && (map != nullptr && (map->IsArkExecutable() || map->IsStaticArkExecutable(frame.pc)))) {
+    if (stopWhenArkFrame_ && (map != nullptr && (map->IsArkExecutable() || map->IsStaticArkExecutable()))) {
         DFXLOGU("Stop by ark frame");
         stopUnwind = true;
         return false;
@@ -1070,9 +1070,9 @@ bool Unwinder::Impl::UnwindArkFrame(StepFrame& frame, const std::shared_ptr<DfxM
     if (!enableMixstack_ || map == nullptr) {
         return true;
     }
-    if (map->IsStaticArkExecutable(frame.pc) || frame.frameType == FrameType::STATIC_JS_FRAME) {
+    if (map->IsStaticArkExecutable() || frame.frameType == FrameType::STATIC_JS_FRAME) {
         static uint64_t frameIndex = 0;
-        if (map->IsStaticArkExecutable(frame.pc)) {
+        if (map->IsStaticArkExecutable()) {
             frame.frameType = FrameType::STATIC_JS_FRAME;
             frameIndex = 0;
         }

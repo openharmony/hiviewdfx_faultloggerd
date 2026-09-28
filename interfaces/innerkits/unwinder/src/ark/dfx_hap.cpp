@@ -46,7 +46,8 @@ DfxHap::~DfxHap()
 #endif
 }
 
-bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction, bool isOffline)
+bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction, bool isOffline,
+    bool isStaticArkFrame)
 {
 #if is_ohos && !is_mingw
     if (jsFunction == nullptr || map == nullptr) {
@@ -62,7 +63,7 @@ bool DfxHap::ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, J
     }
 
     if (DfxMaps::IsArkHapMapItem(map->name)) {
-        if (!ParseHapFileInfo(pc, map, jsFunction)) {
+        if (!ParseHapFileInfo(pc, map, jsFunction, isStaticArkFrame)) {
             DFXLOGW("Failed to parse hap file info");
             return false;
         }
@@ -136,7 +137,7 @@ bool DfxHap::ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relP
 #endif
 }
 
-bool DfxHap::ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction)
+bool DfxHap::ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction, bool isStaticArkFrame)
 {
 #if is_ohos && !is_mingw
     if (jsFunction == nullptr || map == nullptr || map->name.empty()) {
@@ -144,7 +145,7 @@ bool DfxHap::ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFuncti
     }
 
     if (DfxArk::Instance().ParseArkFileInfo(static_cast<uintptr_t>(pc), static_cast<uintptr_t>(map->begin),
-        map->offset, map->name.c_str(), arkSymbolExtractorPtr_, jsFunction) < 0) {
+        map->offset, map->name.c_str(), arkSymbolExtractorPtr_, jsFunction, true, isStaticArkFrame) < 0) {
         DFXLOGW("Failed to parse ark file info, pc: %{private}p, begin: %{private}p",
             reinterpret_cast<void *>(pc), reinterpret_cast<void *>(map->begin));
         return false;

@@ -263,6 +263,10 @@ void DfxMaps::HandleSpecialMap(const std::shared_ptr<DfxMap>& map)
         ArkStackStart_ = static_cast<uintptr_t>(map->begin);
         ArkStackEnd_ = static_cast<uintptr_t>(map->end);
     }
+    if (map->IsMapExec() && map->name.find(DfxMap::GetStaticArkLibName()) != std::string::npos) {
+        StaticArkStart_ = static_cast<uintptr_t>(map->begin);
+        StaticArkEnd_ = static_cast<uintptr_t>(map->end);
+    }
 }
 
 bool DfxMaps::IsArkHapMapItem(const std::string& name)
@@ -288,6 +292,11 @@ bool DfxMaps::IsArkCodeMapItem(const std::string& name)
         return true;
     }
     return false;
+}
+
+bool DfxMaps::IsJsFrame(const DfxFrame& frame)
+{
+    return IsArkHapMapItem(frame.mapName) || IsArkCodeMapItem(frame.mapName) || frame.isJsFrame;
 }
 
 bool DfxMaps::IsLegalMapItem(const std::string& name, bool withArk)
@@ -495,26 +504,12 @@ bool DfxMaps::IsArkExecutedMap(uintptr_t addr)
 
 bool DfxMaps::GetStaticArkRange(uintptr_t& start, uintptr_t& end)
 {
-    std::vector<std::shared_ptr<DfxMap>> maps;
-    std::string libName = "arkruntime";
-    if (!FindMapsByName("lib" + libName + ".so", maps)) {
-        DFXLOGE("can not find map!");
+    if (StaticArkStart_ == 0 || StaticArkEnd_ == 0) {
         return false;
     }
-    std::shared_ptr<DfxMap> execMap;
-    for (const auto& map : maps) {
-        if (map == nullptr) {
-            continue;
-        }
-        if (map->IsMapExec()) {
-            execMap = map;
-            break;
-        }
-    }
-    if (execMap == nullptr) {
-        return false;
-    }
-    return execMap->GetStaticArkRange(start, end);
+    start = StaticArkStart_;
+    end = StaticArkEnd_;
+    return true;
 }
 } // namespace HiviewDFX
 } // namespace OHOS

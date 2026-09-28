@@ -20,6 +20,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include "dfx_frame.h"
 #include "dfx_map.h"
 #include "string_util.h"
 
@@ -37,6 +38,7 @@ public:
 
     static bool IsArkHapMapItem(const std::string& name);
     static bool IsArkCodeMapItem(const std::string& name);
+    static bool IsJsFrame(const DfxFrame& frame);
     static bool IsLegalMapItem(const std::string& name, bool withArk = true);
     static bool IsArkWebProc();
     void AddMap(std::shared_ptr<DfxMap> map, bool enableMapIndex = false);
@@ -75,6 +77,8 @@ private:
     uintptr_t stackTop_ = 0;
     uintptr_t ArkStackStart_ = 0;
     uintptr_t ArkStackEnd_ = 0;
+    uintptr_t StaticArkStart_ = 0;
+    uintptr_t StaticArkEnd_ = 0;
     uint32_t adltMapIndex_ = -1;
     bool isFormatPath_ {true};
 };

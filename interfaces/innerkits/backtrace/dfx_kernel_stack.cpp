@@ -98,6 +98,7 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
     }
     size_t index = 0;
     std::regex framePattern(R"(\[(\w{16})\]\<[\w\?+/]{1,1024}\> \(([\w\-./]{1,1024})\))");
+    bool prevIsStatic = false;
     for (std::sregex_iterator it = std::sregex_iterator(kernelStack.begin() + pos, kernelStack.end(), framePattern);
         it != std::sregex_iterator(); ++it) {
         if ((*it)[2].str().rfind(".elf") != std::string::npos) { // 2 : second of searched element is map name
@@ -108,8 +109,16 @@ bool FormatThreadKernelStack(const std::string& kernelStack, DfxThreadStack& thr
         base = 16; // 16 : Hexadecimal
         frame.relPc = strtoull((*it)[1].str().c_str(), nullptr, base);
         frame.mapName = (*it)[2].str(); // 2 : second of searched element is map name
+        if (prevIsStatic) {
+            frame.frameType = FrameType::STATIC_JS_FRAME;
+        }
         if (parser) {
             parser->ParseSymbolWithFrame(frame);
+        }
+        if (EndsWith(frame.mapName, DfxMap::GetStaticArkLibName())) {
+            prevIsStatic = true;
+        } else if (!DfxMaps::IsJsFrame(frame)) {
+            prevIsStatic = false;
         }
         threadStack.frames.emplace_back(frame);
     }

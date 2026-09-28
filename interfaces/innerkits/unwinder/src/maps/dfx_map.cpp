@@ -263,38 +263,6 @@ bool DfxMap::IsArkExecutable()
     DFXLOGU("Current ark map: %{public}s", name.c_str());
     return true;
 }
-bool DfxMap::GetStaticArkRange(uintptr_t& start, uintptr_t& end)
-{
-    auto elf = GetElf();
-    if (!elf) {
-        return false;
-    }
-    ElfSymbol handleNopSymbol;
-    ElfSymbol handleExcepSymbol;
-    if (!elf->FindFuncSymbolByName("HANDLE_FAST_NOP", handleNopSymbol) ||
-        !elf->FindFuncSymbolByName("HANDLE_FAST_EXCEPTION", handleExcepSymbol)) {
-        return false;
-    }
-    if (prevMap == nullptr) {
-        return false;
-    }
-    uint64_t startVal = 0;
-    uint64_t excepEnd = 0;
-    uint64_t endVal = 0;
-    if (__builtin_add_overflow(handleNopSymbol.value, prevMap->begin, &startVal) ||
-        __builtin_add_overflow(handleExcepSymbol.value, handleExcepSymbol.size, &excepEnd) ||
-        __builtin_add_overflow(excepEnd, prevMap->begin, &endVal)) {
-        DFXLOGE("Failed to get static ark range, value overflow.");
-        return false;
-    }
-    start = startVal;
-    end = endVal;
-    if (start >= end) {
-        return false;
-    }
-    return true;
-}
-
 std::vector<DfxMap::MapRange> DfxMap::BuildStaticArkLLVMRanges()
 {
     auto elf = GetElf();
@@ -345,57 +313,9 @@ std::vector<DfxMap::MapRange> DfxMap::BuildStaticArkLLVMRanges()
     return ranges;
 }
 
-bool DfxMap::IsStaticArkExecutable(uintptr_t pc)
+bool DfxMap::IsStaticArkExecutable()
 {
-    if (name.empty()) {
-        return false;
-    }
-    std::string libName = "arkruntime";
-    if (!EndsWith(name, "lib" + libName + ".so")) {
-        return false;
-    }
-
-    if (!IsMapExec()) {
-        DFXLOGU("Current static ark map(%{public}s) is not exec", name.c_str());
-        return false;
-    }
-
-    // arkllvm Interpreter
-    static std::vector<MapRange> llvmMapRanges;
-    static std::once_flag llvmInitFlag;
-    std::call_once(llvmInitFlag, [this]() {
-        DFXLOGI("ark llvm start to initialize");
-        llvmMapRanges = BuildStaticArkLLVMRanges();
-    });
-
-    if (!llvmMapRanges.empty()) {
-        // Ranges are sorted by begin, use binary search to find first begin > pc
-        auto cmp = [](uint64_t value, const MapRange& r) { return value < r.begin; };
-        auto it = std::upper_bound(llvmMapRanges.begin(), llvmMapRanges.end(),
-            static_cast<uint64_t>(pc), cmp);
-        if (it != llvmMapRanges.begin()) {
-            --it;
-            if (pc >= it->begin && pc < it->end) {
-                return true;
-            }
-        }
-    }
-    // irtoc Interpreter
-    static uint64_t arkInterpreterBegin = 0;
-    static uint64_t arkInterpreterEnd = 0;
-    static std::once_flag irtocInitFlag;
-    std::call_once(irtocInitFlag, [this]() {
-        uintptr_t start = 0;
-        uintptr_t end = 0;
-        if (GetStaticArkRange(start, end)) {
-            arkInterpreterBegin = start;
-            arkInterpreterEnd = end;
-        }
-    });
-    if (arkInterpreterBegin == 0 && arkInterpreterEnd == 0) {
-        return false;
-    }
-    return pc >= arkInterpreterBegin && pc < arkInterpreterEnd;
+    return EndsWith(name, GetStaticArkLibName());
 }
 
 bool DfxMap::IsJsvmExecutable()

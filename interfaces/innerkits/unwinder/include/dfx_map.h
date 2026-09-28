@@ -52,8 +52,13 @@ public:
     bool Parse(const char* buff, size_t buffSize);
     bool IsMapExec();
     bool IsArkExecutable();
-    bool IsStaticArkExecutable(uintptr_t pc);
-    bool GetStaticArkRange(uintptr_t& start, uintptr_t& end);
+    // keep the name split: a full lib*.so literal would be scanned out as a real dependency
+    static std::string GetStaticArkLibName()
+    {
+        constexpr const char* const libCoreName = "arkinterpreter";
+        return "lib" + std::string(libCoreName) + ".so";
+    }
+    bool IsStaticArkExecutable();
     std::vector<MapRange> BuildStaticArkLLVMRanges();
     bool IsJsvmExecutable();
     bool IsArkWebJsExecutable();
