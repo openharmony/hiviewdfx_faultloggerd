@@ -37,9 +37,10 @@ public:
     DfxHap(const DfxHap&) = delete;
     DfxHap& operator= (const DfxHap&) = delete;
     bool ParseHapInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction,
-        bool isOffline = false);
+        bool isOffline = false, bool isStaticArkFrame = false);
 private:
-    bool ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction);
+    bool ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction,
+        bool isStaticArkFrame = false);
     bool ParseHapMemInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map,
         JsFunction *jsFunction);
 

@@ -59,7 +59,6 @@ public:
     bool ParseNativeSymbolWithFrames(std::vector<DfxFrame>& frames);
     static bool ReportDumpStats(const ReportData& reportData);
 private:
-    static bool IsJsFrame(const DfxFrame& frame);
     bool ParseBuildIdAndNativeSymbol(DfxFrame& frame);
     bool ParseJsSymbol(DfxFrame& frame);
     bool ParseBuildId(DfxFrame& frame);

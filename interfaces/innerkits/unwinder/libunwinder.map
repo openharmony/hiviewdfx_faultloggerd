@@ -68,6 +68,7 @@
       OHOS::HiviewDFX::DfxMaps::FindMapsByName*;
       OHOS::HiviewDFX::DfxMaps::GetStackRange*;
       OHOS::HiviewDFX::DfxMaps::IsArkWebProc*;
+      OHOS::HiviewDFX::DfxMaps::IsJsFrame*;
       OHOS::HiviewDFX::DfxMaps::AddMap*;
       OHOS::HiviewDFX::DfxRegs::CreateRemoteRegs*;
       OHOS::HiviewDFX::DfxRegs::CreateFromUcontext*;

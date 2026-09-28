@@ -42,14 +42,14 @@ HWTEST_F(DfxOfflineParserTest, DfxOfflineParserTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxOfflineParserTest001: start.";
     DfxFrame frame;
     frame.mapName = "xxx.hap";
-    bool isJsFrame = DfxOfflineParser::IsJsFrame(frame);
+    bool isJsFrame = DfxMaps::IsJsFrame(frame);
     ASSERT_TRUE(isJsFrame);
     frame.mapName = "xxx.so";
-    isJsFrame = DfxOfflineParser::IsJsFrame(frame);
+    isJsFrame = DfxMaps::IsJsFrame(frame);
     ASSERT_FALSE(isJsFrame);
     frame.mapName = "xxx";
     frame.isJsFrame = true;
-    isJsFrame = DfxOfflineParser::IsJsFrame(frame);
+    isJsFrame = DfxMaps::IsJsFrame(frame);
     ASSERT_TRUE(isJsFrame);
     GTEST_LOG_(INFO) << "DfxOfflineParserTest001: end.";
 }

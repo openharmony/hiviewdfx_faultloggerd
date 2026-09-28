@@ -575,7 +575,7 @@ HWTEST_F(MapsTest, IsStaticArkExecutableConcurrentTest001, TestSize.Level2)
             auto arkMap = std::make_shared<DfxMap>(0x1000, 0x2000, 0, PROT_EXEC,
                 "/system/lib64/libarkruntime.so");
             for (int j = 0; j < iterPerThread; ++j) {
-                bool r = arkMap->IsStaticArkExecutable(0x1000 + j);
+                bool r = arkMap->IsStaticArkExecutable();
                 r ? trueCount.fetch_add(1, std::memory_order_relaxed)
                   : falseCount.fetch_add(1, std::memory_order_relaxed);
             }
@@ -584,7 +584,7 @@ HWTEST_F(MapsTest, IsStaticArkExecutableConcurrentTest001, TestSize.Level2)
     for (auto& t : threads) {
         t.join();
     }
-    // No real ELF symbols available, GetStaticArkRange must fail, all calls return false.
+    // Map name does not end with libarkinterpreter.so, all calls return false.
     EXPECT_EQ(trueCount.load(), 0);
     EXPECT_EQ(falseCount.load(), threadNum * iterPerThread);
 
@@ -601,16 +601,20 @@ HWTEST_F(MapsTest, IsStaticArkExecutableTest001, TestSize.Level2)
     GTEST_LOG_(INFO) << "IsStaticArkExecutableTest001: start.";
 
     auto emptyNameMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "");
-    EXPECT_FALSE(emptyNameMap->IsStaticArkExecutable(0x100));
+    EXPECT_FALSE(emptyNameMap->IsStaticArkExecutable());
 
     auto nonArkMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "/system/lib64/libtest.so");
-    EXPECT_FALSE(nonArkMap->IsStaticArkExecutable(0x100));
+    EXPECT_FALSE(nonArkMap->IsStaticArkExecutable());
 
     auto nonExecMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_READ, "libarkruntime.so");
-    EXPECT_FALSE(nonExecMap->IsStaticArkExecutable(0x100));
+    EXPECT_FALSE(nonExecMap->IsStaticArkExecutable());
 
     auto arkMap = std::make_shared<DfxMap>(0x1000, 0x2000, 0, PROT_EXEC, "/system/lib64/libarkruntime.so");
-    EXPECT_FALSE(arkMap->IsStaticArkExecutable(0x1000));
+    EXPECT_FALSE(arkMap->IsStaticArkExecutable());
+
+    auto interpreterMap = std::make_shared<DfxMap>(0x1000, 0x2000, 0, PROT_EXEC,
+        "/system/lib64/libarkinterpreter.so");
+    EXPECT_TRUE(interpreterMap->IsStaticArkExecutable());
 
     GTEST_LOG_(INFO) << "IsStaticArkExecutableTest001: end.";
 }
