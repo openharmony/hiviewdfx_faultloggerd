@@ -97,7 +97,6 @@ private:
     typedef std::vector<MDRawDirectory> MDRawDirectoryEntries;
     typedef std::map<uint32_t, MinidumpStreamInfo> MinidumpStreamMap;
 
-    bool Open();
     bool ReadMinidumpHeader();
     bool ReadStreamDirectory();
     bool RegisterStreamDirectoryEntry(const MDRawDirectory& entry, uint32_t index);

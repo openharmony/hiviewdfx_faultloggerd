@@ -180,8 +180,8 @@ PerfErrorCode LitePerf::Impl::StartProcessStackSampling(const LitePerfConfig& co
     int seconds = timeout / DumpCatcherConstants::SECOND_TO_MS;
     switch (RequestLitePerfPipeFd(FaultLoggerPipeType::PIPE_FD_READ, pipeReadFd, seconds, checkLimit)) {
         case ResponseCode::REQUEST_SUCCESS: {
-            SmartFd bufFd(pipeReadFd[PIPE_BUF_INDEX], false);
-            SmartFd resFd(pipeReadFd[PIPE_RES_INDEX], false);
+            SmartFd bufFd(pipeReadFd[PIPE_BUF_INDEX]);
+            SmartFd resFd(pipeReadFd[PIPE_RES_INDEX]);
             PerfErrorCode res = PerfErrorCode::SUCCESS;
             if (ExecDump(config.tids, config.freq, config.durationMs) < 0 ||
                 DumpPoll(pipeReadFd, timeout) < 0) {

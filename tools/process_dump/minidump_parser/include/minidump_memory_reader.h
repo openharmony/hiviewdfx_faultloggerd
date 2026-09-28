@@ -61,7 +61,6 @@ private:
     uint8_t* mmapData_ = nullptr;
     size_t mmapSize_ = 0;
     off_t mmapPos_ = 0;
-    int mmapFd_ = -1;
     size_t fileSize_ = 0;
     char* streamBuf_ = nullptr;
 };

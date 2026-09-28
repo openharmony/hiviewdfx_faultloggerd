@@ -14,15 +14,12 @@
  */
 
 #include <algorithm>
-#include <cerrno>
 #include <cinttypes>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <fcntl.h>
 #include <fstream>
-#include <unistd.h>
 
 #include "dfx_log.h"
 #include "minidump_factory.h"
@@ -70,32 +67,8 @@ MinidumpParser::~MinidumpParser()
     stream_.reset();
 }
 
-bool MinidumpParser::Open()
-{
-    if (path_.empty()) {
-        if (!stream_) {
-            return false;
-        }
-        return stream_->good();
-    }
-    int fd = open(path_.c_str(), O_RDONLY | O_CLOEXEC);
-    if (fd < 0) {
-        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_OPEN,
-            "Cannot open file: " + path_, __LINE__);
-        DFXLOGE("MinidumpParser could not open path: %{public}s errno=%{public}d", path_.c_str(), errno);
-        return false;
-    }
-    close(fd);
-    return true;
-}
-
 bool MinidumpParser::ReadMinidumpHeader()
 {
-    if (!Open()) {
-        lastError_ = MinidumpErrorInfo(MinidumpError::ERROR_FILE_OPEN, "Cannot open file", __LINE__);
-        DFXLOGE("MinidumpParser cannot open file");
-        return false;
-    }
     if (!path_.empty()) {
         memoryReader_ = std::make_shared<MinidumpMemoryReader>(path_);
     } else {
