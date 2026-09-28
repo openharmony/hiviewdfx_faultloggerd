@@ -14,12 +14,15 @@
  */
 
 #include <cstdint>
+#include <vector>
 #include <gtest/gtest.h>
+#include <securec.h>
 
 #include <cstdio>
 #include <sys/ucontext.h>
 #include <ucontext.h>
 
+#include "dfx_maps.h"
 #include "thread_context.h"
 
 using namespace testing;
@@ -101,8 +104,14 @@ HWTEST(LocalThreadContextMixTest, AccessMem003, testing::ext::TestSize.Level0)
     // init LocalThreadContextMix
     auto& instance = LocalThreadContextMix::GetInstance();
     instance.ReleaseCollectThreadContext();
-    instance.CollectThreadContext(gettid());
-    instance.CopyRegister((void*)&ucp);
+    instance.SetStackForward(0);
+    instance.SetStackBuf(std::vector<uint8_t>(STACK_BUFFER_SIZE, 0));
+    instance.SetMaps(DfxMaps::Create());
+#if defined(__arm__)
+    instance.SetSp(ucp.uc_mcontext.arm_sp);
+#elif defined(__aarch64__)
+    instance.SetSp(ucp.uc_mcontext.sp);
+#endif
 
     // sp_ <= addr <= sp_ + STACK_BUFFER_SIZE - sizeof(uintptr_t)
 #if defined(__arm__)
@@ -172,6 +181,98 @@ HWTEST(LocalThreadContextMixTest, SetSp001, testing::ext::TestSize.Level2)
     EXPECT_EQ(instance.sp_, testSp);
     instance.SetSp(0);
     EXPECT_EQ(instance.sp_, 0);
+}
+
+/**
+ * @tc.name: AccessMemStackWindow001
+ * @tc.desc: an injected buffer is fully readable through AccessMem
+ * @tc.type: FUNC
+ */
+HWTEST(LocalThreadContextMixTest, AccessMemStackWindow001, testing::ext::TestSize.Level0)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    instance.ReleaseCollectThreadContext();
+    constexpr uintptr_t sp = 0x10000;
+    std::vector<uint8_t> buf(0x100, 0);
+    const uint32_t magic = 0x12345678;
+    ASSERT_EQ(memcpy_s(buf.data() + 0x10, buf.size() - 0x10, &magic, sizeof(magic)), 0);
+    instance.SetStackForward(0);
+    instance.SetStackBuf(buf);
+    instance.SetSp(sp);
+    instance.SetMaps(DfxMaps::Create());
+    uintptr_t val = 0;
+    EXPECT_EQ(instance.AccessMem(sp + 0x10, &val), 0);
+    EXPECT_EQ(val, static_cast<uintptr_t>(magic));
+    EXPECT_EQ(instance.AccessMem(sp + buf.size() - sizeof(uintptr_t), &val), 0);
+}
+
+/**
+ * @tc.name: AccessMemStackWindow002
+ * @tc.desc: reads past the actually copied length fail even inside the 64K window
+ * @tc.type: FUNC
+ */
+HWTEST(LocalThreadContextMixTest, AccessMemStackWindow002, testing::ext::TestSize.Level0)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    instance.ReleaseCollectThreadContext();
+    constexpr uintptr_t sp = 0x10000;
+    std::vector<uint8_t> buf(STACK_BUFFER_SIZE, 0);
+    instance.SetStackForward(0);
+    instance.SetStackBuf(buf);
+    // copied bytes end at 0x558; the rest of the 64K buffer is zero fill
+    instance.stackCopiedLen_ = 0x558;
+    instance.SetSp(sp);
+    instance.SetMaps(DfxMaps::Create());
+    uintptr_t val = 1;
+    EXPECT_EQ(instance.AccessMem(sp + 0x558, &val), -1);
+    // .ARM.exidx offset observed in the field case
+    EXPECT_EQ(instance.AccessMem(sp + 0x232c, &val), -1);
+    EXPECT_EQ(val, 0); // failed read must not write to *val
+    EXPECT_EQ(instance.AccessMem(sp + 0x10, &val), 0);
+    EXPECT_EQ(val, 0);
+}
+
+/**
+ * @tc.name: AccessMemStackWindow003
+ * @tc.desc: reads beyond the 64K window fail
+ * @tc.type: FUNC
+ */
+HWTEST(LocalThreadContextMixTest, AccessMemStackWindow003, testing::ext::TestSize.Level0)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    instance.ReleaseCollectThreadContext();
+    constexpr uintptr_t sp = 0x10000;
+    std::vector<uint8_t> buf(STACK_BUFFER_SIZE, 0);
+    instance.SetStackForward(0);
+    instance.SetStackBuf(buf);
+    instance.SetSp(sp);
+    instance.SetMaps(DfxMaps::Create());
+    uintptr_t val = 0;
+    EXPECT_EQ(instance.AccessMem(sp + STACK_BUFFER_SIZE, &val), -1);
+    EXPECT_EQ(instance.AccessMem(sp + STACK_BUFFER_SIZE - sizeof(uintptr_t), &val), 0);
+    // addr + sizeof(uintptr_t) > sp_ + STACK_BUFFER_SIZE
+    EXPECT_EQ(instance.AccessMem(sp + STACK_BUFFER_SIZE - 3, &val), -1);
+}
+
+/**
+ * @tc.name: AccessMemStackWindow004
+ * @tc.desc: after release every buffer read fails
+ * @tc.type: FUNC
+ */
+HWTEST(LocalThreadContextMixTest, AccessMemStackWindow004, testing::ext::TestSize.Level0)
+{
+    auto& instance = LocalThreadContextMix::GetInstance();
+    instance.ReleaseCollectThreadContext();
+    constexpr uintptr_t sp = 0x10000;
+    std::vector<uint8_t> buf(0x100, 0);
+    instance.SetStackForward(0);
+    instance.SetStackBuf(buf);
+    instance.SetSp(sp);
+    instance.SetMaps(DfxMaps::Create());
+    uintptr_t val = 0;
+    EXPECT_EQ(instance.AccessMem(sp + 0x10, &val), 0);
+    instance.ReleaseCollectThreadContext();
+    EXPECT_EQ(instance.AccessMem(sp + 0x10, &val), -1);
 }
 } // namespace HiviewDFX
 } // namepsace OHOS

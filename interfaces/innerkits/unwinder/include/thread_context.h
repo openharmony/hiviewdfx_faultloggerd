@@ -103,7 +103,11 @@ public:
     static std::shared_ptr<UnwindAccessors> CreateAccessors();
 
     void SetMaps(std::shared_ptr<DfxMaps> maps) { maps_ = maps; }
-    void SetStackBuf(std::vector<uint8_t> stackBuf) { stackBuf_ = stackBuf; }
+    void SetStackBuf(std::vector<uint8_t> stackBuf)
+    {
+        stackBuf_ = stackBuf;
+        stackCopiedLen_ = stackBuf.size();
+    }
     void SetStackForward(unsigned int forward) { stackForward_ = forward; }
 
 private:
@@ -123,6 +127,9 @@ private:
     uintptr_t stackBottom_ {0};
     uintptr_t stackTop_ {0};
     std::vector<uint8_t> stackBuf_;
+    // Bytes copied from sp_ into the start of stackBuf_; the buffer is pre-sized
+    // STACK_BUFFER_SIZE, so the tail past stackCopiedLen_ is zero fill.
+    size_t stackCopiedLen_ {0};
     int32_t tid_ = -1;
     int status_ = SyncStatus::INIT;
     std::shared_ptr<DfxMaps> maps_ = nullptr;

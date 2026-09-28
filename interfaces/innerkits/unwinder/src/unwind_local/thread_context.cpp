@@ -327,6 +327,7 @@ void LocalThreadContextMix::ReleaseCollectThreadContext()
     tid_ = -1;
     status_ = SyncStatus::INIT;
     maps_ = nullptr;
+    stackCopiedLen_ = 0;
 }
 
 NO_SANITIZE bool LocalThreadContextMix::CheckStatusValidate(int status, int32_t tid)
@@ -374,7 +375,11 @@ NO_SANITIZE void LocalThreadContextMix::CopyStackBuf()
     std::unique_lock<std::mutex> lock(mtx_);
 
     SafeReader reader;
-    if (reader.CopyReadableBufSafe(reinterpret_cast<uintptr_t>(stackBuf_.data()), stackBuf_.size(), sp_, cpySz) > 0) {
+    stackCopiedLen_ = 0;
+    size_t copied = reader.CopyReadableBufSafe(
+        reinterpret_cast<uintptr_t>(stackBuf_.data()), stackBuf_.size(), sp_, cpySz);
+    if (copied > 0) {
+        stackCopiedLen_ = copied;
         status_ = SyncStatus::COPY_SUCCESS;
     } else {
         status_ = SyncStatus::COPY_FAILED;
@@ -456,7 +461,7 @@ int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
         DFXLOGE("maps_ is nullptr.");
         return -1;
     }
-    if (addr < sp_ - stackForward_ || result > sp_ + STACK_BUFFER_SIZE) {
+    if (addr < sp_ - stackForward_ || result > sp_ + stackCopiedLen_) {
         std::shared_ptr<DfxMap> map;
         if (!(maps_->FindMapByAddr(addr, map)) || map == nullptr) {
             return -1;
@@ -471,7 +476,8 @@ int LocalThreadContextMix::AccessMem(uintptr_t addr, uintptr_t *val)
         return -1;
     }
     size_t stackOffset = addr - (sp_ - stackForward_);
-    if (stackBuf_.size() < sizeof(uintptr_t) || stackOffset > stackBuf_.size() - sizeof(uintptr_t)) {
+    if (stackBuf_.size() < sizeof(uintptr_t) || stackOffset > stackBuf_.size() - sizeof(uintptr_t) ||
+        stackOffset + sizeof(uintptr_t) > stackCopiedLen_ + stackForward_) {
         DFXLOGE("Failed to access addr, the stackOffset is invalid");
         return -1;
     }
