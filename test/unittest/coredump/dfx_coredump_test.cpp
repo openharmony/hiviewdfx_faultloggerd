@@ -434,13 +434,17 @@ HWTEST_F(DfxCoreDumpTest, CoredumpFileManager006, TestSize.Level2)
 HWTEST_F(DfxCoreDumpTest, CoredumpFileManager007, TestSize.Level2)
 {
     GTEST_LOG_(INFO) << "CoredumpFileManager007: start.";
+    auto& configManager = CoredumpConfigManager::GetInstance();
+    bool oldSwitch = configManager.dumpConfig_.coredumpSwitch;
+    configManager.dumpConfig_.coredumpSwitch = false;
     CoredumpFileManager fileManager;
     fileManager.targetPid_ = 0;
     bool ret = fileManager.CreateFile();
     ASSERT_TRUE(!ret);
     fileManager.targetPid_ = 99999; // 99999 invalid pid
     ret = fileManager.CreateFile();
-    ASSERT_TRUE(!ret);
+    ASSERT_TRUE(!ret); // native coredump is not created while the switch is off
+    configManager.dumpConfig_.coredumpSwitch = oldSwitch;
     GTEST_LOG_(INFO) << "CoredumpFileManager007: end.";
 }
 
