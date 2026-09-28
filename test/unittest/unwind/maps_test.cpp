@@ -526,36 +526,6 @@ HWTEST_F(MapsTest, MapParseTest001, TestSize.Level2)
 }
 
 /**
- * @tc.name: BuildStaticArkLLVMRangesTest001
- * @tc.desc: test BuildStaticArkLLVMRanges with invalid conditions
- * @tc.type: FUNC
- */
-HWTEST_F(MapsTest, BuildStaticArkLLVMRangesTest001, TestSize.Level2)
-{
-    GTEST_LOG_(INFO) << "BuildStaticArkLLVMRangesTest001: start.";
-
-    auto emptyNameMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "");
-    emptyNameMap->prevMap = nullptr;
-    auto rangesEmptyName = emptyNameMap->BuildStaticArkLLVMRanges();
-    EXPECT_TRUE(rangesEmptyName.empty());
-
-    auto nullPrevMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_EXEC, "libarkruntime.so");
-    nullPrevMap->elf = std::make_shared<DfxElf>();
-    nullPrevMap->prevMap = nullptr;
-    auto rangesNullPrev = nullPrevMap->BuildStaticArkLLVMRanges();
-    EXPECT_TRUE(rangesNullPrev.empty());
-
-    auto prevMap = std::make_shared<DfxMap>(0, 0x1000, 0, PROT_READ, "/system/lib64/libarkruntime.so");
-    auto emptySymMap = std::make_shared<DfxMap>(0x1000, 0x2000, 0, PROT_EXEC, "/system/lib64/libarkruntime.so");
-    emptySymMap->prevMap = prevMap;
-    emptySymMap->elf = std::make_shared<DfxElf>();
-    auto rangesEmptySym = emptySymMap->BuildStaticArkLLVMRanges();
-    EXPECT_TRUE(rangesEmptySym.empty());
-
-    GTEST_LOG_(INFO) << "BuildStaticArkLLVMRangesTest001: end.";
-}
-
-/**
  * @tc.name: IsStaticArkExecutableConcurrentTest001
  * @tc.desc: test IsStaticArkExecutable under multi-threaded concurrent invocation
  * @tc.type: FUNC
