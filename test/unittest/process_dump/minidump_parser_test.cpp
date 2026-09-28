@@ -695,22 +695,22 @@ HWTEST_F(MinidumpParserTest, ParserGetStreamNullFactoryTest001, TestSize.Level2)
     EXPECT_TRUE(result);
 }
 /**
- * @tc.name: ParserOpenPathBasedTest001
- * @tc.desc: test MinidumpParser Open with nonexistent file path returns ERROR_FILE_OPEN
+ * @tc.name: ParserParseNonexistentPathTest001
+ * @tc.desc: test MinidumpParser Parse with nonexistent file path returns false and ERROR_FILE_READ
  * @tc.type: FUNC
  */
-HWTEST_F(MinidumpParserTest, ParserOpenPathBasedTest001, TestSize.Level2)
+HWTEST_F(MinidumpParserTest, ParserParseNonexistentPathTest001, TestSize.Level2)
 {
     MinidumpParser parser("/nonexistent/path/to/minidump.dmp");
-    EXPECT_FALSE(parser.Open());
-    EXPECT_EQ(parser.GetLastError().GetError(), MinidumpError::ERROR_FILE_OPEN);
+    EXPECT_FALSE(parser.Parse());
+    EXPECT_EQ(parser.GetLastError().GetError(), MinidumpError::ERROR_FILE_READ);
 }
 /**
- * @tc.name: ParserOpenPathBasedValidTest001
- * @tc.desc: test MinidumpParser Open and Parse with valid file path succeeds
+ * @tc.name: ParserParsePathBasedValidTest001
+ * @tc.desc: test MinidumpParser Parse with valid file path succeeds
  * @tc.type: FUNC
  */
-HWTEST_F(MinidumpParserTest, ParserOpenPathBasedValidTest001, TestSize.Level2)
+HWTEST_F(MinidumpParserTest, ParserParsePathBasedValidTest001, TestSize.Level2)
 {
     int tmpFd = open("/data/test/minidump_open_path_test", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
     ASSERT_TRUE(tmpFd > 0);
@@ -718,7 +718,6 @@ HWTEST_F(MinidumpParserTest, ParserOpenPathBasedValidTest001, TestSize.Level2)
     write(tmpFd, data.c_str(), data.size());
     close(tmpFd);
     MinidumpParser parser("/data/test/minidump_open_path_test");
-    EXPECT_TRUE(parser.Open());
     EXPECT_TRUE(parser.Parse());
     unlink("/data/test/minidump_open_path_test");
 }
@@ -1281,11 +1280,11 @@ HWTEST_F(MinidumpParserTest, ParserGetSubjectTest001, TestSize.Level2)
 }
 
 /**
- * @tc.name: ParserOpenWithValidPathTest001
- * @tc.desc: test MinidumpParser Open with valid file path returns true
+ * @tc.name: ParserParseWithValidPathTest001
+ * @tc.desc: test MinidumpParser Parse with valid file path returns true
  * @tc.type: FUNC
  */
-HWTEST_F(MinidumpParserTest, ParserOpenWithValidPathTest001, TestSize.Level2)
+HWTEST_F(MinidumpParserTest, ParserParseWithValidPathTest001, TestSize.Level2)
 {
     std::string data = BuildValidMinidumpHeader(1);
     int tmpFd = open("/data/test/parser_open_valid_path", O_RDWR | O_CREAT | O_TRUNC, TEST_FILE_PERMISSIONS);
@@ -1294,7 +1293,7 @@ HWTEST_F(MinidumpParserTest, ParserOpenWithValidPathTest001, TestSize.Level2)
     close(tmpFd);
 
     MinidumpParser parser("/data/test/parser_open_valid_path");
-    EXPECT_TRUE(parser.Open());
+    EXPECT_TRUE(parser.Parse());
     unlink("/data/test/parser_open_valid_path");
 }
 

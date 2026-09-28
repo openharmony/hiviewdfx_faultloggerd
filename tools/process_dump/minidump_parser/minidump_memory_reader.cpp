@@ -28,6 +28,7 @@
 #include "minidump_memory_reader.h"
 #include "minidump_optimizer.h"
 #include "securec.h"
+#include "smart_fd.h"
 
 namespace OHOS {
 namespace HiviewDFX {
@@ -59,10 +60,6 @@ MinidumpMemoryReader::~MinidumpMemoryReader()
         munmap(mmapData_, mmapSize_);
         mmapData_ = nullptr;
     }
-    if (mmapFd_ >= 0) {
-        close(mmapFd_);
-        mmapFd_ = -1;
-    }
     if (streamBuf_ != nullptr) {
         stream_.reset();
         delete[] streamBuf_;
@@ -71,33 +68,27 @@ MinidumpMemoryReader::~MinidumpMemoryReader()
 
 bool MinidumpMemoryReader::InitMmap(const std::string& path)
 {
-    mmapFd_ = open(path.c_str(), O_RDONLY | O_CLOEXEC);
-    if (mmapFd_ < 0) {
+    SmartFd fd(open(path.c_str(), O_RDONLY | O_CLOEXEC));
+    if (!fd) {
         DFXLOGE("MinidumpMemoryReader open failed for %{public}s errno=%{public}d", path.c_str(), errno);
         return false;
     }
 
     struct stat st;
-    if (fstat(mmapFd_, &st) != 0) {
+    if (fstat(fd.GetFd(), &st) != 0) {
         DFXLOGE("MinidumpMemoryReader fstat failed errno=%{public}d", errno);
-        close(mmapFd_);
-        mmapFd_ = -1;
         return false;
     }
 
     fileSize_ = static_cast<size_t>(st.st_size);
     if (fileSize_ == 0) {
         DFXLOGE("MinidumpMemoryReader file is empty");
-        close(mmapFd_);
-        mmapFd_ = -1;
         return false;
     }
 
-    void* mapped = mmap(nullptr, fileSize_, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, mmapFd_, 0);
+    void* mapped = mmap(nullptr, fileSize_, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, fd.GetFd(), 0);
     if (mapped == MAP_FAILED) {
         DFXLOGW("MinidumpMemoryReader mmap failed errno=%{public}d, fallback to istream", errno);
-        close(mmapFd_);
-        mmapFd_ = -1;
         return false;
     }
 
