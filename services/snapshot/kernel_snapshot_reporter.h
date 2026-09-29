@@ -26,7 +26,7 @@ public:
 private:
     bool ReportRawMsg(const std::string& content);
     bool ReportCrashNoLogEvent(CrashMap& output);
-    int32_t GetSnapshotPid(const std::string& content);
+    uint32_t GetSnapshotPid(const std::string& content);
 };
 } // namespace HiviewDFX
 } // namespace OHOS

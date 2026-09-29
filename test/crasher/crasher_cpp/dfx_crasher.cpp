@@ -361,7 +361,10 @@ NOINLINE int DfxCrasher::TriggerPipeException(void)
     }
     close(pipe[0]);
     int src = 1;
-    write(pipe[1], reinterpret_cast<const void*>(&src), sizeof(int));
+    ssize_t writeRet = write(pipe[1], reinterpret_cast<const void*>(&src), sizeof(int));
+    if (writeRet < 0) {
+        std::cout << "TriggerPipeException write failed, errno: " << errno << std::endl;
+    }
     close(pipe[1]);
     return 0;
 }
@@ -392,7 +395,10 @@ static void StartServer(int fd)
     }
     const char* msg = "server listen complete";
     SmartFd writePipe(fd);
-    write(writePipe.GetFd(), msg, strlen(msg));
+    ssize_t writeRet = write(writePipe.GetFd(), msg, strlen(msg));
+    if (writeRet < 0) {
+        std::cout << "StartServer write failed, errno: " << errno << std::endl;
+    }
     struct sockaddr_un clientAddr;
     socklen_t clientLen = sizeof(clientAddr);
     SmartFd connectFd(accept(serverFd.GetFd(), reinterpret_cast<struct sockaddr *>(&clientAddr), &clientLen));
@@ -404,7 +410,10 @@ static void StartServer(int fd)
     serverFd.Reset();
     unlink(SOCKET_PATH);
     msg = "close fd successfully";
-    write(writePipe.GetFd(), msg, strlen(msg));
+    writeRet = write(writePipe.GetFd(), msg, strlen(msg));
+    if (writeRet < 0) {
+        std::cout << "StartServer write failed, errno: " << errno << std::endl;
+    }
 }
 
 NOINLINE int DfxCrasher::TriggerSocketException(void)
@@ -867,6 +876,10 @@ NOINLINE int DfxCrasher::CrashInLibuvWork()
     uv_timer_t timerHandle;
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
+    if (loop == nullptr) {
+        printf("CrashInLibuvWork uv_default_loop failed!\n");
+        return -1;
+    }
     int timeout = 5000;
     uv_timer_init(loop, &timerHandle);
     uv_timer_start(&timerHandle, TimerCallback, timeout, 0);
@@ -885,6 +898,10 @@ NOINLINE int DfxCrasher::FdsanInLibuvWork()
     uv_timer_t timerHandle;
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
+    if (loop == nullptr) {
+        printf("FdsanInLibuvWork uv_default_loop failed!\n");
+        return -1;
+    }
     int timeout = 1000;
     uv_timer_init(loop, &timerHandle);
     uv_timer_start(&timerHandle, TimerCallback, timeout, 0);
@@ -908,6 +925,10 @@ NOINLINE int DfxCrasher::CrashInLibuvTimer()
     uv_timer_t timerHandle;
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
+    if (loop == nullptr) {
+        printf("CrashInLibuvTimer uv_default_loop failed!\n");
+        return -1;
+    }
     int timeout = 5000;
     uv_timer_init(loop, &timerHandle);
     uv_timer_start(&timerHandle, TimerCallback2, timeout, 0);
@@ -935,6 +956,10 @@ NOINLINE int DfxCrasher::CrashInLibuvWorkDone()
     }
     uv_work_t work;
     uv_loop_t* loop = uv_default_loop();
+    if (loop == nullptr) {
+        printf("CrashInLibuvWorkDone uv_default_loop failed!\n");
+        return -1;
+    }
     uv_queue_work(loop, &work, WorkCallback2, CrashAfterWorkCallback);
     uv_run(loop, UV_RUN_DEFAULT);
     printf("END in CrashInLibuvWorkDone\n");

@@ -579,8 +579,11 @@ std::string ProcessDumper::ReadFileWithTimeHeader(const std::string& filePath)
     if (filePath.empty()) {
         return "Error: File path empty";
     }
-
-    SmartFd sFd(OHOS_TEMP_FAILURE_RETRY(open(filePath.c_str(), O_RDONLY | O_NOFOLLOW)));
+    auto realPath = RealPath(filePath);
+    SmartFd sFd;
+    if (realPath != nullptr) {
+        sFd = SmartFd(OHOS_TEMP_FAILURE_RETRY(open(realPath.get(), O_RDONLY | O_NOFOLLOW)));
+    }
     if (!sFd) {
         std::string errMsg = "Error: File not found or open failed. Path:" + filePath +
                              ", errno:" + std::to_string(errno) + ", desc: " + strerror(errno);

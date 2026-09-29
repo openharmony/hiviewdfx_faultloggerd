@@ -45,8 +45,9 @@ void DfxPtrace::Detach(pid_t tid)
             DFXLOGW("Failed to waitpid tid(%{public}d), errno=%{public}d", tid, errno);
             return;
         }
-
-        ptrace(PTRACE_DETACH, tid, nullptr, nullptr);
+        if (ptrace(PTRACE_DETACH, tid, nullptr, nullptr) != 0) {
+            DFXLOGW("Failed to ptrace detach tid(%{public}d), errno=%{public}d", tid, errno);
+        }
     }
 }
 

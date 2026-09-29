@@ -67,7 +67,7 @@ bool KernelSnapshotReporter::ReportCrashNoLogEvent(CrashMap& output)
 #endif
 }
 
-int32_t KernelSnapshotReporter::GetSnapshotPid(const std::string& content)
+uint32_t KernelSnapshotReporter::GetSnapshotPid(const std::string& content)
 {
     std::string pidKey = "pid=";
     auto pos = content.find(pidKey);
@@ -81,11 +81,12 @@ int32_t KernelSnapshotReporter::GetSnapshotPid(const std::string& content)
     pos += pidKey.size();
     std::string pidStr = content.substr(pos, end - pos);
     errno = 0;
-    auto pid = static_cast<int32_t>(strtol(pidStr.c_str(), nullptr, 10));
-    if (errno == ERANGE) {
+    constexpr int decimalBase = 10;
+    unsigned long result = strtoul(pidStr.c_str(), nullptr, decimalBase);
+    if (errno == ERANGE || result > UINT32_MAX) {
         return 0;
     }
-    return pid;
+    return static_cast<uint32_t>(result);
 }
 
 bool KernelSnapshotReporter::ReportRawMsg(const std::string& content)
@@ -94,7 +95,7 @@ bool KernelSnapshotReporter::ReportRawMsg(const std::string& content)
         return false;
     }
 #ifndef HISYSEVENT_DISABLE
-    int32_t pid = GetSnapshotPid(content);
+    uint32_t pid = GetSnapshotPid(content);
     char procName[] = "encrypt_snapshot_proc";
     HiSysEventParam params[] = {
         {.name = "PID", .t = HISYSEVENT_UINT32, .v = { .ui32 = pid}, .arraySize = 0},
@@ -103,7 +104,7 @@ bool KernelSnapshotReporter::ReportRawMsg(const std::string& content)
     };
     int ret = OH_HiSysEvent_Write("RELIABILITY", "CPP_CRASH_NO_LOG",
                                   HISYSEVENT_FAULT, params, sizeof(params) / sizeof(params[0]));
-    DFXLOGI("Report pid %{public}d kernel snapshot raw event ret %{public}d", pid, ret);
+    DFXLOGI("Report pid %{public}u kernel snapshot raw event ret %{public}d", pid, ret);
     return ret == 0;
 #else
     DFXLOGI("Not supported for kernel snapshot report.");

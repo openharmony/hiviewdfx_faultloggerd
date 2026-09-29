@@ -111,8 +111,9 @@ uint64_t GetTimeFromFileName(const std::string& fileName)
     }
     auto timeStr = fileName.substr(pos + 1, timeStrLen);
     errno = 0;
-    uint64_t num = strtoull(timeStr.c_str(), nullptr, decimal);
-    if (errno == ERANGE) {
+    char* endPtr = nullptr;
+    uint64_t num = strtoull(timeStr.c_str(), &endPtr, decimal);
+    if (errno == ERANGE || endPtr == timeStr.c_str() || *endPtr != '\0') {
         DFXLOGE("invalid timeStr for file: %{public}s", timeStr.c_str());
         return 0;
     }
@@ -130,9 +131,6 @@ bool CreateFileDir(const std::string& filePath)
 
 bool RemoveTempFile(const std::string& filePath)
 {
-    if (access(filePath.c_str(), F_OK) != 0) {
-        return true;
-    }
     if (!OHOS::RemoveFile(filePath)) {
         DFXLOGE("failed to remove file: %{public}s.", filePath.c_str());
         return false;
@@ -514,16 +512,18 @@ EventResult TempFileManager::TempFileWatcher::OnEventPoll()
     constexpr uint32_t eventLen = static_cast<uint32_t>(sizeof(inotify_event));
     constexpr uint32_t eventLenSize = 32;
     constexpr uint32_t buffLen = eventLenSize * eventLen;
-    constexpr uint32_t bound = buffLen - eventLen;
     char eventBuf[buffLen] = {0};
     int ret = OHOS_TEMP_FAILURE_RETRY(read(GetFd(), eventBuf, sizeof(eventBuf)));
     if (ret < 0) {
         return EventResult::KEEP;
     }
-    auto readLen = static_cast<size_t>(ret);
+    size_t readLen = static_cast<size_t>(ret);
     size_t eventPos = 0;
-    while (readLen >= eventLen && eventPos < bound) {
+    while (eventPos + eventLen <= readLen) {
         auto *event = reinterpret_cast<inotify_event *>(eventBuf + eventPos);
+        if (event->len > readLen - eventPos - eventLen) {
+            break;
+        }
 #ifdef FAULTLOGGERD_TEST
         if (event->mask & tempFileManager_.eventMask_) {
             return EventResult::KEEP;
@@ -543,9 +543,7 @@ EventResult TempFileManager::TempFileWatcher::OnEventPoll()
                 HandleEvent(event->mask, filePath, *fileConfig);
             }
         }
-        auto eventSize = (eventLen + event->len);
-        readLen -= eventSize;
-        eventPos += eventSize;
+        eventPos += static_cast<size_t>(eventLen) + static_cast<size_t>(event->len);
     }
     return EventResult::KEEP;
 }

@@ -159,7 +159,9 @@ bool ThreadNoteWriter::ArmTaggedAddrCtrlWrite()
     if (!NoteUtil().NoteWrite(bw_, NT_ARM_TAGGED_ADDR_CTRL, sizeof(long), NOTE_NAME_LINUX)) {
         return false;
     }
-
+    if (bw_.GetRemaining() < sizeof(long)) {
+        return false;
+    }
     (void)memset_s(bw_.GetCurrent(), sizeof(long), 0, sizeof(long));
     bw_.Advance(sizeof(long));
     return true;
@@ -321,7 +323,9 @@ bool MultiThreadNoteWriter::Write()
 
 bool PrpsinfoWriter::Write()
 {
-    NoteUtil().NoteWrite(bw_, NT_PRPSINFO, sizeof(prpsinfo_t), NOTE_NAME_CORE);
+    if (!NoteUtil().NoteWrite(bw_, NT_PRPSINFO, sizeof(prpsinfo_t), NOTE_NAME_CORE)) {
+        return false;
+    }
     prpsinfo_t ntPrpsinfo{};
     FillPrpsinfo(ntPrpsinfo);
     if (!bw_.Write(&ntPrpsinfo, sizeof(ntPrpsinfo))) {
@@ -350,7 +354,7 @@ bool NoteUtil::NoteWrite(CoredumpBufferWriter& bw, uint32_t noteType, size_t des
         return false;
     }
     constexpr size_t nameSize = 8;
-    if (memcpy_s(bw.GetCurrent(), nameSize, noteName, nameSize) != EOK) {
+    if (memcpy_s(bw.GetCurrent(), nameSize, noteName, note.n_namesz) != EOK) {
         DFXLOGE("memcpy fail, errno:%{public}d", errno);
         return false;
     }
@@ -538,10 +542,15 @@ bool FileRegionWriter::Write()
     bw_.Advance(sizeof(FileHeader));
 
     Elf64_Half lineNumber = 1;
-    WriteAddrRelated();
-    WriteFilePath(lineNumber);
+    if (!WriteAddrRelated() || !WriteFilePath(lineNumber)) {
+        return false;
+    }
+    auto currentPointer = bw_.GetCurrent();
+    if (currentPointer == nullptr) {
+        return false;
+    }
 
-    note->n_descsz = reinterpret_cast<uintptr_t>(bw_.GetCurrent()) - reinterpret_cast<uintptr_t>(startPointer);
+    note->n_descsz = reinterpret_cast<uintptr_t>(currentPointer) - reinterpret_cast<uintptr_t>(startPointer);
     ntFileHd->count = lineNumber - 1;
 
     constexpr uint8_t fileNoteAlignment = 4;
@@ -550,7 +559,11 @@ bool FileRegionWriter::Write()
         if (remain == 0) {
             break;
         }
-        *bw_.GetCurrent() = 0;
+        auto currentPos = bw_.GetCurrent();
+        if (currentPos == nullptr) {
+            return false;
+        }
+        *currentPos = 0;
         bw_.Advance(1);
     }
     return true;

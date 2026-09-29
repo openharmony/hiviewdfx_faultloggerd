@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <limits.h>
+#include <memory>
 #include <stdlib.h>
 #include <string>
 #include <string.h>
@@ -27,21 +28,18 @@
 namespace OHOS {
 namespace HiviewDFX {
 
-inline bool RealPath(const std::string& path, std::string& realPath)
+inline std::unique_ptr<char, void(*)(char*)> RealPath(const std::string& path)
 {
-#if is_ohos
-    // Do not put strings on the stack as it may cause stack overflow issues
-    realPath.reserve(PATH_MAX);
-    realPath.resize(PATH_MAX - 1);
-    if (realpath(path.c_str(), &(realPath[0])) == nullptr) {
-        return false;
-    }
-    size_t actualLen = strlen(realPath.c_str());
-    realPath.resize(actualLen);
+#if defined(is_mingw) && is_mingw
+    char* resolved = _fullpath(nullptr, path.c_str(), 0);
 #else
-    realPath = path;
+    char* resolved = realpath(path.c_str(), nullptr);
 #endif
-    return true;
+    return {resolved, [](char* p) {
+        if (p != nullptr) {
+            free(p);
+        }
+    }};
 }
 
 inline bool StartsWith(const std::string& s, const std::string& prefix)
