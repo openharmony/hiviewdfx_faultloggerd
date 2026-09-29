@@ -109,7 +109,8 @@ uint64_t CoredumpMappingManager::EstimateFileSize() const
     uint64_t totalMem = std::accumulate(maps_.begin(), maps_.end(), uint64_t{0}, [](uint64_t sum, auto const &r) {
         return ShouldIncludeRegion(r) ? sum + r.memorySizeHex : sum;
     });
-    uint64_t estimatedSize = headerSize + notesSize + totalMem + 1000;
+    constexpr uint64_t reserveSpace = 1000;
+    uint64_t estimatedSize = headerSize + notesSize + totalMem + reserveSpace;
     return estimatedSize < MAX_COREDUMP_SIZE ? estimatedSize : MAX_COREDUMP_SIZE;
 }
 

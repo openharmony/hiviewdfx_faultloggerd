@@ -75,7 +75,7 @@ bool MinidumpMemoryReader::InitMmap(const std::string& path)
     auto realPath = RealPath(path);
     SmartFd fd;
     if (realPath != nullptr) {
-        fd = SmartFd(open(path.c_str(), O_RDONLY | O_CLOEXEC));
+        fd = SmartFd(open(realPath.get(), O_RDONLY | O_CLOEXEC));
     }
     if (!fd) {
         DFXLOGE("MinidumpMemoryReader open failed for %{public}s errno=%{public}d", path.c_str(), errno);

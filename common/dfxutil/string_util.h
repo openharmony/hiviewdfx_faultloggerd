@@ -30,7 +30,12 @@ namespace HiviewDFX {
 
 inline std::unique_ptr<char, void(*)(char*)> RealPath(const std::string& path)
 {
-    return {realpath(path.c_str(), nullptr), [](char* p) {
+#if defined(is_mingw) && is_mingw
+    char* resolved = _fullpath(nullptr, path.c_str(), 0);
+#else
+    char* resolved = realpath(path.c_str(), nullptr);
+#endif
+    return {resolved, [](char* p) {
         if (p != nullptr) {
             free(p);
         }
