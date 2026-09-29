@@ -111,9 +111,10 @@ HWTEST_F(DfxHapTest, DfxHapTest004, TestSize.Level2)
     uint64_t pc = 1;
     auto map = std::make_shared<DfxMap>();
     JsFunction jsFunction;
-    auto res = dfxHap.ParseHapMemInfo(pid, pc, map, nullptr);
+    uintptr_t extractorPtr = 0;
+    auto res = dfxHap.ParseHapMemInfo(pid, pc, map, nullptr, extractorPtr);
     ASSERT_EQ(res, false);
-    res = dfxHap.ParseHapMemInfo(pid, pc, map, &jsFunction);
+    res = dfxHap.ParseHapMemInfo(pid, pc, map, &jsFunction, extractorPtr);
     ASSERT_EQ(res, false);
     GTEST_LOG_(INFO) << "DfxHapTest004: end.";
 }
@@ -128,11 +129,12 @@ HWTEST_F(DfxHapTest, DfxHapTest005, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxHapTest005: start.";
     DfxHap dfxHap;
     std::shared_ptr<DfxMap> map = nullptr;
-    dfxHap.ParseHapFileInfo(0, map, nullptr);
+    uintptr_t extractorPtr = 0;
+    dfxHap.ParseHapFileInfo(0, map, nullptr, extractorPtr);
     JsFunction jsFunction;
-    dfxHap.ParseHapFileInfo(0, map, &jsFunction);
+    dfxHap.ParseHapFileInfo(0, map, &jsFunction, extractorPtr);
     auto map1 = std::make_shared<DfxMap>();
-    bool ret = dfxHap.ParseHapFileInfo(0, map1, &jsFunction);
+    bool ret = dfxHap.ParseHapFileInfo(0, map1, &jsFunction, extractorPtr);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DfxHapTest005: end.";
 }
@@ -171,13 +173,14 @@ HWTEST_F(DfxHapTest, DfxHapTest007, TestSize.Level2)
     GTEST_LOG_(INFO) << "DfxHapTest007: start.";
     DfxHap dfxHap;
     std::string mapName = "";
-    bool ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, nullptr);
+    uintptr_t extractorPtr = 0;
+    bool ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, nullptr, extractorPtr);
     ASSERT_EQ(ret, false);
     mapName = "test.abc";
-    ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, nullptr);
+    ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, nullptr, extractorPtr);
     ASSERT_EQ(ret, false);
     JsFunction jsFunction;
-    ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, &jsFunction);
+    ret = dfxHap.ParseHapMemInfoForOffline(mapName, 0, &jsFunction, extractorPtr);
     ASSERT_EQ(ret, false);
     GTEST_LOG_(INFO) << "DfxHapTest007: end.";
 }
