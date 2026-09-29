@@ -33,6 +33,14 @@ typedef void(*HiDebugSetSwitchCallbackFunc)(bool enable);
 bool DfxInitAsyncStack();
 
 /**
+ * @brief init async stack with debuggable info
+ *
+ * @param isDebugApp whether the current app is a debuggable app
+ * @return if succeed return true, otherwise return false
+*/
+bool DfxInitAsyncStackWithDebug(bool isDebugApp);
+
+/**
  * @brief get stack id of submitter
  *
  * @return stack id, if async stack not init, return 0
