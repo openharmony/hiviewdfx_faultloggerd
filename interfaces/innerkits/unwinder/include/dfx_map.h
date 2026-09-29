@@ -30,11 +30,6 @@ class DfxHap;
 
 class DfxMap {
 public:
-    struct MapRange {
-        uint64_t begin;
-        uint64_t end;
-    };
-
     static std::shared_ptr<DfxMap> Create(const std::string& vma);
     static void PermsToProts(const std::string perms, uint32_t& prots, uint32_t& flag);
     static void FormatMapName(pid_t pid, std::string& mapName);
@@ -59,7 +54,6 @@ public:
         return "lib" + std::string(libCoreName) + ".so";
     }
     bool IsStaticArkExecutable();
-    std::vector<MapRange> BuildStaticArkLLVMRanges();
     bool IsJsvmExecutable();
     bool IsArkWebJsExecutable();
     bool IsVdsoMap();
