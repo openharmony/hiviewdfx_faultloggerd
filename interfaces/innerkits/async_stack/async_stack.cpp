@@ -103,10 +103,10 @@ static bool IsAsyncStackEnabled()
     return OHOS::system::GetBoolParameter(ASYNC_STACK_ENABLE_KEY, false);
 }
 
-static SampleMode GetSampleMode()
+static SampleMode GetSampleMode(bool isDebugApp)
 {
     // Full collection when: force, debuggable HAP, enable flag, or Beta/FUT version.
-    bool isFullCollect = IsDebuggableApp() || IsAsyncStackEnabled() || IsDfrBetaVersion() || IsFansStage();
+    bool isFullCollect = isDebugApp || IsAsyncStackEnabled() || IsDfrBetaVersion() || IsFansStage();
     return isFullCollect ? SAMPLE_MODE_FULL : SAMPLE_MODE_SAMPLED;
 }
 
@@ -401,7 +401,7 @@ extern "C" void DfxPopSubmitterStackId(uint64_t stackId)
     }
 }
 
-void DfxSetAsyncStackCallback(void)
+void DfxSetAsyncStackCallback(bool isDebugApp)
 {
     // set callback for DfxSignalHandler to read stackId
     if (DFX_SetAsyncStackCallback == nullptr) {
@@ -413,7 +413,7 @@ void DfxSetAsyncStackCallback(void)
     if (uvSetAsyncStackFn != nullptr) {
         uvSetAsyncStackFn(DfxCollectAsyncStack, DfxSetSubmitterStackId);
     }
-    if (IsDebuggableApp()) {
+    if (isDebugApp) {
         const char* ffrtSetAsyncStackFnName = "FFRTSetAsyncStackFunc";
         auto ffrtSetAsyncStackFn = reinterpret_cast<GenericSetAsyncStackFn>(
             dlsym(RTLD_DEFAULT, ffrtSetAsyncStackFnName));
@@ -423,9 +423,14 @@ void DfxSetAsyncStackCallback(void)
         }
     }
 }
+
+void DfxSetAsyncStackCallback()
+{
+    DfxSetAsyncStackCallback(IsDebuggableApp());
+}
 #endif
 
-bool DfxInitAsyncStack()
+bool DfxInitAsyncStackWithDebug(bool isDebugApp)
 {
 #if defined(__aarch64__)
     // init unique stack table
@@ -439,12 +444,21 @@ bool DfxInitAsyncStack()
         return false;
     }
     g_fpBacktrace = std::unique_ptr<OHOS::HiviewDFX::FpBacktrace>(OHOS::HiviewDFX::FpBacktrace::CreateInstance());
-    g_sampleMode.store(GetSampleMode());
+    g_sampleMode.store(GetSampleMode(isDebugApp));
     DFXLOGI("Init async stack, sample mode: %{public}d", static_cast<int>(g_sampleMode.load()));
-    DfxSetAsyncStackCallback();
+    DfxSetAsyncStackCallback(isDebugApp);
     g_init.store(true);
 #endif
     return g_init.load();
+}
+
+bool DfxInitAsyncStack()
+{
+#if defined(__aarch64__)
+    return DfxInitAsyncStackWithDebug(IsDebuggableApp());
+#else
+    return DfxInitAsyncStackWithDebug(false);
+#endif
 }
 
 extern "C" void DfxSetHiDebugAsyncStackCallback(HiDebugSetSwitchCallbackFunc func)

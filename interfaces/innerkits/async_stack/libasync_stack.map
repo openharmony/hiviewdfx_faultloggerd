@@ -5,6 +5,7 @@
     };
     extern "C" {
       DfxInitAsyncStack;
+      DfxInitAsyncStackWithDebug;
       DfxGetSubmitterStackLocal;
       DfxGetSubmitterStackId;
       DfxSetSubmitterStackId;
