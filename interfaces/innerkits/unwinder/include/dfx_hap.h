@@ -40,17 +40,19 @@ public:
         bool isOffline = false, bool isStaticArkFrame = false);
 private:
     bool ParseHapFileInfo(uint64_t pc, std::shared_ptr<DfxMap> map, JsFunction *jsFunction,
-        bool isStaticArkFrame = false);
+        uintptr_t extractorPtr, bool isStaticArkFrame = false);
     bool ParseHapMemInfo(pid_t pid, uint64_t pc, std::shared_ptr<DfxMap> map,
-        JsFunction *jsFunction);
+        JsFunction *jsFunction, uintptr_t extractorPtr);
 
     bool ParseHapFileData(const std::string& name);
     bool ParseHapMemData(const pid_t pid, std::shared_ptr<DfxMap> map);
-    bool ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relPc, JsFunction *jsFunction);
+    bool ParseHapMemInfoForOffline(const std::string& mapName, uint64_t relPc, JsFunction *jsFunction,
+        uintptr_t extractorPtr);
     bool MmapForHap(const std::string& mapName);
 
 private:
-    MAYBE_UNUSED uintptr_t arkSymbolExtractorPtr_ = 0;
+    MAYBE_UNUSED uintptr_t arkSymbolExtractorStaticPtr_ = 0;
+    MAYBE_UNUSED uintptr_t arkSymbolExtractorDynamicPtr_ = 0;
     MAYBE_UNUSED std::unique_ptr<uint8_t[]> abcDataPtr_ = nullptr;
     MAYBE_UNUSED size_t abcDataSize_ = 0;
     MAYBE_UNUSED uintptr_t abcLoadOffset_ = 0;
